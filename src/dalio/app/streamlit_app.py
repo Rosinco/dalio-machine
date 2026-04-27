@@ -1336,6 +1336,149 @@ def _render_history_explorer(session: Session, country: str) -> None:
     )
 
 
+# ─── Big-cycle qualitative panel (Slice 17) ────────────────────────────────
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def _load_gini_history(country_iso2: str) -> pd.DataFrame:
+    from dalio.scoring.big_cycle import BigCycleSource
+    return BigCycleSource().fetch_gini(country_iso2)
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def _load_cofer_history() -> pd.DataFrame:
+    from dalio.scoring.big_cycle import BigCycleSource
+    return BigCycleSource().fetch_cofer_usd_share()
+
+
+def _render_big_cycle_panel(country_iso2: str, country_name: str) -> None:
+    """Two slow-moving series + a static framework summary. *Qualitative
+    context only* — these never feed compute_tilts or classify_*.
+    """
+    st.caption(
+        "_For completeness, not for action. Two slow-moving series tied to "
+        "Dalio's bigger picture (internal disorder + reserve-currency "
+        "lifecycle), plus the framework outline. **Not classified by this tool.**_"
+    )
+
+    col_a, col_b = st.columns(2)
+
+    # Gini — internal-disorder proxy, per-country
+    with col_a:
+        st.markdown(f"##### Gini index — {country_name}")
+        try:
+            gini = _load_gini_history(country_iso2)
+        except Exception as e:  # noqa: BLE001
+            st.caption(f"_World Bank data unavailable ({type(e).__name__})._")
+            gini = pd.DataFrame()
+        if gini.empty:
+            st.caption("_No published Gini surveys for this country._")
+        else:
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=gini["date"], y=gini["value"],
+                mode="lines+markers",
+                line=dict(color=INK, width=2),
+                marker=dict(size=6, color=RUST),
+                name="Gini",
+            ))
+            fig.update_layout(
+                height=240,
+                margin=dict(l=10, r=10, t=10, b=20),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor=PAPER,
+                font=dict(family="Inter Tight, sans-serif", color=INK, size=11),
+                xaxis=dict(showgrid=True, gridcolor=RULE, gridwidth=0.5,
+                           zeroline=False, color=INK_MUTED),
+                yaxis=dict(showgrid=True, gridcolor=RULE, gridwidth=0.5,
+                           zeroline=False, color=INK_MUTED, title="Gini"),
+                showlegend=False,
+            )
+            st.plotly_chart(fig, width="stretch")
+            latest = gini.iloc[-1]
+            st.caption(
+                f"Latest: {latest['value']:.1f} ({latest['date'].strftime('%Y')}). "
+                f"World Bank `SI.POV.GINI`. Higher = more unequal."
+            )
+
+    # COFER USD share — global reserve-currency-lifecycle proxy
+    with col_b:
+        st.markdown("##### USD share of FX reserves (global)")
+        try:
+            cofer = _load_cofer_history()
+        except Exception as e:  # noqa: BLE001
+            st.caption(f"_IMF COFER data unavailable ({type(e).__name__})._")
+            cofer = pd.DataFrame()
+        if cofer.empty:
+            st.caption("_COFER data not yet fetched._")
+        else:
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=cofer["date"], y=cofer["value"],
+                mode="lines",
+                line=dict(color=INK, width=2),
+                name="USD share",
+            ))
+            fig.update_layout(
+                height=240,
+                margin=dict(l=10, r=10, t=10, b=20),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor=PAPER,
+                font=dict(family="Inter Tight, sans-serif", color=INK, size=11),
+                xaxis=dict(showgrid=True, gridcolor=RULE, gridwidth=0.5,
+                           zeroline=False, color=INK_MUTED),
+                yaxis=dict(showgrid=True, gridcolor=RULE, gridwidth=0.5,
+                           zeroline=False, color=INK_MUTED, title="USD %",
+                           range=[40, 80]),
+                showlegend=False,
+            )
+            st.plotly_chart(fig, width="stretch")
+            latest = cofer.iloc[-1]
+            first = cofer.iloc[0]
+            delta = latest["value"] - first["value"]
+            latest_q = (latest["date"].month - 1) // 3 + 1
+            st.caption(
+                f"Latest: {latest['value']:.1f}% ({latest['date'].year} Q{latest_q}). "
+                f"Down {abs(delta):.1f}pp from {first['value']:.1f}% in {first['date'].year}. "
+                f"IMF COFER quarterly."
+            )
+
+    st.markdown("---")
+    st.markdown(
+        """
+##### Dalio's framework — narrative outline
+
+> *These are Dalio's stages/measures, not classifications produced by this tool.*
+
+**Six stages of internal order** *(from Principles for Dealing with the Changing World Order, Ch. 5)*
+
+1. New order begins, leadership consolidates
+2. Resource allocation systems and government bureaucracies refined
+3. Peace and prosperity
+4. Period of great excesses in spending and debt + widening wealth/political/values gaps
+5. Very bad financial conditions and intense conflict
+6. Civil wars / revolutions
+
+**Eight measures of national power** *(empire-rise/fall index)*
+
+- Education
+- Innovation & technology
+- Cost competitiveness
+- Output (GDP)
+- Share of world trade
+- Military strength
+- Financial center status
+- Reserve currency status
+
+**Why these aren't classifiers here:** Internal-order cycles move on multi-decade
+timescales — they don't shift 9-month allocation tilts. The 8-measure index is
+qualitative and contested in the literature. This panel exists so the reader can
+see the slow-moving variables alongside the cyclical readouts, *not* as
+inputs to portfolio decisions.
+"""
+    )
+
+
 # ─── Main entry ────────────────────────────────────────────────────────────
 
 
@@ -1494,6 +1637,9 @@ def main() -> None:
 
     with st.expander("History explorer (any indicator, full series)"), _open_session() as s:
         _render_history_explorer(s, selected)
+
+    with st.expander("The bigger picture (Dalio's full framework — qualitative)"):
+        _render_big_cycle_panel(selected, country.name)
 
 
 if __name__ == "__main__":
