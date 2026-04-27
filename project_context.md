@@ -120,8 +120,8 @@ All thresholds in `src/dalio/scoring/short_term.py`. Vote weights and reasons ar
 
 ## Current State
 
-- **Working:** Slices 1 + 2 + 4 + 7 + 8 + 9 + 10 + 11 + 12 + 13 end-to-end for all 8 countries (Tier-1 + Tier-2). Cross-regime real-yield multiplier, per-country threshold calibration, historical regime backtest, full world-map coverage.
-- **Tests:** 115/115 passing.
+- **Working:** Slices 1 + 2 + 4 + 7 + 8 + 9 + 10 + 11 + 12 + 13 + 14 end-to-end for all 8 countries (Tier-1 + Tier-2). Cross-regime real-yield multiplier, per-country threshold calibration, historical regime backtest, full world-map coverage, SEK home-currency overlay.
+- **Tests:** 120/120 passing.
 - **Live short-term cycle (2026-04-27):** US Transition (Reflation ↔ Inflationary peak) 29% / CN Expansion 42% / EU Inflationary peak 29% / UK Inflationary peak 33% / JP Transition (insufficient CPI) 0% / SE Expansion 42%.
 - **Live long-term cycle (2026-04-27):**
   - **US** — Transition (Reflation/financial repression ↔ Bubble) 32% (debt 250%, fell 40pp/5y as inflation eroded ratio)
@@ -157,6 +157,7 @@ All thresholds in `src/dalio/scoring/short_term.py`. Vote weights and reasons ar
 | **11** ✓ done | Calibration audit + per-country thresholds — DSR/debt/CPI thresholds derived from each country's own quantiles when ≥10y history; defaults as fallback; dashboard expander shows side-by-side delta |
 | **12** ✓ done | Historical regime backtest — `replay.py` walks both classifiers across 35 years; dashboard step chart with Lehman/COVID/CPI-peak annotations |
 | **13** ✓ done | Tier-2 fan-out (IN, BR) — closes "Slice 3 pending" placeholder; world map fully populated; back-compat preserved via TIER_1 + TIER_2 union |
+| **14** ✓ done | SEK-anchored allocation view — small interest-rate-parity overlay biases USD-denominated foreign assets by home-vs-target real-rate differential; sidebar "View as: SEK / USD" radio defaults to SEK |
 
 ## Decision Log
 
@@ -173,6 +174,7 @@ All thresholds in `src/dalio/scoring/short_term.py`. Vote weights and reasons ar
 
 | Date | Change | Files |
 |------|--------|-------|
+| 2026-04-27 | Slice 14 complete: SEK home-currency overlay. New `src/dalio/scoring/currency.py`; `compute_tilts` accepts `home_currency` and `home_real_rate_10y` kwargs (stays DB-free per refined plan); `compute_country_view` does the home-country lookup. Sidebar "View as: SEK / USD" radio. Demonstrated effect for US in SEK view: gold +0.43→+0.24, long bonds 0.00→−0.13, equities +0.09→−0.01 (SEK +2.29% real rate vs US +1.02% means SEK appreciates → USD-denominated assets less attractive). Honest scope: IRP intuition, not a full FX model. | `src/dalio/scoring/{currency,allocation}.py`, `src/dalio/app/{views,streamlit_app}.py`, `tests/test_allocation.py` |
 | 2026-04-27 | Slice 13 complete: Tier-2 fan-out (IN, BR) closes the dashboard's "Slice 3 pending" placeholder. New `TIER_2_SERIES` (FRED) and `TIER_2_TOTAL_CREDIT`/`TIER_2_DSR` (BIS) added without renaming Tier-1 constants — `specs_for_countries()` unions them transparently. Documented gaps: BR monthly unemployment (FRED OECD-MEI gap), IN/BR govt-debt-to-GDP (BIS WS_TC sector G 404 for emerging markets). Live IN: Transition (Bubble ↔ Debt outpaces) 26%; live BR: Top — peak debt service 42%. World map fully populated. | `src/dalio/data_sources/{fred,bis}.py`, `src/dalio/pipelines/fetch_bis.py`, `tests/test_fred.py` |
 | 2026-04-27 | Slice 12 complete: historical regime backtest. `extract_features` and `classify` in both classifiers gain optional `as_of: date` parameter; `_latest` extracted to `_latest_at`. New `src/dalio/scoring/replay.py` with `replay_classifications(session, country, start, end, step="Q")` returning a 7-column DataFrame. Dashboard expander "Historical regime path" renders a Plotly step chart of long-term phase across 35 years with Lehman/COVID/CPI-peak annotations. The lens has a track record now. | `src/dalio/scoring/{long_term,short_term,replay}.py`, `src/dalio/app/streamlit_app.py`, `tests/test_replay.py` |
 | 2026-04-27 | Slice 11 complete: calibration audit + per-country thresholds. New `src/dalio/scoring/{thresholds,calibration}.py` — `Thresholds` dataclass, `compute_country_thresholds()` builds from each country's own quantiles when ≥10y history, defaults to US-derived literals otherwise. CPI thresholds get a 2.5/3.5 floor for chronically-low-inflation countries. Long-term + short-term classifiers consume `Thresholds` (back-compat preserved). Dashboard expander "How thresholds are set for [country]" shows default vs per-country side-by-side with delta. Reveals real shifts: US `debt_extreme` 280 → 254.9, JP 280 → 401, SE `dsr_distress` 18 → 24.7. | `src/dalio/scoring/{thresholds,calibration,long_term,short_term}.py`, `src/dalio/app/streamlit_app.py`, `tests/test_calibration.py` |
