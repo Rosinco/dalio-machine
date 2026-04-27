@@ -1062,6 +1062,104 @@ def _render_allocation(view: AllocationView) -> None:
     )
 
 
+def _render_growth_inflation_grid(view: CountryView) -> None:
+    """Plot the country's current (real_gdp_yoy, cpi_yoy) on a 2×2 grid.
+
+    Quadrant labels: G↑I↓ Goldilocks · G↑I↑ Overheating · G↓I↓ Recession
+    · G↓I↑ Stagflation. The classifier's stage label is shown below — when
+    it's "Reflation" we note that the regime doesn't fit a single quadrant.
+    """
+    from dalio.scoring.grid import GridQuadrant, quadrant_for_features
+
+    gdp = view.short_term.features.real_gdp_yoy
+    cpi = view.short_term.features.cpi_yoy
+    if gdp is None or cpi is None:
+        st.caption("Growth or CPI data missing — grid panel skipped.")
+        return
+
+    quadrant = quadrant_for_features(gdp, cpi)
+    quadrant_meta = {
+        GridQuadrant.GROWTH_UP_INFL_DOWN:   ("Goldilocks", PHASE_HEX[1]),
+        GridQuadrant.GROWTH_UP_INFL_UP:     ("Overheating", PHASE_HEX[3]),
+        GridQuadrant.GROWTH_DOWN_INFL_DOWN: ("Recession", PHASE_HEX[5]),
+        GridQuadrant.GROWTH_DOWN_INFL_UP:   ("Stagflation", PHASE_HEX[4]),
+    }
+
+    # Build the figure — four shaded rectangles + one country marker
+    fig = go.Figure()
+    bounds = dict(low=-3.0, mid=2.0, high=8.0)
+    for q, (label, color) in quadrant_meta.items():
+        x0 = bounds["mid"] if q in (GridQuadrant.GROWTH_UP_INFL_DOWN, GridQuadrant.GROWTH_UP_INFL_UP) else bounds["low"]
+        x1 = bounds["high"] if q in (GridQuadrant.GROWTH_UP_INFL_DOWN, GridQuadrant.GROWTH_UP_INFL_UP) else bounds["mid"]
+        y0 = bounds["mid"] if q in (GridQuadrant.GROWTH_UP_INFL_UP, GridQuadrant.GROWTH_DOWN_INFL_UP) else bounds["low"]
+        y1 = bounds["high"] if q in (GridQuadrant.GROWTH_UP_INFL_UP, GridQuadrant.GROWTH_DOWN_INFL_UP) else bounds["mid"]
+        fig.add_shape(
+            type="rect",
+            x0=x0, x1=x1, y0=y0, y1=y1,
+            fillcolor=color,
+            opacity=0.18 if q != quadrant else 0.45,
+            line=dict(color=RULE, width=0.5),
+            layer="below",
+        )
+        fig.add_annotation(
+            x=(x0 + x1) / 2, y=(y0 + y1) / 2,
+            text=f"<b>{q.value}</b><br>{label}",
+            showarrow=False,
+            font=dict(family="Source Serif 4, serif", size=13, color=INK),
+        )
+
+    fig.add_trace(go.Scatter(
+        x=[gdp], y=[cpi],
+        mode="markers+text",
+        marker=dict(size=14, color=INK, line=dict(color=PAPER, width=2)),
+        text=[f"  {view.country.name}"],
+        textposition="middle right",
+        textfont=dict(family="Inter Tight, sans-serif", size=12, color=INK),
+        hovertext=f"GDP YoY {gdp:+.2f}% · CPI YoY {cpi:+.2f}%",
+        hoverinfo="text",
+        showlegend=False,
+    ))
+
+    fig.update_layout(
+        height=360,
+        margin=dict(l=10, r=10, t=10, b=30),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor=PAPER,
+        font=dict(family="Inter Tight, sans-serif", color=INK_MUTED, size=11),
+        xaxis=dict(
+            title=dict(text="Real GDP YoY (%)", font=dict(size=11)),
+            range=[bounds["low"], bounds["high"]],
+            zeroline=True, zerolinecolor=RULE,
+            showgrid=False, color=INK_MUTED,
+        ),
+        yaxis=dict(
+            title=dict(text="CPI YoY (%)", font=dict(size=11)),
+            range=[bounds["low"], bounds["high"]],
+            zeroline=True, zerolinecolor=RULE,
+            showgrid=False, color=INK_MUTED,
+        ),
+    )
+    st.plotly_chart(fig, width="stretch")
+
+    stage_label = view.short_term.stage_label
+    if "Reflation" in stage_label:
+        st.caption(
+            "ℹ️ The classifier currently labels this country **Reflation** "
+            "(Stage 4). Reflation does not fit a single quadrant cleanly — "
+            "it spans the G↓I↓ → G↑I↓ transition (CB pivoting from fighting "
+            "inflation to stimulating, growth recovering). The grid above "
+            "still shows where the country sits in the strict 2×2; the "
+            "stage label captures the recovery dynamic the grid cannot."
+        )
+    else:
+        st.caption(
+            f"Quadrant: **{quadrant.value} {quadrant_meta[quadrant][0]}**. "
+            "The country's position is the dot; quadrants are shaded by "
+            "regime severity (sage = calm, ochre = warning, terracotta = "
+            "stagflation, oxblood = recession)."
+        )
+
+
 _THRESHOLD_LABELS: dict[str, str] = {
     "debt_late_cycle_low": "Debt / GDP — late cycle (q75)",
     "debt_extreme": "Debt / GDP — extreme (q95)",
@@ -1363,6 +1461,9 @@ def main() -> None:
 
     with st.expander("All asset-allocation tilts (full table)"):
         _render_allocation(view.allocation)
+
+    with st.expander("Growth × Inflation grid"):
+        _render_growth_inflation_grid(view)
 
     with st.expander(f"How thresholds are set for {country.name}"):
         _render_thresholds_table(selected, country.name)

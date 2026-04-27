@@ -64,44 +64,17 @@ ASSET_LABELS: dict[str, str] = {
 
 # ─── Tilt tables ─────────────────────────────────────────────────────────
 
-# Short-term stage → asset tilts (units: ~ -2 to +2). No vote = 0 (neutral).
+# Short-term stage → asset tilts (units: ~ -2 to +2). Slice 15: derived from
+# the 2×2 growth × inflation grid in `scoring/grid.py`. Stages 1–3 map to a
+# single quadrant each; Stage 4 (Reflation) is a documented hybrid kept as a
+# fifth canonical entry in `GRID_TILTS` because CB-pivot dynamics don't fit a
+# single quadrant cleanly. See grid.py module docstring for the full argument.
+from dalio.scoring.grid import GRID_TILTS, STAGE_TO_QUADRANT  # noqa: E402
+
 SHORT_TERM_TILTS: dict[int, dict[str, float]] = {
-    1: {  # Expansion (Goldilocks)
-        "equities": +1.0,
-        "credit": +0.5,
-        "real_estate": +0.5,
-        "long_bonds": -0.3,
-        "gold": -0.3,
-        "commodities": -0.2,
-    },
-    2: {  # Inflationary peak (Overheating)
-        "commodities": +1.0,
-        "gold": +0.7,
-        "tips": +1.0,
-        "real_estate": +0.3,
-        "long_bonds": -1.2,
-        "credit": -0.5,
-        "equities": -0.3,
-    },
-    3: {  # Recession (Deflationary)
-        "long_bonds": +1.2,
-        "short_bonds": +0.5,
-        "gold": +0.3,
-        "equities": -1.0,
-        "credit": -1.0,
-        "commodities": -0.8,
-        "real_estate": -0.5,
-    },
-    4: {  # Reflation (recovery + rising inflation expectations)
-        "equities": +0.5,
-        "gold": +0.7,
-        "tips": +0.5,
-        "real_estate": +0.3,
-        "credit": +0.3,
-        "short_bonds": -0.3,
-    },
-    0: {},  # Transition / insufficient data — no short-term tilt
-}
+    stage: dict(GRID_TILTS[quadrant])
+    for stage, quadrant in STAGE_TO_QUADRANT.items()
+} | {0: {}}  # Transition / insufficient data
 
 
 # Long-term phase → risk overlay. These are added on top of short-term.
