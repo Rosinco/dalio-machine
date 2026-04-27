@@ -15,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from dalio.countries import COUNTRIES, Tier, get_country
+from dalio.scoring.allocation import AllocationView, compute_tilts
 from dalio.scoring.long_term import PHASE_LABELS, PhaseClassification
 from dalio.scoring.long_term import classify as classify_long_term
 from dalio.scoring.short_term import (
@@ -255,6 +256,47 @@ def _render_long_term_indicators(session: Session, country: str, c: PhaseClassif
                 st.caption("Positive — savers compensated")
 
 
+def _render_allocation(view: AllocationView) -> None:
+    caution = view.caution_level
+    caution_color = {
+        "low": "🟢",
+        "moderate": "🟡",
+        "elevated": "🟠",
+        "high": "🔴",
+    }.get(caution, "⚪")
+
+    body = (
+        f"**Caution level: {caution_color} {caution.upper()}**\n\n"
+        f"{view.summary}"
+    )
+    if caution in ("elevated", "high"):
+        st.warning(body)
+    else:
+        st.info(body)
+
+    # Sort tilts by absolute magnitude — biggest signals first
+    sorted_tilts = sorted(view.tilts, key=lambda t: -abs(t.tilt))
+
+    rows = []
+    for t in sorted_tilts:
+        rows.append({
+            "Direction": t.direction,
+            "Asset class": t.label,
+            "Tilt": f"{t.tilt:+.2f}",
+            "Reasoning": " · ".join(t.reasons) if t.reasons else "—",
+        })
+    df = pd.DataFrame(rows)
+    st.dataframe(df, use_container_width=True, hide_index=True)
+
+    st.caption(
+        "💡 **Tilts are deviations from a default diversified base portfolio, "
+        "not absolute weights.** A `↑↑` does not mean buy now — it means tilt "
+        "more weight to that asset within your normal allocation. Magnitudes "
+        "are confidence-weighted: low-confidence regimes produce small tilts. "
+        "This is decision-support, not a market-timing signal."
+    )
+
+
 def _render_history_explorer(session: Session, country: str) -> None:
     st.subheader("History explorer")
     available = [
@@ -349,6 +391,11 @@ def main() -> None:
     st.subheader("Long-term indicators (BIS Total Credit + DSR)")
     with _open_session() as s:
         _render_long_term_indicators(s, selected, lt_classification)
+
+    st.divider()
+    st.subheader("Asset allocation tilts")
+    allocation = compute_tilts(st_classification, lt_classification)
+    _render_allocation(allocation)
 
     st.divider()
     with _open_session() as s:

@@ -120,8 +120,8 @@ All thresholds in `src/dalio/scoring/short_term.py`. Vote weights and reasons ar
 
 ## Current State
 
-- **Working:** Slices 1 + 2 + 4 end-to-end for all 6 Tier-1 countries. FRED short-term cycle (29 series) and BIS long-term debt cycle (36 series — Total Credit by sector + DSR) → SQLite → two rule-based classifiers → multi-country Streamlit dashboard with two cycle layers (short-term stage + long-term phase) per country.
-- **Tests:** 62/62 passing.
+- **Working:** Slices 1 + 2 + 4 + 7 end-to-end for all 6 Tier-1 countries. Two cycle classifiers + allocation-tilt mapper that translates regime states → asset-class deviations from a default diversified base.
+- **Tests:** 75/75 passing.
 - **Live short-term cycle (2026-04-27):** US Transition (Reflation ↔ Inflationary peak) 29% / CN Expansion 42% / EU Inflationary peak 29% / UK Inflationary peak 33% / JP Transition (insufficient CPI) 0% / SE Expansion 42%.
 - **Live long-term cycle (2026-04-27):**
   - **US** — Transition (Reflation/financial repression ↔ Bubble) 32% (debt 250%, fell 40pp/5y as inflation eroded ratio)
@@ -150,7 +150,7 @@ All thresholds in `src/dalio/scoring/short_term.py`. Vote weights and reasons ar
 | **4** ✓ done | Long-term debt cycle (BIS Total Credit, DSR) for Tier-1 |
 | 5 | Big-cycle power index (8 measures, multi-country) |
 | 6 | Currency lifecycle + wealth/values gaps |
-| 7 | Allocation-implication module (Dalio All Weather mapping) |
+| **7** ✓ done | Allocation-implication module (regime → asset-class tilts) |
 
 ## Decision Log
 
@@ -167,6 +167,7 @@ All thresholds in `src/dalio/scoring/short_term.py`. Vote weights and reasons ar
 
 | Date | Change | Files |
 |------|--------|-------|
+| 2026-04-27 | Slice 7 complete: allocation-tilt mapper (`compute_tilts()`) maps short-term stage + long-term phase → 8 asset-class tilts via Dalio Growth×Inflation matrix + long-term phase risk overlay. Confidence-weighted both layers; transition states blend constituent-stage tilts via vote weights. Dashboard shows tilt table with directional arrows, magnitudes, reasoning, caution level, and a "tilts not weights" disclaimer. | `src/dalio/scoring/allocation.py`, `src/dalio/app/streamlit_app.py`, `tests/test_allocation.py` |
 | 2026-04-27 | Slice 4 complete: BIS adapter (Total Credit + DSR via SDMX REST API, on-disk cache, retry-on-5xx), long-term debt cycle classifier (6 phases — Phase 5 ugly vs Phase 6 beautiful deleveraging distinguished by inflation regime + DSR), dashboard now shows both cycle layers per country with sector-debt sparklines and real-rate banner. 36 BIS series (34/36 working — 2 documented gaps). | `src/dalio/data_sources/bis.py`, `src/dalio/pipelines/fetch_bis.py`, `src/dalio/scoring/long_term.py`, `src/dalio/app/streamlit_app.py`, `tests/test_bis.py`, `tests/test_long_term_classifier.py` |
 | 2026-04-27 | Slice 2 complete: Tier-1 fan-out (CN/EU/UK/JP/SE), 29 FRED series across 6 countries. Added `TIER_1_SERIES` map, `specs_for_countries()` filter, retry-on-transient-error, CLI country subset, freshness-audit + replacement-search helper scripts. Documented data gaps. | `src/dalio/data_sources/fred.py`, `src/dalio/pipelines/fetch_fred.py`, `tests/test_fred.py`, `scripts/{audit_freshness,find_replacements,find_jp_cpi,search_fred}.py` |
 | 2026-04-27 | Slice 1 complete: rule-based classifier with Sahm rule + saturating confidence; full Streamlit dashboard | `src/dalio/scoring/short_term.py`, `src/dalio/app/streamlit_app.py`, `tests/test_short_term_classifier.py` |
