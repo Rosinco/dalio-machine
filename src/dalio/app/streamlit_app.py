@@ -1033,6 +1033,27 @@ def _render_long_term_indicators(session: Session, country: str, c: PhaseClassif
             else:
                 st.caption("Positive — savers compensated")
 
+    if f.hy_spread_z is not None or f.hy_spread is not None:
+        cols = st.columns(3)
+        with cols[0]:
+            latest = f.hy_spread
+            z = f.hy_spread_z
+            delta = f"z {z:+.2f}" if z is not None else None
+            st.metric(
+                "HY credit spread (US)",
+                f"{latest:.2f}pp" if latest is not None else "—",
+                delta=delta, delta_color="off",
+                help="ICE BofA US High Yield OAS, z-score vs 20y history. "
+                     "z < −1.5 = unusual complacency (bubble); z > +2 = distress repricing (top).",
+            )
+            if z is not None:
+                if z < -1.5:
+                    st.caption("⚠️ Unusually tight — risk complacency")
+                elif z > 2.0:
+                    st.caption("⚠️ Unusually wide — distress repricing")
+                else:
+                    st.caption("Within normal range")
+
 
 def _render_allocation(view: AllocationView) -> None:
     caution = view.caution_level

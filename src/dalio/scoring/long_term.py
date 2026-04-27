@@ -71,6 +71,11 @@ class LongTermFeatures:
     debt_service_5y_ago: float | None = None
     yield_10y: float | None = None
     cpi_yoy: float | None = None
+    # Asset-price signals (Slice 16) — z-scores vs the country's 20y history.
+    # None when data is missing or sparse. Currently US-only (no FRED HY
+    # spread for international markets).
+    hy_spread: float | None = None
+    hy_spread_z: float | None = None
     indicator_dates: dict[str, date] = field(default_factory=dict)
 
     @property
@@ -182,6 +187,15 @@ def extract_features(
     if cpi_lookup:
         indicator_dates.setdefault("cpi_yoy", cpi_lookup[1])
 
+    # Asset-price signals (Slice 16) — currently US-only.
+    hy_spread = None
+    hy_spread_z = None
+    if country == "US":
+        from dalio.scoring.asset_signals import compute_asset_signals
+        sigs = compute_asset_signals(session, country)
+        hy_spread = sigs.hy_spread_latest
+        hy_spread_z = sigs.hy_spread_z
+
     return LongTermFeatures(
         country=country,
         total_credit_pct_gdp=fields_out.get("total_credit_pct_gdp"),
@@ -194,6 +208,8 @@ def extract_features(
         debt_service_5y_ago=dsr_5y_ago,
         yield_10y=yield_10y,
         cpi_yoy=cpi_yoy,
+        hy_spread=hy_spread,
+        hy_spread_z=hy_spread_z,
         indicator_dates=indicator_dates,
     )
 
@@ -238,6 +254,14 @@ def _vote_bubble(f: LongTermFeatures, t: Thresholds) -> list[PhaseVote]:
             3, 0.5,
             f"Debt {tc:.0f}% in late-cycle leverage zone (≥ {t.debt_late_cycle_low:.0f}%)",
         ))
+    # Slice 16: HY credit spread complacency vote. z < -1.5 means spreads are
+    # unusually tight relative to 20y history — classic late-cycle bubble
+    # signal (risk premium has been bid away). US-only data.
+    if f.hy_spread_z is not None and f.hy_spread_z < -1.5:
+        votes.append(PhaseVote(
+            3, 0.5,
+            f"HY credit spread z {f.hy_spread_z:+.2f} — risk complacency / bubble territory",
+        ))
     return votes
 
 
@@ -258,6 +282,14 @@ def _vote_top(f: LongTermFeatures, t: Thresholds) -> list[PhaseVote]:
             4, 0.7,
             f"DSR {dsr:.1f}% > {t.dsr_distress:.0f}% on debt {tc:.0f}% "
             f"(peak debt-service burden)",
+        ))
+    # Slice 16: HY credit spread blow-out signals distress / Top exit. z > +2
+    # means spreads have widened well above 20y history — risk premium
+    # repricing the way it does at cycle tops.
+    if f.hy_spread_z is not None and f.hy_spread_z > 2.0:
+        votes.append(PhaseVote(
+            4, 0.4,
+            f"HY credit spread z {f.hy_spread_z:+.2f} — unusual stress, distress repricing",
         ))
     return votes
 

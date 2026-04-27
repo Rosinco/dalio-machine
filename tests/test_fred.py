@@ -97,7 +97,10 @@ def test_tier_1_covers_six_countries():
 
 
 def test_us_subset_alias_matches_filter():
-    assert specs_for_countries(("US",)) == US_SHORT_TERM_SERIES
+    """US subset includes the asset-price series (slice 16) too — those are
+    classified as country=US even though semantically they're market-wide."""
+    from dalio.data_sources.fred import ASSET_PRICE_SERIES
+    assert specs_for_countries(("US",)) == US_SHORT_TERM_SERIES + ASSET_PRICE_SERIES
 
 
 def test_specs_for_countries_filter():
@@ -107,9 +110,9 @@ def test_specs_for_countries_filter():
 
 
 def test_specs_for_countries_none_returns_all():
-    """None returns the union of TIER_1 + TIER_2 (post-Slice 13)."""
-    from dalio.data_sources.fred import TIER_2_SERIES
-    assert specs_for_countries(None) == TIER_1_SERIES + TIER_2_SERIES
+    """None returns the union of TIER_1 + TIER_2 + ASSET_PRICE (post-Slices 13, 16)."""
+    from dalio.data_sources.fred import ASSET_PRICE_SERIES, TIER_2_SERIES
+    assert specs_for_countries(None) == TIER_1_SERIES + TIER_2_SERIES + ASSET_PRICE_SERIES
 
 
 def test_tier_2_countries_present():

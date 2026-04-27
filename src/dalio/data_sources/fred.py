@@ -96,6 +96,23 @@ TIER_1_SERIES: tuple[FredSeriesSpec, ...] = (
 )
 
 
+# Asset-price signals (Slice 16). Currently US-only since FRED doesn't carry
+# consistent international counterparts.
+#
+# Documented gaps (not implemented this slice — follow-up work):
+#   - Shiller CAPE / P/E: FRED has no 10y real S&P 500 earnings series;
+#     proper CAPE needs Yale's `ie_data.xls` spreadsheet integration.
+#   - Spot gold price: FRED's `GOLDAMGBD228NLBM` (LBMA London PM fixing)
+#     was discontinued; no clean replacement series on FRED. The
+#     gold:bonds ratio z-score described in the plan is deferred.
+#
+# What this slice ships: HY credit spread. z < -1.5 (unusually tight)
+# is the bubble-period complacency signal that bumps Phase 3 / 4 votes.
+ASSET_PRICE_SERIES: tuple[FredSeriesSpec, ...] = (
+    FredSeriesSpec("hy_spread", "BAMLH0A0HYM2", "US", frequency="D"),
+)
+
+
 # Tier-2 series — India + Brazil. Coverage is genuinely thinner: no consistent
 # FRED 10y bond yields for either country, and OECD MEI cadence is slower.
 # Documented gaps stay as gaps — the dashboard's Tier-2 sidebar warning
@@ -127,10 +144,11 @@ US_SHORT_TERM_SERIES: tuple[FredSeriesSpec, ...] = tuple(
 
 
 def specs_for_countries(countries: tuple[str, ...] | None = None) -> tuple[FredSeriesSpec, ...]:
-    """Return the subset of TIER_1 + TIER_2 series for the given country codes
-    (None = all). Tier-1 callers continue to work because the union preserves
-    every TIER_1_SERIES entry."""
-    all_series = TIER_1_SERIES + TIER_2_SERIES
+    """Return the subset of TIER_1 + TIER_2 + ASSET_PRICE series for the given
+    country codes (None = all). Tier-1 callers continue to work because the
+    union preserves every TIER_1_SERIES entry. Asset-price series (slice 16)
+    are US-only and only included when "US" is in the wanted set."""
+    all_series = TIER_1_SERIES + TIER_2_SERIES + ASSET_PRICE_SERIES
     if countries is None:
         return all_series
     wanted = {c.upper() for c in countries}
