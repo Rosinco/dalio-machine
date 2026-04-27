@@ -3,7 +3,13 @@ from unittest.mock import MagicMock
 import pandas as pd
 import pytest
 
-from dalio.data_sources.fred import FredSeriesSpec, FredSource
+from dalio.data_sources.fred import (
+    TIER_1_SERIES,
+    US_SHORT_TERM_SERIES,
+    FredSeriesSpec,
+    FredSource,
+    specs_for_countries,
+)
 
 
 @pytest.fixture
@@ -81,3 +87,52 @@ def test_explicit_api_key_used(monkeypatch):
     # Just ensure it doesn't raise — actual Fred() is constructed but never called.
     src = FredSource(api_key="fake_key_for_test")
     assert src._client is not None
+
+
+# ─── Country-map tests ─────────────────────────────────────────────────────
+
+def test_tier_1_covers_six_countries():
+    countries = {s.country for s in TIER_1_SERIES}
+    assert countries == {"US", "CN", "EU", "UK", "JP", "SE"}
+
+
+def test_us_subset_alias_matches_filter():
+    assert specs_for_countries(("US",)) == US_SHORT_TERM_SERIES
+
+
+def test_specs_for_countries_filter():
+    eu_jp = specs_for_countries(("EU", "JP"))
+    assert {s.country for s in eu_jp} == {"EU", "JP"}
+    assert all(s.country in {"EU", "JP"} for s in eu_jp)
+
+
+def test_specs_for_countries_none_returns_all():
+    assert specs_for_countries(None) == TIER_1_SERIES
+
+
+def test_us_has_complete_indicator_set():
+    us_indicators = {s.indicator for s in TIER_1_SERIES if s.country == "US"}
+    assert us_indicators == {
+        "policy_rate", "cpi_yoy", "unemployment_rate",
+        "yield_10y", "yield_2y", "real_gdp_yoy",
+    }
+
+
+def test_known_data_gaps_documented():
+    # JP CPI is a documented gap (FRED's OECD-MEI mirror discontinued 2021)
+    jp_indicators = {s.indicator for s in TIER_1_SERIES if s.country == "JP"}
+    assert "cpi_yoy" not in jp_indicators
+    # CN has no FRED 10Y yield series and no quarterly GDP
+    cn_indicators = {s.indicator for s in TIER_1_SERIES if s.country == "CN"}
+    assert "yield_10y" not in cn_indicators
+
+
+def test_retry_skips_4xx_errors(mock_client):
+    """Bad-series-ID errors should fail fast (no retry waste)."""
+    mock_client.get_series.side_effect = ValueError("Bad Request.  The series does not exist.")
+    src = FredSource(client=mock_client)
+    spec = FredSeriesSpec("foo", "BOGUS", "US", frequency="M")
+    with pytest.raises(ValueError, match="does not exist"):
+        src.fetch(spec)
+    # Only one attempt made (no retry on 4xx)
+    assert mock_client.get_series.call_count == 1

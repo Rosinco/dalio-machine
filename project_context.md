@@ -120,18 +120,29 @@ All thresholds in `src/dalio/scoring/short_term.py`. Vote weights and reasons ar
 
 ## Current State
 
-- **Working:** Full slice 1 end-to-end for US — country registry, SQLite schema, FRED data source, US short-term ETL (56,950 observations), rule-based stage classifier with Sahm rule + saturating confidence, full Streamlit dashboard with stage card / sparklines / yield-curve banner / history explorer / Tier-aware confidence labels.
-- **Tests:** 32/32 passing (mocked HTTP, no real API calls).
-- **Live US classification (2026-04-27):** "Transition (Reflation ↔ Inflationary peak)" at 29% — Fed cutting + sticky CPI = textbook soft-landing transition.
-- **In Progress:** Slice 2 (Tier-1 fan-out: CN, EU, UK, JP, SE).
-- **Known Issues:** None.
+- **Working:** Slices 1 + 2 end-to-end for all 6 Tier-1 countries (US, CN, EU, UK, JP, SE). 29 FRED series → SQLite (~70k observations) → rule-based classifier → multi-country Streamlit dashboard. Tier-1 FRED country/indicator map in `src/dalio/data_sources/fred.py:TIER_1_SERIES`; transient-error retry with exponential backoff; CLI subset by country (`dalio-fetch-fred CN EU`).
+- **Tests:** 39/39 passing.
+- **Live classifications (2026-04-27):**
+  - **US** — Transition (Reflation ↔ Inflationary peak) 29% (soft-landing read)
+  - **China** — Expansion 42% (GDP 5.0%, deflationary CPI -0.07%, stable rate)
+  - **Eurozone** — Inflationary peak 29% (CPI 2.53% +0.6pp/3m, ECB on hold)
+  - **UK** — Inflationary peak 33% (CPI 3.42%, BoE not cutting hard)
+  - **Japan** — Transition (insufficient data) 0% — no current FRED CPI series
+  - **Sweden** — Expansion 42% (GDP 1.95%, CPI 0.47%, Riksbank stable)
+- **In Progress:** Slice 3 (Tier-2 fan-out: IN, BR).
+- **Known data gaps (slice 2 documented):**
+  - **JP CPI** — FRED's OECD-MEI Japan CPI mirror was discontinued 2021. No current monthly JP CPI series available on FRED. Slice 2 ships without it; a BoJ-direct adapter or IMF IFS could fill the gap later.
+  - **CN 10Y yield** — Not in FRED. China's bond data lives in CEIC / WIND.
+  - **CN GDP** — Annual only (`NAEXKP01CNA657S`), already-YoY growth rate (no YoY transform applied).
+  - **2Y yields outside US** — FRED doesn't carry consistent 2Y series for non-US countries; yield-curve slope is therefore US-only.
+  - **UK / SE / CN CPI** — FRED-mirrored OECD MEI data is ~1 year stale; not catastrophic but worth flagging.
 
 ## Roadmap
 
 | Slice | Goal |
 |-------|------|
 | **1** ✓ done | US short-term cycle: ETL + classifier + dashboard, end-to-end |
-| 2 | Tier-1 fan-out: CN, EU, UK, JP, SE for short-term cycle |
+| **2** ✓ done | Tier-1 fan-out: CN, EU, UK, JP, SE for short-term cycle |
 | 3 | Tier-2: IN, BR for short-term cycle |
 | 4 | Long-term debt cycle (BIS Total Credit, DSR) for all 8 |
 | 5 | Big-cycle power index (8 measures, multi-country) |
@@ -153,6 +164,7 @@ All thresholds in `src/dalio/scoring/short_term.py`. Vote weights and reasons ar
 
 | Date | Change | Files |
 |------|--------|-------|
-| 2026-04-27 | Slice 1 complete: rule-based classifier with Sahm rule + saturating confidence; full Streamlit dashboard (stage card, sparklines, yield-curve banner, history explorer) | `src/dalio/scoring/short_term.py`, `src/dalio/app/streamlit_app.py`, `tests/test_short_term_classifier.py` |
+| 2026-04-27 | Slice 2 complete: Tier-1 fan-out (CN/EU/UK/JP/SE), 29 FRED series across 6 countries. Added `TIER_1_SERIES` map, `specs_for_countries()` filter, retry-on-transient-error, CLI country subset, freshness-audit + replacement-search helper scripts. Documented data gaps. | `src/dalio/data_sources/fred.py`, `src/dalio/pipelines/fetch_fred.py`, `tests/test_fred.py`, `scripts/{audit_freshness,find_replacements,find_jp_cpi,search_fred}.py` |
+| 2026-04-27 | Slice 1 complete: rule-based classifier with Sahm rule + saturating confidence; full Streamlit dashboard | `src/dalio/scoring/short_term.py`, `src/dalio/app/streamlit_app.py`, `tests/test_short_term_classifier.py` |
 | 2026-04-27 | First real FRED fetch — 56,950 US observations stored | `data/dalio.db` (gitignored) |
 | 2026-04-27 | Initial scaffold | `pyproject.toml`, `src/dalio/{countries,storage/db,data_sources/fred,pipelines/fetch_fred,app/streamlit_app}.py`, `tests/` |
