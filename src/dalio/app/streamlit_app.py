@@ -15,6 +15,8 @@ Design priorities (Pocock-style discipline):
 """
 from __future__ import annotations
 
+from datetime import date
+
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
@@ -55,24 +57,406 @@ PHASE_EMOJI: dict[int, str] = {
     1: "🟢", 2: "🟡", 3: "🟠", 4: "🔴", 5: "🟣", 6: "🔵", 7: "⚫", 0: "⚪",
 }
 
-# Colors keyed by phase for the choropleth (red=danger, green=safe, blue=repression).
+# Editorial palette — muted, painterly. Each phase reads as a sentiment.
+# Sage / olive = calm. Ochre / terracotta = warning. Oxblood / slate = distress / regime change.
 PHASE_HEX: dict[int, str] = {
-    1: "#16a34a",   # green — sound money
-    2: "#65a30d",   # yellow-green — debt outpacing
-    3: "#eab308",   # yellow — bubble
-    4: "#dc2626",   # red — top
-    5: "#7c3aed",   # purple — deleveraging
-    6: "#2563eb",   # blue — reflation/repression
-    7: "#171717",   # black — reset
-    0: "#a3a3a3",   # grey — transition
+    1: "#506e58",   # sage — sound money
+    2: "#708060",   # olive — debt outpacing
+    3: "#b8893a",   # ochre — bubble
+    4: "#a14a3a",   # terracotta — top
+    5: "#6b3c4a",   # oxblood — deleveraging
+    6: "#3a587a",   # slate blue — reflation/repression
+    7: "#2a2a2a",   # charcoal — reset
+    0: "#c69e3f",   # warm amber — transition (look closer)
 }
 
 CAUTION_HEX: dict[str, str] = {
-    "low": "#16a34a",
-    "moderate": "#eab308",
-    "elevated": "#f97316",
-    "high": "#dc2626",
+    "low": "#506e58",
+    "moderate": "#c69e3f",
+    "elevated": "#b8893a",
+    "high": "#a14a3a",
 }
+
+# Page palette — used both in CSS and to style plotly figures.
+INK = "#0c1f3f"
+INK_MUTED = "#5a5852"
+PAPER = "#faf6ef"
+PAPER_ELEV = "#f1ebde"
+LAND = "#e8e0cb"
+RULE = "#cdc6b6"
+RUST = "#b94e23"
+NO_DATA = "#d9d4c5"
+
+
+def _inject_design_css() -> None:
+    """Editorial macro-research aesthetic. Cream parchment, navy ink,
+    Source Serif 4 / Inter Tight / JetBrains Mono. Hairline rules over
+    drop-shadows, kicker labels over emoji.
+
+    Called once at the top of main(). Streamlit-specific selectors target
+    the rendered DOM (data-testid attributes) so future Streamlit upgrades
+    may need updating here.
+    """
+    st.markdown(
+        """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,800;1,8..60,400;1,8..60,600&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #faf6ef;
+  --bg-elev: #f1ebde;
+  --ink: #0c1f3f;
+  --ink-muted: #5a5852;
+  --rule: #cdc6b6;
+  --rust: #b94e23;
+  --display: 'Source Serif 4', 'Source Serif Pro', Georgia, serif;
+  --body: 'Inter Tight', 'Inter', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+html, body, .stApp,
+[data-testid="stAppViewContainer"],
+[data-testid="stHeader"] {
+  background: var(--bg) !important;
+  color: var(--ink) !important;
+  font-family: var(--body) !important;
+}
+[data-testid="stHeader"] { box-shadow: none !important; }
+
+.block-container {
+  padding-top: 2.5rem !important;
+  padding-bottom: 4rem !important;
+  max-width: 1240px !important;
+}
+
+[data-testid="stSidebar"] {
+  background: var(--bg-elev) !important;
+  border-right: 1px solid var(--rule) !important;
+}
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+[data-testid="stSidebar"] label {
+  font-family: var(--body) !important;
+  font-size: 0.85rem !important;
+  color: var(--ink) !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--display) !important;
+  color: var(--ink) !important;
+  letter-spacing: -0.01em !important;
+  font-weight: 700 !important;
+}
+h1 { font-size: 3rem !important; font-weight: 800 !important; letter-spacing: -0.025em !important; line-height: 1.05 !important; }
+h2 { font-size: 1.55rem !important; }
+h3 { font-size: 1.25rem !important; }
+h4 { font-size: 1.05rem !important; }
+
+p, li, label,
+[data-testid="stMarkdownContainer"] p,
+[data-testid="stCaptionContainer"] {
+  font-family: var(--body) !important;
+  color: var(--ink) !important;
+  line-height: 1.55;
+}
+
+[data-testid="stCaptionContainer"],
+.stCaption,
+small {
+  color: var(--ink-muted) !important;
+  font-size: 0.85rem !important;
+}
+
+code, kbd, pre {
+  font-family: var(--mono) !important;
+  background: var(--bg-elev) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--rule) !important;
+  padding: 0 0.3rem !important;
+  border-radius: 0 !important;
+}
+
+/* ─── Custom blocks ──────────────────────────────────────────────── */
+
+.masthead {
+  border-top: 4px solid var(--ink);
+  border-bottom: 1px solid var(--rule);
+  padding: 0.9rem 0 1.4rem;
+  margin-bottom: 2rem;
+}
+.masthead .meta {
+  font-family: var(--body);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+.masthead .title {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 3.4rem;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+  margin: 0;
+  color: var(--ink);
+}
+.masthead .subtitle {
+  font-family: var(--display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.1rem;
+  color: var(--ink-muted);
+  margin: 0.7rem 0 0;
+  max-width: 56rem;
+}
+
+.kicker {
+  font-family: var(--body);
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  font-weight: 700;
+  color: var(--rust);
+  margin: 2.4rem 0 0.3rem;
+  border-top: 1.5px solid var(--ink);
+  padding-top: 0.55rem;
+  display: block;
+}
+.kicker.no-rule { border-top: none; padding-top: 0; }
+.section-title {
+  font-family: var(--display) !important;
+  font-weight: 700 !important;
+  font-size: 1.7rem !important;
+  margin: 0 0 0.3rem 0 !important;
+  letter-spacing: -0.015em !important;
+}
+.section-lede {
+  font-family: var(--display);
+  font-style: italic;
+  color: var(--ink-muted);
+  font-size: 1rem;
+  margin: 0 0 1rem 0;
+  max-width: 50rem;
+}
+
+.pullquote {
+  font-family: var(--display);
+  font-size: 1.15rem;
+  line-height: 1.55;
+  color: var(--ink);
+  border-left: 3px solid var(--rust);
+  padding: 0.4rem 0 0.4rem 1.1rem;
+  margin: 0.4rem 0 1.6rem;
+  font-weight: 400;
+}
+.pullquote .num {
+  font-family: var(--mono);
+  font-weight: 500;
+  color: var(--ink);
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+.card {
+  border-top: 1.5px solid var(--ink);
+  padding: 0.85rem 1rem 0.5rem 0;
+  height: 100%;
+}
+.card .eyebrow {
+  font-family: var(--body);
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  font-weight: 700;
+  color: var(--ink-muted);
+  margin: 0 0 0.6rem;
+}
+.card .eyebrow .accent { color: var(--rust); }
+.card .title {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.55rem;
+  line-height: 1.1;
+  margin: 0 0 0.45rem;
+  color: var(--ink);
+  letter-spacing: -0.012em;
+}
+.card .deck {
+  font-family: var(--body);
+  font-size: 0.92rem;
+  color: var(--ink-muted);
+  margin: 0 0 0.9rem;
+  line-height: 1.5;
+}
+.card .tilt-row {
+  font-family: var(--body);
+  font-size: 0.95rem;
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  border-bottom: 1px dashed var(--rule);
+  padding: 0.35rem 0;
+}
+.card .tilt-row:last-child { border-bottom: none; }
+.card .tilt-arrow {
+  font-weight: 700;
+  min-width: 1.9rem;
+  color: var(--ink);
+  font-family: var(--body);
+}
+.card .tilt-label { flex: 1; color: var(--ink); }
+.card .tilt-num {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+.confidence-track {
+  height: 3px;
+  background: var(--rule);
+  margin: 1rem 0 0.35rem;
+  position: relative;
+}
+.confidence-fill {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+}
+.confidence-meta {
+  font-family: var(--body);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--ink-muted);
+  display: flex;
+  justify-content: space-between;
+}
+
+.legend-row {
+  font-family: var(--body);
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.1rem 1.6rem;
+  margin: 0.4rem 0 0.4rem;
+}
+.legend-row .swatch {
+  display: inline-block;
+  width: 0.78rem;
+  height: 0.78rem;
+  margin-right: 0.45rem;
+  vertical-align: -0.1rem;
+  border: 1px solid rgba(0,0,0,0.15);
+}
+
+/* ─── Streamlit element overrides ──────────────────────────────── */
+
+[data-testid="stMetric"] {
+  background: transparent !important;
+  border: none !important;
+  border-top: 1px solid var(--rule) !important;
+  padding: 0.55rem 0 0.4rem !important;
+}
+[data-testid="stMetricLabel"] p,
+[data-testid="stMetricLabel"] {
+  font-family: var(--body) !important;
+  font-size: 0.7rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.14em !important;
+  color: var(--ink-muted) !important;
+  font-weight: 600 !important;
+}
+[data-testid="stMetricValue"] {
+  font-family: var(--mono) !important;
+  font-weight: 500 !important;
+  font-size: 1.6rem !important;
+  color: var(--ink) !important;
+}
+[data-testid="stMetricDelta"] {
+  font-family: var(--mono) !important;
+  font-size: 0.78rem !important;
+}
+
+[data-testid="stExpander"] {
+  border: 1px solid var(--rule) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  margin-bottom: 0.7rem !important;
+  box-shadow: none !important;
+}
+[data-testid="stExpander"] details > summary,
+[data-testid="stExpander"] summary {
+  font-family: var(--body) !important;
+  font-weight: 600 !important;
+  color: var(--ink) !important;
+  font-size: 0.95rem !important;
+  padding: 0.6rem 1rem !important;
+}
+[data-testid="stExpander"] [data-testid="stMarkdownContainer"] {
+  padding: 0 0.4rem;
+}
+
+hr, [data-testid="stDivider"] {
+  border: 0 !important;
+  border-top: 1px solid var(--rule) !important;
+  margin: 1.6rem 0 !important;
+}
+
+[data-testid="stRadio"] label,
+[data-testid="stRadio"] p {
+  font-family: var(--body) !important;
+  font-size: 0.82rem !important;
+  color: var(--ink) !important;
+}
+
+div[data-baseweb="select"] > div,
+div[data-baseweb="select"] {
+  background: var(--bg) !important;
+  border: 1px solid var(--rule) !important;
+  border-radius: 0 !important;
+  font-family: var(--body) !important;
+  color: var(--ink) !important;
+}
+
+[data-testid="stProgress"] > div > div {
+  background: var(--rule) !important;
+  border-radius: 0 !important;
+}
+[data-testid="stProgress"] > div > div > div {
+  background: var(--ink) !important;
+  border-radius: 0 !important;
+}
+
+/* Tone-reset Streamlit's status alerts to editorial */
+.stAlert {
+  border-radius: 0 !important;
+  border-left: 3px solid var(--rust) !important;
+  background: var(--bg-elev) !important;
+  color: var(--ink) !important;
+}
+
+/* Buttons */
+button[kind="secondary"], .stButton > button {
+  font-family: var(--body) !important;
+  border-radius: 0 !important;
+  border: 1px solid var(--ink) !important;
+  background: transparent !important;
+  color: var(--ink) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+}
+</style>
+        """,
+        unsafe_allow_html=True,
+    )
 
 LONG_TERM_INDICATORS = (
     "total_credit_pct_gdp",
@@ -147,29 +531,29 @@ def _build_choropleth(
 
     for p in points:
         if not p.has_data:
-            color = "#e5e5e5"
+            color = NO_DATA
             z = -1.0  # reserved zone in the discrete colorscale
         elif metric == "phase":
-            color = PHASE_HEX.get(p.long_term_phase, "#a3a3a3")
+            color = PHASE_HEX.get(p.long_term_phase, INK_MUTED)
             z = float(p.long_term_phase)
         elif metric == "stage":
-            color = PHASE_HEX.get(p.short_term_stage, "#a3a3a3")  # reuse palette
+            color = PHASE_HEX.get(p.short_term_stage, INK_MUTED)
             z = float(p.short_term_stage)
         elif metric == "caution":
-            color = CAUTION_HEX.get(p.caution_level, "#a3a3a3")
+            color = CAUTION_HEX.get(p.caution_level, INK_MUTED)
             z = {"low": 1, "moderate": 2, "elevated": 3, "high": 4}.get(p.caution_level, 0)
         elif metric == "total_debt":
             d = p.total_debt_pct_gdp
-            color = "#a3a3a3" if d is None else (
-                "#16a34a" if d < 100
-                else "#65a30d" if d < 200
-                else "#eab308" if d < 250
-                else "#f97316" if d < 300
-                else "#dc2626"
+            color = NO_DATA if d is None else (
+                "#506e58" if d < 100
+                else "#708060" if d < 200
+                else "#b8893a" if d < 250
+                else "#a14a3a" if d < 300
+                else "#6b3c4a"
             )
             z = d if d is not None else 0
         else:
-            color = "#a3a3a3"
+            color = INK_MUTED
             z = 0
 
         for iso3 in expand_iso3_for_map(p.iso3):
@@ -178,68 +562,79 @@ def _build_choropleth(
             colors.append(color)
             hover_texts.append(p.hover_text)
 
-    # Custom discrete colorscale via per-cell color array
     fig = go.Figure(go.Choropleth(
         locations=locations,
         z=z_values,
         text=hover_texts,
         hoverinfo="text",
         locationmode="ISO-3",
-        marker_line_color="#ffffff",
-        marker_line_width=0.5,
-        colorscale=[[0, "#a3a3a3"], [1, "#a3a3a3"]],  # base (unused — overridden)
+        marker_line_color=PAPER,
+        marker_line_width=0.6,
+        colorscale=[[0, INK_MUTED], [1, INK_MUTED]],  # base (overridden below)
         showscale=False,
     ))
-    # Apply per-location color via a second invisible trace approach? Plotly's
-    # Choropleth doesn't support per-cell colors directly via marker.color; we
-    # need to use a color *scale* mapped through z. Do that:
     if metric in ("phase", "stage"):
         # Discrete categorical scale. z=-1 reserved for "no data" — visibly
         # distinct from z=0 "transition" (countries with data but on a boundary).
         fig.update_traces(
             colorscale=[
-                [0.000, "#e5e5e5"],  # -1: no data (very light grey)
-                [0.125, "#fbbf24"],  #  0: transition (amber — "look closer")
-                [0.250, "#16a34a"],  #  1: sound / expansion
-                [0.375, "#65a30d"],  #  2: outpacing / inflationary
-                [0.500, "#eab308"],  #  3: bubble / recession
-                [0.625, "#dc2626"],  #  4: top / reflation
-                [0.750, "#7c3aed"],  #  5: deleveraging
-                [0.875, "#2563eb"],  #  6: repression
-                [1.000, "#171717"],  #  7: reset
+                [0.000, NO_DATA],     # -1: no data
+                [0.125, PHASE_HEX[0]],# 0: transition (amber)
+                [0.250, PHASE_HEX[1]],# 1: sound / expansion (sage)
+                [0.375, PHASE_HEX[2]],# 2: outpacing / inflationary (olive)
+                [0.500, PHASE_HEX[3]],# 3: bubble / recession (ochre)
+                [0.625, PHASE_HEX[4]],# 4: top / reflation (terracotta)
+                [0.750, PHASE_HEX[5]],# 5: deleveraging (oxblood)
+                [0.875, PHASE_HEX[6]],# 6: repression (slate)
+                [1.000, PHASE_HEX[7]],# 7: reset (charcoal)
             ],
             zmin=-1, zmax=7,
         )
     elif metric == "caution":
         fig.update_traces(
             colorscale=[
-                [0.0, "#a3a3a3"],
-                [0.25, "#16a34a"],
-                [0.5, "#eab308"],
-                [0.75, "#f97316"],
-                [1.0, "#dc2626"],
+                [0.0, NO_DATA],
+                [0.25, CAUTION_HEX["low"]],
+                [0.5, CAUTION_HEX["moderate"]],
+                [0.75, CAUTION_HEX["elevated"]],
+                [1.0, CAUTION_HEX["high"]],
             ],
             zmin=0, zmax=4,
         )
-    else:  # total_debt continuous
+    else:  # total_debt continuous — sage to oxblood, painterly
         fig.update_traces(
-            colorscale="RdYlGn_r",
+            colorscale=[
+                [0.0, "#506e58"],
+                [0.35, "#708060"],
+                [0.55, "#b8893a"],
+                [0.78, "#a14a3a"],
+                [1.0, "#6b3c4a"],
+            ],
             zmin=50, zmax=400,
         )
 
     fig.update_layout(
         geo=dict(
             showframe=False,
-            showcoastlines=True,
+            showcoastlines=False,
             projection_type="natural earth",
             showland=True,
-            landcolor="#f5f5f5",
-            oceancolor="#ffffff",
+            landcolor=LAND,
+            oceancolor=PAPER,
             showocean=True,
+            showcountries=True,
+            countrycolor=RULE,
+            countrywidth=0.4,
             bgcolor="rgba(0,0,0,0)",
         ),
+        font=dict(family="Inter Tight, system-ui, sans-serif", color=INK, size=12),
+        hoverlabel=dict(
+            bgcolor=PAPER_ELEV,
+            bordercolor=INK,
+            font=dict(family="Inter Tight, system-ui, sans-serif", color=INK, size=12),
+        ),
         margin=dict(l=0, r=0, t=0, b=0),
-        height=420,
+        height=460,
         paper_bgcolor="rgba(0,0,0,0)",
     )
     return fig
@@ -270,26 +665,47 @@ def _render_world_map(points: list[CountryMapPoint], selected_iso2: str | None) 
         key="world_map_chart",
     )
 
-    # Legend / explainer below map
+    # Editorial legend below map — swatches with text, hairline-separated
     if metric_key == "phase":
-        st.caption(
-            "**🟢** Sound money &nbsp; **🟢** Outpacing &nbsp; **🟡** Bubble &nbsp; "
-            "**🔴** Top (peak burden) &nbsp; **🟣** Deleveraging (distress) &nbsp; "
-            "**🔵** Reflation/repression &nbsp; **🟠** Transition (on a boundary) &nbsp; "
-            "**⚪** No data"
-        )
+        legend_items = [
+            (PHASE_HEX[1], "Sound money"),
+            (PHASE_HEX[2], "Outpacing"),
+            (PHASE_HEX[3], "Bubble"),
+            (PHASE_HEX[4], "Top (peak burden)"),
+            (PHASE_HEX[5], "Deleveraging (distress)"),
+            (PHASE_HEX[6], "Reflation / repression"),
+            (PHASE_HEX[0], "Transition"),
+            (NO_DATA, "No data"),
+        ]
     elif metric_key == "stage":
-        st.caption(
-            "**🟢** Expansion &nbsp; **🟢** Inflationary peak &nbsp; "
-            "**🔴** Recession &nbsp; **🔵** Reflation &nbsp; "
-            "**🟠** Transition &nbsp; **⚪** No data"
-        )
+        legend_items = [
+            (PHASE_HEX[1], "Expansion"),
+            (PHASE_HEX[2], "Inflationary peak"),
+            (PHASE_HEX[4], "Recession"),
+            (PHASE_HEX[6], "Reflation"),
+            (PHASE_HEX[0], "Transition"),
+            (NO_DATA, "No data"),
+        ]
     elif metric_key == "caution":
-        st.caption(
-            "🟢 Low &nbsp; 🟡 Moderate &nbsp; 🟠 Elevated &nbsp; 🔴 High — derived from long-term phase"
-        )
+        legend_items = [
+            (CAUTION_HEX["low"], "Low"),
+            (CAUTION_HEX["moderate"], "Moderate"),
+            (CAUTION_HEX["elevated"], "Elevated"),
+            (CAUTION_HEX["high"], "High"),
+        ]
     else:
-        st.caption("Continuous scale from low debt (green) to extreme (red ≥300% of GDP).")
+        legend_items = [
+            ("#506e58", "< 100%"),
+            ("#708060", "100–200%"),
+            ("#b8893a", "200–250%"),
+            ("#a14a3a", "250–300%"),
+            ("#6b3c4a", "≥ 300%"),
+        ]
+    swatches = "".join(
+        f'<span><i class="swatch" style="background:{c}"></i>{label}</span>'
+        for c, label in legend_items
+    )
+    st.markdown(f'<div class="legend-row">{swatches}</div>', unsafe_allow_html=True)
 
     # Click handling
     if selection and getattr(selection, "selection", None):
@@ -305,7 +721,7 @@ def _render_world_map(points: list[CountryMapPoint], selected_iso2: str | None) 
 
 
 def _render_quick_read(view: CountryView) -> None:
-    """One-paragraph plain-language read of the current regime."""
+    """Pull-quote-styled one-line plain read of the regime."""
     f_lt = view.long_term.features
     debt = f"{f_lt.total_credit_pct_gdp:.0f}%" if f_lt.total_credit_pct_gdp else "n/a"
     cpi = f"{f_lt.cpi_yoy:.1f}%" if f_lt.cpi_yoy else "n/a"
@@ -313,53 +729,102 @@ def _render_quick_read(view: CountryView) -> None:
     dsr = f"{f_lt.debt_service_ratio:.1f}%" if f_lt.debt_service_ratio else "n/a"
 
     st.markdown(
-        f"### {view.country.name} — quick read\n"
-        f"Total non-fin debt **{debt}** of GDP &nbsp;·&nbsp; "
-        f"CPI YoY **{cpi}** &nbsp;·&nbsp; "
-        f"Real 10y rate **{rr}** &nbsp;·&nbsp; "
-        f"Debt-service ratio **{dsr}**"
+        f"""
+<div class="pullquote">
+Total non-financial debt <span class="num">{debt}</span> of GDP.
+CPI year-on-year <span class="num">{cpi}</span>.
+Real 10-year rate <span class="num">{rr}</span>.
+Private-sector debt-service ratio <span class="num">{dsr}</span>.
+</div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _confidence_block(label: str, confidence: float) -> str:
+    pct = max(0.0, min(confidence, 1.0)) * 100
+    return (
+        f'<div class="confidence-track"><span class="confidence-fill" '
+        f'style="width:{pct:.1f}%"></span></div>'
+        f'<div class="confidence-meta"><span>{label}</span>'
+        f'<span>{pct:.0f}%</span></div>'
+    )
+
+
+def _phase_swatch(color: str) -> str:
+    return (
+        f'<i class="swatch" style="background:{color};display:inline-block;'
+        f'width:0.6rem;height:0.6rem;margin-right:0.45rem;'
+        f'vertical-align:0.05rem;border:1px solid rgba(0,0,0,0.15);"></i>'
     )
 
 
 def _render_summary_cards(view: CountryView) -> None:
-    """Three concept cards: long-term phase, short-term stage, top-3 tilts."""
-    cols = st.columns(3)
+    """Three editorial frames: long-term phase, short-term stage, allocation."""
+    cols = st.columns(3, gap="large")
 
-    # Card 1: Long-term phase
+    # Card 1 — Long-term phase
     with cols[0]:
-        emoji = PHASE_EMOJI.get(view.long_term.phase, "⚪")
-        st.markdown(f"#### {emoji} Long-term phase")
-        st.markdown(f"**{view.long_term.phase_label}**")
-        st.caption(PHASE_EXPLANATIONS.get(view.long_term.phase, ""))
-        st.progress(min(view.long_term.confidence, 1.0), text=f"Confidence: {view.long_term.confidence:.0%}")
+        phase = view.long_term.phase
+        swatch = _phase_swatch(PHASE_HEX.get(phase, INK_MUTED))
+        st.markdown(
+            f"""
+<div class="card">
+  <div class="eyebrow">Long-term cycle <span class="accent">·</span> Phase {phase} of 7</div>
+  <div class="title">{swatch}{view.long_term.phase_label}</div>
+  <div class="deck">{PHASE_EXPLANATIONS.get(phase, "")}</div>
+  {_confidence_block("Classifier confidence", view.long_term.confidence)}
+</div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-    # Card 2: Short-term stage
+    # Card 2 — Short-term stage
     with cols[1]:
-        emoji = STAGE_EMOJI.get(view.short_term.stage, "⚪")
-        st.markdown(f"#### {emoji} Short-term stage")
-        st.markdown(f"**{view.short_term.stage_label}**")
-        st.caption(STAGE_EXPLANATIONS.get(view.short_term.stage, ""))
-        st.progress(min(view.short_term.confidence, 1.0), text=f"Confidence: {view.short_term.confidence:.0%}")
+        stage = view.short_term.stage
+        swatch = _phase_swatch(PHASE_HEX.get(stage, INK_MUTED))
+        st.markdown(
+            f"""
+<div class="card">
+  <div class="eyebrow">Short-term cycle <span class="accent">·</span> Stage {stage} of 4</div>
+  <div class="title">{swatch}{view.short_term.stage_label}</div>
+  <div class="deck">{STAGE_EXPLANATIONS.get(stage, "")}</div>
+  {_confidence_block("Classifier confidence", view.short_term.confidence)}
+</div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-    # Card 3: Top tilts
+    # Card 3 — Allocation tilts
     with cols[2]:
-        caution_emoji = {
-            "low": "🟢", "moderate": "🟡",
-            "elevated": "🟠", "high": "🔴",
-        }.get(view.allocation.caution_level, "⚪")
-        st.markdown(f"#### {caution_emoji} Allocation tilt")
-        st.markdown(f"**Caution: {view.allocation.caution_level}**")
-        for t in top_tilts(view.allocation, n=3):
-            label = t.label.split(" (")[0]  # drop parenthetical
-            st.markdown(f"&nbsp;&nbsp;{t.direction}&nbsp; **{label}** &nbsp;`{t.tilt:+.2f}`")
-        st.caption("Tilts = deviations from a default diversified base. Not buy/sell signals.")
+        caution = view.allocation.caution_level
+        swatch = _phase_swatch(CAUTION_HEX.get(caution, INK_MUTED))
+        rows = "".join(
+            f'<div class="tilt-row">'
+            f'<span class="tilt-arrow">{t.direction}</span>'
+            f'<span class="tilt-label">{t.label.split(" (")[0]}</span>'
+            f'<span class="tilt-num">{t.tilt:+.2f}</span>'
+            f'</div>'
+            for t in top_tilts(view.allocation, n=3)
+        )
+        st.markdown(
+            f"""
+<div class="card">
+  <div class="eyebrow">Positioning <span class="accent">·</span> Caution {caution}</div>
+  <div class="title">{swatch}Top tilts</div>
+  <div class="deck">Three largest-magnitude deviations from a default diversified base — not buy/sell signals.</div>
+  {rows}
+</div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 
 # ─── Framework note ─────────────────────────────────────────────────────────
 
 
 def _render_framework_note() -> None:
-    with st.expander("📚 How these pieces fit together (read once)"):
+    with st.expander("How these pieces fit together (read once)"):
         st.markdown("""
 **The dashboard tracks two cycles + an allocation overlay:**
 
@@ -626,11 +1091,25 @@ def main() -> None:
         layout="wide",
         page_icon="📊",
     )
+    _inject_design_css()
 
-    st.title("📊 dalio-machine")
-    st.caption(
-        "Macro-cycle dashboard built on Ray Dalio's economic-machine framework. "
-        "**Decision-support for allocation tilts, not market-timing signals.**"
+    today = date.today().strftime("%a %d %b %Y").upper()
+    st.markdown(
+        f"""
+<div class="masthead">
+  <div class="meta">
+    <span>Vol. I &nbsp;·&nbsp; {today}</span>
+    <span>A regime lens, not an oracle</span>
+  </div>
+  <h1 class="title">Dalio Machine</h1>
+  <p class="subtitle">
+    A macro-cycle research lens for the late-cycle world — short-term &amp;
+    long-term debt cycles, mapped to allocation tilts. Decision-support for
+    a diversified base portfolio, not market-timing signals.
+  </p>
+</div>
+        """,
+        unsafe_allow_html=True,
     )
 
     with _open_session() as s:
@@ -667,13 +1146,17 @@ def main() -> None:
     )
 
     # ─── World map ────────────────────────────────────────────────
-    st.subheader("Global cycle overview")
+    st.markdown(
+        '<span class="kicker">The lay of the land</span>'
+        '<h2 class="section-title">Global cycle overview</h2>'
+        '<p class="section-lede">Click any country to switch the brief below. '
+        'The Eurozone shows as a single bloc; click any member to select it.</p>',
+        unsafe_allow_html=True,
+    )
     clicked_iso2 = _render_world_map(points, selected_iso2=selected)
     if clicked_iso2 and clicked_iso2 != selected:
         st.session_state.country = clicked_iso2
         st.rerun()
-
-    st.divider()
 
     # ─── Country detail ───────────────────────────────────────────
     if selected not in countries_with_data:
@@ -686,31 +1169,43 @@ def main() -> None:
     with _open_session() as s:
         view = compute_country_view(s, selected)
 
+    st.markdown(
+        f'<span class="kicker">Country brief</span>'
+        f'<h2 class="section-title">{country.name}</h2>'
+        f'<p class="section-lede">Two cycles, mapped to a positioning view. '
+        f'The numbers below are inputs to a decision, not the decision itself.</p>',
+        unsafe_allow_html=True,
+    )
     _render_quick_read(view)
-    st.markdown("&nbsp;")
     _render_summary_cards(view)
-    st.markdown("&nbsp;")
+    st.markdown("<div style='height:1.4rem'></div>", unsafe_allow_html=True)
     _render_framework_note()
 
-    st.divider()
+    st.markdown(
+        '<span class="kicker">Underlying readings</span>'
+        '<h2 class="section-title">Indicators &amp; reasoning</h2>'
+        '<p class="section-lede">Open any panel to see the indicators feeding '
+        'each classification, the rule weights, and full historical series.</p>',
+        unsafe_allow_html=True,
+    )
 
     # ─── Detail expanders ─────────────────────────────────────────
-    with st.expander("🟦 Short-term cycle indicators"):
+    with st.expander("Short-term cycle indicators"):
         _render_stage_card(view.short_term)
         st.markdown("##### Indicators")
         with _open_session() as s:
             _render_indicator_grid(s, selected, view.short_term)
 
-    with st.expander("🟥 Long-term debt cycle indicators (BIS data)"):
+    with st.expander("Long-term debt cycle indicators (BIS data)"):
         _render_long_term_card(view.long_term)
         st.markdown("##### Sector debt + DSR")
         with _open_session() as s:
             _render_long_term_indicators(s, selected, view.long_term)
 
-    with st.expander("📊 All asset-allocation tilts (full table)"):
+    with st.expander("All asset-allocation tilts (full table)"):
         _render_allocation(view.allocation)
 
-    with st.expander("📈 History explorer (any indicator, full series)"), _open_session() as s:
+    with st.expander("History explorer (any indicator, full series)"), _open_session() as s:
         _render_history_explorer(s, selected)
 
 
