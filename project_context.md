@@ -107,28 +107,30 @@ Tier drives dashboard confidence labels — Tier 2 readings are flagged as "data
 
 ## Cycle Stage Classification
 
-Rule-based, transparent, four stages per Dalio's roadmap (slice 1 — short-term cycle):
+Rule-based, transparent, four stages per Dalio's roadmap (slice 1 — short-term cycle). Each rule emits one or more `StageVote(stage, weight, reason)`. Stage = highest summed weight; "Transition" if top two stages within 0.3 weight units. Confidence is saturating: `top_weight / (total_weight + 1.0)` so a single weak vote never reads as 100%.
 
-| Stage | Conditions (US short-term cycle) |
-|-------|----------------------------------|
-| 1. Expansion | `real_gdp_yoy > 0`, unemployment falling, `cpi_yoy < 3` |
-| 2. Inflationary peak | `cpi_yoy > 3` and rising, central bank tightening, output gap closed |
-| 3. Recession | `real_gdp_yoy < 0` OR unemployment rising sharply, credit contracting |
-| 4. Reflation | Central bank cutting, `cpi_yoy` moderating, recovery emerging |
+| Stage | Trigger conditions |
+|-------|--------------------|
+| 1. Expansion | `real_gdp_yoy > 1.5` AND `cpi_yoy < 3` AND unemployment stable/falling. Steep yield curve adds weight. |
+| 2. Inflationary peak | `cpi_yoy > 4` (strong) OR `cpi_yoy > 3` with CB tightening (moderate) OR CPI accelerating from ≥2.5% (modifier). |
+| 3. Recession | `real_gdp_yoy < 0` OR `unemployment_change_3m > 0.5pp` (Sahm-rule territory). Inverted yield curve adds weight. |
+| 4. Reflation | CB cutting strongly (>0.5pp/6m) OR moderately (0.25–0.5pp/6m) with `cpi_yoy < 4` OR CPI decelerating sharply. |
 
-Output is the most-fitting stage with confidence (rule match count). Edge cases → "transition" label, never a forced binary.
+All thresholds in `src/dalio/scoring/short_term.py`. Vote weights and reasons are exposed in the dashboard (expandable "Rule reasoning") so every classification is inspectable.
 
 ## Current State
 
-- **Working:** Project scaffold, country registry, SQLite schema, FRED data source, US short-term ETL, basic test suite, minimal Streamlit smoke-test app.
-- **In Progress:** Slice 1 (US short-term cycle dashboard).
-- **Known Issues:** None yet.
+- **Working:** Full slice 1 end-to-end for US — country registry, SQLite schema, FRED data source, US short-term ETL (56,950 observations), rule-based stage classifier with Sahm rule + saturating confidence, full Streamlit dashboard with stage card / sparklines / yield-curve banner / history explorer / Tier-aware confidence labels.
+- **Tests:** 32/32 passing (mocked HTTP, no real API calls).
+- **Live US classification (2026-04-27):** "Transition (Reflation ↔ Inflationary peak)" at 29% — Fed cutting + sticky CPI = textbook soft-landing transition.
+- **In Progress:** Slice 2 (Tier-1 fan-out: CN, EU, UK, JP, SE).
+- **Known Issues:** None.
 
 ## Roadmap
 
 | Slice | Goal |
 |-------|------|
-| **1** ✓ in progress | US short-term cycle: ETL + dashboard, end-to-end |
+| **1** ✓ done | US short-term cycle: ETL + classifier + dashboard, end-to-end |
 | 2 | Tier-1 fan-out: CN, EU, UK, JP, SE for short-term cycle |
 | 3 | Tier-2: IN, BR for short-term cycle |
 | 4 | Long-term debt cycle (BIS Total Credit, DSR) for all 8 |
@@ -151,4 +153,6 @@ Output is the most-fitting stage with confidence (rule match count). Edge cases 
 
 | Date | Change | Files |
 |------|--------|-------|
+| 2026-04-27 | Slice 1 complete: rule-based classifier with Sahm rule + saturating confidence; full Streamlit dashboard (stage card, sparklines, yield-curve banner, history explorer) | `src/dalio/scoring/short_term.py`, `src/dalio/app/streamlit_app.py`, `tests/test_short_term_classifier.py` |
+| 2026-04-27 | First real FRED fetch — 56,950 US observations stored | `data/dalio.db` (gitignored) |
 | 2026-04-27 | Initial scaffold | `pyproject.toml`, `src/dalio/{countries,storage/db,data_sources/fred,pipelines/fetch_fred,app/streamlit_app}.py`, `tests/` |
