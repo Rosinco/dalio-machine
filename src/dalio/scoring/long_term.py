@@ -27,6 +27,7 @@ from datetime import date, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from dalio.scoring.thresholds import DEFAULT_THRESHOLDS, Thresholds
 from dalio.storage.db import Observation
 
 PHASE_LABELS: dict[int, str] = {
@@ -220,44 +221,45 @@ def _vote_debt_outpaces(f: LongTermFeatures) -> list[PhaseVote]:
     return votes
 
 
-def _vote_bubble(f: LongTermFeatures) -> list[PhaseVote]:
+def _vote_bubble(f: LongTermFeatures, t: Thresholds) -> list[PhaseVote]:
     votes = []
     tc = f.total_credit_pct_gdp
     chg5 = f.total_credit_5y_change_pp
-    if tc is not None and 200 <= tc < 280 and chg5 is not None and chg5 > 15:
+    if tc is not None and 200 <= tc < t.debt_extreme and chg5 is not None and chg5 > 15:
         votes.append(PhaseVote(
             3, 1.0,
             f"Debt {tc:.0f}% with rapid expansion (+{chg5:.0f}pp/5y)",
         ))
-    elif tc is not None and 220 <= tc < 280:
+    elif tc is not None and t.debt_late_cycle_low <= tc < t.debt_extreme:
         votes.append(PhaseVote(
             3, 0.5,
-            f"Debt {tc:.0f}% in late-cycle leverage zone",
+            f"Debt {tc:.0f}% in late-cycle leverage zone (≥ {t.debt_late_cycle_low:.0f}%)",
         ))
     return votes
 
 
-def _vote_top(f: LongTermFeatures) -> list[PhaseVote]:
+def _vote_top(f: LongTermFeatures, t: Thresholds) -> list[PhaseVote]:
     votes = []
     tc = f.total_credit_pct_gdp
     dsr = f.debt_service_ratio
-    # Phase 4a: extreme debt level (≥280% of GDP)
-    if tc is not None and tc >= 280:
-        weight = 0.8 if (dsr is not None and dsr > 17) else 0.6
-        notes = f"Debt {tc:.0f}% in extreme zone (≥280%)"
-        if dsr is not None and dsr > 17:
-            notes += f"; DSR {dsr:.1f}% stretched"
+    # Phase 4a: extreme debt level
+    if tc is not None and tc >= t.debt_extreme:
+        weight = 0.8 if (dsr is not None and dsr > t.dsr_stretched) else 0.6
+        notes = f"Debt {tc:.0f}% in extreme zone (≥ {t.debt_extreme:.0f}%)"
+        if dsr is not None and dsr > t.dsr_stretched:
+            notes += f"; DSR {dsr:.1f}% stretched (> {t.dsr_stretched:.0f}%)"
         votes.append(PhaseVote(4, weight, notes))
     # Phase 4b: stretched DSR with elevated debt — peak debt service burden
-    if dsr is not None and dsr > 18 and tc is not None and tc > 220:
+    if dsr is not None and dsr > t.dsr_distress and tc is not None and tc > t.debt_late_cycle_low:
         votes.append(PhaseVote(
             4, 0.7,
-            f"DSR {dsr:.1f}% > 18% on debt {tc:.0f}% (peak debt-service burden)",
+            f"DSR {dsr:.1f}% > {t.dsr_distress:.0f}% on debt {tc:.0f}% "
+            f"(peak debt-service burden)",
         ))
     return votes
 
 
-def _vote_deleveraging(f: LongTermFeatures) -> list[PhaseVote]:
+def _vote_deleveraging(f: LongTermFeatures, t: Thresholds) -> list[PhaseVote]:
     """Phase 5 = 'ugly' deleveraging: debt contraction AND distress (Dalio's term).
 
     Distinguished from Phase 6 by the *mechanism*: Phase 5 is real distress
@@ -271,29 +273,32 @@ def _vote_deleveraging(f: LongTermFeatures) -> list[PhaseVote]:
     cpi = f.cpi_yoy
     if (
         chg5 is not None and chg5 < -10
-        and tc is not None and tc > 150
-        and dsr is not None and dsr > 18
-        and cpi is not None and cpi < 3
+        and tc is not None and tc > 150  # universal "meaningful debt" floor
+        and dsr is not None and dsr > t.dsr_distress
+        and cpi is not None and cpi < t.cpi_elevated
     ):
         votes.append(PhaseVote(
             5, 1.0,
             f"Debt falling ({chg5:+.0f}pp/5y) at elevated level {tc:.0f}% "
-            f"with distressed DSR {dsr:.1f}% (low inflation rules out beautiful)",
+            f"with distressed DSR {dsr:.1f}% > {t.dsr_distress:.0f}% "
+            f"(low inflation rules out beautiful)",
         ))
-    if dsr is not None and dsr > 22:
+    if dsr is not None and dsr > t.dsr_extreme:
         votes.append(PhaseVote(
             5, 0.7,
-            f"DSR {dsr:.1f}% extreme — household/corp distress likely",
+            f"DSR {dsr:.1f}% extreme (> {t.dsr_extreme:.0f}%) — distress likely",
         ))
     return votes
 
 
-def _vote_reflation_repression(f: LongTermFeatures) -> list[PhaseVote]:
+def _vote_reflation_repression(f: LongTermFeatures, t: Thresholds) -> list[PhaseVote]:
     """Phase 6 = 'beautiful' deleveraging or financial repression.
 
     Two pathways:
-    - Negative real rates (financial repression — savers lose, debtors gain)
-    - Debt/GDP falling AND moderate-to-high inflation (inflation-eroded debt)
+    - Negative real rates (financial repression — savers lose, debtors gain).
+      Real-rate thresholds are universal physics, not country-relative.
+    - Debt/GDP falling AND moderate-to-high inflation (inflation-eroded debt).
+      "Moderate-to-high" is country-relative via t.cpi_elevated.
     """
     votes = []
     rr = f.real_rate_10y
@@ -308,28 +313,32 @@ def _vote_reflation_repression(f: LongTermFeatures) -> list[PhaseVote]:
             f"Real 10y rate {rr:+.1f}% with debt {tc:.0f}% — financial repression",
         ))
 
-    # Beautiful deleveraging: inflation-eroded debt ratio
+    # Beautiful deleveraging: inflation-eroded debt ratio (country-relative CPI)
     if (
         chg5 is not None and chg5 < -10
         and tc is not None and tc > 150
-        and cpi is not None and cpi > 3
+        and cpi is not None and cpi > t.cpi_elevated
     ):
         votes.append(PhaseVote(
             6, 0.7,
             f"Debt {tc:.0f}% falling ({chg5:+.0f}pp/5y) with CPI {cpi:.1f}% "
-            f"— beautiful deleveraging (inflation-eroded ratio)",
+            f"> {t.cpi_elevated:.1f}% — beautiful deleveraging",
         ))
     return votes
 
 
-def classify_features(features: LongTermFeatures) -> PhaseClassification:
+def classify_features(
+    features: LongTermFeatures,
+    thresholds: Thresholds | None = None,
+) -> PhaseClassification:
+    t = thresholds if thresholds is not None else DEFAULT_THRESHOLDS
     votes: list[PhaseVote] = []
     votes.extend(_vote_sound_money(features))
     votes.extend(_vote_debt_outpaces(features))
-    votes.extend(_vote_bubble(features))
-    votes.extend(_vote_top(features))
-    votes.extend(_vote_deleveraging(features))
-    votes.extend(_vote_reflation_repression(features))
+    votes.extend(_vote_bubble(features, t))
+    votes.extend(_vote_top(features, t))
+    votes.extend(_vote_deleveraging(features, t))
+    votes.extend(_vote_reflation_repression(features, t))
 
     if not votes:
         return PhaseClassification(
@@ -374,6 +383,17 @@ def classify_features(features: LongTermFeatures) -> PhaseClassification:
     )
 
 
-def classify(session: Session, country: str) -> PhaseClassification:
+def classify(
+    session: Session, country: str, thresholds: Thresholds | None = None,
+) -> PhaseClassification:
+    """Classify the country's long-term phase.
+
+    If `thresholds` is None, the per-country calibration is loaded
+    automatically (from `calibration.compute_country_thresholds`); pass
+    DEFAULT_THRESHOLDS explicitly to use the global defaults.
+    """
     features = extract_features(session, country)
-    return classify_features(features)
+    if thresholds is None:
+        from dalio.scoring.calibration import compute_country_thresholds
+        thresholds = compute_country_thresholds(session, country)
+    return classify_features(features, thresholds)

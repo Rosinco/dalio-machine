@@ -27,6 +27,7 @@ from datetime import date, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from dalio.scoring.thresholds import DEFAULT_THRESHOLDS, Thresholds
 from dalio.storage.db import Observation
 
 STAGE_LABELS: dict[int, str] = {
@@ -215,19 +216,24 @@ def _vote_recession(f: ShortTermFeatures) -> list[StageVote]:
     return votes
 
 
-def _vote_inflationary_peak(f: ShortTermFeatures) -> list[StageVote]:
+def _vote_inflationary_peak(f: ShortTermFeatures, t: Thresholds) -> list[StageVote]:
     votes = []
     cpi = f.cpi_yoy
-    if cpi is not None and cpi > 4:
-        votes.append(StageVote(2, 1.0, f"CPI {cpi:.2f}% > 4% (clearly elevated)"))
-    elif cpi is not None and cpi > 3:
+    if cpi is not None and cpi > t.cpi_peak:
+        votes.append(StageVote(
+            2, 1.0,
+            f"CPI {cpi:.2f}% > {t.cpi_peak:.1f}% (clearly elevated)",
+        ))
+    elif cpi is not None and cpi > t.cpi_elevated:
         weight = 0.5
-        reason = f"CPI {cpi:.2f}% above 3%"
+        reason = f"CPI {cpi:.2f}% above {t.cpi_elevated:.1f}%"
         if f.policy_rate_change_6m is not None and f.policy_rate_change_6m > 0.5:
             weight = 0.9
             reason += f" with CB tightening (+{f.policy_rate_change_6m:.2f}pp/6m)"
         votes.append(StageVote(2, weight, reason))
-    if f.cpi_change_3m is not None and f.cpi_change_3m > 0.5 and cpi is not None and cpi > 2.5:
+    # Acceleration vote uses cpi_elevated - 0.5 as the floor (was a hard 2.5)
+    accel_floor = max(t.cpi_elevated - 0.5, 2.0)
+    if f.cpi_change_3m is not None and f.cpi_change_3m > 0.5 and cpi is not None and cpi > accel_floor:
         votes.append(StageVote(
             2, 0.4,
             f"CPI accelerating (+{f.cpi_change_3m:.2f}pp over 3m at {cpi:.2f}%)",
@@ -294,11 +300,15 @@ def _vote_expansion(f: ShortTermFeatures) -> list[StageVote]:
     return votes
 
 
-def classify_features(features: ShortTermFeatures) -> Classification:
+def classify_features(
+    features: ShortTermFeatures,
+    thresholds: Thresholds | None = None,
+) -> Classification:
     """Apply all rule families to features, return classification."""
+    t = thresholds if thresholds is not None else DEFAULT_THRESHOLDS
     votes: list[StageVote] = []
     votes.extend(_vote_recession(features))
-    votes.extend(_vote_inflationary_peak(features))
+    votes.extend(_vote_inflationary_peak(features, t))
     votes.extend(_vote_reflation(features))
     votes.extend(_vote_expansion(features))
 
@@ -350,7 +360,17 @@ def classify_features(features: ShortTermFeatures) -> Classification:
     )
 
 
-def classify(session: Session, country: str) -> Classification:
-    """Convenience: extract features + classify in one call."""
+def classify(
+    session: Session, country: str, thresholds: Thresholds | None = None,
+) -> Classification:
+    """Convenience: extract features + classify in one call.
+
+    If `thresholds` is None, the per-country calibration is loaded
+    automatically; pass DEFAULT_THRESHOLDS explicitly to use the global
+    defaults.
+    """
     features = extract_features(session, country)
-    return classify_features(features)
+    if thresholds is None:
+        from dalio.scoring.calibration import compute_country_thresholds
+        thresholds = compute_country_thresholds(session, country)
+    return classify_features(features, thresholds)

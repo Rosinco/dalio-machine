@@ -1062,6 +1062,48 @@ def _render_allocation(view: AllocationView) -> None:
     )
 
 
+_THRESHOLD_LABELS: dict[str, str] = {
+    "debt_late_cycle_low": "Debt / GDP — late cycle (q75)",
+    "debt_extreme": "Debt / GDP — extreme (q95)",
+    "dsr_stretched": "DSR stretched (q75)",
+    "dsr_distress": "DSR distress (q90)",
+    "dsr_extreme": "DSR extreme (q95)",
+    "cpi_elevated": "CPI elevated (q75 ⌊2.5⌋)",
+    "cpi_peak": "CPI peak (q90 ⌊3.5⌋)",
+}
+
+
+def _render_thresholds_table(country_iso2: str, country_name: str) -> None:
+    """Side-by-side table of default vs per-country classifier thresholds.
+
+    The delta column is the credibility signal: large deltas = country's
+    history is meaningfully different from the US-derived defaults; near-zero
+    deltas mean the classifier is using the global thresholds (typically
+    because the country's history is too short).
+    """
+    from dalio.scoring.calibration import compute_country_thresholds, threshold_deltas
+
+    with _open_session() as s:
+        country_t = compute_country_thresholds(s, country_iso2)
+    deltas = threshold_deltas(country_t)
+
+    rows = []
+    for field, (default, country, delta) in deltas.items():
+        rows.append({
+            "Threshold": _THRESHOLD_LABELS.get(field, field),
+            "Default (US-derived)": f"{default:.1f}",
+            f"{country_name}": f"{country:.1f}",
+            "Δ": f"{delta:+.1f}" if delta != 0 else "—",
+        })
+    st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
+    st.caption(
+        "Per-country thresholds are computed from each country's own historical "
+        "quantiles when ≥10 years of data are available; otherwise the US-derived "
+        "defaults apply. Real-rate thresholds and the Sahm rule are universal physics "
+        "and stay as global literals."
+    )
+
+
 def _render_history_explorer(session: Session, country: str) -> None:
     available = [
         ind for ind in ALL_INDICATORS
@@ -1222,6 +1264,9 @@ def main() -> None:
 
     with st.expander("All asset-allocation tilts (full table)"):
         _render_allocation(view.allocation)
+
+    with st.expander(f"How thresholds are set for {country.name}"):
+        _render_thresholds_table(selected, country.name)
 
     with st.expander("History explorer (any indicator, full series)"), _open_session() as s:
         _render_history_explorer(s, selected)
