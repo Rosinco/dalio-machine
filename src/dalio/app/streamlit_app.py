@@ -740,6 +740,24 @@ Private-sector debt-service ratio <span class="num">{dsr}</span>.
         unsafe_allow_html=True,
     )
 
+    # Cross-regime real-yield note — surfaces only when the multiplier is firing.
+    regime = view.allocation.real_yield_regime
+    if regime == "repression":
+        st.markdown(
+            f"<p class='section-lede' style='margin-top:-0.6rem'>"
+            f"Real rate <span class='num' style='color:#0c1f3f;font-family:JetBrains Mono,monospace'>{rr}</span> "
+            f"is biasing every phase's tilts toward gold, commodities, and real estate, "
+            f"away from long nominal bonds — financial repression regime.</p>",
+            unsafe_allow_html=True,
+        )
+    elif regime == "mild repression":
+        st.markdown(
+            "<p class='section-lede' style='margin-top:-0.6rem'>"
+            "Real rate is mildly negative — tilts have a small extra lean to "
+            "gold and away from long nominal bonds, on top of the phase-specific tilts.</p>",
+            unsafe_allow_html=True,
+        )
+
 
 def _confidence_block(label: str, confidence: float) -> str:
     pct = max(0.0, min(confidence, 1.0)) * 100

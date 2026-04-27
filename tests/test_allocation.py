@@ -1,9 +1,13 @@
+import pytest
+
 from dalio.scoring.allocation import (
     ASSET_CLASSES,
     LONG_TERM_TILTS,
     SHORT_TERM_TILTS,
     AllocationView,
     _direction,
+    _real_yield_multiplier,
+    _real_yield_regime,
     compute_tilts,
 )
 from dalio.scoring.long_term import LongTermFeatures, PhaseClassification
@@ -33,6 +37,23 @@ def _long(phase: int, label: str, conf: float, votes: tuple = ()) -> PhaseClassi
         confidence=conf,
         votes=votes,
         features=LongTermFeatures(country="US"),
+    )
+
+
+def _long_rr(phase: int, label: str, conf: float, real_rate: float | None) -> PhaseClassification:
+    """Long-term classification with a target real_rate_10y. CPI fixed at 2%;
+    yield_10y = real_rate + 2 so the real_rate property returns `real_rate`."""
+    if real_rate is None:
+        features = LongTermFeatures(country="US")
+    else:
+        features = LongTermFeatures(country="US", yield_10y=real_rate + 2.0, cpi_yoy=2.0)
+    return PhaseClassification(
+        country="US",
+        phase=phase,
+        phase_label=label,
+        confidence=conf,
+        votes=(),
+        features=features,
     )
 
 
@@ -170,6 +191,90 @@ def test_summary_mentions_caution_and_disclaimer():
     assert "caution" in s
     assert "tilt" in s or "deviation" in s
     assert "not a market-timing" in s
+
+
+# ─── Real-yield multiplier (Slice 10) ───────────────────────────────────────
+
+def test_real_yield_multiplier_zero_when_positive_or_none():
+    assert _real_yield_multiplier(2.0) == {}
+    assert _real_yield_multiplier(0.5) == {}
+    assert _real_yield_multiplier(0.0) == {}
+    assert _real_yield_multiplier(None) == {}
+
+
+def test_real_yield_multiplier_tapers_between_0_and_minus1():
+    half = _real_yield_multiplier(-0.5)
+    full = _real_yield_multiplier(-1.0)
+    assert half["gold"] == pytest.approx(0.2)
+    assert full["gold"] == pytest.approx(0.4)
+    assert half["long_bonds"] == pytest.approx(-0.2)
+    assert full["long_bonds"] == pytest.approx(-0.4)
+
+
+def test_real_yield_multiplier_saturates_below_minus1():
+    rr_minus1 = _real_yield_multiplier(-1.0)
+    rr_minus3 = _real_yield_multiplier(-3.0)
+    assert rr_minus1 == rr_minus3
+
+
+def test_real_yield_regime_labels():
+    assert _real_yield_regime(None) == "unknown"
+    assert _real_yield_regime(-2.0) == "repression"
+    assert _real_yield_regime(-0.5) == "mild repression"
+    assert _real_yield_regime(0.5) == "neutral"
+    assert _real_yield_regime(2.0) == "savers compensated"
+
+
+def test_compute_tilts_negative_real_rate_increases_gold():
+    """Holding ST and LT classifications fixed, flipping real-rate from
+    +1 to −2 must strictly increase the gold tilt (Slice 10 plan invariant)."""
+    st = _short(1, "Expansion", 0.5)
+    pos = _long_rr(1, "Sound money", 0.5, real_rate=+1.0)
+    neg = _long_rr(1, "Sound money", 0.5, real_rate=-2.0)
+    gold_pos = next(t.tilt for t in compute_tilts(st, pos).tilts if t.asset_class == "gold")
+    gold_neg = next(t.tilt for t in compute_tilts(st, neg).tilts if t.asset_class == "gold")
+    assert gold_neg > gold_pos
+
+
+def test_compute_tilts_negative_real_rate_decreases_long_bonds():
+    """Holding ST and LT classifications fixed, flipping real-rate from
+    +1 to −2 must strictly decrease the long_bonds tilt."""
+    st = _short(1, "Expansion", 0.5)
+    pos = _long_rr(1, "Sound money", 0.5, real_rate=+1.0)
+    neg = _long_rr(1, "Sound money", 0.5, real_rate=-2.0)
+    lb_pos = next(t.tilt for t in compute_tilts(st, pos).tilts if t.asset_class == "long_bonds")
+    lb_neg = next(t.tilt for t in compute_tilts(st, neg).tilts if t.asset_class == "long_bonds")
+    assert lb_neg < lb_pos
+
+
+def test_compute_tilts_real_yield_regime_in_view():
+    st = _short(1, "Expansion", 0.5)
+    view = compute_tilts(st, _long_rr(1, "Sound money", 0.5, real_rate=-2.0))
+    assert view.real_yield_regime == "repression"
+
+    view2 = compute_tilts(st, _long_rr(1, "Sound money", 0.5, real_rate=+2.0))
+    assert view2.real_yield_regime == "savers compensated"
+
+
+def test_compute_tilts_real_yield_unknown_when_no_data():
+    """When yield_10y or cpi_yoy is missing the regime is 'unknown' and no
+    real-rate reasons appear in any tilt."""
+    st = _short(1, "Expansion", 0.5)
+    view = compute_tilts(st, _long(1, "Sound money", 0.5))
+    assert view.real_yield_regime == "unknown"
+    for t in view.tilts:
+        assert not any("Real-rate regime" in r for r in t.reasons)
+
+
+def test_compute_tilts_real_yield_appears_in_tilt_reasons():
+    """Tilts materially affected by the multiplier should expose the
+    'Real-rate regime' line in their reasons tuple."""
+    st = _short(1, "Expansion", 1.0)
+    view = compute_tilts(st, _long_rr(1, "Sound money", 0.5, real_rate=-2.0))
+    gold_tilt = next(t for t in view.tilts if t.asset_class == "gold")
+    assert any("Real-rate regime" in r for r in gold_tilt.reasons)
+    long_bonds_tilt = next(t for t in view.tilts if t.asset_class == "long_bonds")
+    assert any("Real-rate regime" in r for r in long_bonds_tilt.reasons)
 
 
 def test_reasons_explain_each_active_tilt():

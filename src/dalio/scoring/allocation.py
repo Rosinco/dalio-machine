@@ -185,6 +185,7 @@ class AllocationView:
     long_term_label: str
     tilts: tuple[AssetTilt, ...]
     caution_level: str        # "low" | "moderate" | "elevated" | "high"
+    real_yield_regime: str    # "repression" | "mild repression" | "neutral" | "savers compensated" | "unknown"
     summary: str
 
 
@@ -203,6 +204,45 @@ def _caution_from_phase(phase: int) -> str:
         7: "high",
         0: "moderate",
     }.get(phase, "moderate")
+
+
+def _real_yield_multiplier(real_rate: float | None) -> dict[str, float]:
+    """Cross-regime tilt overlay driven by the real 10y yield.
+
+    Negative real rates are a financial-repression regime: nominal savers
+    are punished, capital flows to scarce real assets (gold, commodities,
+    real estate) and away from long-duration nominal bonds — across all
+    phases, not just Phase 6. This is additive on top of the phase-specific
+    tilts.
+
+    Magnitudes deliberately small (≤0.4 at the deepest negative rate)
+    because Phase 6 (beautiful deleveraging) already votes on negative real
+    rates. The multiplier amplifies but does not dominate.
+
+    Tapered linearly between rr=0 and rr=-1; full intensity at rr ≤ -1.
+    """
+    if real_rate is None or real_rate >= 0:
+        return {}
+    intensity = 1.0 if real_rate <= -1 else -real_rate
+    return {
+        "gold": +0.4 * intensity,
+        "commodities": +0.3 * intensity,
+        "real_estate": +0.2 * intensity,
+        "long_bonds": -0.4 * intensity,
+    }
+
+
+def _real_yield_regime(real_rate: float | None) -> str:
+    """Plain-language label for the real-yield regime."""
+    if real_rate is None:
+        return "unknown"
+    if real_rate < -1:
+        return "repression"
+    if real_rate < 0:
+        return "mild repression"
+    if real_rate < 1:
+        return "neutral"
+    return "savers compensated"
 
 
 def _summary_for(short_label: str, long_label: str, caution: str) -> str:
@@ -259,11 +299,18 @@ def compute_tilts(
     st_tilts = {k: v * st_weight for k, v in st_tilts_raw.items()}
     lt_tilts = {k: v * lt_weight for k, v in lt_tilts_raw.items()}
 
+    # Real-yield overlay: third additive layer. The rate itself IS the signal,
+    # so this is NOT confidence-weighted by either classifier.
+    real_rate = long_term.features.real_rate_10y
+    ry_tilts = _real_yield_multiplier(real_rate)
+    ry_regime = _real_yield_regime(real_rate)
+
     asset_tilts: list[AssetTilt] = []
     for asset in ASSET_CLASSES:
         st = st_tilts.get(asset, 0.0)
         lt = lt_tilts.get(asset, 0.0)
-        total = st + lt
+        ry = ry_tilts.get(asset, 0.0)
+        total = st + lt + ry
         reasons: list[str] = []
         if abs(st_tilts_raw.get(asset, 0.0)) > 0.01:
             raw = st_tilts_raw[asset]
@@ -276,6 +323,11 @@ def compute_tilts(
             reasons.append(
                 f"Long-term ({long_term.phase_label}, conf {long_term.confidence:.0%}): "
                 f"{raw:+.2f} × {lt_weight:.2f} = {lt:+.2f}"
+            )
+        if abs(ry) > 0.01:
+            assert real_rate is not None  # guaranteed by ry_tilts non-empty
+            reasons.append(
+                f"Real-rate regime ({ry_regime}, rr {real_rate:+.1f}%): {ry:+.2f}"
             )
         asset_tilts.append(AssetTilt(
             asset_class=asset,
@@ -296,5 +348,6 @@ def compute_tilts(
         long_term_label=long_term.phase_label,
         tilts=tuple(asset_tilts),
         caution_level=caution,
+        real_yield_regime=ry_regime,
         summary=summary,
     )
