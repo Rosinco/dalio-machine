@@ -126,27 +126,30 @@ def _value_at_or_before(
     return (float(row.value), row.date)
 
 
-def _latest(
-    session: Session, country: str, indicator: str,
+def _latest_at(
+    session: Session, country: str, indicator: str, as_of: date,
 ) -> tuple[float, date] | None:
-    row = session.execute(
-        select(Observation)
-        .where(Observation.country == country, Observation.indicator == indicator)
-        .order_by(Observation.date.desc())
-        .limit(1)
-    ).scalar_one_or_none()
-    if row is None:
-        return None
-    return (float(row.value), row.date)
+    """Latest observation at or before `as_of`. When `as_of=date.today()` this
+    is equivalent to the original `_latest` helper. Used for both live and
+    historical feature extraction (Slice 12 backtest)."""
+    return _value_at_or_before(session, country, indicator, as_of)
 
 
-def extract_features(session: Session, country: str) -> LongTermFeatures:
-    """Pull latest values + 5-year lags for the long-term debt cycle features."""
+def extract_features(
+    session: Session, country: str, as_of: date | None = None,
+) -> LongTermFeatures:
+    """Pull values + 5-year lags for the long-term debt cycle features.
+
+    If `as_of` is provided, all "latest" lookups are capped at that date —
+    used by `replay.py` to backtest classifications historically. Default
+    behavior (`as_of=None`) is unchanged.
+    """
+    cap = as_of if as_of is not None else date.today()
     fields_out: dict[str, float | None] = {}
     indicator_dates: dict[str, date] = {}
 
     for ind in LONG_TERM_INDICATORS:
-        latest = _latest(session, country, ind)
+        latest = _latest_at(session, country, ind, cap)
         if latest is None:
             fields_out[ind] = None
             continue
@@ -170,8 +173,8 @@ def extract_features(session: Session, country: str) -> LongTermFeatures:
         dsr_5y_ago = lag[0] if lag else None
 
     # Real rate inputs from FRED data (already in DB if FRED ETL has been run)
-    yield_lookup = _latest(session, country, "yield_10y")
-    cpi_lookup = _latest(session, country, "cpi_yoy")
+    yield_lookup = _latest_at(session, country, "yield_10y", cap)
+    cpi_lookup = _latest_at(session, country, "cpi_yoy", cap)
     yield_10y = yield_lookup[0] if yield_lookup else None
     cpi_yoy = cpi_lookup[0] if cpi_lookup else None
     if yield_lookup:
@@ -384,15 +387,20 @@ def classify_features(
 
 
 def classify(
-    session: Session, country: str, thresholds: Thresholds | None = None,
+    session: Session, country: str,
+    thresholds: Thresholds | None = None,
+    as_of: date | None = None,
 ) -> PhaseClassification:
     """Classify the country's long-term phase.
 
     If `thresholds` is None, the per-country calibration is loaded
     automatically (from `calibration.compute_country_thresholds`); pass
     DEFAULT_THRESHOLDS explicitly to use the global defaults.
+
+    If `as_of` is provided, classify as of that historical date — used
+    by `replay.py` to walk the regime path through history.
     """
-    features = extract_features(session, country)
+    features = extract_features(session, country, as_of=as_of)
     if thresholds is None:
         from dalio.scoring.calibration import compute_country_thresholds
         thresholds = compute_country_thresholds(session, country)

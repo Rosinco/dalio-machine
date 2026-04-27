@@ -1104,6 +1104,90 @@ def _render_thresholds_table(country_iso2: str, country_name: str) -> None:
     )
 
 
+def _render_regime_replay(country_iso2: str, country_name: str) -> None:
+    """Plotly step chart of the long-term phase over the last ~35 years.
+
+    Uses the existing PHASE_HEX palette so colors match the world map. The
+    step chart is more honest than a smooth line — phase classifications are
+    discrete, not interpolated.
+    """
+    from datetime import date
+
+    from dalio.scoring.replay import replay_classifications
+
+    end = date.today()
+    start = date(end.year - 35, 1, 1)
+    with _open_session() as s:
+        df = replay_classifications(s, country_iso2, start, end, step="Q")
+
+    if df.empty or df["lt_phase"].nunique() <= 1:
+        st.caption("Not enough historical data for a regime path yet — needs ~10 years of BIS Total Credit + DSR.")
+        return
+
+    # Build trace: stepped line, color by phase
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=df["date"],
+        y=df["lt_phase"],
+        mode="lines+markers",
+        line=dict(shape="hv", width=2.5, color=INK),
+        marker=dict(
+            size=8,
+            color=[PHASE_HEX.get(p, INK_MUTED) for p in df["lt_phase"]],
+            line=dict(color=PAPER, width=1),
+        ),
+        text=[
+            f"{d.strftime('%Y Q%d')}<br>{lbl}<br>conf {c:.0%}"
+            for d, lbl, c in zip(df["date"], df["lt_label"], df["lt_confidence"], strict=True)
+        ],
+        hoverinfo="text",
+        name="Long-term phase",
+    ))
+
+    # Annotate well-known events
+    annotations = []
+    for ev_date, ev_label in (
+        (date(2008, 9, 1), "Lehman"),
+        (date(2020, 3, 1), "COVID"),
+        (date(2022, 3, 1), "CPI peak"),
+    ):
+        if start <= ev_date <= end:
+            annotations.append(dict(
+                x=ev_date, y=7.2, text=ev_label, showarrow=False,
+                font=dict(family="Inter Tight, sans-serif", size=10, color=RUST),
+            ))
+
+    fig.update_layout(
+        height=320,
+        margin=dict(l=10, r=10, t=20, b=20),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor=PAPER,
+        font=dict(family="Inter Tight, sans-serif", color=INK, size=11),
+        xaxis=dict(
+            showgrid=True, gridcolor=RULE, gridwidth=0.5,
+            zeroline=False, color=INK_MUTED,
+        ),
+        yaxis=dict(
+            showgrid=True, gridcolor=RULE, gridwidth=0.5,
+            zeroline=False, color=INK_MUTED,
+            tickmode="array",
+            tickvals=[0, 1, 2, 3, 4, 5, 6, 7],
+            ticktext=["Trans", "Sound", "Outpace", "Bubble", "Top", "Delvg", "Reflate", "Reset"],
+            range=[-0.5, 7.5],
+        ),
+        annotations=annotations,
+        showlegend=False,
+    )
+    st.plotly_chart(fig, width="stretch")
+    st.caption(
+        f"Quarterly long-term-phase classification for {country_name} from "
+        f"{start.year} to {end.year}. Markers colored by phase using the same "
+        "palette as the world map. The classifier sees only data available at "
+        "each quarter — its 2008/2020/2022 calls are what the lens would have "
+        "produced in real time, not in hindsight."
+    )
+
+
 def _render_history_explorer(session: Session, country: str) -> None:
     available = [
         ind for ind in ALL_INDICATORS
@@ -1267,6 +1351,9 @@ def main() -> None:
 
     with st.expander(f"How thresholds are set for {country.name}"):
         _render_thresholds_table(selected, country.name)
+
+    with st.expander("Historical regime path"):
+        _render_regime_replay(selected, country.name)
 
     with st.expander("History explorer (any indicator, full series)"), _open_session() as s:
         _render_history_explorer(s, selected)
