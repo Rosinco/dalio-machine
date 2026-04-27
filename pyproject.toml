@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dalio-machine"
+version = "0.1.0"
+description = "Macro-cycle dashboard built on Ray Dalio's economic machine framework. Tracks short-term debt cycle, long-term debt cycle, and big-cycle indicators across major economies for asset allocation decision support."
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "Adam Boman" }]
+license = { text = "MIT" }
+keywords = ["macro", "economics", "dalio", "debt-cycle", "asset-allocation"]
+
+dependencies = [
+    "fredapi>=0.5.2",
+    "requests>=2.32",
+    "pandas>=2.2",
+    "numpy>=1.26",
+    "sqlalchemy>=2.0",
+    "streamlit>=1.36",
+    "plotly>=5.22",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2",
+    "pytest-mock>=3.14",
+    "pytest-cov>=5.0",
+    "responses>=0.25",
+    "ruff>=0.5",
+]
+
+[project.scripts]
+dalio-fetch-fred = "dalio.pipelines.fetch_fred:main"
+dalio-app = "dalio.app.streamlit_app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "SIM"]
+ignore = ["E501"]

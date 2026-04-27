@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+build/
+dist/
+*.egg-info/
+.eggs/
+.installed.cfg
+*.egg
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+coverage.xml
+*.cover
+
+# Linting / type checking
+.ruff_cache/
+.mypy_cache/
+
+# Secrets and local config
+.env
+.env.local
+.env.*.local
+# Override global gitignore (which excludes .env.*) — keep example file tracked
+!.env.example
+
+# Data (regenerated from APIs)
+data/*.db
+data/*.db-journal
+data/cache/
+data/*.parquet
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Notebook checkpoints
+.ipynb_checkpoints/
