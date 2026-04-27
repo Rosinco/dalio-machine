@@ -120,22 +120,25 @@ All thresholds in `src/dalio/scoring/short_term.py`. Vote weights and reasons ar
 
 ## Current State
 
-- **Working:** Slices 1 + 2 end-to-end for all 6 Tier-1 countries (US, CN, EU, UK, JP, SE). 29 FRED series → SQLite (~70k observations) → rule-based classifier → multi-country Streamlit dashboard. Tier-1 FRED country/indicator map in `src/dalio/data_sources/fred.py:TIER_1_SERIES`; transient-error retry with exponential backoff; CLI subset by country (`dalio-fetch-fred CN EU`).
-- **Tests:** 39/39 passing.
-- **Live classifications (2026-04-27):**
-  - **US** — Transition (Reflation ↔ Inflationary peak) 29% (soft-landing read)
-  - **China** — Expansion 42% (GDP 5.0%, deflationary CPI -0.07%, stable rate)
-  - **Eurozone** — Inflationary peak 29% (CPI 2.53% +0.6pp/3m, ECB on hold)
-  - **UK** — Inflationary peak 33% (CPI 3.42%, BoE not cutting hard)
-  - **Japan** — Transition (insufficient data) 0% — no current FRED CPI series
-  - **Sweden** — Expansion 42% (GDP 1.95%, CPI 0.47%, Riksbank stable)
-- **In Progress:** Slice 3 (Tier-2 fan-out: IN, BR).
-- **Known data gaps (slice 2 documented):**
-  - **JP CPI** — FRED's OECD-MEI Japan CPI mirror was discontinued 2021. No current monthly JP CPI series available on FRED. Slice 2 ships without it; a BoJ-direct adapter or IMF IFS could fill the gap later.
-  - **CN 10Y yield** — Not in FRED. China's bond data lives in CEIC / WIND.
-  - **CN GDP** — Annual only (`NAEXKP01CNA657S`), already-YoY growth rate (no YoY transform applied).
-  - **2Y yields outside US** — FRED doesn't carry consistent 2Y series for non-US countries; yield-curve slope is therefore US-only.
-  - **UK / SE / CN CPI** — FRED-mirrored OECD MEI data is ~1 year stale; not catastrophic but worth flagging.
+- **Working:** Slices 1 + 2 + 4 end-to-end for all 6 Tier-1 countries. FRED short-term cycle (29 series) and BIS long-term debt cycle (36 series — Total Credit by sector + DSR) → SQLite → two rule-based classifiers → multi-country Streamlit dashboard with two cycle layers (short-term stage + long-term phase) per country.
+- **Tests:** 62/62 passing.
+- **Live short-term cycle (2026-04-27):** US Transition (Reflation ↔ Inflationary peak) 29% / CN Expansion 42% / EU Inflationary peak 29% / UK Inflationary peak 33% / JP Transition (insufficient CPI) 0% / SE Expansion 42%.
+- **Live long-term cycle (2026-04-27):**
+  - **US** — Transition (Reflation/financial repression ↔ Bubble) 32% (debt 250%, fell 40pp/5y as inflation eroded ratio)
+  - **China** — Top — peak debt service 60% (debt 296%, DSR 18.8% stretched)
+  - **Eurozone** — Bubble 33% (debt 240%, late-cycle leverage zone)
+  - **UK** — Reflation/financial repression 41% (debt 219%, fell 86pp/5y with CPI 3.4% — beautiful deleveraging)
+  - **Japan** — Top — peak debt service 37% (debt 357% — extreme zone)
+  - **Sweden** — Deleveraging 44% (DSR 23.3% — household distress, real-estate stress)
+- **In Progress:** Slice 3 (Tier-2 fan-out: IN, BR for short-term + long-term cycles).
+- **Known data gaps (documented):**
+  - **JP CPI** — FRED's OECD-MEI Japan CPI mirror discontinued 2021; no current FRED series.
+  - **CN 10Y yield** — not in FRED.
+  - **CN GDP** — annual only (`NAEXKP01CNA657S`), already-YoY format.
+  - **CN government debt / GDP** — not in BIS Total Credit dataset.
+  - **EU debt service ratio** — BIS DSR has individual member states only; no euro-area aggregate.
+  - **2Y yields outside US** — yield-curve slope is US-only.
+  - **UK / SE / CN CPI** — ~1 year stale via FRED's OECD-MEI cadence.
 
 ## Roadmap
 
@@ -143,8 +146,8 @@ All thresholds in `src/dalio/scoring/short_term.py`. Vote weights and reasons ar
 |-------|------|
 | **1** ✓ done | US short-term cycle: ETL + classifier + dashboard, end-to-end |
 | **2** ✓ done | Tier-1 fan-out: CN, EU, UK, JP, SE for short-term cycle |
-| 3 | Tier-2: IN, BR for short-term cycle |
-| 4 | Long-term debt cycle (BIS Total Credit, DSR) for all 8 |
+| 3 | Tier-2: IN, BR for short-term + long-term cycles |
+| **4** ✓ done | Long-term debt cycle (BIS Total Credit, DSR) for Tier-1 |
 | 5 | Big-cycle power index (8 measures, multi-country) |
 | 6 | Currency lifecycle + wealth/values gaps |
 | 7 | Allocation-implication module (Dalio All Weather mapping) |
@@ -164,6 +167,7 @@ All thresholds in `src/dalio/scoring/short_term.py`. Vote weights and reasons ar
 
 | Date | Change | Files |
 |------|--------|-------|
+| 2026-04-27 | Slice 4 complete: BIS adapter (Total Credit + DSR via SDMX REST API, on-disk cache, retry-on-5xx), long-term debt cycle classifier (6 phases — Phase 5 ugly vs Phase 6 beautiful deleveraging distinguished by inflation regime + DSR), dashboard now shows both cycle layers per country with sector-debt sparklines and real-rate banner. 36 BIS series (34/36 working — 2 documented gaps). | `src/dalio/data_sources/bis.py`, `src/dalio/pipelines/fetch_bis.py`, `src/dalio/scoring/long_term.py`, `src/dalio/app/streamlit_app.py`, `tests/test_bis.py`, `tests/test_long_term_classifier.py` |
 | 2026-04-27 | Slice 2 complete: Tier-1 fan-out (CN/EU/UK/JP/SE), 29 FRED series across 6 countries. Added `TIER_1_SERIES` map, `specs_for_countries()` filter, retry-on-transient-error, CLI country subset, freshness-audit + replacement-search helper scripts. Documented data gaps. | `src/dalio/data_sources/fred.py`, `src/dalio/pipelines/fetch_fred.py`, `tests/test_fred.py`, `scripts/{audit_freshness,find_replacements,find_jp_cpi,search_fred}.py` |
 | 2026-04-27 | Slice 1 complete: rule-based classifier with Sahm rule + saturating confidence; full Streamlit dashboard | `src/dalio/scoring/short_term.py`, `src/dalio/app/streamlit_app.py`, `tests/test_short_term_classifier.py` |
 | 2026-04-27 | First real FRED fetch — 56,950 US observations stored | `data/dalio.db` (gitignored) |

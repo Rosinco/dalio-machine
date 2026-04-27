@@ -15,12 +15,14 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from dalio.countries import COUNTRIES, Tier, get_country
+from dalio.scoring.long_term import PHASE_LABELS, PhaseClassification
+from dalio.scoring.long_term import classify as classify_long_term
 from dalio.scoring.short_term import (
     SHORT_TERM_INDICATORS,
     STAGE_LABELS,
     Classification,
-    classify,
 )
+from dalio.scoring.short_term import classify as classify_short_term
 from dalio.storage.db import Observation, make_engine, make_session_factory
 
 STAGE_EMOJI: dict[int, str] = {
@@ -29,6 +31,17 @@ STAGE_EMOJI: dict[int, str] = {
     3: "🔴",  # Recession
     4: "🔵",  # Reflation
     0: "⚪",  # Transition / insufficient data
+}
+
+PHASE_EMOJI: dict[int, str] = {
+    1: "🟢",  # Sound money
+    2: "🟡",  # Debt outpaces income
+    3: "🟠",  # Bubble
+    4: "🔴",  # Top
+    5: "🟣",  # Deleveraging
+    6: "🔵",  # Reflation/repression
+    7: "⚫",  # Reset
+    0: "⚪",  # Transition
 }
 
 
@@ -153,10 +166,99 @@ def _render_indicator_grid(session: Session, country: str, c: Classification) ->
         _sparkline(session, country, "real_gdp_yoy", tail=40)
 
 
+LONG_TERM_INDICATORS = (
+    "total_credit_pct_gdp",
+    "gov_debt_pct_gdp",
+    "private_nonfin_pct_gdp",
+    "hh_debt_pct_gdp",
+    "corp_debt_pct_gdp",
+    "debt_service_ratio",
+)
+
+ALL_INDICATORS = SHORT_TERM_INDICATORS + LONG_TERM_INDICATORS
+
+
+def _render_long_term_card(c: PhaseClassification) -> None:
+    emoji = PHASE_EMOJI[c.phase]
+    header = f"### Long-term cycle phase: {emoji} **{c.phase_label}**"
+    detail = f"Confidence **{c.confidence:.0%}**  •  As of {c.features.as_of}"
+    body = f"{header}\n\n{detail}"
+
+    if c.phase == 1:
+        st.success(body)
+    elif c.phase == 2:
+        st.info(body)
+    elif c.phase == 3:
+        st.warning(body)
+    elif c.phase in (4, 5):
+        st.error(body)
+    elif c.phase == 6:
+        st.info(body)
+    else:
+        st.info(body)
+
+    if c.votes:
+        with st.expander("Rule reasoning — why this phase?"):
+            for v in c.votes:
+                st.markdown(
+                    f"- **{PHASE_LABELS[v.phase]}** (weight `{v.weight:.2f}`) — {v.reason}"
+                )
+
+
+def _render_long_term_indicators(session: Session, country: str, c: PhaseClassification) -> None:
+    f = c.features
+
+    cols = st.columns(3)
+    with cols[0]:
+        delta = None
+        if f.total_credit_5y_change_pp is not None:
+            delta = f"{f.total_credit_5y_change_pp:+.0f}pp / 5y"
+        st.metric(
+            "Total non-fin debt / GDP",
+            _fmt_pct(f.total_credit_pct_gdp),
+            delta=delta,
+            delta_color="inverse",
+        )
+        _sparkline(session, country, "total_credit_pct_gdp", tail=80)
+    with cols[1]:
+        st.metric("Government debt / GDP", _fmt_pct(f.gov_debt_pct_gdp))
+        _sparkline(session, country, "gov_debt_pct_gdp", tail=80)
+    with cols[2]:
+        delta_dsr = None
+        if f.dsr_5y_change_pp is not None:
+            delta_dsr = f"{f.dsr_5y_change_pp:+.1f}pp / 5y"
+        st.metric(
+            "Debt service ratio (private)",
+            _fmt_pct(f.debt_service_ratio),
+            delta=delta_dsr,
+            delta_color="inverse",
+        )
+        _sparkline(session, country, "debt_service_ratio", tail=80)
+
+    cols = st.columns(3)
+    with cols[0]:
+        st.metric("Households / GDP", _fmt_pct(f.hh_debt_pct_gdp))
+        _sparkline(session, country, "hh_debt_pct_gdp", tail=80)
+    with cols[1]:
+        st.metric("Non-fin corps / GDP", _fmt_pct(f.corp_debt_pct_gdp))
+        _sparkline(session, country, "corp_debt_pct_gdp", tail=80)
+    with cols[2]:
+        rr = f.real_rate_10y
+        rr_str = _fmt_pct(rr)
+        st.metric("Real 10y rate (10y − CPI)", rr_str)
+        if rr is not None:
+            if rr < -1:
+                st.caption("⚠️ Financial repression — real-rate punishes savers")
+            elif rr < 0:
+                st.caption("Mildly negative — gentle debt erosion")
+            else:
+                st.caption("Positive — savers compensated")
+
+
 def _render_history_explorer(session: Session, country: str) -> None:
     st.subheader("History explorer")
     available = [
-        ind for ind in SHORT_TERM_INDICATORS
+        ind for ind in ALL_INDICATORS
         if session.execute(
             select(Observation.id)
             .where(Observation.country == country, Observation.indicator == ind)
@@ -229,13 +331,24 @@ def main() -> None:
 
     st.subheader(f"Short-term debt cycle — {country.name}")
     with _open_session() as s:
-        classification = classify(s, selected)
-    _render_stage_card(classification)
+        st_classification = classify_short_term(s, selected)
+    _render_stage_card(st_classification)
 
     st.divider()
-    st.subheader("Current indicators")
+    st.subheader("Short-term indicators")
     with _open_session() as s:
-        _render_indicator_grid(s, selected, classification)
+        _render_indicator_grid(s, selected, st_classification)
+
+    st.divider()
+    st.subheader(f"Long-term debt cycle — {country.name}")
+    with _open_session() as s:
+        lt_classification = classify_long_term(s, selected)
+    _render_long_term_card(lt_classification)
+
+    st.divider()
+    st.subheader("Long-term indicators (BIS Total Credit + DSR)")
+    with _open_session() as s:
+        _render_long_term_indicators(s, selected, lt_classification)
 
     st.divider()
     with _open_session() as s:
