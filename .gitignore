@@ -47,6 +47,11 @@ data/*.parquet
 *.swo
 .DS_Store
 
+# Local agent config
+.claude/
+.playwright-mcp/
+slice-*.png
+
 # Streamlit
 .streamlit/secrets.toml
 
