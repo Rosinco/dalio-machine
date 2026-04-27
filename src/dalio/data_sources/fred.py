@@ -96,6 +96,30 @@ TIER_1_SERIES: tuple[FredSeriesSpec, ...] = (
 )
 
 
+# Tier-2 series — India + Brazil. Coverage is genuinely thinner: no consistent
+# FRED 10y bond yields for either country, and OECD MEI cadence is slower.
+# Documented gaps stay as gaps — the dashboard's Tier-2 sidebar warning
+# already frames the lower implicit confidence for users.
+TIER_2_SERIES: tuple[FredSeriesSpec, ...] = (
+    # ─── India ───
+    FredSeriesSpec("policy_rate", "INTDSRINM193N", "IN", frequency="M"),
+    FredSeriesSpec("cpi_yoy", "INDCPIALLMINMEI", "IN", frequency="M", transform="yoy"),
+    FredSeriesSpec("unemployment_rate", "SLUEM1524ZSIND", "IN", frequency="A"),
+    # NAEXKP01INA657S = OECD-MEI India real GDP, already-YoY annual.
+    FredSeriesSpec("real_gdp_yoy", "NAEXKP01INA657S", "IN", frequency="A", transform="raw"),
+
+    # ─── Brazil (gap: FRED's OECD-MEI Brazil monthly unemployment series
+    #     LRUN64TTBRM156S does not exist; harmonised unemployment is a
+    #     documented Tier-2 coverage hole. The classifier handles `None`
+    #     for unemployment by simply skipping the Sahm-rule and Expansion
+    #     unemployment-modifier votes.) ───
+    FredSeriesSpec("policy_rate", "INTDSRBRM193N", "BR", frequency="M"),
+    FredSeriesSpec("cpi_yoy", "BRACPIALLMINMEI", "BR", frequency="M", transform="yoy"),
+    # NAEXKP01BRQ652S = OECD-MEI Brazil real GDP, level — apply YoY transform.
+    FredSeriesSpec("real_gdp_yoy", "NAEXKP01BRQ652S", "BR", frequency="Q", transform="yoy"),
+)
+
+
 # Backwards-compat: slice-1 US-only subset.
 US_SHORT_TERM_SERIES: tuple[FredSeriesSpec, ...] = tuple(
     s for s in TIER_1_SERIES if s.country == "US"
@@ -103,11 +127,14 @@ US_SHORT_TERM_SERIES: tuple[FredSeriesSpec, ...] = tuple(
 
 
 def specs_for_countries(countries: tuple[str, ...] | None = None) -> tuple[FredSeriesSpec, ...]:
-    """Return the subset of TIER_1_SERIES for the given country codes (None = all)."""
+    """Return the subset of TIER_1 + TIER_2 series for the given country codes
+    (None = all). Tier-1 callers continue to work because the union preserves
+    every TIER_1_SERIES entry."""
+    all_series = TIER_1_SERIES + TIER_2_SERIES
     if countries is None:
-        return TIER_1_SERIES
+        return all_series
     wanted = {c.upper() for c in countries}
-    return tuple(s for s in TIER_1_SERIES if s.country in wanted)
+    return tuple(s for s in all_series if s.country in wanted)
 
 
 class FredClient(Protocol):

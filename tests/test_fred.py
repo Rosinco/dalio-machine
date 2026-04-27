@@ -107,7 +107,18 @@ def test_specs_for_countries_filter():
 
 
 def test_specs_for_countries_none_returns_all():
-    assert specs_for_countries(None) == TIER_1_SERIES
+    """None returns the union of TIER_1 + TIER_2 (post-Slice 13)."""
+    from dalio.data_sources.fred import TIER_2_SERIES
+    assert specs_for_countries(None) == TIER_1_SERIES + TIER_2_SERIES
+
+
+def test_tier_2_countries_present():
+    """Slice 13: India and Brazil specs are reachable via specs_for_countries."""
+    in_br = specs_for_countries(("IN", "BR"))
+    assert {s.country for s in in_br} == {"IN", "BR"}
+    # IN should have at least 4 indicators (policy_rate, cpi, unemp, GDP)
+    in_indicators = {s.indicator for s in in_br if s.country == "IN"}
+    assert {"policy_rate", "cpi_yoy", "real_gdp_yoy"}.issubset(in_indicators)
 
 
 def test_us_has_complete_indicator_set():

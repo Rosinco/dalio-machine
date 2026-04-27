@@ -223,3 +223,31 @@ TIER_1_DSR: tuple[DsrSpec, ...] = tuple(
     DsrSpec("debt_service_ratio", country)
     for country in ("US", "CN", "EU", "UK", "JP", "SE")
 )
+
+
+# ─── Tier-2 long-term cycle bundle ───────────────────────────────────────
+
+# India + Brazil. BIS Total Credit covers both with the same sector taxonomy.
+# Brazil's DSR series is incomplete in BIS (gov debt covered, private DSR
+# patchy) — failing to fetch is documented as an expected gap, like JP CPI.
+TIER_2_TOTAL_CREDIT: tuple[TotalCreditSpec, ...] = tuple(
+    spec
+    for country in ("IN", "BR")
+    for spec in (
+        TotalCreditSpec("total_credit_pct_gdp", country, Sector.NON_FIN_TOTAL),
+        TotalCreditSpec("gov_debt_pct_gdp", country, Sector.GOVERNMENT),
+        TotalCreditSpec("private_nonfin_pct_gdp", country, Sector.PRIVATE_NON_FIN),
+        TotalCreditSpec("hh_debt_pct_gdp", country, Sector.HOUSEHOLDS),
+        TotalCreditSpec("corp_debt_pct_gdp", country, Sector.NON_FIN_CORPS),
+    )
+)
+
+TIER_2_DSR: tuple[DsrSpec, ...] = tuple(
+    DsrSpec("debt_service_ratio", country)
+    for country in ("IN", "BR")
+)
+
+
+# Aggregated convenience constants for callers that want everything.
+ALL_TOTAL_CREDIT: tuple[TotalCreditSpec, ...] = TIER_1_TOTAL_CREDIT + TIER_2_TOTAL_CREDIT
+ALL_DSR: tuple[DsrSpec, ...] = TIER_1_DSR + TIER_2_DSR

@@ -8,6 +8,8 @@ import sys
 from dotenv import load_dotenv
 
 from dalio.data_sources.bis import (
+    ALL_DSR,
+    ALL_TOTAL_CREDIT,
     TIER_1_DSR,
     TIER_1_TOTAL_CREDIT,
     BisSource,
@@ -101,13 +103,13 @@ def main() -> int:
 
     if args.countries:
         wanted = {c.upper() for c in args.countries}
-        tc_specs = tuple(s for s in TIER_1_TOTAL_CREDIT if s.country in wanted)
-        dsr_specs = tuple(s for s in TIER_1_DSR if s.country in wanted)
+        tc_specs = tuple(s for s in ALL_TOTAL_CREDIT if s.country in wanted)
+        dsr_specs = tuple(s for s in ALL_DSR if s.country in wanted)
         label = f"{', '.join(args.countries)} only"
     else:
-        tc_specs = TIER_1_TOTAL_CREDIT
-        dsr_specs = TIER_1_DSR
-        label = f"all Tier-1 ({len({s.country for s in TIER_1_TOTAL_CREDIT})} countries)"
+        tc_specs = ALL_TOTAL_CREDIT
+        dsr_specs = ALL_DSR
+        label = f"all countries ({len({s.country for s in ALL_TOTAL_CREDIT})} countries)"
 
     print(f"dalio-fetch-bis — long-term debt cycle bundle ({label})")
     print(f"  ({len(tc_specs)} Total Credit + {len(dsr_specs)} DSR series)")
