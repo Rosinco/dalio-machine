@@ -1289,6 +1289,21 @@ def main() -> None:
         f"Central bank: {country.central_bank}"
     )
 
+    # Home-currency selector (Slice 14) — defaults to SEK per user context.
+    st.sidebar.divider()
+    home_currency = st.sidebar.radio(
+        "View as",
+        options=("SEK", "USD"),
+        index=0,
+        key="home_currency",
+        help=(
+            "SEK: applies a small interest-rate-parity overlay biasing USD-"
+            "denominated assets (gold, US equities, long bonds) by the home-"
+            "vs-target real-rate differential. USD: no overlay (foreign "
+            "investor's view)."
+        ),
+    )
+
     # ─── World map ────────────────────────────────────────────────
     st.markdown(
         '<span class="kicker">The lay of the land</span>'
@@ -1311,7 +1326,7 @@ def main() -> None:
         return
 
     with _open_session() as s:
-        view = compute_country_view(s, selected)
+        view = compute_country_view(s, selected, home_currency=home_currency)
 
     st.markdown(
         f'<span class="kicker">Country brief</span>'

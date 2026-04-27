@@ -277,6 +277,68 @@ def test_compute_tilts_real_yield_appears_in_tilt_reasons():
     assert any("Real-rate regime" in r for r in long_bonds_tilt.reasons)
 
 
+# ─── Home-currency overlay (Slice 14) ───────────────────────────────────────
+
+def test_compute_tilts_default_home_currency_is_usd():
+    """Default `home_currency="USD"` produces no overlay regardless of rate."""
+    st = _short(1, "Expansion", 1.0)
+    lt = _long_rr(1, "Sound money", 0.5, real_rate=+2.0)
+    view = compute_tilts(st, lt)
+    assert view.home_currency == "USD"
+    for t in view.tilts:
+        assert not any("overlay" in r.lower() for r in t.reasons)
+
+
+def test_compute_tilts_sek_higher_real_rate_pushes_usd_assets_down():
+    """When SEK real rates are higher than target's, USD-denominated assets
+    (gold, equities, long_bonds, commodities) tilt down vs USD baseline."""
+    st = _short(1, "Expansion", 1.0)
+    lt = _long_rr(1, "Sound money", 0.5, real_rate=+0.0)  # target rr 0
+    usd_view = compute_tilts(st, lt)
+    sek_view = compute_tilts(st, lt, home_currency="SEK", home_real_rate_10y=+2.0)
+
+    # Gold (USD-denominated) should be lower in the SEK view
+    gold_usd = next(t.tilt for t in usd_view.tilts if t.asset_class == "gold")
+    gold_sek = next(t.tilt for t in sek_view.tilts if t.asset_class == "gold")
+    assert gold_sek < gold_usd
+
+    long_bonds_usd = next(t.tilt for t in usd_view.tilts if t.asset_class == "long_bonds")
+    long_bonds_sek = next(t.tilt for t in sek_view.tilts if t.asset_class == "long_bonds")
+    assert long_bonds_sek < long_bonds_usd
+
+
+def test_compute_tilts_sek_lower_real_rate_pushes_usd_assets_up():
+    """When SEK real rates are lower than target's, USD-denominated assets
+    tilt up because SEK is likely to depreciate."""
+    st = _short(1, "Expansion", 1.0)
+    lt = _long_rr(1, "Sound money", 0.5, real_rate=+2.0)
+    usd_view = compute_tilts(st, lt)
+    sek_view = compute_tilts(st, lt, home_currency="SEK", home_real_rate_10y=+0.0)
+
+    gold_usd = next(t.tilt for t in usd_view.tilts if t.asset_class == "gold")
+    gold_sek = next(t.tilt for t in sek_view.tilts if t.asset_class == "gold")
+    assert gold_sek > gold_usd
+
+
+def test_compute_tilts_overlay_no_op_when_rates_missing():
+    """If home_real_rate_10y is None, no overlay applies regardless of
+    home_currency value."""
+    st = _short(1, "Expansion", 1.0)
+    lt = _long_rr(1, "Sound money", 0.5, real_rate=+1.0)
+    view = compute_tilts(st, lt, home_currency="SEK", home_real_rate_10y=None)
+    for t in view.tilts:
+        assert not any("overlay" in r.lower() for r in t.reasons)
+
+
+def test_compute_tilts_home_currency_label_in_reasons():
+    """When the overlay fires, the reasons line names the home_currency."""
+    st = _short(1, "Expansion", 1.0)
+    lt = _long_rr(1, "Sound money", 0.5, real_rate=+0.0)
+    view = compute_tilts(st, lt, home_currency="SEK", home_real_rate_10y=+2.0)
+    gold_tilt = next(t for t in view.tilts if t.asset_class == "gold")
+    assert any("SEK overlay" in r for r in gold_tilt.reasons)
+
+
 def test_reasons_explain_each_active_tilt():
     st = _short(2, "Inflationary peak", 0.5)
     lt = _long(6, "Reflation / financial repression", 0.6)

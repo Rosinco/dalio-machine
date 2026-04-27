@@ -98,11 +98,47 @@ class CountryView:
     allocation: AllocationView
 
 
-def compute_country_view(session: Session, iso2: str) -> CountryView:
+# Map ISO2 → currency code used by the home-currency overlay (Slice 14).
+# Eurozone is treated as a single EUR view; Sweden is SEK; etc.
+_HOME_COUNTRY_FOR_CURRENCY: dict[str, str] = {
+    "USD": "US",
+    "SEK": "SE",
+    "EUR": "EU",
+    "GBP": "UK",
+    "JPY": "JP",
+    "CNY": "CN",
+}
+
+
+def compute_country_view(
+    session: Session,
+    iso2: str,
+    *,
+    home_currency: str = "USD",
+) -> CountryView:
+    """Build the per-country view, optionally with a home-currency overlay
+    on the allocation tilts. The home country's `real_rate_10y` is looked
+    up from its own LongTermFeatures so `compute_tilts` itself stays DB-free.
+    """
     country = next(c for c in COUNTRIES if c.iso2 == iso2)
     st = classify_short_term(session, iso2)
     lt = classify_long_term(session, iso2)
-    alloc = compute_tilts(st, lt)
+
+    home_real_rate = None
+    if home_currency != "USD":
+        home_iso2 = _HOME_COUNTRY_FOR_CURRENCY.get(home_currency)
+        if home_iso2 and home_iso2 != iso2:
+            home_lt = classify_long_term(session, home_iso2)
+            home_real_rate = home_lt.features.real_rate_10y
+        elif home_iso2 == iso2:
+            # Viewing your own country in your own currency — overlay is no-op
+            home_real_rate = lt.features.real_rate_10y
+
+    alloc = compute_tilts(
+        st, lt,
+        home_currency=home_currency,
+        home_real_rate_10y=home_real_rate,
+    )
     return CountryView(country=country, short_term=st, long_term=lt, allocation=alloc)
 
 

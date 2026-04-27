@@ -186,6 +186,7 @@ class AllocationView:
     tilts: tuple[AssetTilt, ...]
     caution_level: str        # "low" | "moderate" | "elevated" | "high"
     real_yield_regime: str    # "repression" | "mild repression" | "neutral" | "savers compensated" | "unknown"
+    home_currency: str        # "USD" | "SEK" | "EUR" | etc.
     summary: str
 
 
@@ -282,6 +283,9 @@ def _resolve_tilts(
 def compute_tilts(
     short_term: Classification,
     long_term: PhaseClassification,
+    *,
+    home_currency: str = "USD",
+    home_real_rate_10y: float | None = None,
 ) -> AllocationView:
     """Combine short-term + long-term classifications into asset-class tilts.
 
@@ -291,7 +295,16 @@ def compute_tilts(
     Both layers are weighted by their own classifier confidence: low-confidence
     classifications produce small tilts. This is honest given typical 25–60%
     confidence figures from the saturating-confidence formulas.
+
+    `home_currency` and `home_real_rate_10y` (Slice 14) drive a small
+    interest-rate-parity overlay: when the home currency's real rate is
+    higher than the target country's, USD-denominated foreign assets get a
+    small tilt-down because the home currency is likely to appreciate.
+    `compute_tilts` stays DB-free — the dashboard does the home-country
+    real-rate lookup outside and threads the value in.
     """
+    from dalio.scoring.currency import home_currency_overlay
+
     st_tilts_raw = _resolve_tilts(short_term.stage, short_term.votes, SHORT_TERM_TILTS)
     lt_tilts_raw = _resolve_tilts(long_term.phase, long_term.votes, LONG_TERM_TILTS)
     st_weight = max(short_term.confidence, 0.0)
@@ -305,12 +318,22 @@ def compute_tilts(
     ry_tilts = _real_yield_multiplier(real_rate)
     ry_regime = _real_yield_regime(real_rate)
 
+    # Home-currency overlay: fourth additive layer. Small magnitude (≤0.3),
+    # only fires when home_currency != "USD" and both real rates are present.
+    cur_tilts = home_currency_overlay(home_currency, home_real_rate_10y, real_rate)
+    fx_diff = (
+        home_real_rate_10y - real_rate
+        if (home_real_rate_10y is not None and real_rate is not None)
+        else None
+    )
+
     asset_tilts: list[AssetTilt] = []
     for asset in ASSET_CLASSES:
         st = st_tilts.get(asset, 0.0)
         lt = lt_tilts.get(asset, 0.0)
         ry = ry_tilts.get(asset, 0.0)
-        total = st + lt + ry
+        cur = cur_tilts.get(asset, 0.0)
+        total = st + lt + ry + cur
         reasons: list[str] = []
         if abs(st_tilts_raw.get(asset, 0.0)) > 0.01:
             raw = st_tilts_raw[asset]
@@ -328,6 +351,11 @@ def compute_tilts(
             assert real_rate is not None  # guaranteed by ry_tilts non-empty
             reasons.append(
                 f"Real-rate regime ({ry_regime}, rr {real_rate:+.1f}%): {ry:+.2f}"
+            )
+        if abs(cur) > 0.01:
+            assert fx_diff is not None  # guaranteed by cur_tilts non-empty
+            reasons.append(
+                f"{home_currency} overlay (Δreal-rate {fx_diff:+.1f}pp vs target): {cur:+.2f}"
             )
         asset_tilts.append(AssetTilt(
             asset_class=asset,
@@ -349,5 +377,6 @@ def compute_tilts(
         tilts=tuple(asset_tilts),
         caution_level=caution,
         real_yield_regime=ry_regime,
+        home_currency=home_currency,
         summary=summary,
     )
