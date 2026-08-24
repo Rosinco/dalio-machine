@@ -1,8 +1,9 @@
 """ETL pipeline: fetch World Fundamentals Map indicators → upsert into SQLite.
 
 Sources are pulled per indicator for the whole basket in one paginated call
-(World Bank). IMF WEO (slice 20) and the BIS extension (slice 22) plug into
-the same ``run_pipeline`` via the ``sources`` tuple.
+(World Bank). IMF WEO (slice 20), the BIS extension (slice 22) and IMF IMTS
+bilateral trade (slice 24) plug into the same ``run_pipeline`` via the
+``sources`` tuple.
 
     dalio-fetch-fundamentals                # everything implemented
     dalio-fetch-fundamentals --only wb      # one source family
@@ -34,6 +35,7 @@ from dalio.data_sources.imf_datamapper import (
     ImfSpec,
     derive_interest_burden,
 )
+from dalio.data_sources.imf_imts import IMTS_FLOWS, ImtsSource, ImtsSpec
 from dalio.data_sources.worldbank import (
     WB_FUNDAMENTALS,
     WB_MEMBER_MEAN_INDICATORS,
@@ -48,7 +50,7 @@ from dalio.storage.db import Observation, init_db, make_engine, make_session_fac
 
 logger = logging.getLogger(__name__)
 
-IMPLEMENTED_SOURCES: tuple[str, ...] = ("wb", "imf", "bis")
+IMPLEMENTED_SOURCES: tuple[str, ...] = ("wb", "imf", "bis", "imts")
 PLANNED_SOURCES: dict[str, str] = {}
 
 
@@ -77,6 +79,8 @@ def run_pipeline(
     bis_source: BisSource | None = None,
     bis_dsr_specs: Sequence[DsrSpec] = TIER_3_DSR,
     bis_credit_specs: Sequence[TotalCreditSpec] = TIER_3_PRIVATE_CREDIT,
+    imts_source: ImtsSource | None = None,
+    imts_specs: Sequence[ImtsSpec] = IMTS_FLOWS,
 ) -> dict[str, dict]:
     """Fetch every spec of every requested source and upsert. Returns a
     per-spec summary keyed ``"{source}/{indicator}"``; errors are collected,
@@ -145,6 +149,17 @@ def run_pipeline(
                         logger.warning("Failed %s: %s", key, e)
                         summary[key] = {"source": "bis", "indicator": spec.indicator,
                                         "series_id": spec.country, "error": str(e)}
+            elif source == "imts":
+                imts = imts_source or ImtsSource()
+                for spec in imts_specs:
+                    key = f"imts/{spec.indicator_prefix}"
+                    try:
+                        df = imts.fetch(spec, basket, use_cache=use_cache)
+                        _store(key, df, spec.imts_code, spec.indicator_prefix + "_*", "imts")
+                    except Exception as e:  # noqa: BLE001 — collect per-flow
+                        logger.exception("Failed %s: %s", key, e)
+                        summary[key] = {"source": "imts", "indicator": spec.indicator_prefix + "_*",
+                                        "series_id": spec.imts_code, "error": str(e)}
             elif source == "wb":
                 wb = wb_source or WorldBankSource()
                 for spec in wb_specs:

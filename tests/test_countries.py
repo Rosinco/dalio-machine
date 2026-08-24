@@ -5,6 +5,7 @@ from dalio.countries import (
     CYCLE_COUNTRIES,
     EUROZONE_ISO3,
     ISO2_TO_BIS,
+    ISO2_TO_IMTS,
     ISO2_TO_WB,
     ISO3_TO_ISO2,
     RANKING_POPULATION,
@@ -113,6 +114,8 @@ def test_derived_maps_match_registry():
     assert ISO3_TO_ISO2["DEU"] == "DE"
     assert ISO3_TO_ISO2["EMU"] == "EU"
     assert len(ISO2_TO_WB) == 22
+    assert ISO2_TO_IMTS["EU"] == "G163" and ISO2_TO_IMTS["KR"] == "KOR"
+    assert all(c.imts_id is None for c in COUNTRIES if c.iso2 != "EU")
 
 
 def test_get_country_case_insensitive():

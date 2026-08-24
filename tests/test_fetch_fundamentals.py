@@ -212,3 +212,32 @@ def test_score_writes_latest_and_dated_snapshot(db_env, tmp_path):
     assert snap["countries"]["US"]["indicators"]["gdp_pc_ppp"]["pct"] == 100.0
     assert snap["countries"]["SE"]["indicators"]["gdp_pc_ppp"]["pct"] == 0.0
     assert snap["coverage"]["filled"] == 2
+
+
+class _FakeImts:
+    def __init__(self, frames):
+        self._frames = frames
+
+    def fetch(self, spec, countries, use_cache=True, today=None):
+        out = self._frames.get(spec.indicator_prefix)
+        if isinstance(out, Exception):
+            raise out
+        return out
+
+
+def test_imts_pipeline_stores_partner_rows_and_collects_errors(db_env):
+    from dalio.data_sources.imf_imts import IMTS_FLOWS
+    x = pd.DataFrame([
+        {"country": c, "indicator": i, "date": date(2025, 12, 31), "value": v,
+         "source": "IMF_IMTS", "series_id": "XG_FOB_USD/X"}
+        for c, i, v in (("US", "exports_to_CA", 336.0), ("US", "exports_to_WLD", 2185.0),
+                        ("CA", "exports_to_US", 400.0), ("CA", "exports_to_WLD", 520.0))
+    ])
+    fake = _FakeImts({"exports_to": x, "imports_from": RuntimeError("akamai 403")})
+    summary = fetch_fundamentals.run_pipeline(("imts",), countries=[get_country("US"), get_country("CA")],
+                                              use_cache=False, imts_source=fake, imts_specs=IMTS_FLOWS)
+    assert summary["imts/exports_to"]["rows"] == 4 and summary["imts/exports_to"]["countries"] == 2
+    assert "akamai" in summary["imts/imports_from"]["error"]
+    with make_engine(db_env).connect() as conn:
+        rows = conn.execute(select(Observation.country, Observation.indicator, Observation.value)).all()
+    assert ("US", "exports_to_WLD", 2185.0) in rows and len(rows) == 4
