@@ -51,7 +51,10 @@ def test_load_snapshot_shapes(synthetic_snapshot_dir):
     assert len(snap.chains) == 1
     ch = snap.chains[0]
     assert isinstance(ch, Chain) and ch.iso2 == "US" and ch.rule_id == "fiscal_dominance"
-    assert ch.spillovers == (("CN", "real return on USD reserves falls"), ("SA", "peg imports US inflation"))
+    assert ch.title == "Fiscal dominance"                       # derived when the fake omits it
+    assert ch.spillovers == (("CN", "real return on USD reserves falls", ""),
+                             ("SA", "peg imports US inflation", ""))
+    assert ch.targets == ("CN", "SA")
 
     h = snap.history
     assert set(h.columns) == {"iso2", "indicator", "year", "value", "is_forecast"}

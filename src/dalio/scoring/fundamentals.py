@@ -566,6 +566,30 @@ def build_snapshot(
         columns=["country", "indicator", "year", "value", "is_forecast"]
     )
 
+    # ── pressure chains (slice 21) + cycle block for the cycle basket ──
+    from dalio.scoring.pressure import Panel, evaluate, to_dict
+
+    trend_map: dict[tuple[str, str], str | None] = {}
+    for s in specs:
+        if s.name not in values.columns or s.forward:
+            continue
+        pop_std = float(values.loc[[p for p in population if p in values.index], s.name].std())
+        for iso2 in iso2s:
+            v = values.at[iso2, s.name]
+            lag = lag_values.at[iso2, s.name] if s.name in lag_values.columns else np.nan
+            if pd.isna(v) or pd.isna(lag):
+                continue
+            trend_map[(iso2, s.name)] = trend_direction(float(v), float(lag), s.higher_is_better, pop_std)
+    dsr_q90 = _calibrated_dsr_q90(session, countries)
+    panel = Panel(values=values, trend=trend_map, dsr_q90=dsr_q90,
+                  countries={c.iso2: c for c in countries})
+    pressures: dict[str, list[dict]] = {}
+    for c in countries:
+        pv_pct = pct.at[c.iso2, "political_stability"] if "political_stability" in pct.columns else np.nan
+        pv_pct = None if pd.isna(pv_pct) else float(pv_pct)
+        pressures[c.iso2] = [to_dict(p) for p in evaluate(c.iso2, panel, pv_pct) if p.triggered]
+    cycles = _cycle_blocks(session, countries)
+
     def _cell(iso2: str, s: IndicatorSpec) -> dict:
         has = s.name in values.columns and not pd.isna(values.at[iso2, s.name])
         if not has:
@@ -628,8 +652,8 @@ def build_snapshot(
             "indicators": cells,
             "categories": {cat: asdict(cs) for cat, cs in cats[c.iso2].items()},
             "views": views[c.iso2],
-            "pressures": [],
-            "cycle": None,
+            "pressures": pressures.get(c.iso2, []),
+            "cycle": cycles.get(c.iso2),
             "history": {
                 name: [
                     {"year": int(r.year), "value": float(r.value), "is_forecast": bool(r.is_forecast)}
@@ -664,6 +688,43 @@ def build_snapshot(
             "by_indicator": by_indicator,
         },
     }
+
+
+def _calibrated_dsr_q90(session: Session, countries: Sequence[Country]) -> dict[str, float]:
+    """Per-country DSR distress threshold from its own history (≥ 40 obs), as the
+    long-term classifier uses; players without history fall back in the rule."""
+    from dalio.scoring.calibration import compute_country_quantiles
+    out: dict[str, float] = {}
+    for c in countries:
+        q = compute_country_quantiles(session, c.iso2, "debt_service_ratio")
+        if q and "q90" in q:
+            out[c.iso2] = float(q["q90"])
+    return out
+
+
+def _cycle_blocks(session: Session, countries: Sequence[Country]) -> dict[str, dict | None]:
+    """Short-/long-term cycle readings for the cycle basket (juxtaposed in the
+    UI, never blended into a score). None for fundamentals-only players."""
+    from dalio.app.views import has_cycle_data
+    from dalio.scoring.long_term import classify as classify_long
+    from dalio.scoring.short_term import classify as classify_short
+    out: dict[str, dict | None] = {}
+    for c in countries:
+        if not c.has_cycle_wiring or not has_cycle_data(session, c.iso2):
+            out[c.iso2] = None
+            continue
+        try:
+            st = classify_short(session, c.iso2)
+            lt = classify_long(session, c.iso2)
+            out[c.iso2] = {
+                "long_term_phase": int(lt.phase), "long_term_label": lt.phase_label,
+                "long_term_confidence": float(lt.confidence),
+                "short_term_stage": int(st.stage), "short_term_label": st.stage_label,
+                "short_term_confidence": float(st.confidence),
+            }
+        except Exception:  # noqa: BLE001 — a classifier hiccup must not sink the snapshot
+            out[c.iso2] = None
+    return out
 
 
 def write_snapshot(snapshot: dict, path: Path) -> Path:

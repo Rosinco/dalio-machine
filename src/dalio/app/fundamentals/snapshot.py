@@ -46,17 +46,22 @@ class IndicatorMeta:
 
 @dataclass(frozen=True)
 class Chain:
-    """One fired pressure-chain rule (slice 21+). Empty tuple until then."""
+    """One fired pressure-chain rule (slice 21)."""
     iso2: str
     rule_id: str
+    title: str
     triggered: bool
     severity: float
     constraint: str
     forced_options: tuple[str, ...]
-    spillovers: tuple[tuple[str, str], ...]   # (target, text)
+    spillovers: tuple[tuple[str, str, str], ...]   # (target, text, channel)
     confidence: float
     inputs: dict[str, float | None]
     uncertainty: str
+
+    @property
+    def targets(self) -> tuple[str, ...]:
+        return tuple(dict.fromkeys(t for t, _, _ in self.spillovers))
 
 
 @dataclass(frozen=True)
@@ -161,10 +166,13 @@ def parse_snapshot(raw: dict) -> Snapshot:
             vscores.append({"iso2": iso2, "view": view, "score": score})
         for p in c["pressures"]:
             chains.append(Chain(
-                iso2=iso2, rule_id=p["rule_id"], triggered=bool(p.get("triggered", True)),
+                iso2=iso2, rule_id=p["rule_id"],
+                title=p.get("title") or p["rule_id"].replace("_", " ").capitalize(),
+                triggered=bool(p.get("triggered", True)),
                 severity=float(p.get("severity", 0.0)), constraint=p.get("constraint", ""),
                 forced_options=tuple(p.get("forced_options", ())),
-                spillovers=tuple((s["target"], s.get("text", "")) for s in p.get("spillovers", ())),
+                spillovers=tuple((s["target"], s.get("text", ""), s.get("channel", ""))
+                                 for s in p.get("spillovers", ())),
                 confidence=float(p.get("confidence", 0.0)), inputs=dict(p.get("inputs", {})),
                 uncertainty=p.get("uncertainty", "C"),
             ))

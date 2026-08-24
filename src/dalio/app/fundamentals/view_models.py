@@ -138,7 +138,7 @@ def exposure_counts(snap: Snapshot, source_iso2: str) -> dict[str, int]:
     for ch in snap.chains:
         if ch.iso2 != source_iso2 or not ch.triggered:
             continue
-        for target, _ in ch.spillovers:
+        for target in ch.targets:
             if target != source_iso2:
                 out[target] = out.get(target, 0) + 1
     return out
