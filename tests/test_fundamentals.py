@@ -234,7 +234,7 @@ def test_build_snapshot_schema_and_scores(session_factory, tmp_path):
     assert us["indicators"]["old_age_dependency"]["trend"] == "worsening"   # rose, lower is better
     assert us["categories"]["production"]["score"] == 100.0                # gdp + rd both best
     assert us["categories"]["production"]["n_available"] == 2
-    assert us["categories"]["production"]["n_total"] == 3
+    assert us["categories"]["production"]["n_total"] == 4
     assert us["categories"]["production"]["best_iso2"] == "US"
     assert us["categories"]["exchange"]["score"] is None                  # 0 of 3
     assert us["indicators"]["rule_of_law"]["se"] == 0.15                  # WGI standard error
@@ -261,7 +261,7 @@ def test_build_snapshot_schema_and_scores(session_factory, tmp_path):
     assert ru["data_quality"]["flag"] == "opaque" and ru["sanctioned"] is True
 
     # coverage counts
-    assert snap["coverage"]["cells"] == 22 * 15
+    assert snap["coverage"]["cells"] == 22 * 16
     assert snap["coverage"]["filled"] == SYNTHETIC_FILLED
     assert snap["coverage"]["by_indicator"]["military_share_world"] == 5
     assert snap["coverage"]["by_indicator"]["fiscal_balance_pct_gdp"] == 0

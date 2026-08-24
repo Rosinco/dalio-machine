@@ -51,14 +51,14 @@ def test_member_mean_flagged_and_min_members():
     assert derive_member_mean(df, ["ZZ"], "EU").empty
 
 
-def test_registry_is_the_fifteen_of_adr_0001():
+def test_registry_is_the_sixteen_of_adr_0001_and_0002():
     names = [s.name for s in FUNDAMENTALS]
-    assert len(names) == 15 and len(set(names)) == 15
+    assert len(names) == 16 and len(set(names)) == 16
     by_cat = {}
     for s in FUNDAMENTALS:
         by_cat.setdefault(s.category, []).append(s.name)
     assert {k: len(v) for k, v in by_cat.items()} == {
-        "real_stuff": 2, "production": 3, "exchange": 3, "promises": 4, "enforcer": 3,
+        "real_stuff": 2, "production": 4, "exchange": 3, "promises": 4, "enforcer": 3,
     }
     assert SE_INDICATORS == ("rule_of_law_se", "political_stability_se")
     # every WB-sourced scored indicator is either fetched raw or derived

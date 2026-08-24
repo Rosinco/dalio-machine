@@ -36,7 +36,7 @@ def test_load_snapshot_shapes(synthetic_snapshot_dir):
     ind = snap.indicators
     assert list(ind.columns) == ["iso2", "indicator", "value", "pct", "trend", "trend_5y",
                                  "lag_value", "tier", "as_of", "source", "is_forecast", "se"]
-    assert len(ind) == 6 * 15
+    assert len(ind) == 6 * 16
     us_gdp = ind[(ind.iso2 == "US") & (ind.indicator == "gdp_pc_ppp")].iloc[0]
     assert us_gdp["pct"] == 100.0 and us_gdp["tier"] == "B" and us_gdp["as_of"] == "2024-12-31"
     eu_mil = ind[(ind.iso2 == "EU") & (ind.indicator == "military_share_world")].iloc[0]

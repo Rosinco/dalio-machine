@@ -138,15 +138,15 @@ def test_coverage_confidence(synthetic_snapshot_dict):
     snap = _snap(synthetic_snapshot_dict)
     # US present: gdp B, dep A, rd A, mil A, rol C → mean(.6,1,1,1,.3) × 5/15
     us = coverage_confidence(snap, "US")
-    assert abs(us - ((0.6 + 1 + 1 + 1 + 0.3) / 5) * (5 / 15)) < 1e-9
+    assert abs(us - ((0.6 + 1 + 1 + 1 + 0.3) / 5) * (5 / 16)) < 1e-9
     eu = coverage_confidence(snap, "EU")       # gdp B + dep A → ×2/15
-    assert abs(eu - ((0.6 + 1) / 2) * (2 / 15)) < 1e-9
+    assert abs(eu - ((0.6 + 1) / 2) * (2 / 16)) < 1e-9
 
 
 def test_country_table_order_and_gaps(synthetic_snapshot_dict):
     snap = _snap(synthetic_snapshot_dict)
     t = country_table(snap, "EU")
-    assert len(t) == 15
+    assert len(t) == 16
     assert list(dict.fromkeys(t["category"])) == ["real_stuff", "production", "exchange", "promises", "enforcer"]
     mil = t[t.indicator == "military_share_world"].iloc[0]
     assert mil["value"] is None or pd.isna(mil["value"])

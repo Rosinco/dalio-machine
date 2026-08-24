@@ -1,9 +1,9 @@
 """ETL pipeline: fetch World Fundamentals Map indicators → upsert into SQLite.
 
 Sources are pulled per indicator for the whole basket in one paginated call
-(World Bank). IMF WEO (slice 20), the BIS extension (slice 22) and IMF IMTS
-bilateral trade (slice 24) plug into the same ``run_pipeline`` via the
-``sources`` tuple.
+(World Bank). IMF WEO (slice 20), the BIS extension (slice 22), IMF IMTS
+bilateral trade (slice 24) and the OEC complexity index (slice 23) plug into
+the same ``run_pipeline`` via the ``sources`` tuple.
 
     dalio-fetch-fundamentals                # everything implemented
     dalio-fetch-fundamentals --only wb      # one source family
@@ -36,6 +36,7 @@ from dalio.data_sources.imf_datamapper import (
     derive_interest_burden,
 )
 from dalio.data_sources.imf_imts import IMTS_FLOWS, ImtsSource, ImtsSpec
+from dalio.data_sources.oec import INDICATOR_ECI, OEC_SERIES_ID, OecSource
 from dalio.data_sources.worldbank import (
     WB_FUNDAMENTALS,
     WB_MEMBER_MEAN_INDICATORS,
@@ -50,7 +51,7 @@ from dalio.storage.db import Observation, init_db, make_engine, make_session_fac
 
 logger = logging.getLogger(__name__)
 
-IMPLEMENTED_SOURCES: tuple[str, ...] = ("wb", "imf", "bis", "imts")
+IMPLEMENTED_SOURCES: tuple[str, ...] = ("wb", "imf", "bis", "imts", "oec")
 PLANNED_SOURCES: dict[str, str] = {}
 
 
@@ -81,6 +82,7 @@ def run_pipeline(
     bis_credit_specs: Sequence[TotalCreditSpec] = TIER_3_PRIVATE_CREDIT,
     imts_source: ImtsSource | None = None,
     imts_specs: Sequence[ImtsSpec] = IMTS_FLOWS,
+    oec_source: OecSource | None = None,
 ) -> dict[str, dict]:
     """Fetch every spec of every requested source and upsert. Returns a
     per-spec summary keyed ``"{source}/{indicator}"``; errors are collected,
@@ -160,6 +162,19 @@ def run_pipeline(
                         logger.exception("Failed %s: %s", key, e)
                         summary[key] = {"source": "imts", "indicator": spec.indicator_prefix + "_*",
                                         "series_id": spec.imts_code, "error": str(e)}
+            elif source == "oec":
+                oec = oec_source or OecSource()
+                key = f"oec/{INDICATOR_ECI}"
+                try:
+                    df = oec.fetch_eci(basket, use_cache=use_cache)
+                    _store(key, df, OEC_SERIES_ID, INDICATOR_ECI, "oec")
+                    if has_eu and eu_members:
+                        _store(f"{key}:EU", derive_member_mean(df, eu_members, "EU"),
+                               OEC_SERIES_ID + ":member-mean", INDICATOR_ECI, "oec")
+                except Exception as e:  # noqa: BLE001
+                    logger.exception("Failed %s: %s", key, e)
+                    summary[key] = {"source": "oec", "indicator": INDICATOR_ECI,
+                                    "series_id": OEC_SERIES_ID, "error": str(e)}
             elif source == "wb":
                 wb = wb_source or WorldBankSource()
                 for spec in wb_specs:

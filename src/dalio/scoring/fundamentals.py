@@ -75,9 +75,9 @@ class IndicatorSpec:
 FORWARD_HORIZON_YEARS = 5
 
 
-# The 15 scored indicators (ADR 0001). Keep this list the single source of
-# truth for what is scored — the UI reads it from the snapshot. IMF-sourced
-# cells stay empty until slice 20 wires the DataMapper adapter.
+# The 16 scored indicators (ADR 0001 + ADR 0002 for economic complexity). Keep
+# this list the single source of truth for what is scored — the UI reads it
+# from the snapshot.
 FUNDAMENTALS: tuple[IndicatorSpec, ...] = (
     # ── real stuff ──
     IndicatorSpec(
@@ -116,6 +116,15 @@ FUNDAMENTALS: tuple[IndicatorSpec, ...] = (
         preferred_sources=("WORLD_BANK",), first_year=1996,
         description="Gross domestic expenditure on R&D. The investment behind future "
                     "productivity; ragged in the latest 1–2 years.",
+    ),
+    IndicatorSpec(
+        "economic_complexity", "production", "Economic complexity", "ECI (OEC, HS92)",
+        higher_is_better=True, uncertainty="C",
+        preferred_sources=("OEC_ECI",), first_year=1995,
+        description="Observatory of Economic Complexity index of how diversified and "
+                    "non-ubiquitous a country's goods exports are — productive knowledge, not "
+                    "volume. Ordinal, revised with each trade vintage (tier C); the euro-area "
+                    "value is a flagged member mean.",
     ),
     # ── exchange ──
     IndicatorSpec(
