@@ -16,27 +16,28 @@ Akamai may answer 403 from some networks; a User-Agent header is always sent.
 """
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
-import os
-import time
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-from typing import Protocol
 
 import pandas as pd
 import requests
 
 from dalio.countries import Country
+from dalio.data_sources.sdmx_csv import (
+    DEFAULT_USER_AGENT,
+    CachedTextFetcher,
+    HttpClient,
+    set_default_headers,
+)
 
 logger = logging.getLogger(__name__)
 
 IMF_DM_BASE = "https://www.imf.org/external/datamapper/api/v1"
 DEFAULT_TIMEOUT = 30
-DEFAULT_USER_AGENT = "dalio-machine/0.1 (+https://github.com/Rosinco/dalio-machine)"
 SOURCE_HISTORY = "IMF_WEO"
 SOURCE_FORECAST = "IMF_WEO_FCST"
 
@@ -48,10 +49,6 @@ class ImfSpec:
     start_year: int = 1980
 
 
-class HttpClient(Protocol):
-    def get(self, url: str, *, timeout: float = ...) -> requests.Response: ...
-
-
 class ImfDataMapperSource:
     def __init__(
         self,
@@ -61,12 +58,13 @@ class ImfDataMapperSource:
         user_agent: str = DEFAULT_USER_AGENT,
     ):
         self._client = client or requests.Session()
-        headers = getattr(self._client, "headers", None)
-        if isinstance(headers, dict | requests.structures.CaseInsensitiveDict):
-            headers["User-Agent"] = user_agent
-        self._cache_dir = cache_dir or Path(os.environ.get("DALIO_IMF_CACHE", "data/cache/imf"))
-        self._cache_dir.mkdir(parents=True, exist_ok=True)
-        self._cache_ttl_seconds = cache_ttl_hours * 3600
+        set_default_headers(self._client, user_agent)
+        self._fetcher = CachedTextFetcher(
+            self._client,
+            CachedTextFetcher.resolve_cache_dir(cache_dir, "DALIO_IMF_CACHE", "data/cache/imf"),
+            cache_ttl_hours, label="IMF DataMapper", timeout=DEFAULT_TIMEOUT, suffix=".json",
+            forbidden_hint="Akamai; try another network or the SDMX WEO fallback",
+        )
 
     # ─── Public API ──────────────────────────────────────────────────────
 
@@ -83,7 +81,7 @@ class ImfDataMapperSource:
         if not code_to_iso2:
             return _empty_long()
         url = f"{IMF_DM_BASE}/{spec.imf_code}"
-        text = self._fetch_text(url, use_cache=use_cache)
+        text = self._fetcher.fetch(url, use_cache=use_cache)
         values = self._parse(text, spec.imf_code)
         cutoff = (today or date.today()).year
         rows = []
@@ -125,43 +123,6 @@ class ImfDataMapperSource:
         block = values.get(code)
         return block if isinstance(block, dict) else {}
 
-    def _fetch_text(self, url: str, use_cache: bool, attempts: int = 3, backoff_base: float = 1.0) -> str:
-        cache_path = self._cache_path_for(url)
-        if use_cache and cache_path.exists():
-            age = time.time() - cache_path.stat().st_mtime
-            if age < self._cache_ttl_seconds:
-                return cache_path.read_text()
-        last_error: Exception | None = None
-        for attempt in range(attempts):
-            try:
-                resp = self._client.get(url, timeout=DEFAULT_TIMEOUT)
-                if resp.status_code == 403:
-                    raise ValueError(
-                        f"IMF DataMapper refused the request (403 — Akamai; try another network "
-                        f"or the SDMX WEO fallback): {url}"
-                    )
-                if resp.status_code == 404:
-                    raise ValueError(f"Resource not found (404): {url}")
-                if resp.status_code >= 500:
-                    raise RuntimeError(f"Server error {resp.status_code}: {url}")
-                resp.raise_for_status()
-                cache_path.write_text(resp.text)
-                return resp.text
-            except (ValueError, FileNotFoundError):
-                raise
-            except Exception as e:  # noqa: BLE001
-                last_error = e
-                if attempt < attempts - 1:
-                    wait = backoff_base * (2 ** attempt)
-                    logger.warning("imf %s attempt %d/%d failed (%s) — retrying in %.1fs",
-                                   url, attempt + 1, attempts, e, wait)
-                    time.sleep(wait)
-        assert last_error is not None
-        raise last_error
-
-    def _cache_path_for(self, url: str) -> Path:
-        h = hashlib.sha256(url.encode()).hexdigest()[:16]
-        return self._cache_dir / f"{h}.json"
 
 
 def _empty_long() -> pd.DataFrame:

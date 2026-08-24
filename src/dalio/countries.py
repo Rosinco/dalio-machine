@@ -58,6 +58,7 @@ class Country:
     wb_id: str | None = None          # World Bank code: ISO3 or "EMU"
     imf_id: str | None = None         # IMF DataMapper entity: ISO3, or "EURO" for the euro area
     imts_id: str | None = None        # IMF IMTS (bilateral trade) code when not ISO3: "G163" = euro area
+    oecd_id: str | None = None        # OECD SDMX area when not ISO3: "EA" = euro area (slice 26)
     central_bank: str | None = None
     currency: str | None = None
     eu_member: bool = False           # individual player that is also inside the EU aggregate
@@ -84,7 +85,8 @@ COUNTRIES: Final[tuple[Country, ...]] = (
             fx_regime="managed", data_quality=DataQuality.LOW,
             data_quality_note="GDP series smoothed; provincial data revised; opacity on credit."),
     Country("EU", "EMU", "Eurozone", Tier.TIER_1, fred_id="EMU", bis_id="XM",
-            wb_id="EMU", imf_id="EURO", imts_id="G163", central_bank="European Central Bank",
+            wb_id="EMU", imf_id="EURO", imts_id="G163", oecd_id="EA",
+            central_bank="European Central Bank",
             currency="EUR", members=EUROZONE_ISO3, fx_regime="reserve_issuer", on_map=False),
     Country("UK", "GBR", "United Kingdom", Tier.TIER_1, fred_id="GBR", bis_id="GB",
             wb_id="GBR", imf_id="GBR", central_bank="Bank of England", currency="GBP"),
@@ -155,6 +157,8 @@ ISO2_TO_BIS: Final[dict[str, str]] = {c.iso2: c.bis_id for c in COUNTRIES if c.b
 ISO3_TO_ISO2: Final[dict[str, str]] = {c.iso3: c.iso2 for c in COUNTRIES}
 # IMF IMTS (bilateral trade) reporter/counterpart codes: ISO3 for countries, G163 for the euro area.
 ISO2_TO_IMTS: Final[dict[str, str]] = {c.iso2: c.imts_id or c.iso3 for c in COUNTRIES}
+# OECD SDMX REF_AREA codes: ISO3 for countries, EA for the euro area (slice 26).
+ISO2_TO_OECD: Final[dict[str, str]] = {c.iso2: c.oecd_id or c.iso3 for c in COUNTRIES}
 _BY_ISO2: Final[dict[str, Country]] = {c.iso2: c for c in COUNTRIES}
 
 

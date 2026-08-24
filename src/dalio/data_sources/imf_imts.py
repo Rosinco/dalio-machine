@@ -19,31 +19,34 @@ are dropped; its world total still includes intra-area trade — the UI says so.
 """
 from __future__ import annotations
 
-import hashlib
 import io
 import logging
-import os
-import time
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-from typing import Literal, Protocol
+from typing import Literal
 
 import pandas as pd
 import requests
 
 from dalio.countries import ISO2_TO_IMTS, Country
+from dalio.data_sources.sdmx_csv import (
+    DEFAULT_USER_AGENT,
+    SDMX_CSV_ACCEPT,
+    CachedTextFetcher,
+    HttpClient,
+    set_default_headers,
+)
 
 logger = logging.getLogger(__name__)
 
 IMTS_BASE = "https://api.imf.org/external/sdmx/2.1/data/IMF.STA,IMTS"
-IMTS_ACCEPT = "application/vnd.sdmx.data+csv;version=1.0.0"
+IMTS_ACCEPT = SDMX_CSV_ACCEPT
 IMTS_WORLD = "G001"
 WORLD_PARTNER = "WLD"
 IMTS_YEARS = 7                  # latest + a 5-year lag with slack
 DEFAULT_TIMEOUT = 120
-DEFAULT_USER_AGENT = "dalio-machine/0.1 (+https://github.com/Rosinco/dalio-machine)"
 SOURCE_IMTS = "IMF_IMTS"
 
 
@@ -63,10 +66,6 @@ IMTS_FLOWS: tuple[ImtsSpec, ...] = (
 )
 
 
-class HttpClient(Protocol):
-    def get(self, url: str, *, timeout: float = ...) -> requests.Response: ...
-
-
 class ImtsSource:
     def __init__(
         self,
@@ -76,13 +75,13 @@ class ImtsSource:
         user_agent: str = DEFAULT_USER_AGENT,
     ):
         self._client = client or requests.Session()
-        headers = getattr(self._client, "headers", None)
-        if isinstance(headers, dict | requests.structures.CaseInsensitiveDict):
-            headers["User-Agent"] = user_agent
-            headers["Accept"] = IMTS_ACCEPT
-        self._cache_dir = cache_dir or Path(os.environ.get("DALIO_IMTS_CACHE", "data/cache/imts"))
-        self._cache_dir.mkdir(parents=True, exist_ok=True)
-        self._cache_ttl_seconds = cache_ttl_hours * 3600
+        set_default_headers(self._client, user_agent, IMTS_ACCEPT)
+        self._fetcher = CachedTextFetcher(
+            self._client,
+            CachedTextFetcher.resolve_cache_dir(cache_dir, "DALIO_IMTS_CACHE", "data/cache/imts"),
+            cache_ttl_hours, label="IMF IMTS", timeout=DEFAULT_TIMEOUT,
+            forbidden_hint="Akamai; try another network",
+        )
 
     # ─── Public API ──────────────────────────────────────────────────────
 
@@ -102,7 +101,7 @@ class ImtsSource:
         if not code_to_iso2:
             return _empty_long()
         url = self.url_for(spec, list(code_to_iso2), (today or date.today()).year - years + 1)
-        text = self._fetch_text(url, use_cache=use_cache)
+        text = self._fetcher.fetch(url, use_cache=use_cache)
         raw = self._parse(text)
         if raw.empty:
             return _empty_long()
@@ -149,40 +148,6 @@ class ImtsSource:
         df = df[df["TIME_PERIOD"].str.fullmatch(r"\d{4}")]
         return df
 
-    def _fetch_text(self, url: str, use_cache: bool, attempts: int = 3, backoff_base: float = 1.0) -> str:
-        cache_path = self._cache_path_for(url)
-        if use_cache and cache_path.exists():
-            age = time.time() - cache_path.stat().st_mtime
-            if age < self._cache_ttl_seconds:
-                return cache_path.read_text()
-        last_error: Exception | None = None
-        for attempt in range(attempts):
-            try:
-                resp = self._client.get(url, timeout=DEFAULT_TIMEOUT)
-                if resp.status_code == 403:
-                    raise ValueError(f"IMF IMTS refused the request (403 — Akamai; try another network): {url}")
-                if resp.status_code == 404:
-                    raise ValueError(f"Resource not found (404): {url}")
-                if resp.status_code >= 500:
-                    raise RuntimeError(f"Server error {resp.status_code}: {url}")
-                resp.raise_for_status()
-                cache_path.write_text(resp.text)
-                return resp.text
-            except (ValueError, FileNotFoundError):
-                raise
-            except Exception as e:  # noqa: BLE001
-                last_error = e
-                if attempt < attempts - 1:
-                    wait = backoff_base * (2 ** attempt)
-                    logger.warning("imts %s attempt %d/%d failed (%s) — retrying in %.1fs",
-                                   url, attempt + 1, attempts, e, wait)
-                    time.sleep(wait)
-        assert last_error is not None
-        raise last_error
-
-    def _cache_path_for(self, url: str) -> Path:
-        h = hashlib.sha256(url.encode()).hexdigest()[:16]
-        return self._cache_dir / f"{h}.csv"
 
 
 def _empty_long() -> pd.DataFrame:

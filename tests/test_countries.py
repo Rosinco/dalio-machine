@@ -139,3 +139,10 @@ def test_each_country_has_central_bank_and_currency():
     for c in COUNTRIES:
         assert c.central_bank, f"{c.iso2} missing central_bank"
         assert c.currency, f"{c.iso2} missing currency"
+
+
+def test_oecd_codes_are_iso3_except_euro_area():
+    from dalio.countries import ISO2_TO_OECD
+    assert ISO2_TO_OECD["EU"] == "EA"
+    assert ISO2_TO_OECD["UK"] == "GBR" and ISO2_TO_OECD["US"] == "USA"
+    assert all(c.oecd_id is None for c in COUNTRIES if c.iso2 != "EU")

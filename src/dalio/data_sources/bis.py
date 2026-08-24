@@ -63,6 +63,17 @@ class DsrSpec:
     borrower: str = "P"      # P = private non-financial sector
 
 
+@dataclass(frozen=True)
+class PolicyRateSpec:
+    """One central-bank policy-rate series from BIS WS_CBPOL (monthly, %).
+
+    Slice 26: replaces FRED's stale/discontinued policy-rate mirrors for the
+    cycle basket (India's FRED series stopped in 2022). Source ``BIS_CBPOL``.
+    """
+    country: str             # ISO2 — adapter translates to BIS code (EU → XM)
+    indicator: str = "policy_rate"
+
+
 class HttpClient(Protocol):
     def get(self, url: str, *, timeout: float = ...) -> requests.Response: ...
 
@@ -104,6 +115,13 @@ class BisSource:
         url = f"{BIS_BASE_URL}/WS_DSR/{key}?format=csv"
         csv_text = self._fetch_csv(url, use_cache=use_cache)
         return self._parse_to_long(csv_text, spec.country, spec.indicator, "BIS_DSR", url)
+
+    def fetch_policy_rate(self, spec: PolicyRateSpec, use_cache: bool = True) -> pd.DataFrame:
+        bis_country = self._iso2_to_bis(spec.country)
+        key = f"M.{bis_country}"
+        url = f"{BIS_BASE_URL}/WS_CBPOL/{key}?format=csv"
+        csv_text = self._fetch_csv(url, use_cache=use_cache)
+        return self._parse_to_long(csv_text, spec.country, spec.indicator, "BIS_CBPOL", url)
 
     # ─── Internals ───────────────────────────────────────────────────────
 
@@ -180,7 +198,7 @@ class BisSource:
 
     @staticmethod
     def _period_to_date(period: str):
-        """Convert BIS TIME_PERIOD ('2025-Q3', '2025-M01', '2025') to date."""
+        """Convert BIS TIME_PERIOD ('2025-Q3', '2025-M01', '2025-01', '2025') to date."""
         from datetime import date as _date
         if not isinstance(period, str):
             return None
@@ -191,9 +209,21 @@ class BisSource:
         if "-M" in period:
             year, m = period.split("-M")
             return _date(int(year), int(m), 1)
+        if len(period) == 7 and period[4] == "-" and period[5:].isdigit():   # WS_CBPOL: 2026-06
+            try:
+                return _date(int(period[:4]), int(period[5:]), 1)
+            except ValueError:
+                return None
         if period.isdigit():
             return _date(int(period), 1, 1)
         return None
+
+
+# ─── Cycle policy rates (slice 26) ────────────────────────────────────────
+
+CYCLE_POLICY_RATES: tuple[PolicyRateSpec, ...] = tuple(
+    PolicyRateSpec(country) for country in ("US", "CN", "EU", "UK", "JP", "SE", "IN", "BR")
+)
 
 
 # ─── Tier-1 long-term cycle bundle ───────────────────────────────────────

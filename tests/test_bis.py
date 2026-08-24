@@ -136,3 +136,41 @@ def test_tier_1_total_credit_covers_six_countries():
 def test_tier_1_dsr_covers_six_countries():
     countries = {s.country for s in TIER_1_DSR}
     assert countries == {"US", "CN", "EU", "UK", "JP", "SE"}
+
+
+# ─── Slice 26: policy rates from WS_CBPOL ─────────────────────────────────
+
+SAMPLE_CBPOL_CSV = '''DATAFLOW,FREQ,REF_AREA,TIME_PERIOD,OBS_VALUE,UNIT_MEASURE,UNIT_MULT,TIME_FORMAT,COMPILATION,DECIMALS,SOURCE_REF,SUPP_INFO_BREAKS,TITLE,OBS_STATUS,OBS_CONF,OBS_PRE_BREAK
+BIS:WS_CBPOL(1.0),M,IN,2026-05,5.5,368,0,,"Repo rate; from 4 Jun 1986: bank rate
+(multi-line note)",1,,,,A,F,
+BIS:WS_CBPOL(1.0),M,IN,2026-06,5.25,368,0,,"Repo rate",1,,,,A,F,
+BIS:WS_CBPOL(1.0),M,IN,2026-07,,368,0,,"Repo rate",1,,,,M,F,
+'''
+
+
+def test_fetch_policy_rate_monthly_first_of_month(http_client, tmp_path):
+    from datetime import date
+
+    from dalio.data_sources.bis import CYCLE_POLICY_RATES, PolicyRateSpec
+
+    http_client.get.return_value = _mock_response(SAMPLE_CBPOL_CSV)
+    src = BisSource(client=http_client, cache_dir=tmp_path)
+    df = src.fetch_policy_rate(PolicyRateSpec("IN"), use_cache=False)
+    assert http_client.get.call_args[0][0].endswith("/WS_CBPOL/M.IN?format=csv")
+    assert list(df["date"]) == [date(2026, 5, 1), date(2026, 6, 1)]        # empty value dropped
+    assert list(df["value"]) == [5.5, 5.25]
+    assert set(df["indicator"]) == {"policy_rate"} and set(df["source"]) == {"BIS_CBPOL"}
+    assert df["country"].iloc[0] == "IN"
+    # EU → XM, and the bundle covers the whole cycle basket
+    src.fetch_policy_rate(PolicyRateSpec("EU"), use_cache=False)
+    assert "/WS_CBPOL/M.XM?" in http_client.get.call_args[0][0]
+    assert {s.country for s in CYCLE_POLICY_RATES} == {"US", "CN", "EU", "UK", "JP", "SE", "IN", "BR"}
+
+
+def test_period_to_date_handles_plain_monthly():
+    from datetime import date
+
+    assert BisSource._period_to_date("2026-06") == date(2026, 6, 1)
+    assert BisSource._period_to_date("2026-M06") == date(2026, 6, 1)
+    assert BisSource._period_to_date("garbage") is None
+    assert BisSource._period_to_date("2026-13") is None
