@@ -443,6 +443,91 @@ button[kind="secondary"], .stButton > button {
   font-size: 0.78rem !important;
   font-weight: 600 !important;
 }
+
+/* ─── Fundamentals: dense editorial table (slice P1) ─────────────── */
+table.dense {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--body);
+  font-size: 0.8rem;
+  color: var(--ink);
+  margin: 0.6rem 0 1rem;
+}
+table.dense th {
+  font-family: var(--body);
+  text-transform: uppercase;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  font-weight: 700;
+  color: var(--ink-muted);
+  text-align: left;
+  padding: 0.25rem 0.4rem 0.35rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+table.dense td {
+  padding: 0.3rem 0.4rem 0.3rem 0;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: middle;
+}
+table.dense td.num, table.dense th.num, table.dense .mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.78rem;
+}
+table.dense td.num { text-align: right; padding-right: 0.8rem; }
+table.dense td.unit, table.dense td.src { color: var(--ink-muted); font-size: 0.72rem; }
+table.dense tr.cat td {
+  font-family: var(--display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding-top: 0.9rem;
+  border-top: 1.5px solid var(--ink);
+  border-bottom: none;
+}
+table.dense td.fcast { font-style: italic; color: var(--ink-muted); }
+.pbar {
+  display: inline-block;
+  width: 56px;
+  height: 4px;
+  background: var(--rule);
+  vertical-align: middle;
+  margin-right: 0.4rem;
+}
+.pbar > span { display: block; height: 100%; background: var(--ink); }
+.tier {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  border: 1px solid var(--ink);
+  padding: 0 0.28rem;
+  letter-spacing: 0.05em;
+}
+.tier-b { border-style: dashed; }
+.tier-c { border-style: dotted; color: var(--ink-muted); }
+.weights {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  margin: 0.2rem 0 0.8rem;
+}
+
+/* Fundamentals control strip: segmented controls to editorial */
+[data-testid="stSegmentedControl"] button,
+[data-testid="stPills"] button {
+  font-family: var(--body) !important;
+  border-radius: 0 !important;
+  border: 1px solid var(--rule) !important;
+  background: var(--bg) !important;
+  color: var(--ink) !important;
+  font-size: 0.78rem !important;
+}
+[data-testid="stSegmentedControl"] button[aria-checked="true"],
+[data-testid="stSegmentedControl"] button[kind="segmented_controlActive"],
+[data-testid="stPills"] button[kind="pillsActive"] {
+  background: var(--ink) !important;
+  color: var(--bg) !important;
+  border-color: var(--ink) !important;
+}
+[data-testid="stDataFrame"] { border: 1px solid var(--rule); }
 </style>
         """,
         unsafe_allow_html=True,

@@ -1,0 +1,12 @@
+# Editorial palette for Streamlit-native widgets (progress columns, radios,
+# segmented controls). The CSS in `_inject_design_css` covers custom blocks;
+# this covers what CSS cannot reach (canvas-rendered dataframe columns).
+[theme]
+primaryColor = "#0c1f3f"
+backgroundColor = "#faf6ef"
+secondaryBackgroundColor = "#f1ebde"
+textColor = "#0c1f3f"
+font = "sans serif"
+
+[browser]
+gatherUsageStats = false
