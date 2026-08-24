@@ -1,10 +1,22 @@
 """Plotly builders for the Fundamentals page (no Streamlit imports)."""
 from __future__ import annotations
 
+import pandas as pd
 import plotly.graph_objects as go
 
 from dalio.app.fundamentals.view_models import MapLayer
-from dalio.app.theme import INK, NO_DATA, PAPER, RUST, geo_layout, plotly_base_layout
+from dalio.app.theme import (
+    FONT_BODY,
+    FONT_MONO,
+    INK,
+    INK_MUTED,
+    NO_DATA,
+    PAPER,
+    RULE,
+    RUST,
+    geo_layout,
+    plotly_base_layout,
+)
 
 SELECTED_LINE_WIDTH = 2.2
 DEFAULT_LINE_WIDTH = 0.6
@@ -66,4 +78,46 @@ def build_fundamentals_map(layer: MapLayer, height: int = 460) -> go.Figure:
             name="data quality",
         ))
     fig.update_layout(geo=geo_layout(), showlegend=False, **plotly_base_layout(height=height))
+    return fig
+
+
+def build_pareto(df: pd.DataFrame, height: int | None = None) -> go.Figure:
+    """Horizontal Pareto of gap-to-best-in-class: ink bars sorted descending,
+    end labels 'gap · cum %', one rust rule where cumulative share crosses 80 %.
+    No secondary axis (gap points and share are different quantities)."""
+    n = len(df)
+    h = height or max(160, 34 * n + 40)
+    fig = go.Figure()
+    if n == 0:
+        fig.update_layout(**plotly_base_layout(height=h))
+        return fig
+    keys = list(df["key"])[::-1]                    # plotly draws bottom-up
+    gaps = list(df["gap"])[::-1]
+    labels = [f"gap {g:.0f} · cum {c:.0%}" for g, c in zip(gaps, list(df["cum_share"])[::-1], strict=True)]
+    fig.add_trace(go.Bar(
+        x=gaps, y=keys, orientation="h",
+        marker=dict(color=INK, line=dict(color=PAPER, width=1)),
+        text=labels, textposition="outside", cliponaxis=False,
+        textfont=dict(family=FONT_MONO, size=11, color=INK_MUTED),
+        hovertemplate="%{y}: gap %{x:.0f} points<extra></extra>",
+    ))
+    if df["crosses_80"].any():
+        idx80 = int(df.index[df["crosses_80"]][0])
+        y_pos = n - 1 - idx80                          # reversed axis index
+        fig.add_shape(type="line", x0=0, x1=max(gaps) * 1.02, y0=y_pos - 0.5, y1=y_pos - 0.5,
+                      line=dict(color=RUST, width=1.5, dash="dot"))
+        fig.add_annotation(x=max(gaps) * 1.02, y=y_pos - 0.5, text="80 %", showarrow=False,
+                           xanchor="left", yanchor="middle",
+                           font=dict(family=FONT_BODY, size=10, color=RUST))
+    layout = plotly_base_layout(height=h)
+    layout["margin"] = dict(l=0, r=90, t=6, b=24)
+    fig.update_layout(
+        bargap=0.35,
+        xaxis=dict(title=dict(text="gap to best-in-class (percentile points)", font=dict(size=10)),
+                   range=[0, max(gaps) * 1.4], showgrid=True, gridcolor=RULE, gridwidth=0.5,
+                   zeroline=False, color=INK_MUTED, tickfont=dict(family=FONT_MONO, size=10)),
+        yaxis=dict(showgrid=False, color=INK, tickfont=dict(family=FONT_BODY, size=11), automargin=True),
+        showlegend=False,
+        **layout,
+    )
     return fig

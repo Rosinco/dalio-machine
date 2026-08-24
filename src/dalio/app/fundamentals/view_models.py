@@ -299,6 +299,88 @@ def leaderboard(snap: Snapshot, view: str) -> pd.DataFrame:
     return df.sort_values("Composite", ascending=False, na_position="last", kind="stable").reset_index(drop=True)
 
 
+# ─── Purpose views ───────────────────────────────────────────────────────────
+
+VIEW_LABELS: dict[str, str] = {
+    "learning": "Learning",
+    "jurisdiction": "Jurisdiction",
+    "allocation": "Allocation",
+    "moonshot": "Moonshot",
+}
+
+VIEW_CAPTIONS: dict[str, str] = {
+    "learning": ("Equal weights. Tells you where a country is strong or weak relative to the "
+                 "other twenty; cannot tell you what to do about it."),
+    "jurisdiction": ("Enforcer 50 · Promises 30 · Exchange 20. Tells you which jurisdictions carry "
+                     "structural risk to a concentrated stock position (property rights, "
+                     "convertibility, sovereign stress); cannot tell you whether the company "
+                     "itself is exposed to that risk."),
+    "allocation": ("Promises 40 · Production 30 · Exchange 20 · Enforcer 10. Tells you which "
+                   "economies' fundamentals argue for more or less margin of safety in the "
+                   "index/value sleeve; cannot time anything — pair it with the cycle map."),
+    "moonshot": ("Real stuff 50 · Exchange 30 · Production 20. Tells you which countries own the "
+                 "physical inputs and trade position that supply chains run through; cannot "
+                 "tell you which company captures it."),
+}
+
+
+def view_caption(view: str) -> str:
+    return VIEW_CAPTIONS.get(view, "")
+
+
+def weights_line(snap: Snapshot, view: str) -> str:
+    """'Jurisdiction view · Enforcer 50 · Promises 30 · Exchange 20' (mono line)."""
+    w = snap.views.get(view, {})
+    parts = [f"{snap.category_labels.get(c, c)} {round(v * 100)}" for c, v in
+             sorted(w.items(), key=lambda kv: -kv[1]) if v > 0]
+    return f"{VIEW_LABELS.get(view, view)} view · " + " · ".join(parts)
+
+
+# ─── Pareto (gap to best-in-class) ───────────────────────────────────────────
+
+
+def pareto_frame(snap: Snapshot, iso2: str, level: str = "indicator", top_n: int = 10) -> pd.DataFrame:
+    """Where does a player's weakness concentrate?
+
+    ``level="indicator"``: gap = 100 − percentile per scored indicator.
+    ``level="category"``: gap = distance_to_best per category score.
+    Sorted descending with ``share`` (of total gap), ``cum_share`` and
+    ``crosses_80`` (True on the first row where cumulative share ≥ 80 %).
+    Rows with no data are excluded; an all-zero gap yields an empty frame.
+    """
+    if level == "category":
+        cs = snap.category_scores[snap.category_scores["iso2"] == iso2]
+        df = pd.DataFrame({
+            "key": cs["category"].map(lambda c: snap.category_labels.get(c, c)),
+            "gap": cs["distance_to_best"].astype(float),
+        })
+    else:
+        ind = snap.indicators[snap.indicators["iso2"] == iso2]
+        df = pd.DataFrame({
+            "key": ind["indicator"].map(lambda n: snap.catalog[n].label if n in snap.catalog else n),
+            "gap": (100.0 - ind["pct"].astype(float)),
+        })
+    df = df[df["gap"].notna()].copy()
+    total = float(df["gap"].sum())
+    if df.empty or total <= 0:
+        return pd.DataFrame(columns=["key", "gap", "share", "cum_share", "crosses_80"])
+    df = df.sort_values("gap", ascending=False, kind="stable").reset_index(drop=True)
+    df["share"] = df["gap"] / total
+    df["cum_share"] = df["share"].cumsum()
+    first = int((df["cum_share"] >= 0.8).idxmax()) if (df["cum_share"] >= 0.8).any() else len(df) - 1
+    df["crosses_80"] = [i == first for i in range(len(df))]
+    return df.head(top_n).reset_index(drop=True)
+
+
+def pareto_caption(df: pd.DataFrame, name: str, level: str) -> str:
+    if df.empty:
+        return f"{name} has no gap to best-in-class on the scored {level}s — or no data."
+    n80 = int(df.index[df["crosses_80"]][0]) + 1 if df["crosses_80"].any() else len(df)
+    unit = "indicators" if level == "indicator" else "categories"
+    return (f"{n80} of {len(df)} shown {unit} explain 80 % of {name}'s gap to best-in-class "
+            f"(largest gap: {df.iloc[0]['key']}, {df.iloc[0]['gap']:.0f} points).")
+
+
 # ─── Country table ───────────────────────────────────────────────────────────
 
 
