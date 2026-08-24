@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 
 from dalio.countries import COUNTRIES
 from dalio.scoring.fundamentals import FUNDAMENTALS, load_forward_panel, load_history, load_panel
+from dalio.scoring.trade import load_trade
 from dalio.storage.db import init_db, make_engine, make_session_factory
 
 
@@ -34,6 +35,7 @@ def main() -> int:
         panel = load_panel(s, FUNDAMENTALS, COUNTRIES, as_of)
         forward = load_forward_panel(s, FUNDAMENTALS, COUNTRIES, as_of)
         hist = load_history(s, FUNDAMENTALS, COUNTRIES)
+        trade = load_trade(s, COUNTRIES, as_of)
     if not forward.empty:   # forward indicators replace their backward reading
         fwd_names = set(forward["indicator"])
         panel = pd.concat([panel[~panel["indicator"].isin(fwd_names)],
@@ -74,6 +76,12 @@ def main() -> int:
     total = sum(fill_by_ind.values())
     print(f"\nTotal {total}/{len(COUNTRIES) * len(names)} cells "
           f"({100 * total / (len(COUNTRIES) * len(names)):.0f} %)")
+    if trade.empty:
+        print("\nBilateral trade (IMTS): none stored — run `dalio-fetch-fundamentals --only imts`")
+    else:
+        years = trade.groupby("iso2")["year"].first()
+        print(f"\nBilateral trade (IMTS): {years.size}/{len(COUNTRIES)} reporters · "
+              f"latest year {int(years.min())}–{int(years.max())}")
     if stale:
         print(f"\nCells older than {args.stale_years} years:")
         for iso2, n, d in stale:
