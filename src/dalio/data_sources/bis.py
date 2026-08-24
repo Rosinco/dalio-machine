@@ -21,6 +21,8 @@ from typing import Protocol
 import pandas as pd
 import requests
 
+from dalio.countries import ISO2_TO_BIS
+
 logger = logging.getLogger(__name__)
 
 
@@ -38,17 +40,8 @@ class Sector:
     NON_FIN_CORPS = "N"
 
 
-# ISO2 → BIS country code (mostly identical, a few aggregates differ)
-ISO2_TO_BIS: dict[str, str] = {
-    "US": "US",
-    "CN": "CN",
-    "EU": "XM",   # Euro area aggregate
-    "UK": "GB",
-    "JP": "JP",
-    "SE": "SE",
-    "IN": "IN",
-    "BR": "BR",
-}
+# ISO2 → BIS country code lives in the registry (dalio.countries.ISO2_TO_BIS);
+# imported at module top and re-exported here for back-compat.
 
 
 @dataclass(frozen=True)

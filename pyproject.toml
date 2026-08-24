@@ -35,6 +35,8 @@ dev = [
 [project.scripts]
 dalio-fetch-fred = "dalio.pipelines.fetch_fred:main"
 dalio-fetch-bis = "dalio.pipelines.fetch_bis:main"
+dalio-fetch-fundamentals = "dalio.pipelines.fetch_fundamentals:main"
+dalio-score = "dalio.pipelines.score_fundamentals:main"
 dalio-app = "dalio.app.streamlit_app:main"
 
 [tool.setuptools.packages.find]

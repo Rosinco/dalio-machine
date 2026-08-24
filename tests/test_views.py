@@ -9,7 +9,9 @@ from dalio.app.views import (
     STAGE_EXPLANATIONS,
     compute_country_view,
     compute_world_view,
+    cycle_click_target,
     expand_iso3_for_map,
+    has_cycle_data,
     map_iso3_to_country_iso2,
     top_tilts,
 )
@@ -37,9 +39,15 @@ def test_expand_iso3_passes_through_non_eu():
     assert expand_iso3_for_map("CHN") == ("CHN",)
 
 
-def test_map_iso3_to_country_iso2_handles_eurozone_members():
-    assert map_iso3_to_country_iso2("DEU") == "EU"
-    assert map_iso3_to_country_iso2("FRA") == "EU"
+def test_map_iso3_to_country_iso2_prefers_registry_country_over_aggregate():
+    # Germany and France are their own fundamentals players (slice 18)
+    assert map_iso3_to_country_iso2("DEU") == "DE"
+    assert map_iso3_to_country_iso2("FRA") == "FR"
+
+
+def test_map_iso3_to_country_iso2_handles_non_player_eurozone_members():
+    assert map_iso3_to_country_iso2("AUT") == "EU"
+    assert map_iso3_to_country_iso2("PRT") == "EU"
 
 
 def test_map_iso3_to_country_iso2_handles_basket_members():
@@ -52,6 +60,19 @@ def test_map_iso3_to_country_iso2_handles_basket_members():
 
 def test_map_iso3_unknown_returns_none():
     assert map_iso3_to_country_iso2("ZZZ") is None
+
+
+def test_cycle_click_target_clamps_to_cycle_basket():
+    # cycle countries pass through
+    assert cycle_click_target("US") == "US"
+    assert cycle_click_target("EU") == "EU"
+    # euro-area registry members fold to the aggregate on the cycles page
+    for iso2 in ("DE", "FR", "IT", "ES", "NL"):
+        assert cycle_click_target(iso2) == "EU"
+    # non-cycle, non-EU players are ignored (would otherwise reset the selectbox)
+    assert cycle_click_target("KR") is None
+    assert cycle_click_target("SA") is None
+    assert cycle_click_target(None) is None
 
 
 # ─── Explanation coverage ──────────────────────────────────────────────────
@@ -151,7 +172,32 @@ def test_compute_world_view_includes_no_data_countries(session_factory):
     assert by_iso2["US"].has_data is True
     assert by_iso2["IN"].has_data is False
     assert by_iso2["BR"].has_data is False
-    # All 8 basket countries always present
+    # All 8 cycle-basket countries always present — and only those
+    assert len(points) == 8
+
+
+def test_compute_world_view_ignores_fundamentals_only_rows(session_factory):
+    """World Bank rows for a Tier-3 player must not create a cycle map point,
+    and fundamentals-only rows for a cycle country must not count as cycle data."""
+    with session_factory() as s:
+        _seed_us_minimal(s)
+        s.add(Observation(
+            country="KR", indicator="gdp_pc_ppp", date=date(2024, 12, 31),
+            value=50000.0, source="WORLD_BANK", series_id="NY.GDP.PCAP.PP.KD",
+        ))
+        s.add(Observation(
+            country="IN", indicator="gdp_pc_ppp", date=date(2024, 12, 31),
+            value=9000.0, source="WORLD_BANK", series_id="NY.GDP.PCAP.PP.KD",
+        ))
+        s.commit()
+    with session_factory() as s:
+        points = compute_world_view(s)
+        assert has_cycle_data(s, "US") is True
+        assert has_cycle_data(s, "IN") is False
+        assert has_cycle_data(s, "KR") is False
+    by_iso2 = {p.iso2: p for p in points}
+    assert "KR" not in by_iso2
+    assert by_iso2["IN"].has_data is False
     assert len(points) == 8
 
 

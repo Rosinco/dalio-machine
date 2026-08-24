@@ -32,11 +32,13 @@ from dalio.app.views import (
     CountryView,
     compute_country_view,
     compute_world_view,
+    cycle_click_target,
     expand_iso3_for_map,
+    has_cycle_data,
     map_iso3_to_country_iso2,
     top_tilts,
 )
-from dalio.countries import COUNTRIES, Tier, get_country
+from dalio.countries import CYCLE_COUNTRIES, Tier, get_country
 from dalio.scoring.allocation import AllocationView
 from dalio.scoring.long_term import PHASE_LABELS, PhaseClassification
 from dalio.scoring.short_term import (
@@ -493,9 +495,7 @@ def _load_history(session: Session, country: str, indicator: str) -> pd.DataFram
 
 
 def _has_data(session: Session, country: str) -> bool:
-    return session.execute(
-        select(Observation.id).where(Observation.country == country).limit(1)
-    ).scalar_one_or_none() is not None
+    return has_cycle_data(session, country)
 
 
 def _fmt_pct(v: float | None, suffix: str = "%") -> str:
@@ -1519,7 +1519,7 @@ def main() -> None:
     )
 
     with _open_session() as s:
-        countries_with_data = {c.iso2 for c in COUNTRIES if _has_data(s, c.iso2)}
+        countries_with_data = {c.iso2 for c in CYCLE_COUNTRIES if _has_data(s, c.iso2)}
         points = compute_world_view(s)
 
     # ─── Sidebar (country selector) ────────────────────────────────
@@ -1533,7 +1533,7 @@ def main() -> None:
         st.session_state.country = "US"
     selected = st.sidebar.selectbox(
         "Country",
-        [c.iso2 for c in COUNTRIES],
+        [c.iso2 for c in CYCLE_COUNTRIES],
         format_func=_format,
         key="country",
     )
@@ -1574,7 +1574,7 @@ def main() -> None:
         'The Eurozone shows as a single bloc; click any member to select it.</p>',
         unsafe_allow_html=True,
     )
-    clicked_iso2 = _render_world_map(points, selected_iso2=selected)
+    clicked_iso2 = cycle_click_target(_render_world_map(points, selected_iso2=selected))
     if clicked_iso2 and clicked_iso2 != selected:
         st.session_state.country = clicked_iso2
         st.rerun()

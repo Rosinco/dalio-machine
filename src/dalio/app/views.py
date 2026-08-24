@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
-from dalio.countries import COUNTRIES, Country
+from dalio.countries import COUNTRIES, CYCLE_COUNTRIES, EUROZONE_ISO3, ISO3_TO_ISO2, Country
 from dalio.scoring.allocation import AllocationView, AssetTilt, compute_tilts
 from dalio.scoring.long_term import (
     PhaseClassification,
@@ -30,26 +30,49 @@ from dalio.scoring.short_term import (
 
 # ─── Concept-level explanations ────────────────────────────────────────────
 
-EUROZONE_ISO3: tuple[str, ...] = (
-    "AUT", "BEL", "CYP", "EST", "FIN", "FRA", "DEU", "GRC", "IRL", "ITA",
-    "LVA", "LTU", "LUX", "MLT", "NLD", "PRT", "SVK", "SVN", "ESP", "HRV",
-)
+__all__ = ["EUROZONE_ISO3"]  # re-exported from dalio.countries for back-compat
 
 
 def expand_iso3_for_map(iso3: str) -> tuple[str, ...]:
-    """Plot-time expansion: EU → 19 eurozone members for choropleth coloring."""
+    """Plot-time expansion: EU → eurozone members for choropleth coloring."""
     if iso3 == "EMU":
         return EUROZONE_ISO3
     return (iso3,)
 
 
 def map_iso3_to_country_iso2(iso3: str) -> str | None:
-    """Reverse mapping for click handling: any eurozone iso3 → 'EU' in basket."""
+    """Reverse mapping for click handling.
+
+    A registry country wins over the aggregate (DEU → "DE" now that Germany is
+    its own player); any other eurozone member maps to the "EU" aggregate.
+    """
+    direct = ISO3_TO_ISO2.get(iso3)
+    if direct is not None and direct != "EU":
+        return direct
     if iso3 in EUROZONE_ISO3:
         return "EU"
-    iso3_to_iso2 = {"USA": "US", "CHN": "CN", "GBR": "UK", "JPN": "JP",
-                    "SWE": "SE", "IND": "IN", "BRA": "BR"}
-    return iso3_to_iso2.get(iso3)
+    return None
+
+
+_CYCLE_CODES: frozenset[str] = frozenset(c.iso2 for c in CYCLE_COUNTRIES)
+
+
+def cycle_click_target(iso2: str | None) -> str | None:
+    """Clamp a map click to the cycles page's selectbox options.
+
+    Registry members that are not cycle countries (DE, FR, IT, ES, NL …) would
+    otherwise be written into ``st.session_state.country``, silently reset the
+    selectbox to index 0 and re-trigger the click → an unbounded rerun loop.
+    Euro-area members fold to the "EU" aggregate; anything else is ignored.
+    """
+    if iso2 is None:
+        return None
+    if iso2 in _CYCLE_CODES:
+        return iso2
+    c = next((c for c in COUNTRIES if c.iso2 == iso2), None)
+    if c is not None and c.eu_member:
+        return "EU"
+    return None
 
 
 PHASE_EXPLANATIONS: dict[int, str] = {
@@ -190,22 +213,35 @@ def _hover_for(view: CountryView) -> str:
     return "<br>".join(lines)
 
 
-def compute_world_view(session: Session) -> list[CountryMapPoint]:
-    """Build map points for every country in the basket — including those
-    without data (rendered greyed-out)."""
+def has_cycle_data(session: Session, iso2: str) -> bool:
+    """True if the country has at least one *cycle* indicator observation.
+
+    "Any observation" is no longer enough: fundamentals-only rows (World Bank
+    etc.) exist for Tier-3 players, and running the cycle classifiers on empty
+    cycle features would produce a confident-looking "Transition".
+    """
     from sqlalchemy import select
 
+    from dalio.scoring.long_term import LONG_TERM_INDICATORS
+    from dalio.scoring.short_term import SHORT_TERM_INDICATORS
     from dalio.storage.db import Observation
 
-    points: list[CountryMapPoint] = []
-    for country in COUNTRIES:
-        has_data = session.execute(
-            select(Observation.id)
-            .where(Observation.country == country.iso2)
-            .limit(1)
-        ).scalar_one_or_none() is not None
+    return session.execute(
+        select(Observation.id)
+        .where(
+            Observation.country == iso2,
+            Observation.indicator.in_(SHORT_TERM_INDICATORS + LONG_TERM_INDICATORS),
+        )
+        .limit(1)
+    ).scalar_one_or_none() is not None
 
-        if not has_data:
+
+def compute_world_view(session: Session) -> list[CountryMapPoint]:
+    """Build map points for every country in the *cycle* basket — including
+    those without data (rendered greyed-out)."""
+    points: list[CountryMapPoint] = []
+    for country in CYCLE_COUNTRIES:
+        if not has_cycle_data(session, country.iso2):
             points.append(CountryMapPoint(
                 iso2=country.iso2,
                 iso3=country.iso3,
@@ -220,7 +256,7 @@ def compute_world_view(session: Session) -> list[CountryMapPoint]:
                 debt_service_ratio=None,
                 cpi_yoy=None,
                 real_rate_10y=None,
-                hover_text=f"<b>{country.name}</b><br>No data — slice 3 (Tier-2) pending",
+                hover_text=f"<b>{country.name}</b><br>No cycle data — run dalio-fetch-fred / dalio-fetch-bis",
             ))
             continue
 

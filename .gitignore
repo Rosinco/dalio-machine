@@ -57,3 +57,6 @@ slice-*.png
 
 # Notebook checkpoints
 .ipynb_checkpoints/
+
+# World Fundamentals Map snapshots (regenerate with dalio-score)
+data/snapshots/

@@ -27,6 +27,8 @@ from typing import Protocol
 import pandas as pd
 import requests
 
+from dalio.countries import ISO2_TO_WB
+
 logger = logging.getLogger(__name__)
 
 WB_BASE_URL = "https://api.worldbank.org/v2"
@@ -36,18 +38,7 @@ IMF_COFER_URL = (
 )
 DEFAULT_TIMEOUT = 30
 
-
-# ISO2 → World Bank country code (mostly ISO3, with "EMU" for Eurozone)
-ISO2_TO_WB: dict[str, str] = {
-    "US": "USA",
-    "CN": "CHN",
-    "EU": "EMU",
-    "UK": "GBR",
-    "JP": "JPN",
-    "SE": "SWE",
-    "IN": "IND",
-    "BR": "BRA",
-}
+__all__ = ["ISO2_TO_WB", "BigCycleSource"]  # ISO2_TO_WB re-exported from the registry
 
 
 class HttpClient(Protocol):
@@ -75,11 +66,20 @@ class BigCycleSource:
     def fetch_gini(self, country_iso2: str, use_cache: bool = True) -> pd.DataFrame:
         """Annual Gini index for one country, long-format. Sparse — typically
         one survey per 1–3 years. Returns empty frame if no data is published.
+
+        Delegates to the generic World Bank adapter (slice 18); the country
+        must be in the registry.
         """
-        wb_code = self._iso2_to_wb(country_iso2)
-        url = f"{WB_BASE_URL}/country/{wb_code}/indicator/SI.POV.GINI?format=json&per_page=200"
-        text = self._fetch_text(url, use_cache=use_cache)
-        return self._parse_worldbank_json(text, country_iso2)
+        from dalio.countries import get_country
+        from dalio.data_sources.worldbank import WbIndicatorSpec, WorldBankSource
+
+        self._iso2_to_wb(country_iso2)  # keeps the "No World Bank code" KeyError contract
+        wb = WorldBankSource(
+            client=self._client, cache_dir=self._cache_dir,
+            cache_ttl_hours=self._cache_ttl_seconds / 3600, page_pause_seconds=0.0,
+        )
+        spec = WbIndicatorSpec("gini", "SI.POV.GINI", start_year=1960)
+        return wb.fetch(spec, [get_country(country_iso2)], use_cache=use_cache)
 
     def fetch_cofer_usd_share(self, use_cache: bool = True) -> pd.DataFrame:
         """Quarterly USD share of allocated FX reserves, world aggregate.
@@ -136,33 +136,6 @@ class BigCycleSource:
         import hashlib
         h = hashlib.sha256(url.encode()).hexdigest()[:16]
         return self._cache_dir / f"{h}.txt"
-
-    @staticmethod
-    def _parse_worldbank_json(text: str, country_iso2: str) -> pd.DataFrame:
-        """World Bank returns [meta, [observations]]. Some country/indicator
-        combinations return a single message dict instead — treat as empty.
-        """
-        import json
-        data = json.loads(text)
-        if not isinstance(data, list) or len(data) < 2 or not isinstance(data[1], list):
-            return _empty_long()
-        rows = []
-        for obs in data[1]:
-            v = obs.get("value")
-            if v is None:
-                continue
-            year = int(obs["date"])
-            rows.append({
-                "country": country_iso2,
-                "indicator": "gini",
-                "date": pd.Timestamp(year=year, month=12, day=31).date(),
-                "value": float(v),
-                "source": "WORLD_BANK",
-                "series_id": "SI.POV.GINI",
-            })
-        if not rows:
-            return _empty_long()
-        return pd.DataFrame(rows).sort_values("date").reset_index(drop=True)
 
     @staticmethod
     def _parse_cofer_xml(text: str) -> pd.DataFrame:

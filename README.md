@@ -27,6 +27,11 @@ cp .env.example .env
 
 # Initialize SQLite schema and pull first US data
 dalio-fetch-fred
+dalio-fetch-bis
+
+# World Fundamentals Map (22 players, keyless World Bank API) → snapshot JSON
+dalio-fetch-fundamentals
+dalio-score
 
 # Run dashboard
 dalio-app
@@ -55,6 +60,8 @@ Tests use mocked HTTP — no real API calls in CI.
 | BR | Brazil | 2 | Strong |
 
 Tier drives dashboard confidence labels — Tier 2 readings are flagged as such.
+
+**World Fundamentals Map (slice 18+)** adds 14 Tier-3 players — DE, FR, IT, ES, NL, CA, RU, KR, AU, MX, ID, SA, TR, CH — scored by percentile on fundamentals in five categories (real stuff · production · exchange · promises · enforcer). Tier 3 = fundamentals only, no cycle classifiers. See `decisions/0001-fundamentals-map.md`.
 
 ## Status
 
