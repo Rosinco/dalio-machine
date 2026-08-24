@@ -27,6 +27,7 @@ from sqlalchemy.orm import Session
 from dalio.app.fundamentals.page import render_fundamentals_page
 from dalio.app.theme import (
     CAUTION_HEX,
+    FONT_MONO,
     INK,
     INK_MUTED,
     NO_DATA,
@@ -51,6 +52,7 @@ from dalio.app.views import (
     cycle_click_target,
     expand_iso3_for_map,
     has_cycle_data,
+    input_freshness_line,
     map_iso3_to_country_iso2,
     top_tilts,
 )
@@ -858,6 +860,7 @@ def _render_summary_cards(view: CountryView) -> None:
   <div class="title">{swatch}{view.short_term.stage_label}</div>
   <div class="deck">{STAGE_EXPLANATIONS.get(stage, "")}</div>
   {_confidence_block("Classifier confidence", view.short_term.confidence)}
+  <div style="font-family:{FONT_MONO};font-size:0.68rem;color:{INK_MUTED};margin-top:0.55rem;line-height:1.5">{input_freshness_line(view.short_term.features)}</div>
 </div>
             """,
             unsafe_allow_html=True,
@@ -930,7 +933,7 @@ def _render_stage_card(c: Classification) -> None:
     emoji = STAGE_EMOJI[c.stage]
     header = f"### Cycle stage: {emoji} **{c.stage_label}**"
     detail = f"Confidence **{c.confidence:.0%}**  •  As of {c.features.as_of}"
-    body = f"{header}\n\n{detail}"
+    body = f"{header}\n\n{detail}\n\n`{input_freshness_line(c.features)}`"
 
     if c.stage == 1:
         st.success(body)
@@ -1010,7 +1013,7 @@ def _render_long_term_card(c: PhaseClassification) -> None:
     emoji = PHASE_EMOJI[c.phase]
     header = f"### Long-term cycle phase: {emoji} **{c.phase_label}**"
     detail = f"Confidence **{c.confidence:.0%}**  •  As of {c.features.as_of}"
-    body = f"{header}\n\n{detail}"
+    body = f"{header}\n\n{detail}\n\n`{input_freshness_line(c.features)}`"
 
     if c.phase == 1:
         st.success(body)

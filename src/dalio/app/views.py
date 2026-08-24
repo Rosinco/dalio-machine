@@ -10,6 +10,7 @@ the choropleth.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 
 from sqlalchemy.orm import Session
 
@@ -22,7 +23,9 @@ from dalio.scoring.long_term import (
     classify as classify_long_term,
 )
 from dalio.scoring.short_term import (
+    SHORT_TERM_INDICATORS,
     Classification,
+    ShortTermFeatures,
 )
 from dalio.scoring.short_term import (
     classify as classify_short_term,
@@ -174,6 +177,40 @@ def compute_country_view(
         home_real_rate_10y=home_real_rate,
     )
     return CountryView(country=country, short_term=st, long_term=lt, allocation=alloc)
+
+
+_INPUT_LABELS: dict[str, str] = {
+    "real_gdp_yoy": "GDP",
+    "cpi_yoy": "CPI",
+    "unemployment_rate": "unemployment",
+    "policy_rate": "policy rate",
+    "yield_10y": "10y",
+    "yield_2y": "2y",
+}
+
+
+def _fmt_input_date(indicator: str, d: date) -> str:
+    if indicator == "real_gdp_yoy":
+        return f"Q{(d.month - 1) // 3 + 1} {d.year}"
+    return d.strftime("%b %Y")
+
+
+def input_freshness_line(features: ShortTermFeatures) -> str:
+    """One mono line naming the as-of date of every short-term input, plus the
+    inputs dropped as stale (slice 26) and the ones absent altogether — so a
+    stage call can never again hide a fifteen-year-old unemployment rate."""
+    parts = [f"{_INPUT_LABELS[i]} {_fmt_input_date(i, features.indicator_dates[i])}"
+             for i in SHORT_TERM_INDICATORS if i in features.indicator_dates]
+    line = "Inputs · " + (" · ".join(parts) if parts else "none")
+    if features.stale_inputs:
+        dropped = ", ".join(f"{_INPUT_LABELS[i]} ({_fmt_input_date(i, d)})"
+                            for i, d in features.stale_inputs.items())
+        line += f" · dropped as stale: {dropped}"
+    missing = [_INPUT_LABELS[i] for i in SHORT_TERM_INDICATORS
+               if i not in features.indicator_dates and i not in features.stale_inputs]
+    if missing:
+        line += " · missing: " + ", ".join(missing)
+    return line
 
 
 def top_tilts(allocation: AllocationView, n: int = 3) -> list[AssetTilt]:

@@ -211,3 +211,22 @@ def test_compute_world_view_hover_text_html_safe(session_factory):
     # Plotly hover supports <br> for line breaks
     assert "<br>" in us.hover_text
     assert "United States" in us.hover_text
+
+
+# ─── Slice 26: input freshness line ─────────────────────────────────────────
+
+
+def test_input_freshness_line_names_dates_dropped_and_missing():
+    from dalio.app.views import input_freshness_line
+    from dalio.scoring.short_term import ShortTermFeatures
+
+    f = ShortTermFeatures(
+        country="CN", real_gdp_yoy=4.3, cpi_yoy=1.0, policy_rate=3.0,
+        indicator_dates={"real_gdp_yoy": date(2026, 4, 1), "cpi_yoy": date(2026, 6, 1),
+                         "policy_rate": date(2026, 6, 1)},
+        stale_inputs={"unemployment_rate": date(2011, 7, 1)},
+    )
+    line = input_freshness_line(f)
+    assert line == ("Inputs · GDP Q2 2026 · CPI Jun 2026 · policy rate Jun 2026"
+                    " · dropped as stale: unemployment (Jul 2011) · missing: 10y, 2y")
+    assert input_freshness_line(ShortTermFeatures(country="XX")).startswith("Inputs · none · missing: GDP")

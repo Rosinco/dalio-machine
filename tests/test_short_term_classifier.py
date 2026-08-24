@@ -191,3 +191,52 @@ def test_classify_full_flow_via_db(session_factory):
     assert isinstance(c, Classification)
     assert c.stage == 3  # Recession dominant
     assert c.confidence > 0
+
+
+# ─── Slice 26: freshness guard, source tie-break, honest zero-vote label ────
+
+
+def test_stale_input_is_dropped_and_reported(session_factory):
+    today = date(2026, 8, 24)
+    with session_factory() as s:
+        _add_obs(s, "CN", "real_gdp_yoy", date(2026, 4, 1), 4.3)
+        _add_obs(s, "CN", "cpi_yoy", date(2026, 6, 1), 1.0)
+        _add_obs(s, "CN", "policy_rate", date(2026, 6, 1), 3.0)
+        _add_obs(s, "CN", "unemployment_rate", date(2011, 7, 1), 4.1)     # dead FRED mirror
+        _add_obs(s, "CN", "unemployment_rate", date(2011, 4, 1), 4.1)
+        s.commit()
+    with session_factory() as s:
+        f = extract_features(s, "CN", as_of=today)
+    assert f.unemployment_rate is None and f.unemployment_3m_ago is None
+    assert f.stale_inputs == {"unemployment_rate": date(2011, 7, 1)}
+    assert "unemployment_rate" not in f.indicator_dates
+    assert f.has_core_inputs
+    # The guard is relative to the as-of date: replaying 2011 sees it as fresh.
+    with session_factory() as s:
+        f2011 = extract_features(s, "CN", as_of=date(2011, 9, 1))
+    assert f2011.unemployment_rate == 4.1 and not f2011.stale_inputs
+
+
+def test_fresher_source_wins_and_same_date_tie_break_is_deterministic(session_factory):
+    today = date(2026, 8, 24)
+    with session_factory() as s:
+        _add_obs(s, "JP", "cpi_yoy", date(2025, 3, 1), 3.6, source="FRED")
+        _add_obs(s, "JP", "cpi_yoy", date(2026, 6, 1), 1.7, source="IMF_CPI")   # fresher
+        _add_obs(s, "JP", "policy_rate", date(2026, 7, 1), 1.0, source="FRED")
+        _add_obs(s, "JP", "policy_rate", date(2026, 7, 1), 0.9, source="BIS_CBPOL")  # same date
+        s.commit()
+    with session_factory() as s:
+        f = extract_features(s, "JP", as_of=today)
+    assert f.cpi_yoy == 1.7 and f.indicator_dates["cpi_yoy"] == date(2026, 6, 1)
+    assert f.policy_rate == 0.9                      # source ascending: BIS_CBPOL < FRED
+
+
+def test_zero_votes_label_distinguishes_missing_core_from_no_rule():
+    quiet = _features(real_gdp_yoy=0.5, cpi_yoy=1.7, cpi_yoy_3m_ago=1.7, policy_rate=1.0,
+                      policy_rate_6m_ago=1.0, yield_10y=1.5, yield_2y=1.2,
+                      indicator_dates={"real_gdp_yoy": date(2026, 4, 1), "cpi_yoy": date(2026, 6, 1),
+                                       "policy_rate": date(2026, 7, 1)})
+    c = classify_features(quiet)
+    assert c.stage == 0 and c.stage_label == "Transition (no rule fired)"
+    empty = ShortTermFeatures(country="XX")
+    assert classify_features(empty).stage_label == "Transition (insufficient data)"

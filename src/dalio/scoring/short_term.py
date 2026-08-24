@@ -38,6 +38,15 @@ STAGE_LABELS: dict[int, str] = {
     0: "Transition",
 }
 
+# Slice 26: an input older than this (relative to the as-of date) is dropped and
+# reported in `ShortTermFeatures.stale_inputs` instead of voting. 18 months —
+# every short-term input is monthly or quarterly, so anything older is a dead
+# series (China's FRED unemployment mirror stopped in 2011 and kept voting).
+MAX_INPUT_AGE_DAYS: int = 548
+
+# The three inputs without which a stage call is not a call at all.
+CORE_INDICATORS: tuple[str, ...] = ("real_gdp_yoy", "cpi_yoy", "policy_rate")
+
 # Indicators required to compute the full feature set.
 SHORT_TERM_INDICATORS: tuple[str, ...] = (
     "real_gdp_yoy",
@@ -70,6 +79,12 @@ class ShortTermFeatures:
     yield_10y: float | None = None
     yield_2y: float | None = None
     indicator_dates: dict[str, date] = field(default_factory=dict)
+    # indicator → date of the newest observation that was DROPPED as too old (slice 26)
+    stale_inputs: dict[str, date] = field(default_factory=dict)
+
+    @property
+    def has_core_inputs(self) -> bool:
+        return all(ind in self.indicator_dates for ind in CORE_INDICATORS)
 
     @property
     def cpi_change_3m(self) -> float | None:
@@ -122,7 +137,9 @@ def _value_at_or_before(
             Observation.indicator == indicator,
             Observation.date <= target,
         )
-        .order_by(Observation.date.desc())
+        # Freshest observation wins regardless of source; the source tie-break
+        # keeps two sources on the same date deterministic (replay.py).
+        .order_by(Observation.date.desc(), Observation.source.asc())
         .limit(1)
     ).scalar_one_or_none()
     if row is None:
@@ -151,6 +168,7 @@ def extract_features(
     cap = as_of if as_of is not None else date.today()
     fields: dict[str, float | None] = {}
     indicator_dates: dict[str, date] = {}
+    stale_inputs: dict[str, date] = {}
 
     for ind in SHORT_TERM_INDICATORS:
         latest = _latest_at(session, country, ind, cap)
@@ -158,6 +176,10 @@ def extract_features(
             fields[ind] = None
             continue
         value, when = latest
+        if (cap - when).days > MAX_INPUT_AGE_DAYS:
+            fields[ind] = None                      # a dead series must not vote
+            stale_inputs[ind] = when
+            continue
         fields[ind] = value
         indicator_dates[ind] = when
 
@@ -193,6 +215,7 @@ def extract_features(
         yield_10y=fields.get("yield_10y"),
         yield_2y=fields.get("yield_2y"),
         indicator_dates=indicator_dates,
+        stale_inputs=stale_inputs,
     )
 
 
@@ -318,10 +341,13 @@ def classify_features(
     votes.extend(_vote_expansion(features))
 
     if not votes:
+        # "Insufficient data" only when a core input is missing; with the core
+        # present and no rule firing the honest label is "no rule fired".
+        why = "no rule fired" if features.has_core_inputs else "insufficient data"
         return Classification(
             country=features.country,
             stage=0,
-            stage_label=STAGE_LABELS[0] + " (insufficient data)",
+            stage_label=f"{STAGE_LABELS[0]} ({why})",
             confidence=0.0,
             votes=tuple(votes),
             features=features,

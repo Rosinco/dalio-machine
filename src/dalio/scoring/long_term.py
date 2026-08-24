@@ -123,7 +123,9 @@ def _value_at_or_before(
             Observation.indicator == indicator,
             Observation.date <= target,
         )
-        .order_by(Observation.date.desc())
+        # Freshest observation wins regardless of source; the source tie-break
+        # keeps two sources on the same date deterministic (replay.py).
+        .order_by(Observation.date.desc(), Observation.source.asc())
         .limit(1)
     ).scalar_one_or_none()
     if row is None:
