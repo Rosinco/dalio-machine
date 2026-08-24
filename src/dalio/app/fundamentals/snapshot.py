@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
@@ -84,6 +84,7 @@ class Snapshot:
     history: pd.DataFrame          # iso2, indicator, year, value, is_forecast
     trade: pd.DataFrame | None
     coverage: dict
+    cycles: dict[str, dict] = field(default_factory=dict)   # iso2 → cycle block (cycle basket only)
 
     @property
     def player_codes(self) -> tuple[str, ...]:
@@ -138,9 +139,12 @@ def parse_snapshot(raw: dict) -> Snapshot:
         )
 
     players, cells, cats, vscores, chains, hist = [], [], [], [], [], []
+    cycles: dict[str, dict] = {}
     for iso2, c in raw["countries"].items():
         _require(c, _REQUIRED_COUNTRY, f"snapshot.countries[{iso2}]")
         dq = c["data_quality"] or {}
+        if isinstance(c.get("cycle"), dict):
+            cycles[iso2] = dict(c["cycle"])
         players.append({
             "iso2": iso2, "iso3": c["iso3"], "name": c["name"], "tier": int(c["tier"]),
             "eu_member": bool(c["eu_member"]), "members": tuple(c["members"]),
@@ -200,6 +204,7 @@ def parse_snapshot(raw: dict) -> Snapshot:
         history=pd.DataFrame(hist, columns=["iso2", "indicator", "year", "value", "is_forecast"]),
         trade=pd.DataFrame(trade) if isinstance(trade, list) else None,
         coverage=dict(raw["coverage"]),
+        cycles=cycles,
     )
 
 

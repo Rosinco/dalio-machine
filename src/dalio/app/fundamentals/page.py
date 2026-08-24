@@ -12,6 +12,7 @@ import pandas as pd
 import streamlit as st
 
 from dalio.app.fundamentals.charts import build_fundamentals_map, build_pareto
+from dalio.app.fundamentals.dot import chain_to_dot
 from dalio.app.fundamentals.snapshot import (
     Snapshot,
     SnapshotError,
@@ -83,6 +84,13 @@ def _on_lb_select() -> None:
             st.session_state.country = target
 
 
+def _on_spill_select(key: str) -> None:
+    """Spillover pill clicked: follow the chain to that player."""
+    target = st.session_state.get(key)
+    if target and target != st.session_state.get("country"):
+        st.session_state.country = target
+
+
 # ─── Sections ────────────────────────────────────────────────────────────────
 
 
@@ -99,14 +107,15 @@ def _purpose_view(snap: Snapshot) -> str:
 
 
 def _control_strip(snap: Snapshot, view: str) -> tuple[MapMode, str | None, bool]:
-    c1, c2, c3 = st.columns([2, 3, 2], gap="large")
+    c1, c2, c3 = st.columns([3, 3, 2], gap="large")
     with c1:
         mode_label = st.segmented_control(
-            "Color by", ["Composite", "Category", "Indicator"], default="Composite",
-            key="fund_map_mode",
+            "Color by", ["Composite", "Category", "Indicator", "Chains", "Exposure"],
+            default="Composite", key="fund_map_mode",
         ) or "Composite"
     mode = {"Indicator": MapMode.INDICATOR, "Category": MapMode.CATEGORY,
-            "Composite": MapMode.COMPOSITE}[mode_label]
+            "Composite": MapMode.COMPOSITE, "Chains": MapMode.CHAINS,
+            "Exposure": MapMode.EXPOSURE}[mode_label]
     key: str | None = None
     with c2:
         if mode == MapMode.INDICATOR:
@@ -117,6 +126,12 @@ def _control_strip(snap: Snapshot, view: str) -> tuple[MapMode, str | None, bool
             key = st.selectbox("Category", list(snap.categories),
                                format_func=lambda c: snap.category_labels.get(c, c),
                                key="fund_map_category")
+        elif mode == MapMode.CHAINS:
+            st.caption("How many pressure-chain rules fire per country — judgment encoded as "
+                       "rules (tier C), not data.")
+        elif mode == MapMode.EXPOSURE:
+            st.caption("Who feels the selected country's chains: shaded by how many of its "
+                       "fired rules name them as a spillover target.")
         else:
             st.caption(f"Composite for the {VIEW_LABELS.get(view, view)} view — weighted mean of "
                        "the category scores, renormalised over the categories a country has; "
@@ -134,7 +149,8 @@ def _render_map(snap: Snapshot, mode: MapMode, key: str | None, bloc: bool, sele
     fig = build_fundamentals_map(layer)
     st.plotly_chart(fig, width="stretch", on_select=_on_map_select,
                     selection_mode=("points",), key=MAP_KEY)
-    items = list(layer.legend) + [("#d9d4c5", "No data")]
+    none_label = "None fired" if mode in (MapMode.CHAINS, MapMode.EXPOSURE) else "No data"
+    items = list(layer.legend) + [("#d9d4c5", none_label)]
     st.markdown(legend_row(items), unsafe_allow_html=True)
     dq_note = " ◇ = official statistics contested." if layer.dq_points else ""
     st.caption(f"{layer.caption}{dq_note}")
@@ -184,6 +200,14 @@ def _render_country_panel(snap: Snapshot, iso2: str, view: str) -> None:
         st.markdown(f"<p class='section-lede'>† Data quality <b>{p['dq_flag']}</b>: "
                     f"{p['dq_note'] or 'official statistics contested.'}</p>",
                     unsafe_allow_html=True)
+    cyc = snap.cycles.get(iso2)
+    if cyc:
+        st.markdown(
+            f"<p class='section-lede'>Cycle lens (juxtaposed, never blended): long-term "
+            f"<b>{cyc['long_term_label']}</b> ({cyc['long_term_confidence']:.0%}) · short-term "
+            f"<b>{cyc['short_term_label']}</b> ({cyc['short_term_confidence']:.0%}).</p>",
+            unsafe_allow_html=True,
+        )
     st.markdown(confidence_block("Coverage confidence", coverage_confidence(snap, iso2)),
                 unsafe_allow_html=True)
     table = country_table(snap, iso2)
@@ -205,6 +229,30 @@ def _render_pareto(snap: Snapshot, iso2: str) -> None:
     df = pareto_frame(snap, iso2, level=level, top_n=10)
     st.plotly_chart(build_pareto(df), width="stretch", key="fund_pareto")
     st.caption(pareto_caption(df, name, level))
+
+
+def _render_chains(snap: Snapshot, iso2: str) -> None:
+    name = snap.player_name(iso2)
+    chains = [c for c in snap.chains if c.iso2 == iso2 and c.triggered]
+    st.markdown(
+        '<span class="kicker">Pressure chains</span>'
+        f'<h3 class="section-title">What {name} will be forced to do</h3>'
+        '<p class="section-lede">Six rules over the scored panel: binding constraint → forced '
+        'option set → who feels it. Judgment encoded as rules (tier C) — thresholds are round '
+        'numbers from the sovereign-debt and balance-of-payments literature, not calibrated.</p>',
+        unsafe_allow_html=True,
+    )
+    if not chains:
+        st.caption(f"No rule fires for {name} on the current snapshot.")
+        return
+    players = dict(zip(snap.players["iso2"], snap.players["name"], strict=True))
+    for ch in sorted(chains, key=lambda c: -c.severity):
+        st.graphviz_chart(chain_to_dot(ch, players, snap.catalog), width="stretch")
+        targets = [t for t in ch.targets if t in players and t != iso2]
+        if targets:
+            key = f"spill_{iso2}_{ch.rule_id}"
+            st.pills("Follow the spillover to", targets, format_func=lambda t: players[t],
+                     key=key, on_change=_on_spill_select, args=(key,))
 
 
 # ─── Page ────────────────────────────────────────────────────────────────────
@@ -249,4 +297,5 @@ def render_fundamentals_page() -> None:
     with right:
         _render_country_panel(snap, selected, view)
 
+    _render_chains(snap, selected)
     _render_pareto(snap, selected)

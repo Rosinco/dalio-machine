@@ -60,6 +60,7 @@ def test_load_snapshot_shapes(synthetic_snapshot_dir):
     assert set(h.columns) == {"iso2", "indicator", "year", "value", "is_forecast"}
     assert sorted(h[(h.iso2 == "US") & (h.indicator == "gdp_pc_ppp")]["year"]) == [2019, 2024]
     assert snap.trade is None
+    assert snap.cycles == {}                                    # no cycle data seeded
     from tests.conftest import SYNTHETIC_FILLED
     assert snap.coverage["filled"] == SYNTHETIC_FILLED
     assert snap.player_name("SE") == "Sweden" and snap.player_name("ZZ") == "ZZ"
