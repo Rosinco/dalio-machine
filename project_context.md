@@ -2,7 +2,9 @@
 
 ## Overview
 
-dalio-machine is a macro-cycle dashboard built on Ray Dalio's economic machine framework. For 8 economies (US, CN, EU, UK, JP, SE, IN, BR), it pulls macro indicators from FRED, BIS, IMF, OECD, World Bank, WID, and SIPRI, then classifies cycle stage with rule-based logic. Output is a Streamlit dashboard for **asset-allocation decision support** — informing diversified-portfolio tilts based on regime indicators, *not* market-timing signals.
+dalio-machine is a macro-cycle dashboard built on Ray Dalio's economic machine framework. For 8 economies (US, CN, EU, UK, JP, SE, IN, BR), it pulls macro indicators from FRED, BIS, IMF and World Bank, then classifies cycle stage with rule-based logic. Output is a Streamlit dashboard for **asset-allocation decision support** — informing diversified-portfolio tilts based on regime indicators, *not* market-timing signals.
+
+Since slice 18 it also hosts the **World Fundamentals Map**: 21 countries + the euro-area aggregate scored by percentile on fundamentals across five first-principles categories (real stuff · production · exchange · promises · enforcer), with purpose-specific *views* (jurisdiction gate for concentrated stock positions, allocation lens, learning, moonshot geography) as weight vectors over the category scores. Design in `decisions/0001-fundamentals-map.md`; full plan in `~/.claude/plans/radiant-bubbling-micali.md`.
 
 The framework is treated as a descriptive lens, not a predictive oracle. Per Dalio's own writing and academic evidence on macro-overlay strategies, this dashboard surfaces regime state with explicit confidence — it does not output buy/sell signals.
 
@@ -17,16 +19,21 @@ The framework is treated as a descriptive lens, not a predictive oracle. Per Dal
 
 - **Entry Points:**
   - `dalio-fetch-fred` (CLI ETL) — `src/dalio/pipelines/fetch_fred.py:main`
+  - `dalio-fetch-bis` (CLI ETL) — `src/dalio/pipelines/fetch_bis.py:main`
+  - `dalio-fetch-fundamentals` (CLI ETL, World Bank; IMF/BIS families planned) — `src/dalio/pipelines/fetch_fundamentals.py:main`
+  - `dalio-score` (writes `data/snapshots/fundamentals_latest.json` + dated copy) — `src/dalio/pipelines/score_fundamentals.py:main`
   - `dalio-app` (Streamlit dashboard) — `src/dalio/app/streamlit_app.py:main`
 - **Module Structure:**
-  - `src/dalio/countries.py` — 8-country tiered registry
-  - `src/dalio/data_sources/` — one adapter per provider (FRED first; BIS, IMF, OECD, WB, WID, SIPRI later)
-  - `src/dalio/indicators/` — cycle-layer computation (short-term, long-term, big-cycle)
-  - `src/dalio/scoring/` — stage classification + asset-allocation map
-  - `src/dalio/storage/` — SQLite schema + session helpers
-  - `src/dalio/pipelines/` — ETL orchestration (one pipeline per data source)
-  - `src/dalio/app/` — Streamlit dashboard
-- **Data Flow:** API (FRED/BIS/IMF/...) → DataSource adapter → long-format DataFrame → SQLite via SQLAlchemy → indicator compute → stage classifier → Streamlit chart
+  - `src/dalio/countries.py` — **the one place to add a player**: 22-row registry (8 cycle countries + 14 Tier-3 fundamentals-only), derived `ISO2_TO_WB` / `ISO2_TO_BIS` / `ISO3_TO_ISO2`, `CYCLE_COUNTRIES`, `RANKING_POPULATION` (21, no aggregate), `EUROZONE_ISO3`, static flags (`fx_regime`, `sanctioned`, `data_quality`)
+  - `src/dalio/data_sources/` — one adapter per provider: `fred.py`, `bis.py`, `worldbank.py` (WDI source 2 + WGI source 3, paginated multi-country, never `mrv`)
+  - `src/dalio/scoring/` — cycle classifiers + allocation map + `fundamentals.py` (indicator registry, percentile/category/view scoring, snapshot) + `big_cycle.py` (Gini/COFER; delegates WB calls to `worldbank.py`)
+  - `src/dalio/storage/` — SQLite schema + session helpers (single `observations` table; fundamentals rows share it)
+  - `src/dalio/pipelines/` — ETL orchestration; `fetch_fred.upsert_observations` is the shared **set-based** upsert (slice 18)
+  - `src/dalio/app/` — Streamlit dashboard (`views.py` view-models; cycle map iterates `CYCLE_COUNTRIES` via `has_cycle_data`)
+  - `decisions/` — ADRs (pull on demand)
+  - `src/dalio/indicators/` — empty placeholder (compute lives in `scoring/`)
+- **Data Flow (cycles):** API (FRED/BIS) → adapter → long-format DataFrame → SQLite → feature extraction → stage classifier → Streamlit chart
+- **Data Flow (fundamentals):** World Bank/IMF/BIS → adapter → SQLite → `dalio-score` → `data/snapshots/fundamentals_latest.json` → (slice P1) Streamlit fundamentals page reading the snapshot only
 
 ## Conventions
 
@@ -51,7 +58,23 @@ The framework is treated as a descriptive lens, not a predictive oracle. Per Dal
 
 Tier drives dashboard confidence labels — Tier 2 readings are flagged as "data thinner" in the UI.
 
+### Fundamentals players (slice 18, Tier 3 = fundamentals only)
+
+DE · FR · IT · ES · NL (all `eu_member`, `currency_union`) · CA · RU (`sanctioned`, `data_quality=opaque`) · KR · AU · MX (medium) · ID (managed, medium) · SA (`peg`, low) · TR (managed, low) · CH. Plus the 8 cycle countries (US `reserve_issuer`; CN managed/low; IN managed/medium; BR medium). The euro-area aggregate `EU` is `on_map=False`, carries `members=EUROZONE_ISO3` (20), and is **excluded from `RANKING_POPULATION`** (21) — its percentiles are interpolated so its members are not double-counted. Adding a player = one `Country(...)` row.
+
 ## Indicator Catalogue
+
+### World Fundamentals Map (slice 18 tracer trio; slice 19 fills the 15)
+
+Five categories: `real_stuff` · `production` · `exchange` · `promises` · `enforcer`. Every indicator carries an uncertainty tier (A measured / B model-or-forecast / C ordinal index) and a direction.
+
+| Indicator | Category | Definition | Source | Dir | Tier |
+|-----------|----------|-----------|--------|-----|------|
+| `gdp_pc_ppp` | production | GDP per capita, PPP (constant 2021 intl $) | WB `NY.GDP.PCAP.PP.KD` | higher | B |
+| `old_age_dependency` | real_stuff | Population 65+ per 100 aged 15–64 | WB `SP.POP.DPND.OL` | lower | A |
+| `military_pct_gdp` | enforcer | Military expenditure % of GDP (SIPRI via WB) — capacity proxy, not a virtue score; slice 19 switches to share-of-world | WB `MS.MIL.XPND.GD.ZS` | higher | A |
+
+Scoring: percentile rank among the 21 (worst 0 / best 100, average ties, ~5-point steps), 5-year trend with a 0.1 × cross-sectional-std dead band, category score = mean with a half-coverage floor, views (`learning`, `jurisdiction`, `allocation`, `moonshot`) = renormalised weight vectors with a 60 % floor. Forecast rows are tagged by source suffix `_FCST` (slice 20).
 
 ### Short-term debt cycle (slice 1)
 
@@ -120,8 +143,9 @@ All thresholds in `src/dalio/scoring/short_term.py`. Vote weights and reasons ar
 
 ## Current State
 
-- **Working:** Slices 1 + 2 + 4 + 7 + 8 + 9 + 10 + 11 + 12 + 13 + 14 end-to-end for all 8 countries (Tier-1 + Tier-2). Cross-regime real-yield multiplier, per-country threshold calibration, historical regime backtest, full world-map coverage, SEK home-currency overlay.
-- **Tests:** 120/120 passing.
+- **Working:** Slices 1–17 end-to-end for all 8 cycle countries. **Slice 18 (2026-08-24):** World Fundamentals Map data layer — 22-player registry, World Bank adapter, set-based upsert, percentile scoring, snapshot JSON; live run 66/66 cells (3 indicators × 22 players). No fundamentals UI yet (slice P0/P1).
+- **Tests:** 206/206 passing (`pytest`), `ruff check src tests` clean.
+- **Live fundamentals (2026-08-24, tracer trio, learning view):** SA 93 · US 80 · KR 65 · RU 63 · UK/NL/AU 58 · SE 57 · … · IT 28 · JP 20. Reads as expected for these three inputs (military-%-GDP rewards SA/RU; JP's dependency ratio 51 is worst-in-class) — not a verdict until the full 15 land.
 - **Live short-term cycle (2026-04-27):** US Transition (Reflation ↔ Inflationary peak) 29% / CN Expansion 42% / EU Inflationary peak 29% / UK Inflationary peak 33% / JP Transition (insufficient CPI) 0% / SE Expansion 42%.
 - **Live long-term cycle (2026-04-27):**
   - **US** — Transition (Reflation/financial repression ↔ Bubble) 32% (debt 250%, fell 40pp/5y as inflation eroded ratio)
@@ -130,8 +154,12 @@ All thresholds in `src/dalio/scoring/short_term.py`. Vote weights and reasons ar
   - **UK** — Reflation/financial repression 41% (debt 219%, fell 86pp/5y with CPI 3.4% — beautiful deleveraging)
   - **Japan** — Top — peak debt service 37% (debt 357% — extreme zone)
   - **Sweden** — Deleveraging 44% (DSR 23.3% — household distress, real-estate stress)
-- **In Progress:** Slice 3 (Tier-2 fan-out: IN, BR for short-term + long-term cycles).
+- **In Progress:** World Fundamentals Map — next: P0 (navigation + theme + click-callback fix), P1 (fundamentals page: map/leaderboard/table), 19 (remaining 12 indicators incl. WGI + world shares), P2 (views + Pareto). MVP gate 2026-09-14.
 - **Known data gaps (documented):**
+  - **IMF DataMapper** may return Akamai 403 from some networks (verify from Adam's network before slice 20; SDMX WEO-vintage fallback).
+  - **IMF DOTS** no longer exists on the new IMF portal — bilateral trade needs `IMF.STA,IMTS` (spike, post-gate).
+  - **World Bank `mrv=1`** returns null latest rows — banned; adapters fetch a range and keep non-null years.
+  - **WGI** needs `source=3` and ids `GOV_WGI_{RL,PV,...}.{EST,SE}`; no euro-area aggregate (member-mean, flagged, in slice 19).
   - **JP CPI** — FRED's OECD-MEI Japan CPI mirror discontinued 2021; no current FRED series.
   - **CN 10Y yield** — not in FRED.
   - **CN GDP** — annual only (`NAEXKP01CNA657S`), already-YoY format.
@@ -158,11 +186,24 @@ All thresholds in `src/dalio/scoring/short_term.py`. Vote weights and reasons ar
 | **12** ✓ done | Historical regime backtest — `replay.py` walks both classifiers across 35 years; dashboard step chart with Lehman/COVID/CPI-peak annotations |
 | **13** ✓ done | Tier-2 fan-out (IN, BR) — closes "Slice 3 pending" placeholder; world map fully populated; back-compat preserved via TIER_1 + TIER_2 union |
 | **14** ✓ done | SEK-anchored allocation view — small interest-rate-parity overlay biases USD-denominated foreign assets by home-vs-target real-rate differential; sidebar "View as: SEK / USD" radio defaults to SEK |
+| **15–17** ✓ done | Growth × Inflation grid · HY-spread asset signal · big-cycle qualitative panel |
+| **18** ✓ done | World Fundamentals Map data layer: 22-player registry, World Bank adapter, set-based upsert, percentile/category/view scoring, snapshot JSON, `dalio-fetch-fundamentals` + `dalio-score`, ADR 0001 |
+| P0 | Fundamentals presentation plumbing: `st.navigation`, `theme.py`, callback-based map clicks (fixes the `session_state` write-after-instantiation bug), selected-country outline, `snapshot.py` loader + synthetic fixture |
+| P1 | Fundamentals page tracer: map (indicator mode, quintile bins, no-data band, data-quality diamonds), leaderboard, dense country table, selection sync, URL params |
+| 19 | Remaining 12 indicators (WB/WGI + world shares), 5-y trend, `scripts/audit_coverage.py` |
+| P2 | Composite/category map modes, purpose-view selector + weights + captions, Pareto (indicator + category), coverage confidence — **MVP gate 2026-09-14** |
+| 20 | IMF DataMapper (WEO history + forecasts), interest burden, `gdp_growth_fwd5` |
+| 21 | Pressure chains (6 rules, tier C) + views/pressures/cycle blocks in snapshot |
+| P3 / P4 | DOT flowcharts + spillover pills + exposure map · Gapminder bubble with forecast markers |
+| 22–25 | BIS Tier-3 extension · PWT/ECI static files · IMTS bilateral-trade spike · `jurisdiction_tier` export |
 
 ## Decision Log
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
+| 2026-08-24 | **ADR 0001** — World Fundamentals Map: five first-principles categories, percentile rank among 21 (aggregate interpolated), mean category score with half-coverage floor, purposes as weight-vector views (no headline composite by default), uncertainty tiers A/B/C + data-quality flags carried per cell, one snapshot JSON as the only data↔UI coupling, storage unchanged | Pareto + Occam on Dalio's 18 determinants; n = 21 makes weighting false precision; four purposes must not leak into data. See `decisions/0001-fundamentals-map.md`. |
+| 2026-08-24 | `upsert_observations` rewritten set-based (one SELECT + executemany), same `(inserted, skipped)` contract | Row-by-row SELECT cost ~8 s per 20k rows; fundamentals loads are bulk. Equivalence test against the old loop in `tests/test_upsert.py`. |
+| 2026-08-24 | Cycle map/classifiers gated by `has_cycle_data` (cycle indicators present), not "any observation" | Fundamentals-only rows for Tier-3 players would otherwise run the classifiers on empty features. |
 | 2026-04-27 | Frame project as decision-support for allocation tilts, not market-timing | Empirical evidence: macro-overlay strategies underperform passive after costs. Dalio's own All Weather doesn't time. |
 | 2026-04-27 | 8-country basket with tiering | Tier 1: full Dalio framework relevance + complete data. Tier 2: major EM with strong but slightly thinner coverage. Drives UI confidence labels. |
 | 2026-04-27 | SQLite + SQLAlchemy + long-format observations table | Simple, file-based, easy to reason about. Long format makes adding indicators trivial. |
@@ -174,6 +215,7 @@ All thresholds in `src/dalio/scoring/short_term.py`. Vote weights and reasons ar
 
 | Date | Change | Files |
 |------|--------|-------|
+| 2026-08-24 | Slice 18 complete: World Fundamentals Map data layer. Registry → 22 players with derived maps and static flags (`countries.py` is the one place to add a country; `EUROZONE_ISO3` moved here, `views` re-exports). New `data_sources/worldbank.py` (paginated multi-country WDI/WGI, never `mrv`, disk cache; `big_cycle.fetch_gini` delegates). `upsert_observations` set-based with equivalence test. New `scoring/fundamentals.py` (IndicatorSpec registry with tiers, `percentile_rank` incl. aggregate interpolation, `trend_direction`, `category_scores`, `view_scores`, `build_snapshot`/`write_snapshot`). New pipelines `dalio-fetch-fundamentals` / `dalio-score`. `map_iso3_to_country_iso2`: DEU → "DE" (registry first), other eurozone → "EU". Cycle map iterates `CYCLE_COUNTRIES` via `has_cycle_data`. Live: 3 indicators × 22 players, 66/66 cells; snapshot 395 KB. Adversarial review pass (4 lenses + skeptic verification) found and fixed before commit: year-end `as_of` made the 5-year lag a 6-year lag (day-28 clamp); stale single-point series reported `trend="flat"`; `load_panel` could borrow another spec's source; aggregate `distance_to_best` could go negative; `upsert_observations` had no rollback (partial batch swept into the next commit); cycles-page click on DE/FR/IT/ES/NL would reset the selectbox and loop (`cycle_click_target`). 55 new tests (206 total). ADR 0001 + `decisions/README.md`. | `src/dalio/{countries,app/views,app/streamlit_app,data_sources/worldbank,data_sources/bis,scoring/fundamentals,scoring/big_cycle,pipelines/fetch_fred,pipelines/fetch_fundamentals,pipelines/score_fundamentals}.py`, `tests/test_{countries,views,upsert,worldbank,fundamentals,fetch_fundamentals}.py`, `decisions/0001-fundamentals-map.md`, `pyproject.toml`, `.gitignore` |
 | 2026-04-28 | Slice 17 complete: big-cycle qualitative panel. New `src/dalio/scoring/big_cycle.py` loads two slow-moving series — World Bank Gini (per country, internal-disorder proxy) and IMF COFER USD share of allocated FX reserves (global quarterly, reserve-currency lifecycle). Neither feeds the classifier or `compute_tilts`. Rendered in a deeply-collapsed "The bigger picture" expander with two charts plus a static framework outline (6 stages of internal order, 8 measures of national power), explicitly labeled "Dalio's framework — not classified by this tool". Live: US Gini 41.8 (2024); COFER USD share 56.8% (2025-Q4, down 14pp from 70.8% in 2000-Q1). 8 new tests with mocked HTTP. Plan now fully shipped (10 → 17). | `src/dalio/scoring/big_cycle.py`, `src/dalio/app/streamlit_app.py`, `tests/test_big_cycle.py` |
 | 2026-04-27 | Slice 16 complete: asset-price inputs (HY credit spread). New `src/dalio/scoring/asset_signals.py` computes z-score of latest `hy_spread` against country's 20y history (US-only — `BAMLH0A0HYM2` is a US ICE BofA index). `LongTermFeatures` gains `hy_spread`/`hy_spread_z`; `_vote_bubble` adds Phase 3 vote when z < −1.5 (complacency), `_vote_top` adds Phase 4 vote when z > +2.0 (distress repricing). Dashboard shows HY-spread metric with regime caption in the long-term card. Scope reduced from original plan: CAPE deferred (FRED lacks the 10y real S&P earnings; needs Yale spreadsheet integration), gold:bonds deferred (LBMA gold series discontinued on FRED). 9 new tests. | `src/dalio/scoring/{asset_signals,long_term}.py`, `src/dalio/data_sources/fred.py`, `src/dalio/app/streamlit_app.py`, `tests/test_asset_signals.py` |
 | 2026-04-27 | Slice 15 complete: refactor allocation to growth × inflation grid. New `src/dalio/scoring/grid.py` introduces `GridQuadrant` enum (5 entries — 4 strict G×I quadrants + REFLATION hybrid per refined plan), `GRID_TILTS` canonical mapping, `quadrant_for_features()`. `SHORT_TERM_TILTS` now derived from `GRID_TILTS` via `STAGE_TO_QUADRANT` (back-compat preserved 1e-6). Stagflation (G↓I↑) gets explicit tilts (long_bonds −1.7). Dashboard "Growth × Inflation grid" panel renders the country's current `(real_gdp_yoy, cpi_yoy)` point on a 2×2 with quadrant tilt-direction labels and Reflation hybrid note. 14 new tests. | `src/dalio/scoring/{grid,allocation}.py`, `src/dalio/app/streamlit_app.py`, `tests/test_grid.py` |
