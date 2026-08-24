@@ -56,7 +56,7 @@ class Country:
     fred_id: str | None = None
     bis_id: str | None = None
     wb_id: str | None = None          # World Bank code: ISO3 or "EMU"
-    imf_id: str | None = None         # IMF DataMapper code (ISO3); None until verified
+    imf_id: str | None = None         # IMF DataMapper entity: ISO3, or "EURO" for the euro area
     central_bank: str | None = None
     currency: str | None = None
     eu_member: bool = False           # individual player that is also inside the EU aggregate
@@ -83,7 +83,7 @@ COUNTRIES: Final[tuple[Country, ...]] = (
             fx_regime="managed", data_quality=DataQuality.LOW,
             data_quality_note="GDP series smoothed; provincial data revised; opacity on credit."),
     Country("EU", "EMU", "Eurozone", Tier.TIER_1, fred_id="EMU", bis_id="XM",
-            wb_id="EMU", imf_id=None, central_bank="European Central Bank", currency="EUR",
+            wb_id="EMU", imf_id="EURO", central_bank="European Central Bank", currency="EUR",
             members=EUROZONE_ISO3, fx_regime="reserve_issuer", on_map=False),
     Country("UK", "GBR", "United Kingdom", Tier.TIER_1, fred_id="GBR", bis_id="GB",
             wb_id="GBR", imf_id="GBR", central_bank="Bank of England", currency="GBP"),

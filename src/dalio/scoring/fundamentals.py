@@ -69,6 +69,10 @@ class IndicatorSpec:
     first_year: int = 1960
     forward: bool = False            # value is a mean of forecast rows after as_of
     se_indicator: str | None = None  # sibling indicator carrying a standard error
+    base_indicator: str | None = None  # stored series a forward indicator is derived from
+
+
+FORWARD_HORIZON_YEARS = 5
 
 
 # The 15 scored indicators (ADR 0001). Keep this list the single source of
@@ -101,7 +105,8 @@ FUNDAMENTALS: tuple[IndicatorSpec, ...] = (
     IndicatorSpec(
         "gdp_growth_fwd5", "production", "Real growth, next 5 y", "% p.a. (IMF forecast)",
         higher_is_better=True, uncertainty="B",
-        preferred_sources=("IMF_WEO_FCST",), first_year=1980, forward=True,
+        preferred_sources=("IMF_WEO_FCST", "IMF_WEO"), first_year=1980, forward=True,
+        base_indicator="real_gdp_growth",
         description="Mean of the IMF's real-GDP growth forecasts for the next five years. "
                     "A forecast, not a fact (tier B): 1-year RMSE ~1.5 pp, worse beyond.",
     ),
@@ -213,7 +218,8 @@ class CategoryScore:
 
 
 def _as_of_cutoff(as_of: date, lag_years: int) -> date:
-    """``as_of`` minus whole years; only Feb 29 needs clamping (→ Feb 28).
+    """``as_of`` minus whole years (negative = forward); only Feb 29 needs
+    clamping (→ Feb 28).
 
     World Bank rows are dated Dec 31, so a naive day-28 clamp would silently
     turn a 5-year lag into 6 years for any year-end ``as_of``.
@@ -279,13 +285,61 @@ def _rank_by_source_preference(df: pd.DataFrame, specs: Sequence[IndicatorSpec])
     return df[df["_pref"].notna()].copy()
 
 
+def load_forward_panel(
+    session: Session,
+    specs: Sequence[IndicatorSpec],
+    countries: Sequence[Country],
+    as_of: date,
+    horizon_years: int = FORWARD_HORIZON_YEARS,
+) -> pd.DataFrame:
+    """Forward indicators: mean of the base series' FORECAST rows dated in
+    ``(as_of, as_of + horizon]``. Returns the same long shape as ``load_panel``
+    (``date`` = last forecast year used, ``source`` = the forecast tag) plus
+    ``n_years``. Specs without ``forward``/``base_indicator`` are ignored."""
+    fwd = [s for s in specs if s.forward and s.base_indicator]
+    cols = ["country", "indicator", "value", "date", "source", "n_years"]
+    if not fwd:
+        return pd.DataFrame(columns=cols)
+    base_to_spec = {s.base_indicator: s for s in fwd}
+    iso2s = [c.iso2 for c in countries]
+    end = _as_of_cutoff(as_of, -horizon_years)
+    rows = session.execute(
+        select(Observation.country, Observation.indicator, Observation.value,
+               Observation.date, Observation.source)
+        .where(
+            Observation.indicator.in_(list(base_to_spec)),
+            Observation.country.in_(iso2s),
+            Observation.source.like(f"%{FORECAST_SUFFIX}"),
+            Observation.date > as_of,
+            Observation.date <= end,
+        )
+    ).all()
+    if not rows:
+        return pd.DataFrame(columns=cols)
+    df = pd.DataFrame(rows, columns=["country", "indicator", "value", "date", "source"])
+    g = df.groupby(["country", "indicator"], as_index=False).agg(
+        value=("value", "mean"), date=("date", "max"), source=("source", "first"),
+        n_years=("value", "size"),
+    )
+    g["indicator"] = g["indicator"].map(lambda b: base_to_spec[b].name)
+    return g[cols]
+
+
 def load_history(
     session: Session,
     specs: Sequence[IndicatorSpec],
     countries: Sequence[Country],
 ) -> pd.DataFrame:
     """All annual rows for the snapshot's history block (preferred source only).
+    Forward indicators show their base series' history (incl. forecasts).
     Columns: ``country, indicator, year, value, is_forecast``."""
+    alias = {s.base_indicator: s.name for s in specs if s.forward and s.base_indicator}
+    specs = tuple(
+        IndicatorSpec(s.base_indicator, s.category, s.label, s.unit, s.higher_is_better,
+                      s.uncertainty, s.preferred_sources, s.description, s.cadence, s.first_year)
+        if s.forward and s.base_indicator else s
+        for s in specs
+    )
     names = [s.name for s in specs]
     sources = sorted({src for s in specs for src in s.preferred_sources})
     iso2s = [c.iso2 for c in countries]
@@ -305,9 +359,13 @@ def load_history(
     df = _rank_by_source_preference(df, specs)
     if df.empty:
         return pd.DataFrame(columns=cols)
-    # One source per (country, indicator): the most preferred one that has data.
-    best = df.groupby(["country", "indicator"])["_pref"].transform("min")
-    df = df[df["_pref"] == best]
+    # One source FAMILY per (country, indicator) — a family is a source and its
+    # forecast tag (IMF_WEO + IMF_WEO_FCST) so a series does not mix BIS and IMF
+    # levels across years, yet history and projections stay together.
+    df["_family"] = df["source"].str.replace(FORECAST_SUFFIX + "$", "", regex=True)
+    fam_pref = df.groupby(["country", "indicator", "_family"])["_pref"].transform("min")
+    best = df.assign(_fp=fam_pref).groupby(["country", "indicator"])["_fp"].transform("min")
+    df = df[fam_pref == best].copy()
     df["year"] = [d.year for d in df["date"]]
     df["is_forecast"] = df["source"].str.endswith(FORECAST_SUFFIX)
     # Quarterly series (BIS DSR): keep the LAST observation of each year.
@@ -315,6 +373,8 @@ def load_history(
         df.sort_values(["country", "indicator", "year", "date"])
         .drop_duplicates(subset=["country", "indicator", "year"], keep="last")
     )
+    if alias:
+        df["indicator"] = df["indicator"].map(lambda n: alias.get(n, n))
     return df[cols].reset_index(drop=True)
 
 
@@ -467,6 +527,16 @@ def build_snapshot(
 
     latest = load_panel(session, specs, countries, as_of)
     lagged = load_panel(session, specs, countries, as_of, lag_years=5)
+    forward = load_forward_panel(session, specs, countries, as_of)
+    if not forward.empty:
+        # Forward indicators replace whatever the backward panel found for them.
+        fwd_names = set(forward["indicator"])
+        latest = pd.concat(
+            [latest[~latest["indicator"].isin(fwd_names)],
+             forward[["country", "indicator", "value", "date", "source"]]],
+            ignore_index=True,
+        )
+        lagged = lagged[~lagged["indicator"].isin(fwd_names)]
     # Standard-error siblings (WGI) share the estimate's sources.
     se_specs = [
         IndicatorSpec(s.se_indicator, s.category, s.label, "se", True, s.uncertainty,
@@ -529,7 +599,7 @@ def build_snapshot(
             "trend_5y": None if lag is None else float(v - lag),
             "lag_value": lag,
             "is_forecast": src.endswith(FORECAST_SUFFIX),
-            "forecast_horizon_years": None,
+            "forecast_horizon_years": FORWARD_HORIZON_YEARS if s.forward else None,
             "se": se,
             "uncertainty": s.uncertainty,
         }

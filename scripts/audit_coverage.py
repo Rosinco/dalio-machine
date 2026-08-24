@@ -12,10 +12,11 @@ from __future__ import annotations
 import argparse
 from datetime import date
 
+import pandas as pd
 from dotenv import load_dotenv
 
 from dalio.countries import COUNTRIES
-from dalio.scoring.fundamentals import FUNDAMENTALS, load_history, load_panel
+from dalio.scoring.fundamentals import FUNDAMENTALS, load_forward_panel, load_history, load_panel
 from dalio.storage.db import init_db, make_engine, make_session_factory
 
 
@@ -31,7 +32,13 @@ def main() -> int:
     init_db(engine)
     with make_session_factory(engine)() as s:
         panel = load_panel(s, FUNDAMENTALS, COUNTRIES, as_of)
+        forward = load_forward_panel(s, FUNDAMENTALS, COUNTRIES, as_of)
         hist = load_history(s, FUNDAMENTALS, COUNTRIES)
+    if not forward.empty:   # forward indicators replace their backward reading
+        fwd_names = set(forward["indicator"])
+        panel = pd.concat([panel[~panel["indicator"].isin(fwd_names)],
+                           forward[["country", "indicator", "value", "date", "source"]]],
+                          ignore_index=True)
 
     latest = {(r.country, r.indicator): r.date for r in panel.itertuples()}
     fcst_only = set()

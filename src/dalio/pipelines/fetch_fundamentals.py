@@ -17,8 +17,16 @@ import sys
 from collections.abc import Sequence
 
 from dotenv import load_dotenv
+from sqlalchemy import delete
 
 from dalio.countries import COUNTRIES, Country, get_country
+from dalio.data_sources.imf_datamapper import (
+    IMF_FUNDAMENTALS,
+    SOURCE_FORECAST,
+    ImfDataMapperSource,
+    ImfSpec,
+    derive_interest_burden,
+)
 from dalio.data_sources.worldbank import (
     WB_FUNDAMENTALS,
     WB_MEMBER_MEAN_INDICATORS,
@@ -29,15 +37,28 @@ from dalio.data_sources.worldbank import (
     derive_world_share,
 )
 from dalio.pipelines.fetch_fred import upsert_observations
-from dalio.storage.db import init_db, make_engine, make_session_factory
+from dalio.storage.db import Observation, init_db, make_engine, make_session_factory
 
 logger = logging.getLogger(__name__)
 
-IMPLEMENTED_SOURCES: tuple[str, ...] = ("wb",)
+IMPLEMENTED_SOURCES: tuple[str, ...] = ("wb", "imf")
 PLANNED_SOURCES: dict[str, str] = {
-    "imf": "IMF DataMapper (WEO history + forecasts) — slice 20",
     "bis": "BIS DSR + private credit for Tier-3 players — slice 22",
 }
+
+
+def delete_forecasts(session, indicator: str, iso2s: Sequence[str]) -> int:
+    """A WEO vintage supersedes the previous one entirely: drop old forecast
+    rows before inserting the new ones (history rows are upserted as usual)."""
+    res = session.execute(
+        delete(Observation).where(
+            Observation.indicator == indicator,
+            Observation.source == SOURCE_FORECAST,
+            Observation.country.in_(list(iso2s)),
+        )
+    )
+    session.commit()
+    return int(res.rowcount or 0)
 
 
 def run_pipeline(
@@ -46,6 +67,8 @@ def run_pipeline(
     use_cache: bool = True,
     wb_source: WorldBankSource | None = None,
     wb_specs: Sequence[WbIndicatorSpec] = WB_FUNDAMENTALS,
+    imf_source: ImfDataMapperSource | None = None,
+    imf_specs: Sequence[ImfSpec] = IMF_FUNDAMENTALS,
 ) -> dict[str, dict]:
     """Fetch every spec of every requested source and upsert. Returns a
     per-spec summary keyed ``"{source}/{indicator}"``; errors are collected,
@@ -60,10 +83,10 @@ def run_pipeline(
     eu_members = [c.iso2 for c in basket if c.eu_member]
     has_eu = any(c.iso2 == "EU" for c in basket)
 
-    def _store(key: str, df, series_id: str, indicator: str) -> None:
+    def _store(key: str, df, series_id: str, indicator: str, source_family: str = "wb") -> None:
         ins, skp = upsert_observations(session, df)
         summary[key] = {
-            "source": "wb", "indicator": indicator, "series_id": series_id,
+            "source": source_family, "indicator": indicator, "series_id": series_id,
             "rows": len(df), "inserted": ins, "skipped": skp,
             "countries": int(df["country"].nunique()) if not df.empty else 0,
         }
@@ -72,7 +95,34 @@ def run_pipeline(
 
     with session_factory() as session:
         for source in sources:
-            if source == "wb":
+            if source == "imf":
+                imf = imf_source or ImfDataMapperSource()
+                fetched: dict[str, object] = {}
+                iso2s = [c.iso2 for c in basket if c.imf_id]
+                for spec in imf_specs:
+                    key = f"imf/{spec.indicator}"
+                    try:
+                        df = imf.fetch(spec, basket, use_cache=use_cache)
+                        delete_forecasts(session, spec.indicator, iso2s)
+                        _store(key, df, spec.imf_code, spec.indicator, "imf")
+                        fetched[spec.indicator] = df
+                    except Exception as e:  # noqa: BLE001 — collect per-series
+                        logger.exception("Failed %s: %s", key, e)
+                        summary[key] = {"source": "imf", "indicator": spec.indicator,
+                                        "series_id": spec.imf_code, "error": str(e)}
+                if "primary_balance_pct_gdp" in fetched and "fiscal_balance_pct_gdp" in fetched:
+                    try:
+                        delete_forecasts(session, "interest_burden_pct_gdp", iso2s)
+                        _store("imf/interest_burden_pct_gdp",
+                               derive_interest_burden(fetched["primary_balance_pct_gdp"],
+                                                      fetched["fiscal_balance_pct_gdp"]),
+                               "primary-overall", "interest_burden_pct_gdp", "imf")
+                    except Exception as e:  # noqa: BLE001
+                        logger.exception("Failed imf/interest_burden_pct_gdp: %s", e)
+                        summary["imf/interest_burden_pct_gdp"] = {
+                            "source": "imf", "indicator": "interest_burden_pct_gdp",
+                            "series_id": "primary-overall", "error": str(e)}
+            elif source == "wb":
                 wb = wb_source or WorldBankSource()
                 for spec in wb_specs:
                     key = f"wb/{spec.indicator}"
