@@ -18,7 +18,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from dalio.scoring.fundamentals import build_snapshot, write_snapshot
+from dalio.scoring.fundamentals import build_snapshot, jurisdiction_table, write_snapshot
 from dalio.storage.db import init_db, make_engine, make_session_factory
 
 logger = logging.getLogger(__name__)
@@ -39,6 +39,8 @@ def run(as_of: date | None = None, out: Path | None = None) -> tuple[Path, dict]
     write_snapshot(snap, target)
     if out is None:
         write_snapshot(snap, snapshot_dir() / f"fundamentals_{snap['as_of']}.json")
+        # Slice 25: the one output that touches real money — §0.2 pre-triage input.
+        jurisdiction_table(snap).to_csv(snapshot_dir() / "jurisdiction_tier.csv", index=False)
     return target, snap
 
 

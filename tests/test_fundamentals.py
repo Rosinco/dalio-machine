@@ -373,6 +373,28 @@ def test_history_keeps_last_observation_per_year_from_best_source(session_factor
     assert h.iloc[0]["year"] == 2024 and h.iloc[0]["value"] == 13.0   # Q4, from the preferred source
 
 
+def test_jurisdiction_table_and_tiers(session_factory):
+    from dalio.scoring.fundamentals import jurisdiction_table, jurisdiction_tier
+    from tests.conftest import seed_synthetic
+    assert jurisdiction_tier(60.0) == "A" and jurisdiction_tier(59.9) == "B"
+    assert jurisdiction_tier(40.0) == "B" and jurisdiction_tier(39.9) == "C" and jurisdiction_tier(None) == "—"
+    with session_factory() as s:
+        seed_synthetic(s)
+        s.commit()
+    with session_factory() as s:
+        snap = build_snapshot(s, as_of=date(2026, 8, 24))
+    df = jurisdiction_table(snap)
+    assert len(df) == 22
+    assert list(df.columns) == ["iso2", "iso3", "name", "jurisdiction_score", "jurisdiction_tier", "enforcer",
+                                "promises", "exchange", "fx_regime", "sanctioned", "data_quality",
+                                "fired_rules", "aggregate", "as_of"]
+    ru = df[df.iso2 == "RU"].iloc[0]
+    assert ru["sanctioned"] and ru["data_quality"] == "opaque" and ru["fired_rules"] == "isolation"
+    assert df[df.iso2 == "EU"]["aggregate"].iloc[0]
+    # sorted by score, unscored last; synthetic seeds cover enforcer only (< 60 % weight) → all '—'
+    assert (df["jurisdiction_tier"] == "—").all()
+
+
 def test_build_snapshot_on_empty_db(session_factory):
     with session_factory() as s:
         snap = build_snapshot(s, as_of=date(2026, 8, 24))

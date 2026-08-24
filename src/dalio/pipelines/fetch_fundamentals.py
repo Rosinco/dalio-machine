@@ -20,6 +20,13 @@ from dotenv import load_dotenv
 from sqlalchemy import delete
 
 from dalio.countries import COUNTRIES, Country, get_country
+from dalio.data_sources.bis import (
+    TIER_3_DSR,
+    TIER_3_PRIVATE_CREDIT,
+    BisSource,
+    DsrSpec,
+    TotalCreditSpec,
+)
 from dalio.data_sources.imf_datamapper import (
     IMF_FUNDAMENTALS,
     SOURCE_FORECAST,
@@ -41,10 +48,8 @@ from dalio.storage.db import Observation, init_db, make_engine, make_session_fac
 
 logger = logging.getLogger(__name__)
 
-IMPLEMENTED_SOURCES: tuple[str, ...] = ("wb", "imf")
-PLANNED_SOURCES: dict[str, str] = {
-    "bis": "BIS DSR + private credit for Tier-3 players — slice 22",
-}
+IMPLEMENTED_SOURCES: tuple[str, ...] = ("wb", "imf", "bis")
+PLANNED_SOURCES: dict[str, str] = {}
 
 
 def delete_forecasts(session, indicator: str, iso2s: Sequence[str]) -> int:
@@ -69,6 +74,9 @@ def run_pipeline(
     wb_specs: Sequence[WbIndicatorSpec] = WB_FUNDAMENTALS,
     imf_source: ImfDataMapperSource | None = None,
     imf_specs: Sequence[ImfSpec] = IMF_FUNDAMENTALS,
+    bis_source: BisSource | None = None,
+    bis_dsr_specs: Sequence[DsrSpec] = TIER_3_DSR,
+    bis_credit_specs: Sequence[TotalCreditSpec] = TIER_3_PRIVATE_CREDIT,
 ) -> dict[str, dict]:
     """Fetch every spec of every requested source and upsert. Returns a
     per-spec summary keyed ``"{source}/{indicator}"``; errors are collected,
@@ -122,6 +130,21 @@ def run_pipeline(
                         summary["imf/interest_burden_pct_gdp"] = {
                             "source": "imf", "indicator": "interest_burden_pct_gdp",
                             "series_id": "primary-overall", "error": str(e)}
+            elif source == "bis":
+                bis = bis_source or BisSource()
+                wanted = {c.iso2 for c in basket}
+                for spec in [*bis_dsr_specs, *bis_credit_specs]:
+                    if spec.country not in wanted:
+                        continue
+                    key = f"bis/{spec.country}/{spec.indicator}"
+                    try:
+                        df = (bis.fetch_dsr(spec, use_cache=use_cache) if isinstance(spec, DsrSpec)
+                              else bis.fetch_total_credit(spec, use_cache=use_cache))
+                        _store(key, df, spec.indicator, spec.indicator, "bis")
+                    except Exception as e:  # noqa: BLE001 — collect per-series (SA/RU expected)
+                        logger.warning("Failed %s: %s", key, e)
+                        summary[key] = {"source": "bis", "indicator": spec.indicator,
+                                        "series_id": spec.country, "error": str(e)}
             elif source == "wb":
                 wb = wb_source or WorldBankSource()
                 for spec in wb_specs:

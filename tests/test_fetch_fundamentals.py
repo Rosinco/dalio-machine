@@ -55,13 +55,14 @@ def test_run_pipeline_upserts_and_collects_errors(db_env):
         use_cache=False, wb_source=fake, wb_specs=specs,
         imf_source=_FakeImf({"gov_debt_pct_gdp": RuntimeError("akamai 403")}),
         imf_specs=(ImfSpec("gov_debt_pct_gdp", "GGXWDG_NGDP"),),
+        bis_source=_FakeBis(),
     )
     assert summary["wb/gdp_pc_ppp"]["rows"] == 2
     assert summary["wb/gdp_pc_ppp"]["inserted"] == 2
     assert summary["wb/gdp_pc_ppp"]["countries"] == 2
     assert "error" in summary["wb/old_age_dependency"]
     assert "akamai" in summary["imf/gov_debt_pct_gdp"]["error"]
-    assert "not implemented" in summary["bis/*"]["error"]
+    assert summary["bis/KR/debt_service_ratio"]["rows"] == 0          # empty fake, no error
     assert "unknown source" in summary["nope/*"]["error"]
     assert fake.calls[0] == ("gdp_pc_ppp", ("US", "KR"), False)
 
@@ -150,6 +151,52 @@ def test_imf_pipeline_replaces_forecasts_and_derives_interest(db_env):
     assert fiscal == {(2025, "IMF_WEO"): -6.5, (2026, "IMF_WEO_FCST"): -6.2}
     interest = {(r[1].year, r[3]): r[2] for r in rows if r[0] == "interest_burden_pct_gdp"}
     assert interest == {(2025, "IMF_WEO"): 3.5, (2026, "IMF_WEO_FCST"): pytest.approx(3.6)}
+
+
+class _FakeBis:
+    def __init__(self, dsr=None, credit=None):
+        self._dsr, self._credit = dsr or {}, credit or {}
+        self.calls = []
+
+    def fetch_dsr(self, spec, use_cache=True):
+        self.calls.append(("dsr", spec.country))
+        out = self._dsr.get(spec.country)
+        if isinstance(out, Exception):
+            raise out
+        return out if out is not None else pd.DataFrame(
+            columns=["country", "indicator", "date", "value", "source", "series_id"])
+
+    def fetch_total_credit(self, spec, use_cache=True):
+        self.calls.append(("tc", spec.country))
+        return self._credit.get(spec.country, pd.DataFrame(
+            columns=["country", "indicator", "date", "value", "source", "series_id"]))
+
+
+def test_bis_tier3_pipeline_filters_basket_and_collects_errors(db_env):
+    dsr_kr = pd.DataFrame([{"country": "KR", "indicator": "debt_service_ratio", "date": date(2025, 4, 1),
+                            "value": 13.2, "source": "BIS_DSR", "series_id": "Q.KR.P"}])
+    fake = _FakeBis(dsr={"KR": dsr_kr, "RU": ValueError("Resource not found (404)")})
+    basket = [get_country("KR"), get_country("RU"), get_country("US")]
+    summary = fetch_fundamentals.run_pipeline(("bis",), countries=basket, use_cache=False, bis_source=fake)
+    assert summary["bis/KR/debt_service_ratio"]["rows"] == 1
+    assert "404" in summary["bis/RU/debt_service_ratio"]["error"]
+    assert ("dsr", "US") not in fake.calls                      # US is not a Tier-3 spec
+    assert ("tc", "KR") in fake.calls                            # private credit requested too
+    with make_engine(db_env).connect() as conn:
+        rows = conn.execute(select(Observation.country, Observation.value)).all()
+    assert rows == [("KR", 13.2)]
+
+
+def test_score_writes_jurisdiction_csv(db_env, tmp_path):
+    fake = _FakeWb({"gdp_pc_ppp": _frame("gdp_pc_ppp", [("US", 2024, 80000.0), ("SE", 2024, 60000.0)])})
+    fetch_fundamentals.run_pipeline(("wb",), use_cache=False, wb_source=fake,
+                                    wb_specs=(WbIndicatorSpec("gdp_pc_ppp", "NY.GDP.PCAP.PP.KD"),))
+    score_fundamentals.run(as_of=date(2026, 8, 24))
+    csv = tmp_path / "snapshots" / "jurisdiction_tier.csv"
+    assert csv.exists()
+    df = pd.read_csv(csv)
+    assert list(df.columns)[:5] == ["iso2", "iso3", "name", "jurisdiction_score", "jurisdiction_tier"]
+    assert len(df) == 22 and set(df["jurisdiction_tier"]) == {"—"}     # nothing scored on enforcer/promises
 
 
 def test_score_writes_latest_and_dated_snapshot(db_env, tmp_path):

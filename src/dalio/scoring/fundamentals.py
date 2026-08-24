@@ -758,6 +758,46 @@ def _cycle_blocks(session: Session, countries: Sequence[Country]) -> dict[str, d
     return out
 
 
+# ─── Jurisdiction tier export (slice 25) ─────────────────────────────────────
+
+JURISDICTION_TIERS: tuple[tuple[str, float], ...] = (("A", 60.0), ("B", 40.0), ("C", 0.0))
+
+
+def jurisdiction_tier(score: float | None) -> str:
+    """A ≥ 60 · B ≥ 40 · C otherwise · '—' when the view is unscored."""
+    if score is None:
+        return "—"
+    for tier, floor in JURISDICTION_TIERS:
+        if score >= floor:
+            return tier
+    return "C"
+
+
+def jurisdiction_table(snapshot: dict) -> pd.DataFrame:
+    """One row per player for the §0.2 pre-triage: jurisdiction view score and
+    tier, the two categories behind it, static flags, fired chains, as-of.
+    Pre-triage input only — a country tier never fells a company by itself."""
+    rows = []
+    for iso2, c in snapshot["countries"].items():
+        score = c["views"].get("jurisdiction")
+        cats = c["categories"]
+        rows.append({
+            "iso2": iso2, "iso3": c["iso3"], "name": c["name"],
+            "jurisdiction_score": None if score is None else round(float(score), 1),
+            "jurisdiction_tier": jurisdiction_tier(score),
+            "enforcer": cats.get("enforcer", {}).get("score"),
+            "promises": cats.get("promises", {}).get("score"),
+            "exchange": cats.get("exchange", {}).get("score"),
+            "fx_regime": c["fx_regime"], "sanctioned": c["sanctioned"],
+            "data_quality": c["data_quality"]["flag"],
+            "fired_rules": "|".join(p["rule_id"] for p in c["pressures"]),
+            "aggregate": not c["on_map"],
+            "as_of": snapshot["as_of"],
+        })
+    df = pd.DataFrame(rows)
+    return df.sort_values(["jurisdiction_score"], ascending=False, na_position="last").reset_index(drop=True)
+
+
 def write_snapshot(snapshot: dict, path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(snapshot, indent=1, ensure_ascii=False))

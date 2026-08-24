@@ -241,6 +241,25 @@ TIER_2_DSR: tuple[DsrSpec, ...] = tuple(
 )
 
 
+# ─── Tier-3 fundamentals bundle (slice 22) ───────────────────────────────
+
+# Fundamentals-only players: only the two series the World Fundamentals Map
+# scores or reads — DSR (scored, `debt_service_ratio`) and private non-financial
+# credit (context for the credit-bust rule). Government debt comes from the IMF
+# for these players (BIS sector G is missing for SA/RU/ID/MX). Saudi Arabia has
+# no BIS DSR; Russia's BIS reporting is suspended (expected empty/404).
+TIER_3_COUNTRIES: tuple[str, ...] = (
+    "DE", "FR", "IT", "ES", "NL", "CA", "RU", "KR", "AU", "MX", "ID", "TR", "CH",
+)
+TIER_3_PRIVATE_CREDIT: tuple[TotalCreditSpec, ...] = tuple(
+    TotalCreditSpec("private_nonfin_pct_gdp", country, Sector.PRIVATE_NON_FIN)
+    for country in TIER_3_COUNTRIES
+)
+TIER_3_DSR: tuple[DsrSpec, ...] = tuple(
+    DsrSpec("debt_service_ratio", country) for country in TIER_3_COUNTRIES
+)
+
+
 # Aggregated convenience constants for callers that want everything.
 ALL_TOTAL_CREDIT: tuple[TotalCreditSpec, ...] = TIER_1_TOTAL_CREDIT + TIER_2_TOTAL_CREDIT
 ALL_DSR: tuple[DsrSpec, ...] = TIER_1_DSR + TIER_2_DSR
