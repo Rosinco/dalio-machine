@@ -35,11 +35,13 @@ def test_load_snapshot_shapes(synthetic_snapshot_dir):
     ind = snap.indicators
     assert list(ind.columns) == ["iso2", "indicator", "value", "pct", "trend", "trend_5y",
                                  "lag_value", "tier", "as_of", "source", "is_forecast", "se"]
-    assert len(ind) == 6 * 3
+    assert len(ind) == 6 * 15
     us_gdp = ind[(ind.iso2 == "US") & (ind.indicator == "gdp_pc_ppp")].iloc[0]
     assert us_gdp["pct"] == 100.0 and us_gdp["tier"] == "B" and us_gdp["as_of"] == "2024-12-31"
-    eu_mil = ind[(ind.iso2 == "EU") & (ind.indicator == "military_pct_gdp")].iloc[0]
+    eu_mil = ind[(ind.iso2 == "EU") & (ind.indicator == "military_share_world")].iloc[0]
     assert pd.isna(eu_mil["value"]) and pd.isna(eu_mil["pct"])   # numeric columns: None → NaN
+    us_rol = ind[(ind.iso2 == "US") & (ind.indicator == "rule_of_law")].iloc[0]
+    assert us_rol["se"] == 0.15 and us_rol["tier"] == "C"
 
     cs = snap.category_scores
     assert set(cs["category"]) == set(CATEGORIES)
@@ -55,7 +57,8 @@ def test_load_snapshot_shapes(synthetic_snapshot_dir):
     assert set(h.columns) == {"iso2", "indicator", "year", "value", "is_forecast"}
     assert sorted(h[(h.iso2 == "US") & (h.indicator == "gdp_pc_ppp")]["year"]) == [2019, 2024]
     assert snap.trade is None
-    assert snap.coverage["filled"] == 17
+    from tests.conftest import SYNTHETIC_FILLED
+    assert snap.coverage["filled"] == SYNTHETIC_FILLED
     assert snap.player_name("SE") == "Sweden" and snap.player_name("ZZ") == "ZZ"
 
 

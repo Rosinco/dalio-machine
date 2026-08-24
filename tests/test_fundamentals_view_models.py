@@ -73,7 +73,7 @@ def test_metric_series_modes(synthetic_snapshot_dict):
 
 def test_map_layer_indicator_mode(synthetic_snapshot_dict):
     snap = _snap(synthetic_snapshot_dict)
-    layer = map_layer(snap, MapMode.INDICATOR, "military_pct_gdp", "learning", selected_iso2="EU")
+    layer = map_layer(snap, MapMode.INDICATOR, "military_share_world", "learning", selected_iso2="EU")
     # EU has no military value → its 19 covered members are no-data; selected still last among scored? EU not scored
     assert set(layer.no_data_locations) >= {"AUT", "PRT"}
     assert "DEU" not in layer.no_data_locations           # Germany scored on its own
@@ -136,19 +136,23 @@ def test_leaderboard_sorted_with_markers(synthetic_snapshot_dict):
 
 def test_coverage_confidence(synthetic_snapshot_dict):
     snap = _snap(synthetic_snapshot_dict)
-    us = coverage_confidence(snap, "US")       # B + A + A present → mean(.6,1,1) × 1
-    assert abs(us - (0.6 + 1 + 1) / 3) < 1e-9
-    eu = coverage_confidence(snap, "EU")       # military missing → ×2/3
-    assert abs(eu - ((0.6 + 1) / 2) * (2 / 3)) < 1e-9
+    # US present: gdp B, dep A, rd A, mil A, rol C → mean(.6,1,1,1,.3) × 5/15
+    us = coverage_confidence(snap, "US")
+    assert abs(us - ((0.6 + 1 + 1 + 1 + 0.3) / 5) * (5 / 15)) < 1e-9
+    eu = coverage_confidence(snap, "EU")       # gdp B + dep A → ×2/15
+    assert abs(eu - ((0.6 + 1) / 2) * (2 / 15)) < 1e-9
 
 
 def test_country_table_order_and_gaps(synthetic_snapshot_dict):
     snap = _snap(synthetic_snapshot_dict)
     t = country_table(snap, "EU")
-    assert list(t["category"]) == ["real_stuff", "production", "enforcer"]
-    mil = t[t.indicator == "military_pct_gdp"].iloc[0]
+    assert len(t) == 15
+    assert list(dict.fromkeys(t["category"])) == ["real_stuff", "production", "exchange", "promises", "enforcer"]
+    mil = t[t.indicator == "military_share_world"].iloc[0]
     assert mil["value"] is None or pd.isna(mil["value"])
     assert mil["tier"] == "A"
+    rol = country_table(snap, "US").set_index("indicator").loc["rule_of_law"]
+    assert rol["se"] == 0.15
 
 
 def test_html_dense_table_escapes_and_marks(synthetic_snapshot_dict):
@@ -157,7 +161,9 @@ def test_html_dense_table_escapes_and_marks(synthetic_snapshot_dict):
     t.loc[0, "label"] = "<b>evil</b>"
     html_out = html_dense_table(t, snap.category_labels, 5)
     assert "&lt;b&gt;evil&lt;/b&gt;" in html_out and "<b>evil</b>" not in html_out
-    assert html_out.count('<tr class="cat">') == 3
+    assert html_out.count('<tr class="cat">') == 5
     assert 'class="tier tier-b"' in html_out and 'class="tier tier-a"' in html_out
+    assert 'class="tier tier-c"' in html_out
+    assert "±0.15" in html_out
     assert "1/5" in html_out                      # US gdp best of 5
     assert "▲" in html_out or "▼" in html_out

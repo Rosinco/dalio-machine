@@ -233,10 +233,92 @@ def _empty_long() -> pd.DataFrame:
     ])
 
 
-# ─── Fundamentals bundle (slice 18: tracer trio; slice 19 adds the rest) ────
+# ─── Derived series ──────────────────────────────────────────────────────────
 
+WORLD_SHARE_SUFFIX = "÷WLD"
+MEMBER_MEAN_SUFFIX = ":member-mean"
+
+
+def derive_world_share(df: pd.DataFrame, indicator_out: str) -> pd.DataFrame:
+    """``country ÷ WLD × 100`` per year → a new long frame for ``indicator_out``.
+
+    Input is one indicator's long frame that includes the ``WLD`` pseudo-country
+    (fetch with ``include_world=True``). Rows without a matching world value
+    are dropped; the world row itself is not emitted.
+    """
+    if df.empty:
+        return _empty_long()
+    world = df[df["country"] == WORLD_CODE].set_index("date")["value"]
+    rest = df[df["country"] != WORLD_CODE].copy()
+    rest["_w"] = rest["date"].map(world)
+    rest = rest[rest["_w"].notna() & (rest["_w"] != 0)]
+    if rest.empty:
+        return _empty_long()
+    out = rest.assign(
+        indicator=indicator_out,
+        value=rest["value"] / rest["_w"] * 100.0,
+        series_id=rest["series_id"] + WORLD_SHARE_SUFFIX,
+    ).drop(columns="_w")
+    return out[["country", "indicator", "date", "value", "source", "series_id"]].reset_index(drop=True)
+
+
+def derive_member_mean(
+    df: pd.DataFrame,
+    members: Sequence[str],
+    out_country: str,
+    min_members: int = 3,
+) -> pd.DataFrame:
+    """Unweighted mean over ``members`` per (indicator, date) → rows for
+    ``out_country`` (the euro-area aggregate, which WGI does not publish).
+
+    Flagged in ``series_id`` (``:member-mean``) so the UI can say so. For
+    standard-error siblings this is an approximation, not a pooled SE.
+    """
+    sub = df[df["country"].isin(members)]
+    if sub.empty:
+        return _empty_long()
+    g = sub.groupby(["indicator", "date", "source"], as_index=False).agg(
+        value=("value", "mean"), n=("value", "size"), series_id=("series_id", "first"),
+    )
+    g = g[g["n"] >= min_members].drop(columns="n")
+    if g.empty:
+        return _empty_long()
+    g["country"] = out_country
+    g["series_id"] = g["series_id"] + MEMBER_MEAN_SUFFIX
+    return g[["country", "indicator", "date", "value", "source", "series_id"]].reset_index(drop=True)
+
+
+# ─── Fundamentals bundle ─────────────────────────────────────────────────────
+
+# Raw pulls. Derived indicators (world shares, EU member-means) are produced by
+# the pipeline from these via the helpers above.
 WB_FUNDAMENTALS: tuple[WbIndicatorSpec, ...] = (
-    WbIndicatorSpec("gdp_pc_ppp", "NY.GDP.PCAP.PP.KD", start_year=1990),
+    # real stuff
+    WbIndicatorSpec("energy_net_imports_pct", "EG.IMP.CONS.ZS", start_year=1960),
     WbIndicatorSpec("old_age_dependency", "SP.POP.DPND.OL", start_year=1960),
+    # production
+    WbIndicatorSpec("gdp_pc_ppp", "NY.GDP.PCAP.PP.KD", start_year=1990),
+    WbIndicatorSpec("rd_pct_gdp", "GB.XPD.RSDV.GD.ZS", start_year=1996),
+    # exchange
+    WbIndicatorSpec("exports_usd", "NE.EXP.GNFS.CD", start_year=1960, include_world=True),
+    WbIndicatorSpec("current_account_pct_gdp", "BN.CAB.XOKA.GD.ZS", start_year=1960),
+    WbIndicatorSpec("reserves_months_imports", "FI.RES.TOTL.MO", start_year=1960),
+    # enforcer
     WbIndicatorSpec("military_pct_gdp", "MS.MIL.XPND.GD.ZS", start_year=1960),
+    WbIndicatorSpec("military_usd", "MS.MIL.XPND.CD", start_year=1960, include_world=True),
+    WbIndicatorSpec("rule_of_law", "GOV_WGI_RL.EST", source_id=3, start_year=1996),
+    WbIndicatorSpec("rule_of_law_se", "GOV_WGI_RL.SE", source_id=3, start_year=1996),
+    WbIndicatorSpec("political_stability", "GOV_WGI_PV.EST", source_id=3, start_year=1996),
+    WbIndicatorSpec("political_stability_se", "GOV_WGI_PV.SE", source_id=3, start_year=1996),
+)
+
+# (raw indicator → derived indicator) world shares computed after fetch
+WB_WORLD_SHARES: tuple[tuple[str, str], ...] = (
+    ("exports_usd", "exports_share_world"),
+    ("military_usd", "military_share_world"),
+)
+
+# WGI has no euro-area aggregate: mean of the basket's members, flagged.
+WB_MEMBER_MEAN_INDICATORS: tuple[str, ...] = (
+    "rule_of_law", "rule_of_law_se", "political_stability", "political_stability_se",
 )

@@ -126,10 +126,13 @@ def test_cache_hit_avoids_second_call(http_client, tmp_path):
     assert http_client.get.call_count == 1
 
 
-def test_fundamentals_bundle_is_tracer_trio_across_three_categories():
+def test_fundamentals_bundle_shape():
     names = [s.indicator for s in WB_FUNDAMENTALS]
-    assert names == ["gdp_pc_ppp", "old_age_dependency", "military_pct_gdp"]
-    assert all(s.source_id == 2 for s in WB_FUNDAMENTALS)
+    assert len(names) == len(set(names)) == 13
+    assert {"gdp_pc_ppp", "old_age_dependency", "exports_usd", "military_usd", "rule_of_law_se"} <= set(names)
+    world = {s.indicator for s in WB_FUNDAMENTALS if s.include_world}
+    assert world == {"exports_usd", "military_usd"}
+    assert {s.source_id for s in WB_FUNDAMENTALS} == {2, 3}
 
 
 def test_every_registry_country_has_wb_id_for_fetch():

@@ -65,6 +65,35 @@ def test_run_pipeline_upserts_and_collects_errors(db_env):
     assert sorted(rows) == [("KR", 50000.0), ("US", 80000.0)]
 
 
+def test_run_pipeline_derives_world_share_and_member_mean(db_env):
+    specs = (
+        WbIndicatorSpec("exports_usd", "NE.EXP.GNFS.CD", include_world=True),
+        WbIndicatorSpec("rule_of_law", "GOV_WGI_RL.EST", source_id=3),
+    )
+    frames = {
+        "exports_usd": _frame("exports_usd", [("US", 2023, 3000.0), ("DE", 2023, 1800.0), ("WLD", 2023, 30000.0)]),
+        "rule_of_law": pd.DataFrame([
+            {"country": c, "indicator": "rule_of_law", "date": date(2023, 12, 31), "value": v,
+             "source": "WORLD_BANK_WGI", "series_id": "GOV_WGI_RL.EST"}
+            for c, v in (("DE", 1.6), ("FR", 1.3), ("IT", 0.3), ("ES", 0.9), ("NL", 1.8), ("US", 1.4))
+        ]),
+    }
+    basket = [get_country(c) for c in ("US", "DE", "FR", "IT", "ES", "NL", "EU")]
+    summary = fetch_fundamentals.run_pipeline(("wb",), countries=basket, use_cache=False,
+                                              wb_source=_FakeWb(frames), wb_specs=specs)
+    assert summary["wb/exports_share_world"]["rows"] == 2
+    assert summary["wb/rule_of_law:EU"]["rows"] == 1
+    with make_engine(db_env).connect() as conn:
+        rows = conn.execute(select(Observation.country, Observation.indicator, Observation.value,
+                                   Observation.series_id)).all()
+    by = {(r[0], r[1]): (r[2], r[3]) for r in rows}
+    assert by[("US", "exports_share_world")][0] == 10.0
+    assert by[("US", "exports_share_world")][1].endswith("÷WLD")
+    assert ("WLD", "exports_share_world") not in by
+    assert by[("EU", "rule_of_law")][0] == pytest.approx((1.6 + 1.3 + 0.3 + 0.9 + 1.8) / 5)
+    assert by[("EU", "rule_of_law")][1].endswith(":member-mean")
+
+
 def test_score_writes_latest_and_dated_snapshot(db_env, tmp_path):
     fake = _FakeWb({"gdp_pc_ppp": _frame("gdp_pc_ppp", [("US", 2024, 80000.0), ("SE", 2024, 60000.0)])})
     fetch_fundamentals.run_pipeline(

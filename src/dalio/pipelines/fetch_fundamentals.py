@@ -19,7 +19,15 @@ from collections.abc import Sequence
 from dotenv import load_dotenv
 
 from dalio.countries import COUNTRIES, Country, get_country
-from dalio.data_sources.worldbank import WB_FUNDAMENTALS, WbIndicatorSpec, WorldBankSource
+from dalio.data_sources.worldbank import (
+    WB_FUNDAMENTALS,
+    WB_MEMBER_MEAN_INDICATORS,
+    WB_WORLD_SHARES,
+    WbIndicatorSpec,
+    WorldBankSource,
+    derive_member_mean,
+    derive_world_share,
+)
 from dalio.pipelines.fetch_fred import upsert_observations
 from dalio.storage.db import init_db, make_engine, make_session_factory
 
@@ -48,6 +56,20 @@ def run_pipeline(
     session_factory = make_session_factory(engine)
 
     summary: dict[str, dict] = {}
+    world_shares = dict(WB_WORLD_SHARES)
+    eu_members = [c.iso2 for c in basket if c.eu_member]
+    has_eu = any(c.iso2 == "EU" for c in basket)
+
+    def _store(key: str, df, series_id: str, indicator: str) -> None:
+        ins, skp = upsert_observations(session, df)
+        summary[key] = {
+            "source": "wb", "indicator": indicator, "series_id": series_id,
+            "rows": len(df), "inserted": ins, "skipped": skp,
+            "countries": int(df["country"].nunique()) if not df.empty else 0,
+        }
+        logger.info("Stored %s: %d rows / %d countries (%d new/updated)",
+                    key, len(df), summary[key]["countries"], ins)
+
     with session_factory() as session:
         for source in sources:
             if source == "wb":
@@ -56,14 +78,14 @@ def run_pipeline(
                     key = f"wb/{spec.indicator}"
                     try:
                         df = wb.fetch(spec, basket, use_cache=use_cache)
-                        ins, skp = upsert_observations(session, df)
-                        summary[key] = {
-                            "source": "wb", "indicator": spec.indicator, "series_id": spec.wb_code,
-                            "rows": len(df), "inserted": ins, "skipped": skp,
-                            "countries": int(df["country"].nunique()) if not df.empty else 0,
-                        }
-                        logger.info("Fetched %s: %d rows / %d countries (%d new/updated)",
-                                    key, len(df), summary[key]["countries"], ins)
+                        _store(key, df, spec.wb_code, spec.indicator)
+                        if spec.indicator in world_shares:
+                            out = world_shares[spec.indicator]
+                            _store(f"wb/{out}", derive_world_share(df, out), spec.wb_code + "÷WLD", out)
+                        if has_eu and spec.indicator in WB_MEMBER_MEAN_INDICATORS and eu_members:
+                            dkey = f"wb/{spec.indicator}:EU"
+                            _store(dkey, derive_member_mean(df, eu_members, "EU"),
+                                   spec.wb_code + ":member-mean", spec.indicator)
                     except Exception as e:  # noqa: BLE001 — collect per-series
                         logger.exception("Failed %s: %s", key, e)
                         summary[key] = {"source": "wb", "indicator": spec.indicator,

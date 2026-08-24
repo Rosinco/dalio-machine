@@ -71,16 +71,17 @@ class IndicatorSpec:
     se_indicator: str | None = None  # sibling indicator carrying a standard error
 
 
-# Slice 18 ships the tracer trio (one per category for three categories).
-# Slice 19 fills the remaining twelve. Keep this list the single source of
-# truth for what is scored — the UI reads it from the snapshot.
+# The 15 scored indicators (ADR 0001). Keep this list the single source of
+# truth for what is scored — the UI reads it from the snapshot. IMF-sourced
+# cells stay empty until slice 20 wires the DataMapper adapter.
 FUNDAMENTALS: tuple[IndicatorSpec, ...] = (
+    # ── real stuff ──
     IndicatorSpec(
-        "gdp_pc_ppp", "production", "GDP per capita (PPP)", "intl $ 2021",
-        higher_is_better=True, uncertainty="B",
-        preferred_sources=("WORLD_BANK",), first_year=1990,
-        description="Output per person at purchasing-power parity. The level of prosperity; "
-                    "PPP conversion is model-dependent (tier B).",
+        "energy_net_imports_pct", "real_stuff", "Energy net imports", "% of energy use",
+        higher_is_better=False, uncertainty="A",
+        preferred_sources=("WORLD_BANK",), first_year=1960,
+        description="Energy use minus production, as a share of use. Negative = net exporter. "
+                    "The physical dependency that supply shocks hit first.",
     ),
     IndicatorSpec(
         "old_age_dependency", "real_stuff", "Old-age dependency", "% of working-age pop.",
@@ -89,14 +90,106 @@ FUNDAMENTALS: tuple[IndicatorSpec, ...] = (
         description="People 65+ per 100 people aged 15–64. Higher = fewer hands per pension; "
                     "the slow variable behind growth, savings and fiscal pressure.",
     ),
+    # ── production ──
     IndicatorSpec(
-        "military_pct_gdp", "enforcer", "Military spending", "% of GDP",
+        "gdp_pc_ppp", "production", "GDP per capita (PPP)", "intl $ 2021",
+        higher_is_better=True, uncertainty="B",
+        preferred_sources=("WORLD_BANK",), first_year=1990,
+        description="Output per person at purchasing-power parity. The level of prosperity; "
+                    "PPP conversion is model-dependent (tier B).",
+    ),
+    IndicatorSpec(
+        "gdp_growth_fwd5", "production", "Real growth, next 5 y", "% p.a. (IMF forecast)",
+        higher_is_better=True, uncertainty="B",
+        preferred_sources=("IMF_WEO_FCST",), first_year=1980, forward=True,
+        description="Mean of the IMF's real-GDP growth forecasts for the next five years. "
+                    "A forecast, not a fact (tier B): 1-year RMSE ~1.5 pp, worse beyond.",
+    ),
+    IndicatorSpec(
+        "rd_pct_gdp", "production", "R&D spending", "% of GDP",
+        higher_is_better=True, uncertainty="A",
+        preferred_sources=("WORLD_BANK",), first_year=1996,
+        description="Gross domestic expenditure on R&D. The investment behind future "
+                    "productivity; ragged in the latest 1–2 years.",
+    ),
+    # ── exchange ──
+    IndicatorSpec(
+        "exports_share_world", "exchange", "Share of world exports", "% of world",
         higher_is_better=True, uncertainty="A",
         preferred_sources=("WORLD_BANK",), first_year=1960,
-        description="Defence outlays as a share of output (SIPRI via World Bank). A proxy for "
-                    "the state's capacity to enforce externally — not a virtue score.",
+        description="Exports of goods and services ÷ world exports. Dalio's trade-share "
+                    "measure of power — scale, not openness.",
+    ),
+    IndicatorSpec(
+        "current_account_pct_gdp", "exchange", "Current account", "% of GDP",
+        higher_is_better=True, uncertainty="A",
+        preferred_sources=("IMF_WEO", "WORLD_BANK"), first_year=1960,
+        description="Net lending to the rest of the world. Persistent deficits need financing; "
+                    "surpluses export savings. Errors & omissions are large for some players.",
+    ),
+    IndicatorSpec(
+        "reserves_months_imports", "exchange", "FX reserves", "months of imports",
+        higher_is_better=True, uncertainty="A",
+        preferred_sources=("WORLD_BANK",), first_year=1960,
+        description="Total reserves in months of import cover. The buffer against a sudden stop; "
+                    "less relevant for reserve-currency issuers.",
+    ),
+    # ── promises ──
+    IndicatorSpec(
+        "gov_debt_pct_gdp", "promises", "Government debt", "% of GDP",
+        higher_is_better=False, uncertainty="B",
+        preferred_sources=("IMF_WEO", "BIS_TC"), first_year=1980,
+        description="General government gross debt. The stock of promises the state must "
+                    "service; BIS core-debt figures fill in until IMF lands.",
+    ),
+    IndicatorSpec(
+        "fiscal_balance_pct_gdp", "promises", "Fiscal balance", "% of GDP",
+        higher_is_better=True, uncertainty="B",
+        preferred_sources=("IMF_WEO",), first_year=1980,
+        description="General government net lending. The flow that grows or shrinks the debt "
+                    "stock; the deficit lever in a deleveraging.",
+    ),
+    IndicatorSpec(
+        "interest_burden_pct_gdp", "promises", "Interest burden", "% of GDP",
+        higher_is_better=False, uncertainty="B",
+        preferred_sources=("IMF_WEO",), first_year=1980,
+        description="Primary balance minus overall balance = net interest paid. Where fiscal "
+                    "dominance bites; compare with growth (r vs g).",
+    ),
+    IndicatorSpec(
+        "debt_service_ratio", "promises", "Private debt service", "% of income",
+        higher_is_better=False, uncertainty="B",
+        preferred_sources=("BIS_DSR",), first_year=1999, cadence="Q",
+        description="Interest + amortisation of the private non-financial sector over income "
+                    "(BIS estimate, tier B). The credit-bust trigger.",
+    ),
+    # ── enforcer ──
+    IndicatorSpec(
+        "rule_of_law", "enforcer", "Rule of law", "WGI estimate (−2.5..2.5)",
+        higher_is_better=True, uncertainty="C",
+        preferred_sources=("WORLD_BANK_WGI",), first_year=1996, se_indicator="rule_of_law_se",
+        description="Worldwide Governance Indicators: contract enforcement, property rights, "
+                    "courts. Perception-based (tier C) with a published standard error; the "
+                    "euro-area value is a flagged member mean.",
+    ),
+    IndicatorSpec(
+        "political_stability", "enforcer", "Political stability", "WGI estimate (−2.5..2.5)",
+        higher_is_better=True, uncertainty="C",
+        preferred_sources=("WORLD_BANK_WGI",), first_year=1996,
+        se_indicator="political_stability_se",
+        description="WGI: likelihood of unconstitutional or violent destabilisation. "
+                    "Perception-based (tier C); euro-area value is a flagged member mean.",
+    ),
+    IndicatorSpec(
+        "military_share_world", "enforcer", "Share of world military spending", "% of world",
+        higher_is_better=True, uncertainty="A",
+        preferred_sources=("WORLD_BANK",), first_year=1960,
+        description="Military expenditure ÷ world (SIPRI via World Bank). Capacity to enforce "
+                    "externally — a power measure, not a virtue score.",
     ),
 )
+
+SE_INDICATORS: tuple[str, ...] = tuple(s.se_indicator for s in FUNDAMENTALS if s.se_indicator)
 
 VIEWS: dict[str, dict[str, float]] = {
     "learning": {c: 0.2 for c in CATEGORIES},
@@ -212,11 +305,15 @@ def load_history(
     df = _rank_by_source_preference(df, specs)
     if df.empty:
         return pd.DataFrame(columns=cols)
+    # One source per (country, indicator): the most preferred one that has data.
+    best = df.groupby(["country", "indicator"])["_pref"].transform("min")
+    df = df[df["_pref"] == best]
     df["year"] = [d.year for d in df["date"]]
     df["is_forecast"] = df["source"].str.endswith(FORECAST_SUFFIX)
+    # Quarterly series (BIS DSR): keep the LAST observation of each year.
     df = (
-        df.sort_values(["country", "indicator", "year", "_pref"])
-        .drop_duplicates(subset=["country", "indicator", "year"], keep="first")
+        df.sort_values(["country", "indicator", "year", "date"])
+        .drop_duplicates(subset=["country", "indicator", "year"], keep="last")
     )
     return df[cols].reset_index(drop=True)
 
@@ -370,6 +467,16 @@ def build_snapshot(
 
     latest = load_panel(session, specs, countries, as_of)
     lagged = load_panel(session, specs, countries, as_of, lag_years=5)
+    # Standard-error siblings (WGI) share the estimate's sources.
+    se_specs = [
+        IndicatorSpec(s.se_indicator, s.category, s.label, "se", True, s.uncertainty,
+                      s.preferred_sources, "standard error", first_year=s.first_year)
+        for s in specs if s.se_indicator
+    ]
+    se_panel = load_panel(session, se_specs, countries, as_of) if se_specs else pd.DataFrame(
+        columns=["country", "indicator", "value", "date", "source"]
+    )
+    se_values = _wide(se_panel, "value", iso2s)
     values = _wide(latest, "value", iso2s)
     dates = _wide(latest, "date", iso2s)
     sources = _wide(latest, "source", iso2s)
@@ -409,6 +516,10 @@ def build_snapshot(
         pop_std = float(values.loc[[p for p in population if p in values.index], s.name].std())
         src = str(sources.at[iso2, s.name])
         d = dates.at[iso2, s.name]
+        se = None
+        if s.se_indicator and s.se_indicator in se_values.columns:
+            se_v = se_values.at[iso2, s.se_indicator]
+            se = None if pd.isna(se_v) else float(se_v)
         return {
             "value": v,
             "date": d.isoformat() if d is not None and not pd.isna(d) else None,
@@ -419,7 +530,7 @@ def build_snapshot(
             "lag_value": lag,
             "is_forecast": src.endswith(FORECAST_SUFFIX),
             "forecast_horizon_years": None,
-            "se": None,
+            "se": se,
             "uncertainty": s.uncertainty,
         }
 

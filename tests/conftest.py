@@ -4,6 +4,11 @@
 (`build_snapshot`) and the presentation layer (`load_snapshot`): it is produced
 by the real builder on a seeded temp DB, then decorated with one fake pressure
 chain so the loader's chain path is exercised before slice 21 exists.
+
+Seeded indicators (of the 15): gdp_pc_ppp, old_age_dependency (6 players incl.
+EU, two years); rd_pct_gdp, military_share_world, rule_of_law (+ _se)
+(5 individual players, latest year only). Category coverage that results:
+real_stuff 1/2 · production 2/3 · exchange 0/3 · promises 0/4 · enforcer 2/3.
 """
 from datetime import date
 from pathlib import Path
@@ -15,9 +20,10 @@ from dalio.scoring.fundamentals import build_snapshot, write_snapshot
 from dalio.storage.db import Observation, init_db, make_engine, make_session_factory
 
 SYNTHETIC_PLAYERS = ("US", "SE", "CN", "IN", "DE", "EU")
+SYNTHETIC_FILLED = 6 + 6 + 5 + 5 + 5   # gdp, dep, rd, mil, rol
 
 
-def _seed(session, country, indicator, year_values, source="WORLD_BANK"):
+def seed_observation(session, country, indicator, year_values, source="WORLD_BANK"):
     for year, v in year_values:
         session.add(Observation(
             country=country, indicator=indicator, date=date(year, 12, 31),
@@ -25,21 +31,32 @@ def _seed(session, country, indicator, year_values, source="WORLD_BANK"):
         ))
 
 
+def seed_synthetic(session) -> None:
+    gdp = {"US": 80000, "SE": 60000, "CN": 24000, "IN": 10000, "DE": 65000, "EU": 58000}
+    dep = {"US": 27, "SE": 33, "CN": 21, "IN": 10, "DE": 36, "EU": 34}
+    mil = {"US": 40.0, "SE": 0.4, "CN": 12.0, "IN": 3.4, "DE": 2.6}
+    rd = {"US": 3.5, "SE": 3.4, "CN": 2.4, "IN": 0.7, "DE": 3.1}
+    rol = {"US": 1.4, "SE": 1.7, "CN": -0.5, "IN": 0.1, "DE": 1.6}
+    for iso2, v in gdp.items():
+        seed_observation(session, iso2, "gdp_pc_ppp", [(2019, v * 0.9), (2024, v)])
+    for iso2, v in dep.items():
+        seed_observation(session, iso2, "old_age_dependency", [(2019, v - 2), (2025, v)])
+    for iso2, v in mil.items():
+        seed_observation(session, iso2, "military_share_world", [(2024, v)])
+    for iso2, v in rd.items():
+        seed_observation(session, iso2, "rd_pct_gdp", [(2023, v)])
+    for iso2, v in rol.items():
+        seed_observation(session, iso2, "rule_of_law", [(2023, v)], source="WORLD_BANK_WGI")
+        seed_observation(session, iso2, "rule_of_law_se", [(2023, 0.15)], source="WORLD_BANK_WGI")
+
+
 @pytest.fixture
 def synthetic_snapshot_dict(tmp_path) -> dict:
     engine = make_engine(tmp_path / "synthetic.db")
     init_db(engine)
     sf = make_session_factory(engine)
-    gdp = {"US": 80000, "SE": 60000, "CN": 24000, "IN": 10000, "DE": 65000, "EU": 58000}
-    dep = {"US": 27, "SE": 33, "CN": 21, "IN": 10, "DE": 36, "EU": 34}
-    mil = {"US": 3.3, "SE": 2.0, "CN": 1.7, "IN": 2.4, "DE": 1.5}
     with sf() as s:
-        for iso2, v in gdp.items():
-            _seed(s, iso2, "gdp_pc_ppp", [(2019, v * 0.9), (2024, v)])
-        for iso2, v in dep.items():
-            _seed(s, iso2, "old_age_dependency", [(2019, v - 2), (2025, v)])
-        for iso2, v in mil.items():
-            _seed(s, iso2, "military_pct_gdp", [(2024, v)])
+        seed_synthetic(s)
         s.commit()
     with sf() as s:
         snap = build_snapshot(

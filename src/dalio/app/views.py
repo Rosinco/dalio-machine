@@ -110,6 +110,17 @@ INDICATOR_EXPLANATIONS: dict[str, str] = {
 }
 
 
+def _merge_fundamentals_explanations() -> None:
+    """Fundamentals indicators explain themselves from the registry (slice 19);
+    cycle explanations above win on name clashes (e.g. gov_debt_pct_gdp)."""
+    from dalio.scoring.fundamentals import FUNDAMENTALS
+    for spec in FUNDAMENTALS:
+        INDICATOR_EXPLANATIONS.setdefault(spec.name, spec.description)
+
+
+_merge_fundamentals_explanations()
+
+
 # ─── Per-country view ───────────────────────────────────────────────────────
 
 

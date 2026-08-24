@@ -32,7 +32,7 @@ def test_map_traces_and_outline(synthetic_snapshot_dict):
     assert scored.zmin == -0.5 and scored.zmax == 4.5
     assert fig.layout.geo.projection.type == "natural earth"
 
-    layer2 = map_layer(snap, MapMode.INDICATOR, "military_pct_gdp", "learning", selected_iso2="US")
+    layer2 = map_layer(snap, MapMode.INDICATOR, "military_share_world", "learning", selected_iso2="US")
     fig2 = build_fundamentals_map(layer2)
     assert [t.type for t in fig2.data] == ["choropleth", "choropleth", "scattergeo"]
     assert len(fig2.data[1].locations) == 19

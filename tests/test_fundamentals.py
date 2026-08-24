@@ -204,22 +204,10 @@ def test_load_panel_latest_at_or_before_as_of_with_source_preference(session_fac
     assert lagged.set_index("country").loc["US", "value"] == 1.0
 
 
-def _seed_tracer(session):
-    """Three indicators for a handful of countries; EU as aggregate; RU missing."""
-    gdp = {"US": 80000, "SE": 60000, "CN": 24000, "IN": 10000, "DE": 65000, "EU": 58000}
-    dep = {"US": 27, "SE": 33, "CN": 21, "IN": 10, "DE": 36, "EU": 34}
-    mil = {"US": 3.3, "SE": 2.0, "CN": 1.7, "IN": 2.4, "DE": 1.5}
-    for iso2, v in gdp.items():
-        _seed(session, iso2, "gdp_pc_ppp", [(2019, v * 0.9), (2024, v)])
-    for iso2, v in dep.items():
-        _seed(session, iso2, "old_age_dependency", [(2019, v - 2), (2025, v)])
-    for iso2, v in mil.items():
-        _seed(session, iso2, "military_pct_gdp", [(2024, v)])
-
-
 def test_build_snapshot_schema_and_scores(session_factory, tmp_path):
+    from tests.conftest import SYNTHETIC_FILLED, seed_synthetic
     with session_factory() as s:
-        _seed_tracer(s)
+        seed_synthetic(s)
         s.commit()
     with session_factory() as s:
         snap = build_snapshot(s, as_of=date(2026, 8, 24))
@@ -241,10 +229,14 @@ def test_build_snapshot_schema_and_scores(session_factory, tmp_path):
     assert us["indicators"]["gdp_pc_ppp"]["trend"] in ("improving", "flat")
     assert us["indicators"]["gdp_pc_ppp"]["lag_value"] == pytest.approx(72000.0)
     assert us["indicators"]["old_age_dependency"]["trend"] == "worsening"   # rose, lower is better
-    assert us["categories"]["production"]["score"] == 100.0
-    assert us["categories"]["production"]["n_available"] == 1
+    assert us["categories"]["production"]["score"] == 100.0                # gdp + rd both best
+    assert us["categories"]["production"]["n_available"] == 2
+    assert us["categories"]["production"]["n_total"] == 3
     assert us["categories"]["production"]["best_iso2"] == "US"
-    assert us["categories"]["exchange"]["score"] is None
+    assert us["categories"]["exchange"]["score"] is None                  # 0 of 3
+    assert us["indicators"]["rule_of_law"]["se"] == 0.15                  # WGI standard error
+    assert us["indicators"]["rule_of_law"]["uncertainty"] == "C"
+    assert us["indicators"]["gdp_growth_fwd5"]["value"] is None            # IMF lands in slice 20
     assert us["data_quality"]["flag"] == "high"
     assert us["fx_regime"] == "reserve_issuer"
     assert us["pressures"] == [] and us["cycle"] is None
@@ -266,9 +258,10 @@ def test_build_snapshot_schema_and_scores(session_factory, tmp_path):
     assert ru["data_quality"]["flag"] == "opaque" and ru["sanctioned"] is True
 
     # coverage counts
-    assert snap["coverage"]["cells"] == 22 * 3
-    assert snap["coverage"]["filled"] == 6 + 6 + 5
-    assert snap["coverage"]["by_indicator"]["military_pct_gdp"] == 5
+    assert snap["coverage"]["cells"] == 22 * 15
+    assert snap["coverage"]["filled"] == SYNTHETIC_FILLED
+    assert snap["coverage"]["by_indicator"]["military_share_world"] == 5
+    assert snap["coverage"]["by_indicator"]["fiscal_balance_pct_gdp"] == 0
 
     # history block
     assert [h["year"] for h in us["history"]["gdp_pc_ppp"]] == [2019, 2024]
@@ -281,8 +274,9 @@ def test_build_snapshot_schema_and_scores(session_factory, tmp_path):
 
 def test_learning_view_needs_60pct_of_weight(session_factory):
     """With exactly 3 of 5 equal-weight categories scored, coverage = 0.6 → allowed."""
+    from tests.conftest import seed_synthetic
     with session_factory() as s:
-        _seed_tracer(s)
+        seed_synthetic(s)
         s.commit()
     with session_factory() as s:
         snap = build_snapshot(s, as_of=date(2026, 8, 24))
@@ -319,17 +313,17 @@ def test_year_end_as_of_lag_picks_row_five_years_back(session_factory):
 
 def test_stale_single_point_series_has_no_trend(session_factory):
     with session_factory() as s:
-        _seed(s, "SA", "military_pct_gdp", [(2019, 8.0)])
+        _seed(s, "SA", "military_share_world", [(2019, 8.0)])
         for iso2, v in (("US", 3.3), ("SE", 2.0), ("CN", 1.7), ("IN", 2.4), ("DE", 1.5)):
-            _seed(s, iso2, "military_pct_gdp", [(2019, v - 1.0), (2024, v)])
+            _seed(s, iso2, "military_share_world", [(2019, v - 1.0), (2024, v)])
         s.commit()
     with session_factory() as s:
         snap = build_snapshot(s, as_of=date(2026, 8, 24), include_history=False)
-    sa = snap["countries"]["SA"]["indicators"]["military_pct_gdp"]
+    sa = snap["countries"]["SA"]["indicators"]["military_share_world"]
     assert sa["value"] == 8.0 and sa["date"] == "2019-12-31"
     assert sa["lag_value"] is None
     assert sa["trend"] is None and sa["trend_5y"] is None
-    us = snap["countries"]["US"]["indicators"]["military_pct_gdp"]
+    us = snap["countries"]["US"]["indicators"]["military_share_world"]
     assert us["trend"] == "improving"
 
 
@@ -358,6 +352,22 @@ def test_aggregate_distance_to_best_never_negative():
     assert cs["EU"]["real_stuff"].score == 90.0
     assert cs["EU"]["real_stuff"].distance_to_best == 0.0
     assert cs["EU"]["real_stuff"].best_iso2 in ("X", "Y")
+
+
+def test_history_keeps_last_observation_per_year_from_best_source(session_factory):
+    from dalio.scoring.fundamentals import load_history
+    spec = IndicatorSpec("debt_service_ratio", "promises", "x", "", False, "B", ("BIS_DSR", "OTHER"), "x" * 30, cadence="Q")
+    with session_factory() as s:
+        for m, v in ((3, 10.0), (6, 11.0), (9, 12.0), (12, 13.0)):
+            s.add(Observation(country="US", indicator="debt_service_ratio", date=date(2024, m, 1),
+                              value=v, source="BIS_DSR", series_id="X"))
+        s.add(Observation(country="US", indicator="debt_service_ratio", date=date(2024, 12, 31),
+                          value=99.0, source="OTHER", series_id="X"))
+        s.commit()
+    with session_factory() as s:
+        h = load_history(s, [spec], [get_country("US")])
+    assert len(h) == 1
+    assert h.iloc[0]["year"] == 2024 and h.iloc[0]["value"] == 13.0   # Q4, from the preferred source
 
 
 def test_build_snapshot_on_empty_db(session_factory):
