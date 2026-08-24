@@ -35,7 +35,8 @@ def _flat_colorscale(ramp: tuple[str, ...]) -> list[list]:
 
 
 def build_fundamentals_map(layer: MapLayer, height: int = 460) -> go.Figure:
-    """Three traces: scored polygons (binned), no-data polygons, data-quality markers."""
+    """Three traces: scored polygons (binned), no-data polygons, data-quality markers —
+    plus one line trace per trade arc (Trade mode, slice 24)."""
     n_bins = len(layer.ramp)
     fig = go.Figure()
 
@@ -78,6 +79,12 @@ def build_fundamentals_map(layer: MapLayer, height: int = 460) -> go.Figure:
             mode="markers",
             marker=dict(symbol="diamond-open", size=9, color=INK, line=dict(width=1.2, color=INK)),
             name="data quality",
+        ))
+    for lat0, lon0, lat1, lon1, width, hover in layer.arcs:
+        fig.add_trace(go.Scattergeo(
+            lat=[lat0, lat1], lon=[lon0, lon1], mode="lines",
+            line=dict(width=width, color=RUST), opacity=0.7,
+            text=[hover, hover], hoverinfo="text", name="arc",
         ))
     fig.update_layout(geo=geo_layout(), showlegend=False, **plotly_base_layout(height=height))
     return fig

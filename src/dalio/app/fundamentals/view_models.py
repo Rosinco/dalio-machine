@@ -15,6 +15,7 @@ import pandas as pd
 
 from dalio.app.fundamentals.snapshot import Snapshot
 from dalio.app.theme import EXPOSURE_RAMP, PCT_BIN_LABELS, PCT_RAMP, PLAYER_CENTROIDS
+from dalio.scoring.trade import TRADE_CAVEATS, exposure_to
 
 TIER_WEIGHT = {"A": 1.0, "B": 0.6, "C": 0.3}
 DQ_MARKED = ("low", "opaque")
@@ -27,6 +28,13 @@ class MapMode(StrEnum):
     INDICATOR = "indicator"
     CHAINS = "chains"
     EXPOSURE = "exposure"
+    TRADE = "trade"
+
+
+# Share of the selected country's goods trade (exports + imports) with a partner.
+TRADE_BINS: tuple[float, ...] = (2.0, 5.0, 10.0)
+TRADE_BIN_LABELS: tuple[str, ...] = ("< 2 %", "2–5 %", "5–10 %", "≥ 10 %")
+TRADE_ARCS = 5
 
 
 @dataclass(frozen=True)
@@ -43,6 +51,7 @@ class MapLayer:
     ramp: tuple[str, ...]
     title: str
     caption: str
+    arcs: tuple[tuple[float, float, float, float, float, str], ...] = ()   # (lat0, lon0, lat1, lon1, width, hover)
 
 
 # ─── Small helpers ───────────────────────────────────────────────────────────
@@ -144,6 +153,120 @@ def exposure_counts(snap: Snapshot, source_iso2: str) -> dict[str, int]:
     return out
 
 
+# ─── Bilateral trade (slice 24) ──────────────────────────────────────────────
+
+
+def _trade_totals(sub: pd.DataFrame) -> tuple[float, float]:
+    """World totals implied by any row with a defined share (share = usd ÷ total × 100)."""
+    def _one(usd: str, share: str) -> float:
+        ok = sub[[usd, share]].dropna()
+        ok = ok[ok[share] > 0]
+        return float(ok[usd].iloc[0] / ok[share].iloc[0] * 100.0) if not ok.empty else np.nan
+    return _one("x_usd", "x_share"), _one("m_usd", "m_share")
+
+
+def trade_share_series(snap: Snapshot, iso2: str) -> pd.Series:
+    """Partner → share of ``iso2``'s goods trade (exports + imports over the two
+    world totals) in %, NaN-free; empty when the snapshot has no trade."""
+    if snap.trade is None:
+        return pd.Series(dtype=float)
+    sub = snap.trade[snap.trade["iso2"] == iso2]
+    if sub.empty:
+        return pd.Series(dtype=float)
+    x_tot, m_tot = _trade_totals(sub)
+    denom = np.nansum([x_tot, m_tot])
+    if not denom or np.isnan(denom):
+        return pd.Series(dtype=float)
+    num = sub["x_usd"].fillna(0.0) + sub["m_usd"].fillna(0.0)
+    out = pd.Series((num / denom * 100.0).to_numpy(), index=list(sub["partner"]), dtype=float)
+    return out[out.notna()].sort_values(ascending=False)
+
+
+def trade_partner_table(snap: Snapshot, iso2: str, n: int = 8) -> pd.DataFrame:
+    """Top partners by combined share: ``partner, name, year, x_share, m_share,
+    x_usd, m_usd, balance_usd, their_exposure`` (share of the partner's own
+    exports that come here)."""
+    cols = ["partner", "name", "year", "x_share", "m_share", "x_usd", "m_usd", "balance_usd", "their_exposure"]
+    if snap.trade is None:
+        return pd.DataFrame(columns=cols)
+    sub = snap.trade[snap.trade["iso2"] == iso2].copy()
+    if sub.empty:
+        return pd.DataFrame(columns=cols)
+    sub["_s"] = sub[["x_share", "m_share"]].sum(axis=1, min_count=1)
+    sub = sub.sort_values("_s", ascending=False, kind="stable").head(n)
+    names = dict(zip(snap.players["iso2"], snap.players["name"], strict=True))
+    sub["name"] = sub["partner"].map(names).fillna(sub["partner"])
+    sub["balance_usd"] = sub["x_usd"] - sub["m_usd"]
+    sub["their_exposure"] = [exposure_to(snap.trade, p, iso2) for p in sub["partner"]]
+    return sub[cols].reset_index(drop=True)
+
+
+def trade_caption(snap: Snapshot, iso2: str) -> str:
+    if snap.trade is None:
+        return "No bilateral trade in the snapshot — run `dalio-fetch-fundamentals --only imts` then `dalio-score`."
+    sub = snap.trade[snap.trade["iso2"] == iso2]
+    year = f"{int(sub['year'].iloc[0])} · " if not sub.empty else ""
+    return (f"{year}{TRADE_CAVEATS} 'Their exposure' = share of the partner's own exports that come here — "
+            "the direction the pressure chains use.")
+
+
+def _usd_bn(v: float | None) -> str:
+    if v is None or (isinstance(v, float) and np.isnan(v)):
+        return "—"
+    return f"{v / 1e9:,.0f}"
+
+
+def _pct(v: float | None) -> str:
+    if v is None or (isinstance(v, float) and np.isnan(v)):
+        return "—"
+    return f"{v:.1f} %"
+
+
+def html_trade_table(df: pd.DataFrame) -> str:
+    esc = html.escape
+    out = ['<table class="dense"><thead><tr>',
+           '<th>Partner</th><th class="num">Exports to</th><th class="num">US$ bn</th>'
+           '<th class="num">Imports from</th><th class="num">US$ bn</th><th class="num">Balance</th>'
+           '<th class="num">Their exposure</th>',
+           '</tr></thead><tbody>']
+    for _, r in df.iterrows():
+        out.append(
+            f'<tr><td>{esc(str(r["name"]))}</td>'
+            f'<td class="num">{esc(_pct(r["x_share"]))}</td><td class="num">{esc(_usd_bn(r["x_usd"]))}</td>'
+            f'<td class="num">{esc(_pct(r["m_share"]))}</td><td class="num">{esc(_usd_bn(r["m_usd"]))}</td>'
+            f'<td class="num">{esc(_usd_bn(r["balance_usd"]))}</td>'
+            f'<td class="num">{esc(_pct(r["their_exposure"]))}</td></tr>'
+        )
+    out.append("</tbody></table>")
+    return "".join(out)
+
+
+def trade_arcs(snap: Snapshot, iso2: str, n: int = TRADE_ARCS) -> tuple[tuple[float, float, float, float, float, str], ...]:
+    """Centroid-to-centroid arcs to the top-``n`` partners; width 1–6 px ∝ share."""
+    if iso2 not in PLAYER_CENTROIDS:
+        return ()
+    shares = trade_share_series(snap, iso2)
+    shares = shares[[p in PLAYER_CENTROIDS for p in shares.index]].head(n)
+    if shares.empty:
+        return ()
+    lat0, lon0 = PLAYER_CENTROIDS[iso2]
+    top = float(shares.iloc[0]) or 1.0
+    sub = snap.trade[snap.trade["iso2"] == iso2].set_index("partner")
+    names = dict(zip(snap.players["iso2"], snap.players["name"], strict=True))
+    arcs = []
+    for partner, share in shares.items():
+        lat1, lon1 = PLAYER_CENTROIDS[partner]
+        xs, ms = sub.at[partner, "x_share"], sub.at[partner, "m_share"]
+        hover = (f"{esc_name(names, iso2)} ↔ {esc_name(names, partner)}: {share:.1f} % of goods trade "
+                 f"(exports {_pct(xs)} · imports {_pct(ms)})")
+        arcs.append((lat0, lon0, lat1, lon1, 1.0 + 5.0 * float(share) / top, hover))
+    return tuple(arcs)
+
+
+def esc_name(names: dict[str, str], iso2: str) -> str:
+    return html.escape(str(names.get(iso2, iso2)))
+
+
 # ─── Map layer ───────────────────────────────────────────────────────────────
 
 
@@ -170,7 +293,19 @@ def map_layer(
     bloc: bool = False,
 ) -> MapLayer:
     n = len(snap.ranking_population)
-    if mode == MapMode.EXPOSURE:
+    arcs: tuple = ()
+    if mode == MapMode.TRADE:
+        shares = trade_share_series(snap, selected_iso2 or "")
+        series = pd.Series({c: float(shares.get(c, np.nan)) for c in snap.player_codes})
+        label = f"Share of {snap.player_name(selected_iso2 or '')}'s goods trade"
+        z = pd.Series(np.digitize(series.to_numpy(dtype=float), TRADE_BINS).astype(float), index=series.index)
+        z = z.where(series.notna())
+        ramp = EXPOSURE_RAMP
+        legend = tuple(zip(EXPOSURE_RAMP, TRADE_BIN_LABELS, strict=True))
+        caption = (f"Each player shaded by its share of {snap.player_name(selected_iso2 or '')}'s goods "
+                   f"trade (exports + imports); arcs to the top {TRADE_ARCS}. {TRADE_CAVEATS}")
+        arcs = trade_arcs(snap, selected_iso2 or "")
+    elif mode == MapMode.EXPOSURE:
         counts = exposure_counts(snap, selected_iso2 or "")
         series = pd.Series({c: float(counts.get(c, np.nan)) for c in snap.player_codes})
         label = f"Exposure to {snap.player_name(selected_iso2 or '')}'s pressure chains"
@@ -215,6 +350,10 @@ def map_layer(
     no_data_hover: list[str] = []
     dq_points: list[tuple[float, float, str]] = []
 
+    trade_rows = None
+    if mode == MapMode.TRADE and snap.trade is not None:
+        trade_rows = snap.trade[snap.trade["iso2"] == selected_iso2].set_index("partner")
+
     for _, p in players.iterrows():
         iso2 = p["iso2"]
         locs = player_locations(snap, iso2, bloc)
@@ -224,11 +363,18 @@ def map_layer(
             continue                                      # bloc covers members
         zval = z.get(iso2, np.nan)
         if isinstance(zval, float) and np.isnan(zval):
+            what = ("selected reporter — its partners are shaded" if mode == MapMode.TRADE and iso2 == selected_iso2
+                    else f"no data for {html.escape(label)}")
             for loc in locs:
                 no_data.append(loc)
-                no_data_hover.append(f"<b>{html.escape(str(p['name']))}</b><br>no data for {html.escape(label)}")
+                no_data_hover.append(f"<b>{html.escape(str(p['name']))}</b><br>{what}")
             continue
-        if ind_cells is not None and iso2 in ind_cells.index:
+        if trade_rows is not None and iso2 in trade_rows.index:
+            tr = trade_rows.loc[iso2]
+            vtxt = f"{float(series[iso2]):.1f} % of goods trade"
+            extra = f"exports to {_pct(tr['x_share'])} · imports from {_pct(tr['m_share'])} · {int(tr['year'])}"
+            pct = None
+        elif ind_cells is not None and iso2 in ind_cells.index:
             c = ind_cells.loc[iso2]
             vtxt = f"{fmt_value(c['value'], unit)} {html.escape(unit)}".strip()
             extra = f"tier {c['tier']} · as of {c['as_of']} · {c['source']}"
@@ -255,7 +401,7 @@ def map_layer(
         opacity=tuple(opacity), selected=tuple(selected),
         no_data_locations=tuple(no_data), no_data_hover=tuple(no_data_hover),
         dq_points=tuple(dq_points), legend=legend, ramp=tuple(ramp),
-        title=label, caption=caption,
+        title=label, caption=caption, arcs=arcs,
     )
 
 

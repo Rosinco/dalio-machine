@@ -114,13 +114,15 @@ def _trade_exposed(panel: Panel, iso2: str, n: int = 3, min_share: float = 2.0) 
     return [(t, s) for t, s in exposed_players(panel.trade, iso2, n, min_share) if t in panel.countries]
 
 
-def _partner_spillovers(panel: Panel, iso2: str, text: str, fallback: str) -> tuple[Spillover, ...]:
+def _partner_spillovers(panel: Panel, iso2: str, text: str, fallback: str,
+                        exclude: Sequence[str] = ()) -> tuple[Spillover, ...]:
     """Named exposed players (share of their exports that go to ``iso2``) or
-    the group label when bilateral trade is absent."""
-    exposed = _trade_exposed(panel, iso2)
+    the group label when bilateral trade is absent. ``exclude`` drops targets
+    the rule has already named through another channel."""
+    exposed = [(t, s) for t, s in _trade_exposed(panel, iso2) if t not in exclude]
     if not exposed:
         return (Spillover("trade partners", fallback, "via demand"),)
-    return tuple(Spillover(t, f"{s:.0f} % of {panel.countries[t].name}'s exports go here — {text}", "via demand")
+    return tuple(Spillover(t, f"{panel.countries[t].name} sends {s:.0f} % of its exports here — {text}", "via demand")
                  for t, s in exposed)
 
 
@@ -288,7 +290,8 @@ def rule_isolation(iso2: str, panel: Panel, pv_pct: float | None = None) -> Pres
                "reserve diversification into gold / CNY")
     issuers = _players(panel, lambda k: k.fx_regime == "reserve_issuer" and k.iso2 != iso2)
     spill = tuple(Spillover(t, "marginal loss of demand for reserve-issuer debt", "via rates") for t in issuers) + \
-            _partner_spillovers(panel, iso2, "exports at risk of re-routing", "re-routed trade and payment flows")
+            _partner_spillovers(panel, iso2, "exports at risk of re-routing", "re-routed trade and payment flows",
+                                exclude=issuers)
     return Pressure("isolation", title, True, round(sev, 3), constraint, options, spill, conf, inp)
 
 

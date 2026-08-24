@@ -200,7 +200,7 @@ def test_external_financing_names_exposed_players_or_falls_back():
     targets = [s.target for s in with_trade.spillovers]
     assert targets == ["foreign holders", "RU", "DE"]                      # CN at 1.2 % is below the 2 % floor
     de = next(s for s in with_trade.spillovers if s.target == "DE")
-    assert de.text.startswith("3 % of Germany's exports go here") and de.channel == "via demand"
+    assert de.text.startswith("Germany sends 3 % of its exports here") and de.channel == "via demand"
     without = rule_external_financing("TR", _panel(rows))
     assert [s.target for s in without.spillovers] == ["foreign holders", "trade partners"]
 
@@ -213,6 +213,10 @@ def test_isolation_names_partners_and_energy_orders_exporters_by_import_share():
     iso = rule_isolation("RU", p)
     assert [s.target for s in iso.spillovers] == ["US", "EU", "TR"]        # issuers first, then exposed TR (3 %)
     assert "re-routing" in iso.spillovers[-1].text
+    mx_trade = pd.concat([_trade(), pd.DataFrame([{"iso2": "US", "partner": "MX", "year": 2025, "x_share": 15.0,
+                                                   "m_share": 15.0, "x_usd": 1, "m_usd": 1}])])
+    mx = rule_isolation("MX", Panel(values=p.values, countries=p.countries, trade=mx_trade), pv_pct=10.0)
+    assert [s.target for s in mx.spillovers].count("US") == 1             # issuer channel wins, no duplicate
     en = rule_energy_dependence("JP", p)
     assert [s.target for s in en.spillovers] == ["AU", "SA", "CA"]        # 7 % · 4.5 % · unknown last
     assert en.spillovers[0].text.endswith("· 7 % of its imports") and "·" not in en.spillovers[2].text

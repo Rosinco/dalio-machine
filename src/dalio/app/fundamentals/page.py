@@ -1,8 +1,7 @@
 """Fundamentals page — Streamlit rendering only (thin).
 
-Layout: control strip → map → leaderboard + country panel (two columns).
-P2 adds the purpose-view selector, weights, captions and the Pareto; P3 the
-pressure chains; P4 the bubble.
+Layout: control strip → map → leaderboard + country panel (two columns) →
+pressure chains → trade partners → trajectories → Pareto.
 """
 from __future__ import annotations
 
@@ -32,11 +31,14 @@ from dalio.app.fundamentals.view_models import (
     coverage_confidence,
     forecast_boundary,
     html_dense_table,
+    html_trade_table,
     iso3_to_player,
     leaderboard,
     map_layer,
     pareto_caption,
     pareto_frame,
+    trade_caption,
+    trade_partner_table,
     view_caption,
     weights_line,
 )
@@ -116,12 +118,12 @@ def _control_strip(snap: Snapshot, view: str) -> tuple[MapMode, str | None, bool
     c1, c2, c3 = st.columns([3, 3, 2], gap="large")
     with c1:
         mode_label = st.segmented_control(
-            "Color by", ["Composite", "Category", "Indicator", "Chains", "Exposure"],
+            "Color by", ["Composite", "Category", "Indicator", "Chains", "Exposure", "Trade"],
             default="Composite", key="fund_map_mode",
         ) or "Composite"
     mode = {"Indicator": MapMode.INDICATOR, "Category": MapMode.CATEGORY,
             "Composite": MapMode.COMPOSITE, "Chains": MapMode.CHAINS,
-            "Exposure": MapMode.EXPOSURE}[mode_label]
+            "Exposure": MapMode.EXPOSURE, "Trade": MapMode.TRADE}[mode_label]
     key: str | None = None
     with c2:
         if mode == MapMode.INDICATOR:
@@ -138,6 +140,9 @@ def _control_strip(snap: Snapshot, view: str) -> tuple[MapMode, str | None, bool
         elif mode == MapMode.EXPOSURE:
             st.caption("Who feels the selected country's chains: shaded by how many of its "
                        "fired rules name them as a spillover target.")
+        elif mode == MapMode.TRADE:
+            st.caption("Share of the selected country's goods trade (exports + imports) with each "
+                       "player; arcs join it to its top-5 partners. IMF IMTS, goods only.")
         else:
             st.caption(f"Composite for the {VIEW_LABELS.get(view, view)} view — weighted mean of "
                        "the category scores, renormalised over the categories a country has; "
@@ -155,7 +160,8 @@ def _render_map(snap: Snapshot, mode: MapMode, key: str | None, bloc: bool, sele
     fig = build_fundamentals_map(layer)
     st.plotly_chart(fig, width="stretch", on_select=_on_map_select,
                     selection_mode=("points",), key=MAP_KEY)
-    none_label = "None fired" if mode in (MapMode.CHAINS, MapMode.EXPOSURE) else "No data"
+    none_label = ("None fired" if mode in (MapMode.CHAINS, MapMode.EXPOSURE)
+                  else "Selected · no data" if mode == MapMode.TRADE else "No data")
     items = list(layer.legend) + [("#d9d4c5", none_label)]
     st.markdown(legend_row(items), unsafe_allow_html=True)
     dq_note = " ◇ = official statistics contested." if layer.dq_points else ""
@@ -306,6 +312,24 @@ def _render_chains(snap: Snapshot, iso2: str) -> None:
                      key=key, on_change=_on_spill_select, args=(key,))
 
 
+def _render_trade(snap: Snapshot, iso2: str) -> None:
+    name = snap.player_name(iso2)
+    st.markdown(
+        '<span class="kicker">Trade partners</span>'
+        f'<h3 class="section-title">Who {name} trades with</h3>'
+        '<p class="section-lede">Largest goods-trade partners by combined share of exports and imports. '
+        'Two directions, two numbers: how much of this country\'s trade a partner is, and how much of '
+        'the partner\'s own exports come here (their exposure — the direction the pressure chains use).</p>',
+        unsafe_allow_html=True,
+    )
+    table = trade_partner_table(snap, iso2)
+    if table.empty:
+        st.caption(trade_caption(snap, iso2))
+        return
+    st.markdown(html_trade_table(table), unsafe_allow_html=True)
+    st.caption(trade_caption(snap, iso2))
+
+
 # ─── Page ────────────────────────────────────────────────────────────────────
 
 
@@ -349,5 +373,6 @@ def render_fundamentals_page() -> None:
         _render_country_panel(snap, selected, view)
 
     _render_chains(snap, selected)
+    _render_trade(snap, selected)
     _render_bubble(snap, selected, view, bloc)
     _render_pareto(snap, selected)
