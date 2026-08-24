@@ -174,3 +174,47 @@ def test_evaluate_returns_all_six_and_serialises():
     assert isinstance(d["spillovers"], list) and set(d) >= {"rule_id", "severity", "forced_options", "inputs"}
     assert all(v is None or isinstance(v, float) for v in d["inputs"].values())
     assert not any(isinstance(v, np.floating) for v in d["inputs"].values())
+
+
+# ─── named trade spillovers (slice 24) ─────────────────────────────────────
+
+
+def _trade():
+    return pd.DataFrame([
+        {"iso2": "DE", "partner": "TR", "year": 2025, "x_share": 3.1, "m_share": 2.0, "x_usd": 1, "m_usd": 1},
+        {"iso2": "CN", "partner": "TR", "year": 2025, "x_share": 1.2, "m_share": 0.3, "x_usd": 1, "m_usd": 1},
+        {"iso2": "RU", "partner": "TR", "year": 2025, "x_share": 8.0, "m_share": 4.0, "x_usd": 1, "m_usd": 1},
+        {"iso2": "TR", "partner": "RU", "year": 2025, "x_share": 3.0, "m_share": 12.0, "x_usd": 1, "m_usd": 1},
+        {"iso2": "TR", "partner": "SA", "year": 2025, "x_share": 1.0, "m_share": 2.5, "x_usd": 1, "m_usd": 1},
+        {"iso2": "JP", "partner": "SA", "year": 2025, "x_share": 1.0, "m_share": 4.5, "x_usd": 1, "m_usd": 1},
+        {"iso2": "JP", "partner": "AU", "year": 2025, "x_share": 2.0, "m_share": 7.0, "x_usd": 1, "m_usd": 1},
+        {"iso2": "IN", "partner": "RU", "year": 2025, "x_share": 1.0, "m_share": 9.0, "x_usd": 1, "m_usd": 1},
+    ])
+
+
+def test_external_financing_names_exposed_players_or_falls_back():
+    rows = {"TR": {"current_account_pct_gdp": -5.0, "reserves_months_imports": 2.5}, "DE": {}, "CN": {}, "RU": {}}
+    with_trade = rule_external_financing("TR", Panel(values=pd.DataFrame.from_dict(rows, orient="index")
+                                                     .reindex(columns=COLS).astype(float),
+                                                     countries={c.iso2: c for c in COUNTRIES}, trade=_trade()))
+    targets = [s.target for s in with_trade.spillovers]
+    assert targets == ["foreign holders", "RU", "DE"]                      # CN at 1.2 % is below the 2 % floor
+    de = next(s for s in with_trade.spillovers if s.target == "DE")
+    assert de.text.startswith("3 % of Germany's exports go here") and de.channel == "via demand"
+    without = rule_external_financing("TR", _panel(rows))
+    assert [s.target for s in without.spillovers] == ["foreign holders", "trade partners"]
+
+
+def test_isolation_names_partners_and_energy_orders_exporters_by_import_share():
+    p = Panel(values=_panel({"RU": {}, "TR": {}, "IN": {}, "US": {}, "JP": {"energy_net_imports_pct": 87.0},
+                             "SA": {"energy_net_imports_pct": -170.0}, "AU": {"energy_net_imports_pct": -150.0},
+                             "CA": {"energy_net_imports_pct": -60.0}}).values,
+              countries={c.iso2: c for c in COUNTRIES}, trade=_trade())
+    iso = rule_isolation("RU", p)
+    assert [s.target for s in iso.spillovers] == ["US", "EU", "TR"]        # issuers first, then exposed TR (3 %)
+    assert "re-routing" in iso.spillovers[-1].text
+    en = rule_energy_dependence("JP", p)
+    assert [s.target for s in en.spillovers] == ["AU", "SA", "CA"]        # 7 % · 4.5 % · unknown last
+    assert en.spillovers[0].text.endswith("· 7 % of its imports") and "·" not in en.spillovers[2].text
+    no_trade = rule_energy_dependence("JP", Panel(values=p.values, countries=p.countries))
+    assert {s.target for s in no_trade.spillovers} == {"AU", "SA", "CA"}

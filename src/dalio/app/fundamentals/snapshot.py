@@ -25,6 +25,7 @@ _REQUIRED_COUNTRY = ("name", "iso3", "tier", "eu_member", "members", "on_map", "
                      "pressures", "history")
 _REQUIRED_CELL = ("value", "date", "source", "pct", "trend", "trend_5y", "uncertainty")
 _REQUIRED_CATEGORY = ("score", "n_available", "n_total", "distance_to_best", "best_iso2")
+_REQUIRED_TRADE = ("iso2", "partner", "year", "x_share", "m_share", "x_usd", "m_usd")
 
 
 class SnapshotError(ValueError):
@@ -84,7 +85,7 @@ class Snapshot:
     views: dict[str, dict[str, float]]
     chains: tuple[Chain, ...]
     history: pd.DataFrame          # iso2, indicator, year, value, is_forecast
-    trade: pd.DataFrame | None
+    trade: pd.DataFrame | None     # iso2, partner, year, x_share, m_share, x_usd, m_usd (slice 24) or None
     coverage: dict
     cycles: dict[str, dict] = field(default_factory=dict)   # iso2 → cycle block (cycle basket only)
 
@@ -195,6 +196,14 @@ def parse_snapshot(raw: dict) -> Snapshot:
     cell_cols = ["iso2", "indicator", "value", "pct", "trend", "trend_5y", "lag_value", "tier",
                  "as_of", "source", "is_forecast", "se"]
     trade = raw.get("trade")
+    trade_df: pd.DataFrame | None = None
+    if isinstance(trade, list) and trade:
+        for i, row in enumerate(trade):
+            _require(row, _REQUIRED_TRADE, f"snapshot.trade[{i}]")
+        trade_df = pd.DataFrame(trade, columns=list(_REQUIRED_TRADE))
+        trade_df["year"] = trade_df["year"].astype(int)
+        for col in ("x_share", "m_share", "x_usd", "m_usd"):
+            trade_df[col] = trade_df[col].astype(float)
     return Snapshot(
         as_of=date.fromisoformat(raw["as_of"]),
         generated_at=raw.get("generated_at", ""),
@@ -209,7 +218,7 @@ def parse_snapshot(raw: dict) -> Snapshot:
         views={k: dict(v) for k, v in raw["views"].items()},
         chains=tuple(chains),
         history=pd.DataFrame(hist, columns=["iso2", "indicator", "year", "value", "is_forecast"]),
-        trade=pd.DataFrame(trade) if isinstance(trade, list) else None,
+        trade=trade_df,
         coverage=dict(raw["coverage"]),
         cycles=cycles,
     )

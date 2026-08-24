@@ -400,3 +400,24 @@ def test_build_snapshot_on_empty_db(session_factory):
         snap = build_snapshot(s, as_of=date(2026, 8, 24))
     assert snap["coverage"]["filled"] == 0
     assert all(c["categories"]["production"]["score"] is None for c in snap["countries"].values())
+
+
+def test_snapshot_trade_block_and_panel(session_factory):
+    from tests.conftest import SYNTHETIC_TRADE_ROWS, seed_synthetic
+    with session_factory() as s:
+        seed_synthetic(s)
+        s.commit()
+    with session_factory() as s:
+        snap = build_snapshot(s, as_of=date(2026, 8, 24),
+                              countries=[get_country(c) for c in ("US", "SE", "CN", "IN", "DE", "EU")],
+                              population=["US", "SE", "CN", "IN", "DE"])
+    assert snap["coverage"]["trade_reporters"] == 4
+    rows = {(r["iso2"], r["partner"]): r for r in snap["trade"]}
+    assert len(rows) == SYNTHETIC_TRADE_ROWS and ("US", "WLD") not in rows
+    assert rows[("US", "CN")]["x_share"] == pytest.approx(143.5 / 2185.2 * 100)
+    assert rows[("US", "CN")]["m_share"] == pytest.approx(438.9 / 3300.0 * 100)
+    assert rows[("EU", "US")]["year"] == 2025 and rows[("EU", "US")]["x_usd"] == 523.0
+    assert "DE" not in {p for (r, p) in rows if r == "EU"}          # fetch-time intra drop is the adapter's job; none seeded
+    with session_factory() as s:
+        before = build_snapshot(s, as_of=date(2024, 12, 31), include_history=False)   # no trade rows ≤ 2024
+    assert before["trade"] is None and before["coverage"]["trade_reporters"] == 0

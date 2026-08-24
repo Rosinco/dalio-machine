@@ -60,7 +60,7 @@ def test_load_snapshot_shapes(synthetic_snapshot_dir):
     h = snap.history
     assert set(h.columns) == {"iso2", "indicator", "year", "value", "is_forecast"}
     assert sorted(h[(h.iso2 == "US") & (h.indicator == "gdp_pc_ppp")]["year"]) == [2019, 2024]
-    assert snap.trade is None
+    assert snap.trade is not None and len(snap.trade) == 11   # slice 24: synthetic trade block
     assert snap.cycles == {}                                    # no cycle data seeded
     from tests.conftest import SYNTHETIC_FILLED
     assert snap.coverage["filled"] == SYNTHETIC_FILLED
@@ -116,3 +116,20 @@ def test_fingerprint_tracks_rewrites(synthetic_snapshot_dir):
 def test_snapshot_dir_env_override(monkeypatch, tmp_path):
     monkeypatch.setenv("FUNDAMENTALS_DIR", str(tmp_path / "x"))
     assert snapshot_dir() == tmp_path / "x"
+
+
+def test_trade_block_parsed_and_validated(synthetic_snapshot_dict):
+    from dalio.app.fundamentals.snapshot import SnapshotError, parse_snapshot
+    from tests.conftest import SYNTHETIC_TRADE_ROWS
+    snap = parse_snapshot(synthetic_snapshot_dict)
+    assert snap.trade is not None and len(snap.trade) == SYNTHETIC_TRADE_ROWS
+    assert list(snap.trade.columns) == ["iso2", "partner", "year", "x_share", "m_share", "x_usd", "m_usd"]
+    assert snap.trade["year"].dtype.kind == "i"
+    raw = dict(synthetic_snapshot_dict)
+    raw["trade"] = None
+    assert parse_snapshot(raw).trade is None
+    raw["trade"] = []
+    assert parse_snapshot(raw).trade is None
+    raw["trade"] = [{"iso2": "US", "partner": "CN", "year": 2025, "x_share": 6.6}]
+    with pytest.raises(SnapshotError, match=r"snapshot.trade\[0\]"):
+        parse_snapshot(raw)

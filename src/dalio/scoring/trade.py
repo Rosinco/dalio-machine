@@ -129,6 +129,16 @@ def exposure_to(shares: pd.DataFrame, target: str, iso2: str) -> float | None:
     return float(row["x_share"].iloc[0])
 
 
+def import_share(shares: pd.DataFrame, iso2: str, partner: str) -> float | None:
+    """Share of ``iso2``'s imports that come from ``partner``."""
+    if shares.empty:
+        return None
+    row = shares[(shares["iso2"] == iso2) & (shares["partner"] == partner)]
+    if row.empty or pd.isna(row["m_share"].iloc[0]):
+        return None
+    return float(row["m_share"].iloc[0])
+
+
 def exposed_players(shares: pd.DataFrame, iso2: str, n: int = 3,
                     min_share: float = DEFAULT_MIN_SHARE) -> list[tuple[str, float]]:
     """Players whose exports to ``iso2`` are at least ``min_share`` % of their

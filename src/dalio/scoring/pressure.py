@@ -9,7 +9,10 @@ plus the registry's static flags, and returns a ``Pressure``:
 *Forced* means the option set is branched on the exit routes a country
 actually has: a reserve-currency issuer can monetize, a currency-union member
 cannot (the ECB decides), everyone else pays in FX. Spillovers are mechanical
-templates keyed on OTHER players' flags and values — never free text.
+templates keyed on OTHER players' flags and values — never free text. With
+bilateral trade in the panel (slice 24) the "trade partners" group label
+becomes the players most exposed to the country (share of THEIR exports that
+go there); without it the group label stays.
 
 Everything here is tier C: thresholds are round numbers from the sovereign-
 debt / balance-of-payments literature, not calibrated. Confidence shrinks when
@@ -25,6 +28,7 @@ import numpy as np
 import pandas as pd
 
 from dalio.countries import COUNTRIES, Country, DataQuality
+from dalio.scoring.trade import exposed_players, import_share
 
 LAYER_UNCERTAINTY = ("C — judgment encoded as rules; thresholds are round numbers from the "
                      "sovereign-debt/BoP literature, not calibrated")
@@ -62,6 +66,7 @@ class Panel:
     trend: Mapping[tuple[str, str], str | None] = field(default_factory=dict)
     dsr_q90: Mapping[str, float] = field(default_factory=dict)
     countries: Mapping[str, Country] = field(default_factory=lambda: {c.iso2: c for c in COUNTRIES})
+    trade: pd.DataFrame | None = None       # bilateral shares (scoring.trade.trade_shares); None → group labels
 
 
 # ─── helpers ─────────────────────────────────────────────────────────────────
@@ -99,6 +104,24 @@ def _top_by(panel: Panel, name: str, n: int, exclude: str, higher: bool = True) 
     s = panel.values[name].dropna().drop(labels=[exclude], errors="ignore")
     s = s[[i for i in s.index if panel.countries.get(i) and panel.countries[i].on_map]]
     return list(s.sort_values(ascending=not higher).head(n).index)
+
+
+def _trade_exposed(panel: Panel, iso2: str, n: int = 3, min_share: float = 2.0) -> list[tuple[str, float]]:
+    """Players whose exports to ``iso2`` are ≥ ``min_share`` % of their own
+    exports (top ``n``); empty when the panel carries no trade."""
+    if panel.trade is None or panel.trade.empty:
+        return []
+    return [(t, s) for t, s in exposed_players(panel.trade, iso2, n, min_share) if t in panel.countries]
+
+
+def _partner_spillovers(panel: Panel, iso2: str, text: str, fallback: str) -> tuple[Spillover, ...]:
+    """Named exposed players (share of their exports that go to ``iso2``) or
+    the group label when bilateral trade is absent."""
+    exposed = _trade_exposed(panel, iso2)
+    if not exposed:
+        return (Spillover("trade partners", fallback, "via demand"),)
+    return tuple(Spillover(t, f"{s:.0f} % of {panel.countries[t].name}'s exports go here — {text}", "via demand")
+                 for t, s in exposed)
 
 
 def _not_triggered(rule_id: str, title: str, constraint: str, inputs: dict, conf: float) -> Pressure:
@@ -176,7 +199,8 @@ def rule_external_financing(iso2: str, panel: Panel) -> Pressure:
     constraint = f"Current account {ca:.1f} % of GDP with {res:.1f} months of reserves ({c.fx_regime} FX)"
     options = ("devalue", "hike rates to defend the currency", "capital controls", "IMF programme")
     spill = (Spillover("foreign holders", "convertibility / repatriation risk — jurisdiction-gate flag", "via FX"),
-             Spillover("trade partners", "cheaper exports from, and lost demand in, this economy", "via demand"))
+             *_partner_spillovers(panel, iso2, "import compression",
+                                  "cheaper exports from, and lost demand in, this economy"))
     return Pressure("external_financing", title, True, round(sev, 3), constraint, options, spill, conf, inp)
 
 
@@ -237,10 +261,16 @@ def rule_energy_dependence(iso2: str, panel: Panel) -> Pressure:
     constraint = f"Imports {e:.0f} % of the energy it uses"
     options = ("long-term supply contracts", "subsidise / absorb terms-of-trade shocks",
                "build nuclear and renewables", "strategic stockpiles")
+    # Goods-only IMTS cannot isolate energy flows: exporters are still picked by
+    # their energy balance, then ORDERED by this country's import share from them.
     exporters = [i for i in panel.values.index
                  if (x := _v(panel, i, "energy_net_imports_pct")) is not None and x < -25.0 and i != iso2
                  and panel.countries.get(i) and panel.countries[i].on_map]
-    spill = tuple(Spillover(t, "exposed to this exporter's supply and pricing", "via supply") for t in exporters)
+    m_share = {t: (import_share(panel.trade, iso2, t) if panel.trade is not None else None) for t in exporters}
+    exporters.sort(key=lambda t: -(m_share[t] if m_share[t] is not None else -1.0))
+    spill = tuple(Spillover(t, "exposed to this exporter's supply and pricing"
+                            + (f" · {m_share[t]:.0f} % of its imports" if m_share[t] is not None else ""),
+                            "via supply") for t in exporters)
     return Pressure("energy_dependence", title, True, round(sev, 3), constraint, options, spill, conf, inp)
 
 
@@ -258,7 +288,7 @@ def rule_isolation(iso2: str, panel: Panel, pv_pct: float | None = None) -> Pres
                "reserve diversification into gold / CNY")
     issuers = _players(panel, lambda k: k.fx_regime == "reserve_issuer" and k.iso2 != iso2)
     spill = tuple(Spillover(t, "marginal loss of demand for reserve-issuer debt", "via rates") for t in issuers) + \
-            (Spillover("trade partners", "re-routed trade and payment flows", "via demand"),)
+            _partner_spillovers(panel, iso2, "exports at risk of re-routing", "re-routed trade and payment flows")
     return Pressure("isolation", title, True, round(sev, 3), constraint, options, spill, conf, inp)
 
 

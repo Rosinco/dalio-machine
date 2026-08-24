@@ -596,8 +596,11 @@ def build_snapshot(
         columns=["country", "indicator", "year", "value", "is_forecast"]
     )
 
-    # ── pressure chains (slice 21) + cycle block for the cycle basket ──
+    # ── bilateral trade (slice 24) → snapshot block + named spillovers ──
     from dalio.scoring.pressure import Panel, evaluate, to_dict
+    from dalio.scoring.trade import load_trade, trade_block, trade_shares
+
+    shares = trade_shares(load_trade(session, countries, as_of))
 
     trend_map: dict[tuple[str, str], str | None] = {}
     for s in specs:
@@ -612,7 +615,8 @@ def build_snapshot(
             trend_map[(iso2, s.name)] = trend_direction(float(v), float(lag), s.higher_is_better, pop_std)
     dsr_q90 = _calibrated_dsr_q90(session, countries)
     panel = Panel(values=values, trend=trend_map, dsr_q90=dsr_q90,
-                  countries={c.iso2: c for c in countries})
+                  countries={c.iso2: c for c in countries},
+                  trade=None if shares.empty else shares)
     pressures: dict[str, list[dict]] = {}
     for c in countries:
         pv_pct = pct.at[c.iso2, "political_stability"] if "political_stability" in pct.columns else np.nan
@@ -712,11 +716,12 @@ def build_snapshot(
         "category_labels": dict(CATEGORY_LABELS),
         "views": {k: dict(v) for k, v in VIEWS.items()},
         "countries": countries_block,
-        "trade": None,
+        "trade": trade_block(shares),
         "coverage": {
             "cells": len(countries) * len(specs),
             "filled": filled,
             "by_indicator": by_indicator,
+            "trade_reporters": 0 if shares.empty else int(shares["iso2"].nunique()),
         },
     }
 

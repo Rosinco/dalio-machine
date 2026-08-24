@@ -10,6 +10,7 @@ from dalio.scoring.trade import (
     TRADE_COLUMNS,
     exposed_players,
     exposure_to,
+    import_share,
     load_trade,
     partner_indicator_names,
     top_partners,
@@ -94,9 +95,10 @@ def test_trade_shares_hand_calc(session_factory):
     assert pd.isna(by.loc[("MX", "US"), "m_share"])                       # no import total
     us = shares[shares["iso2"] == "US"]
     assert list(us["partner"])[:2] == ["EU", "MX"]                        # sorted by x_share desc
-    wt = world_totals(load_trade(s, BASKET, as_of=date(2026, 8, 24)) if False else pd.DataFrame(
-        [{"iso2": "US", "partner": "WLD", "year": 2025, "x_usd": 1.0, "m_usd": 2.0}]))
-    assert wt.loc["US", "m_usd"] == 2.0
+    with session_factory() as s:
+        wt = world_totals(load_trade(s, BASKET, as_of=date(2026, 8, 24)))
+    assert wt.loc["US", "m_usd"] == 3300.0 and wt.loc["CA", "year"] == 2024
+    assert world_totals(pd.DataFrame(columns=["iso2", "partner", "year", "x_usd", "m_usd"])).empty
 
 
 def _shares():
@@ -130,6 +132,8 @@ def test_exposure_direction():
     assert exposure_to(sh, "CA", "US") == 76.9          # 76.9 % of Canada's exports go to the US
     assert exposure_to(sh, "US", "CA") == 16.9
     assert exposure_to(sh, "US", "JP") is None
+    assert import_share(sh, "US", "CN") == 13.8 and import_share(sh, "US", "EU") is None
+    assert import_share(pd.DataFrame(columns=TRADE_COLUMNS), "US", "CN") is None
     assert exposed_players(sh, "US", n=3) == [("MX", 83.0), ("CA", 76.9), ("CN", 14.7)]
     assert exposed_players(sh, "US", n=10) == [("MX", 83.0), ("CA", 76.9), ("CN", 14.7), ("SE", 9.0)]  # SA < 2 %
     assert exposed_players(sh, "SE") == []
