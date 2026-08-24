@@ -196,6 +196,17 @@ FUNDAMENTALS: tuple[IndicatorSpec, ...] = (
 
 SE_INDICATORS: tuple[str, ...] = tuple(s.se_indicator for s in FUNDAMENTALS if s.se_indicator)
 
+# Stored and shipped in the snapshot's history block but NEVER scored — the
+# bubble chart needs a size variable (GDP, current USD).
+EXTRA_HISTORY: tuple[IndicatorSpec, ...] = (
+    IndicatorSpec(
+        "gdp_usd", "production", "GDP (current US$)", "US$",
+        higher_is_better=True, uncertainty="A",
+        preferred_sources=("WORLD_BANK",), first_year=1960,
+        description="Nominal GDP in current US dollars — bubble size only, not scored.",
+    ),
+)
+
 VIEWS: dict[str, dict[str, float]] = {
     "learning": {c: 0.2 for c in CATEGORIES},
     "jurisdiction": {"enforcer": 0.5, "promises": 0.3, "exchange": 0.2},
@@ -246,7 +257,7 @@ def load_panel(
     — one row per (country, indicator) that has any data. ONE query.
     """
     names = [s.name for s in specs]
-    sources = sorted({src for s in specs for src in s.preferred_sources})
+    sources = _sources_with_forecast_tags(specs)
     iso2s = [c.iso2 for c in countries]
     cutoff = _as_of_cutoff(as_of, lag_years)
     rows = session.execute(
@@ -274,13 +285,31 @@ def load_panel(
     return df
 
 
+def _sources_with_forecast_tags(specs: Sequence[IndicatorSpec]) -> list[str]:
+    """Union of preferred sources plus each one's ``_FCST`` twin, so the SQL
+    filter lets projection rows through for history-sourced specs."""
+    base = {src for s in specs for src in s.preferred_sources}
+    return sorted(base | {src + FORECAST_SUFFIX for src in base if not src.endswith(FORECAST_SUFFIX)})
+
+
 def _rank_by_source_preference(df: pd.DataFrame, specs: Sequence[IndicatorSpec]) -> pd.DataFrame:
     """Attach ``_pref`` (0 = most preferred) and DROP rows whose source is not
     in that indicator's own ``preferred_sources`` — the query filters on the
     union of all specs' sources, so without this a spec could silently consume
     another spec's source."""
     pref = {s.name: {src: i for i, src in enumerate(s.preferred_sources)} for s in specs}
-    ranks = [pref.get(i, {}).get(src) for i, src in zip(df["indicator"], df["source"], strict=True)]
+
+    def _rank(ind: str, src: str) -> float | None:
+        p = pref.get(ind, {})
+        if src in p:
+            return p[src]
+        # A forecast tag belongs to its base source's family (IMF_WEO_FCST → IMF_WEO)
+        # so projections ride along wherever the history source is preferred.
+        if src.endswith(FORECAST_SUFFIX):
+            return p.get(src[: -len(FORECAST_SUFFIX)])
+        return None
+
+    ranks = [_rank(i, src) for i, src in zip(df["indicator"], df["source"], strict=True)]
     df = df.assign(_pref=ranks)
     return df[df["_pref"].notna()].copy()
 
@@ -341,7 +370,7 @@ def load_history(
         for s in specs
     )
     names = [s.name for s in specs]
-    sources = sorted({src for s in specs for src in s.preferred_sources})
+    sources = _sources_with_forecast_tags(specs)
     iso2s = [c.iso2 for c in countries]
     rows = session.execute(
         select(Observation.country, Observation.indicator, Observation.date,
@@ -562,7 +591,8 @@ def build_snapshot(
 
     cats = category_scores(pct, specs, population)
     views = view_scores(cats)
-    history = load_history(session, specs, countries) if include_history else pd.DataFrame(
+    history_specs = (*specs, *EXTRA_HISTORY)
+    history = load_history(session, history_specs, countries) if include_history else pd.DataFrame(
         columns=["country", "indicator", "year", "value", "is_forecast"]
     )
 
@@ -659,7 +689,7 @@ def build_snapshot(
                     {"year": int(r.year), "value": float(r.value), "is_forecast": bool(r.is_forecast)}
                     for r in hist[hist["indicator"] == name].sort_values("year").itertuples()
                 ]
-                for name in by_name
+                for name in [*by_name, *(x.name for x in EXTRA_HISTORY)]
             } if include_history else {},
         }
 
@@ -674,8 +704,9 @@ def build_snapshot(
                 "uncertainty": s.uncertainty, "higher_is_better": s.higher_is_better,
                 "description": s.description, "cadence": s.cadence,
                 "sources": list(s.preferred_sources), "first_year": s.first_year,
+                "scored": s in specs, "forward": s.forward,
             }
-            for s in specs
+            for s in (*specs, *EXTRA_HISTORY)
         ],
         "categories": list(CATEGORIES),
         "category_labels": dict(CATEGORY_LABELS),

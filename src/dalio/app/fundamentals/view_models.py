@@ -299,6 +299,94 @@ def leaderboard(snap: Snapshot, view: str) -> pd.DataFrame:
     return df.sort_values("Composite", ascending=False, na_position="last", kind="stable").reset_index(drop=True)
 
 
+# ─── Gapminder bubble ────────────────────────────────────────────────────────
+
+BUBBLE_SIZE_INDICATOR = "gdp_usd"
+BUBBLE_MIN_YEAR = 1990
+BUBBLE_SIZE_FFILL_YEARS = 6      # nominal GDP has no projections: hold the last actual through them
+BUBBLE_DEFAULT_X = "gov_debt_pct_gdp"   # IMF series → projections visible by default
+BUBBLE_DEFAULT_Y = "gdp_growth_fwd5"
+
+
+def bubble_indicator_options(snap: Snapshot) -> list[str]:
+    """Scored indicators that have any history (x / y candidates)."""
+    have = set(snap.history["indicator"].unique()) if not snap.history.empty else set()
+    return [n for n, m in snap.catalog.items() if m.scored and n in have]
+
+
+def bubble_frame(
+    snap: Snapshot,
+    x: str,
+    y: str,
+    size: str = BUBBLE_SIZE_INDICATOR,
+    color_view: str = "learning",
+    bloc: bool = False,
+    year_min: int = BUBBLE_MIN_YEAR,
+) -> pd.DataFrame:
+    """Long frame ``iso2, name, year, x, y, size, color, is_forecast``.
+
+    Inner-joins x and y per (player, year); size is forward-filled per player
+    for up to ``BUBBLE_SIZE_FFILL_YEARS`` (nominal GDP has no projections —
+    the last actual is held through the forecast years), else the row is
+    dropped (a bubble needs a size); ``is_forecast`` is True if either x or y
+    came from a forecast row. Bloc mode swaps the individual euro-area members
+    for the aggregate."""
+    h = snap.history
+    if h.empty:
+        return pd.DataFrame(columns=["iso2", "name", "year", "x", "y", "size", "color", "is_forecast"])
+    h = h[h["year"] >= year_min]
+
+    def _piv(name: str, col: str) -> pd.DataFrame:
+        sub = h[h["indicator"] == name][["iso2", "year", "value", "is_forecast"]]
+        return sub.rename(columns={"value": col, "is_forecast": f"{col}_f"})
+
+    df = _piv(x, "x").merge(_piv(y, "y"), on=["iso2", "year"], how="inner")
+    if df.empty:
+        return pd.DataFrame(columns=["iso2", "name", "year", "x", "y", "size", "color", "is_forecast"])
+    s = _piv(size, "size")[["iso2", "year", "size"]]
+    years = pd.MultiIndex.from_product([df["iso2"].unique(), range(int(h["year"].min()), int(h["year"].max()) + 1)],
+                                       names=["iso2", "year"])
+    s = (s.set_index(["iso2", "year"]).reindex(years).groupby(level=0)["size"]
+         .ffill(limit=BUBBLE_SIZE_FFILL_YEARS).reset_index())
+    df = df.merge(s, on=["iso2", "year"], how="left").dropna(subset=["size"])
+    df["is_forecast"] = df["x_f"].astype(bool) | df["y_f"].astype(bool)
+    df = df.drop(columns=["x_f", "y_f"])
+
+    players = snap.players.set_index("iso2")
+    if bloc:
+        df = df[~df["iso2"].map(players["eu_member"]).fillna(False).astype(bool)]
+    else:
+        df = df[df["iso2"].map(players["on_map"]).fillna(True).astype(bool)]
+    df["name"] = df["iso2"].map(players["name"])
+    comp = snap.view_scores[snap.view_scores["view"] == color_view].set_index("iso2")["score"]
+    df["color"] = df["iso2"].map(comp).astype(float)
+    return df.sort_values(["year", "iso2"]).reset_index(drop=True)[
+        ["iso2", "name", "year", "x", "y", "size", "color", "is_forecast"]]
+
+
+def bubble_ranges(frame: pd.DataFrame, log_x: bool, pad: float = 0.05) -> tuple[tuple[float, float], tuple[float, float]]:
+    """Axis ranges from the WHOLE frame (else axes jump between years), padded
+    5 %; log x returns log10 bounds as plotly expects."""
+    if frame.empty:
+        return (0.0, 1.0), (0.0, 1.0)
+    xs, ys = frame["x"].astype(float), frame["y"].astype(float)
+    if log_x:
+        xs = np.log10(xs[xs > 0])
+    x0, x1 = float(xs.min()), float(xs.max())
+    y0, y1 = float(ys.min()), float(ys.max())
+    dx, dy = (x1 - x0) or 1.0, (y1 - y0) or 1.0
+    return (x0 - pad * dx, x1 + pad * dx), (y0 - pad * dy, y1 + pad * dy)
+
+
+def bubble_trail(frame: pd.DataFrame, iso2: str) -> pd.DataFrame:
+    return frame[frame["iso2"] == iso2].sort_values("year").reset_index(drop=True)
+
+
+def forecast_boundary(frame: pd.DataFrame) -> int | None:
+    f = frame[frame["is_forecast"]]
+    return None if f.empty else int(f["year"].min())
+
+
 # ─── Purpose views ───────────────────────────────────────────────────────────
 
 VIEW_LABELS: dict[str, str] = {
@@ -390,7 +478,7 @@ def country_table(snap: Snapshot, iso2: str) -> pd.DataFrame:
     ind = snap.indicators[snap.indicators["iso2"] == iso2].set_index("indicator")
     order = {c: i for i, c in enumerate(snap.categories)}
     rows = []
-    for name, meta in snap.catalog.items():
+    for name, meta in snap.scored_catalog.items():
         cell = ind.loc[name] if name in ind.index else None
         rows.append({
             "category": meta.category, "indicator": name, "label": meta.label, "unit": meta.unit,

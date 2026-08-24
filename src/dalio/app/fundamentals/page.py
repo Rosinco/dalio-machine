@@ -11,7 +11,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from dalio.app.fundamentals.charts import build_fundamentals_map, build_pareto
+from dalio.app.fundamentals.charts import build_bubble, build_fundamentals_map, build_pareto
 from dalio.app.fundamentals.dot import chain_to_dot
 from dalio.app.fundamentals.snapshot import (
     Snapshot,
@@ -21,10 +21,16 @@ from dalio.app.fundamentals.snapshot import (
     snapshot_fingerprint,
 )
 from dalio.app.fundamentals.view_models import (
+    BUBBLE_DEFAULT_X,
+    BUBBLE_DEFAULT_Y,
+    BUBBLE_SIZE_INDICATOR,
     VIEW_LABELS,
     MapMode,
+    bubble_frame,
+    bubble_indicator_options,
     country_table,
     coverage_confidence,
+    forecast_boundary,
     html_dense_table,
     iso3_to_player,
     leaderboard,
@@ -119,7 +125,7 @@ def _control_strip(snap: Snapshot, view: str) -> tuple[MapMode, str | None, bool
     key: str | None = None
     with c2:
         if mode == MapMode.INDICATOR:
-            names = list(snap.catalog)
+            names = list(snap.scored_catalog)
             key = st.selectbox("Indicator", names, format_func=lambda n: snap.catalog[n].label,
                                key="fund_map_indicator")
         elif mode == MapMode.CATEGORY:
@@ -231,6 +237,51 @@ def _render_pareto(snap: Snapshot, iso2: str) -> None:
     st.caption(pareto_caption(df, name, level))
 
 
+@st.cache_data(show_spinner=False)
+def _cached_bubble(dir_str: str, fingerprint: int, x: str, y: str, view: str, bloc: bool,
+                   selected: str, log_x: bool):
+    snap = _cached_snapshot(dir_str, fingerprint)
+    frame = bubble_frame(snap, x, y, BUBBLE_SIZE_INDICATOR, view, bloc)
+    fig = build_bubble(frame, snap.catalog[x].label, snap.catalog[y].label, selected, log_x=log_x)
+    return fig, forecast_boundary(frame), len(frame)
+
+
+def _render_bubble(snap: Snapshot, iso2: str, view: str, bloc: bool) -> None:
+    st.markdown(
+        '<span class="kicker">Trajectories</span>'
+        '<h3 class="section-title">Where players have been, and where the IMF thinks they go</h3>'
+        '<p class="section-lede">Gapminder-style: one bubble per player per year, sized by GDP, '
+        'coloured by the current view\'s composite. Open circles are IMF projections — a forecast, '
+        'not a fact. The selected player leaves a trail (dotted over the projection).</p>',
+        unsafe_allow_html=True,
+    )
+    options = bubble_indicator_options(snap)
+    if len(options) < 2 or BUBBLE_SIZE_INDICATOR not in snap.catalog:
+        st.caption("Not enough history in the snapshot for trajectories yet.")
+        return
+    c1, c2, c3 = st.columns([3, 3, 2], gap="large")
+    x_default = BUBBLE_DEFAULT_X if BUBBLE_DEFAULT_X in options else options[0]
+    y_default = BUBBLE_DEFAULT_Y if BUBBLE_DEFAULT_Y in options else options[1]
+    with c1:
+        x = st.selectbox("Horizontal", options, index=options.index(x_default),
+                         format_func=lambda n: snap.catalog[n].label, key="fund_bubble_x")
+    with c2:
+        y = st.selectbox("Vertical", options, index=options.index(y_default),
+                         format_func=lambda n: snap.catalog[n].label, key="fund_bubble_y")
+    with c3:
+        log_x = st.toggle("Log horizontal axis", value=(x == "gdp_pc_ppp"), key="fund_bubble_log")
+    fig, boundary, n_rows = _cached_bubble(str(snapshot_dir()), snapshot_fingerprint(snapshot_dir()),
+                                           x, y, view, bloc, iso2, log_x)
+    if n_rows == 0:
+        st.caption("No overlapping history for that pair.")
+        return
+    st.plotly_chart(fig, width="stretch", key="fund_bubble", on_select="ignore")
+    tail = (f" Projections start in {boundary} (open circles; bubble size held at the last actual GDP)."
+            if boundary else " Pick two IMF series (debt, deficit, growth, current account) to see projections.")
+    st.caption(f"{n_rows} player-years since 1990. Bubble size = {snap.catalog[BUBBLE_SIZE_INDICATOR].label}."
+               f"{tail} Press ▶ to animate; drag the slider to a year.")
+
+
 def _render_chains(snap: Snapshot, iso2: str) -> None:
     name = snap.player_name(iso2)
     chains = [c for c in snap.chains if c.iso2 == iso2 and c.triggered]
@@ -298,4 +349,5 @@ def render_fundamentals_page() -> None:
         _render_country_panel(snap, selected, view)
 
     _render_chains(snap, selected)
+    _render_bubble(snap, selected, view, bloc)
     _render_pareto(snap, selected)

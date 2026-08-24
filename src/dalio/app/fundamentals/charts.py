@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 import pandas as pd
+import plotly.express as px
 import plotly.graph_objects as go
 
-from dalio.app.fundamentals.view_models import MapLayer
+from dalio.app.fundamentals.view_models import MapLayer, bubble_ranges, bubble_trail
 from dalio.app.theme import (
     FONT_BODY,
     FONT_MONO,
@@ -12,6 +13,7 @@ from dalio.app.theme import (
     INK_MUTED,
     NO_DATA,
     PAPER,
+    PCT_RAMP,
     RULE,
     RUST,
     geo_layout,
@@ -78,6 +80,74 @@ def build_fundamentals_map(layer: MapLayer, height: int = 460) -> go.Figure:
             name="data quality",
         ))
     fig.update_layout(geo=geo_layout(), showlegend=False, **plotly_base_layout(height=height))
+    return fig
+
+
+def build_bubble(
+    frame: pd.DataFrame,
+    x_label: str,
+    y_label: str,
+    selected_iso2: str | None,
+    log_x: bool = True,
+    height: int = 520,
+) -> go.Figure:
+    """Gapminder-style animated scatter. Forecast years are open circles and
+    their slider steps carry an 'f' suffix; the selected player gets a trail
+    (dotted over the forecast segment) and the only direct label."""
+    if frame.empty:
+        fig = go.Figure()
+        fig.update_layout(**plotly_base_layout(height=height))
+        return fig
+    df = frame.copy()
+    df["label"] = df["name"].where(df["iso2"] == selected_iso2, "")
+    df["kind"] = df["is_forecast"].map({False: "actual", True: "forecast"})
+    (x0, x1), (y0, y1) = bubble_ranges(df, log_x)
+    fig = px.scatter(
+        df, x="x", y="y", size="size", color="color", animation_frame="year", animation_group="iso2",
+        hover_name="name", symbol="kind", symbol_map={"actual": "circle", "forecast": "circle-open"},
+        text="label", log_x=log_x, size_max=52, range_x=[10 ** x0, 10 ** x1] if log_x else [x0, x1],
+        range_y=[y0, y1], color_continuous_scale=list(PCT_RAMP), range_color=[0, 100],
+        labels={"x": x_label, "y": y_label, "color": "composite"},
+    )
+    fig.update_traces(marker=dict(line=dict(width=2, color=PAPER), sizemin=4),
+                      textposition="top center", textfont=dict(family=FONT_BODY, size=11, color=INK),
+                      selector=dict(type="scatter"))
+    for fr in fig.frames:
+        for tr in fr.data:
+            tr.marker.line = dict(width=2, color=PAPER)
+    # slider labels: forecast years suffixed 'f'
+    fc_years = set(df.loc[df["is_forecast"], "year"].astype(int))
+    if fig.layout.sliders:
+        for step in fig.layout.sliders[0].steps:
+            try:
+                yr = int(step.label)
+            except (TypeError, ValueError):
+                continue
+            if yr in fc_years and yr not in set(df.loc[~df["is_forecast"], "year"].astype(int)):
+                step.label = f"{yr}f"
+    # trail for the selected player (appended traces persist across frames)
+    if selected_iso2:
+        tr = bubble_trail(df, selected_iso2)
+        if len(tr) > 1:
+            actual = tr[~tr["is_forecast"]]
+            fig.add_trace(go.Scatter(x=actual["x"], y=actual["y"], mode="lines", name="trail",
+                                     line=dict(color=INK, width=1.5), hoverinfo="skip", showlegend=False))
+            fc = tr[tr["is_forecast"]]
+            if not fc.empty:
+                bridge = pd.concat([actual.tail(1), fc])
+                fig.add_trace(go.Scatter(x=bridge["x"], y=bridge["y"], mode="lines", name="trail-forecast",
+                                         line=dict(color=INK, width=1.5, dash="dot"), hoverinfo="skip",
+                                         showlegend=False))
+    layout = plotly_base_layout(height=height)
+    layout["margin"] = dict(l=10, r=10, t=10, b=10)
+    fig.update_layout(
+        showlegend=False, coloraxis_showscale=False,
+        xaxis=dict(title=dict(text=x_label, font=dict(size=11)), showgrid=True, gridcolor=RULE, gridwidth=0.5,
+                   zeroline=False, color=INK_MUTED, tickfont=dict(family=FONT_MONO, size=10)),
+        yaxis=dict(title=dict(text=y_label, font=dict(size=11)), showgrid=True, gridcolor=RULE, gridwidth=0.5,
+                   zeroline=True, zerolinecolor=RULE, color=INK_MUTED, tickfont=dict(family=FONT_MONO, size=10)),
+        **layout,
+    )
     return fig
 
 

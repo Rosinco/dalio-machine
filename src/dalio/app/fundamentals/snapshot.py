@@ -42,6 +42,8 @@ class IndicatorMeta:
     description: str
     cadence: str
     sources: tuple[str, ...]
+    scored: bool = True        # False = history-only series (e.g. bubble size)
+    forward: bool = False
 
 
 @dataclass(frozen=True)
@@ -90,6 +92,10 @@ class Snapshot:
     def player_codes(self) -> tuple[str, ...]:
         return tuple(self.players["iso2"])
 
+    @property
+    def scored_catalog(self) -> dict[str, IndicatorMeta]:
+        return {k: v for k, v in self.catalog.items() if v.scored}
+
     def player_name(self, iso2: str) -> str:
         row = self.players.loc[self.players["iso2"] == iso2, "name"]
         return str(row.iloc[0]) if not row.empty else iso2
@@ -136,6 +142,7 @@ def parse_snapshot(raw: dict) -> Snapshot:
             uncertainty=i["uncertainty"], higher_is_better=bool(i["higher_is_better"]),
             description=i["description"], cadence=i.get("cadence", "A"),
             sources=tuple(i.get("sources", ())),
+            scored=bool(i.get("scored", True)), forward=bool(i.get("forward", False)),
         )
 
     players, cells, cats, vscores, chains, hist = [], [], [], [], [], []

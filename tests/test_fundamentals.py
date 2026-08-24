@@ -216,7 +216,10 @@ def test_build_snapshot_schema_and_scores(session_factory, tmp_path):
     assert snap["as_of"] == "2026-08-24"
     assert snap["ranking_population"] == list(RANKING_POPULATION)
     assert len(snap["ranking_population"]) == 21
-    assert [i["name"] for i in snap["indicators"]] == [s.name for s in FUNDAMENTALS]
+    from dalio.scoring.fundamentals import EXTRA_HISTORY
+    assert [i["name"] for i in snap["indicators"]] == [s.name for s in (*FUNDAMENTALS, *EXTRA_HISTORY)]
+    assert [i["scored"] for i in snap["indicators"]].count(False) == len(EXTRA_HISTORY)
+    assert "gdp_usd" in snap["countries"]["US"]["history"]
     assert snap["categories"] == list(CATEGORIES)
     assert set(snap["views"]) == set(VIEWS)
     assert set(snap["countries"]) == {c.iso2 for c in COUNTRIES}

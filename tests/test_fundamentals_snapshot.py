@@ -22,7 +22,8 @@ def test_load_snapshot_shapes(synthetic_snapshot_dir):
     snap = load_snapshot(synthetic_snapshot_dir)
     assert snap.as_of.isoformat() == "2026-08-24"
     assert snap.categories == CATEGORIES
-    assert set(snap.catalog) == {s.name for s in FUNDAMENTALS}
+    assert set(snap.scored_catalog) == {s.name for s in FUNDAMENTALS}
+    assert set(snap.catalog) - set(snap.scored_catalog) == {"gdp_usd"}
     assert snap.catalog["old_age_dependency"].higher_is_better is False
     assert snap.ranking_population == ("US", "SE", "CN", "IN", "DE")
 

@@ -298,6 +298,7 @@ WB_FUNDAMENTALS: tuple[WbIndicatorSpec, ...] = (
     WbIndicatorSpec("old_age_dependency", "SP.POP.DPND.OL", start_year=1960),
     # production
     WbIndicatorSpec("gdp_pc_ppp", "NY.GDP.PCAP.PP.KD", start_year=1990),
+    WbIndicatorSpec("gdp_usd", "NY.GDP.MKTP.CD", start_year=1960),          # bubble size only
     WbIndicatorSpec("rd_pct_gdp", "GB.XPD.RSDV.GD.ZS", start_year=1996),
     # exchange
     WbIndicatorSpec("exports_usd", "NE.EXP.GNFS.CD", start_year=1960, include_world=True),

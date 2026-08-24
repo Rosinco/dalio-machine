@@ -180,6 +180,27 @@ def test_snapshot_forward_cell_and_history_alias(session_factory):
     assert [h["is_forecast"] for h in hist] == [False, False, True, True]
 
 
+def test_history_keeps_projection_rows_for_history_sourced_specs(session_factory):
+    """gov_debt lists only IMF_WEO (+ BIS_TC) — its IMF_WEO_FCST rows must still ship."""
+    spec = next(s for s in FUNDAMENTALS if s.name == "gov_debt_pct_gdp")
+    with session_factory() as s:
+        for y, v, src in ((2024, 122.3, SOURCE_HISTORY), (2025, 123.9, SOURCE_HISTORY),
+                          (2026, 125.8, SOURCE_FORECAST), (2031, 142.1, SOURCE_FORECAST)):
+            s.add(Observation(country="US", indicator="gov_debt_pct_gdp", date=date(y, 12, 31),
+                              value=v, source=src, series_id="GGXWDG_NGDP"))
+        s.add(Observation(country="US", indicator="gov_debt_pct_gdp", date=date(2024, 10, 1),
+                          value=118.0, source="BIS_TC", series_id="Q.US.G"))     # less preferred family
+        s.commit()
+    with session_factory() as s:
+        h = load_history(s, [spec], [get_country("US")])
+        latest = build_snapshot(s, as_of=date(2026, 8, 24), include_history=False)
+    assert list(h["year"]) == [2024, 2025, 2026, 2031]
+    assert list(h["is_forecast"]) == [False, False, True, True]
+    assert (h["value"] != 118.0).all()                                   # BIS family dropped
+    cell = latest["countries"]["US"]["indicators"]["gov_debt_pct_gdp"]
+    assert cell["value"] == 123.9 and cell["is_forecast"] is False       # latest ≤ as_of is history
+
+
 def test_history_alias_only_for_forward_specs(session_factory):
     spec = IndicatorSpec("gdp_growth_fwd5", "production", "x", "", True, "B",
                          ("IMF_WEO_FCST", "IMF_WEO"), "x" * 30, forward=True, base_indicator="real_gdp_growth")

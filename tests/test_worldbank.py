@@ -128,8 +128,8 @@ def test_cache_hit_avoids_second_call(http_client, tmp_path):
 
 def test_fundamentals_bundle_shape():
     names = [s.indicator for s in WB_FUNDAMENTALS]
-    assert len(names) == len(set(names)) == 13
-    assert {"gdp_pc_ppp", "old_age_dependency", "exports_usd", "military_usd", "rule_of_law_se"} <= set(names)
+    assert len(names) == len(set(names)) == 14
+    assert {"gdp_pc_ppp", "gdp_usd", "old_age_dependency", "exports_usd", "military_usd", "rule_of_law_se"} <= set(names)
     world = {s.indicator for s in WB_FUNDAMENTALS if s.include_world}
     assert world == {"exports_usd", "military_usd"}
     assert {s.source_id for s in WB_FUNDAMENTALS} == {2, 3}
