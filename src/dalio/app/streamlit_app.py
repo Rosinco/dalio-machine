@@ -24,6 +24,22 @@ from dotenv import load_dotenv
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from dalio.app.fundamentals.page import render_fundamentals_page
+from dalio.app.theme import (
+    CAUTION_HEX,
+    INK,
+    INK_MUTED,
+    NO_DATA,
+    PAPER,
+    PHASE_HEX,
+    RULE,
+    RUST,
+    geo_layout,
+    legend_row,
+    plotly_base_layout,
+)
+from dalio.app.theme import confidence_block as _confidence_block
+from dalio.app.theme import phase_swatch as _phase_swatch
 from dalio.app.views import (
     INDICATOR_EXPLANATIONS,
     PHASE_EXPLANATIONS,
@@ -38,7 +54,7 @@ from dalio.app.views import (
     map_iso3_to_country_iso2,
     top_tilts,
 )
-from dalio.countries import CYCLE_COUNTRIES, Tier, get_country
+from dalio.countries import COUNTRIES, CYCLE_COUNTRIES, Tier, get_country
 from dalio.scoring.allocation import AllocationView
 from dalio.scoring.long_term import PHASE_LABELS, PhaseClassification
 from dalio.scoring.short_term import (
@@ -59,35 +75,7 @@ PHASE_EMOJI: dict[int, str] = {
     1: "🟢", 2: "🟡", 3: "🟠", 4: "🔴", 5: "🟣", 6: "🔵", 7: "⚫", 0: "⚪",
 }
 
-# Editorial palette — muted, painterly. Each phase reads as a sentiment.
-# Sage / olive = calm. Ochre / terracotta = warning. Oxblood / slate = distress / regime change.
-PHASE_HEX: dict[int, str] = {
-    1: "#506e58",   # sage — sound money
-    2: "#708060",   # olive — debt outpacing
-    3: "#b8893a",   # ochre — bubble
-    4: "#a14a3a",   # terracotta — top
-    5: "#6b3c4a",   # oxblood — deleveraging
-    6: "#3a587a",   # slate blue — reflation/repression
-    7: "#2a2a2a",   # charcoal — reset
-    0: "#c69e3f",   # warm amber — transition (look closer)
-}
-
-CAUTION_HEX: dict[str, str] = {
-    "low": "#506e58",
-    "moderate": "#c69e3f",
-    "elevated": "#b8893a",
-    "high": "#a14a3a",
-}
-
-# Page palette — used both in CSS and to style plotly figures.
-INK = "#0c1f3f"
-INK_MUTED = "#5a5852"
-PAPER = "#faf6ef"
-PAPER_ELEV = "#f1ebde"
-LAND = "#e8e0cb"
-RULE = "#cdc6b6"
-RUST = "#b94e23"
-NO_DATA = "#d9d4c5"
+# Palette constants live in dalio.app.theme (slice P0) and are imported above.
 
 
 def _inject_design_css() -> None:
@@ -516,20 +504,30 @@ def _sparkline(session: Session, country: str, indicator: str, tail: int) -> Non
 # ─── World map ─────────────────────────────────────────────────────────────
 
 
+SELECTED_LINE_WIDTH = 2.2
+DEFAULT_LINE_WIDTH = 0.6
+
+
 def _build_choropleth(
     points: list[CountryMapPoint], metric: str, selected_iso2: str | None,
 ) -> go.Figure:
     """Build a Plotly choropleth keyed by country ISO-3.
 
     metric ∈ {phase, stage, caution, total_debt}.
-    Eurozone is expanded to its 19 members so the EU shows as a coherent block.
+    Eurozone is expanded to its members so the EU shows as a coherent block.
+    The selected country gets a rust outline; its locations are emitted LAST
+    because plotly draws in order and neighbours would overdraw the outline.
     """
     locations: list[str] = []
     z_values: list[float] = []
     colors: list[str] = []
     hover_texts: list[str] = []
+    line_widths: list[float] = []
+    line_colors: list[str] = []
 
-    for p in points:
+    ordered = sorted(points, key=lambda p: p.iso2 == selected_iso2)  # selected last
+    for p in ordered:
+        is_selected = p.iso2 == selected_iso2
         if not p.has_data:
             color = NO_DATA
             z = -1.0  # reserved zone in the discrete colorscale
@@ -561,6 +559,8 @@ def _build_choropleth(
             z_values.append(z)
             colors.append(color)
             hover_texts.append(p.hover_text)
+            line_widths.append(SELECTED_LINE_WIDTH if is_selected else DEFAULT_LINE_WIDTH)
+            line_colors.append(RUST if is_selected else PAPER)
 
     fig = go.Figure(go.Choropleth(
         locations=locations,
@@ -568,8 +568,8 @@ def _build_choropleth(
         text=hover_texts,
         hoverinfo="text",
         locationmode="ISO-3",
-        marker_line_color=PAPER,
-        marker_line_width=0.6,
+        marker_line_color=line_colors,
+        marker_line_width=line_widths,
         colorscale=[[0, INK_MUTED], [1, INK_MUTED]],  # base (overridden below)
         showscale=False,
     ))
@@ -613,36 +613,32 @@ def _build_choropleth(
             zmin=50, zmax=400,
         )
 
-    fig.update_layout(
-        geo=dict(
-            showframe=False,
-            showcoastlines=False,
-            projection_type="natural earth",
-            showland=True,
-            landcolor=LAND,
-            oceancolor=PAPER,
-            showocean=True,
-            showcountries=True,
-            countrycolor=RULE,
-            countrywidth=0.4,
-            bgcolor="rgba(0,0,0,0)",
-        ),
-        font=dict(family="Inter Tight, system-ui, sans-serif", color=INK, size=12),
-        hoverlabel=dict(
-            bgcolor=PAPER_ELEV,
-            bordercolor=INK,
-            font=dict(family="Inter Tight, system-ui, sans-serif", color=INK, size=12),
-        ),
-        margin=dict(l=0, r=0, t=0, b=0),
-        height=460,
-        paper_bgcolor="rgba(0,0,0,0)",
-    )
+    fig.update_layout(geo=geo_layout(), **plotly_base_layout(height=460))
     return fig
 
 
-def _render_world_map(points: list[CountryMapPoint], selected_iso2: str | None) -> str | None:
-    """Render the choropleth + metric selector. Returns iso2 of clicked country
-    if user clicked a location, else None."""
+CYCLE_MAP_KEY = "world_map_chart"
+
+
+def _on_cycle_map_select() -> None:
+    """Selection callback: runs BEFORE widgets are instantiated on the rerun,
+    so writing the sidebar selectbox's key here is legal (writing it in the
+    script body after the selectbox exists raises StreamlitAPIException —
+    the pre-P0 bug). Clicks are clamped to the cycles basket."""
+    state = st.session_state.get(CYCLE_MAP_KEY)
+    sel = getattr(state, "selection", None)
+    pts = sel.get("points", []) if isinstance(sel, dict) else getattr(sel, "points", []) or []
+    if not pts:
+        return
+    clicked_iso3 = pts[0].get("location") if isinstance(pts[0], dict) else None
+    target = cycle_click_target(map_iso3_to_country_iso2(clicked_iso3)) if clicked_iso3 else None
+    if target and target != st.session_state.get("country"):
+        st.session_state.country = target
+
+
+def _render_world_map(points: list[CountryMapPoint], selected_iso2: str | None) -> None:
+    """Render the choropleth + metric selector. Clicks are handled by
+    `_on_cycle_map_select` (callback) — nothing is returned."""
     metric_label, metric_key = st.radio(
         "Color the map by:",
         options=[
@@ -657,12 +653,12 @@ def _render_world_map(points: list[CountryMapPoint], selected_iso2: str | None) 
     ) or ("Long-term phase", "phase")
 
     fig = _build_choropleth(points, metric_key, selected_iso2)
-    selection = st.plotly_chart(
+    st.plotly_chart(
         fig,
         width="stretch",
-        on_select="rerun",
+        on_select=_on_cycle_map_select,
         selection_mode=("points",),
-        key="world_map_chart",
+        key=CYCLE_MAP_KEY,
     )
 
     # Editorial legend below map — swatches with text, hairline-separated
@@ -701,20 +697,7 @@ def _render_world_map(points: list[CountryMapPoint], selected_iso2: str | None) 
             ("#a14a3a", "250–300%"),
             ("#6b3c4a", "≥ 300%"),
         ]
-    swatches = "".join(
-        f'<span><i class="swatch" style="background:{c}"></i>{label}</span>'
-        for c, label in legend_items
-    )
-    st.markdown(f'<div class="legend-row">{swatches}</div>', unsafe_allow_html=True)
-
-    # Click handling
-    if selection and getattr(selection, "selection", None):
-        pts = selection.selection.get("points", []) if isinstance(selection.selection, dict) else []
-        if pts:
-            clicked_iso3 = pts[0].get("location")
-            if clicked_iso3:
-                return map_iso3_to_country_iso2(clicked_iso3)
-    return None
+    st.markdown(legend_row(legend_items), unsafe_allow_html=True)
 
 
 # ─── Simplified country summary ─────────────────────────────────────────────
@@ -757,24 +740,6 @@ Private-sector debt-service ratio <span class="num">{dsr}</span>.
             "gold and away from long nominal bonds, on top of the phase-specific tilts.</p>",
             unsafe_allow_html=True,
         )
-
-
-def _confidence_block(label: str, confidence: float) -> str:
-    pct = max(0.0, min(confidence, 1.0)) * 100
-    return (
-        f'<div class="confidence-track"><span class="confidence-fill" '
-        f'style="width:{pct:.1f}%"></span></div>'
-        f'<div class="confidence-meta"><span>{label}</span>'
-        f'<span>{pct:.0f}%</span></div>'
-    )
-
-
-def _phase_swatch(color: str) -> str:
-    return (
-        f'<i class="swatch" style="background:{color};display:inline-block;'
-        f'width:0.6rem;height:0.6rem;margin-right:0.45rem;'
-        f'vertical-align:0.05rem;border:1px solid rgba(0,0,0,0.15);"></i>'
-    )
 
 
 def _render_summary_cards(view: CountryView) -> None:
@@ -1479,70 +1444,41 @@ inputs to portfolio decisions.
     )
 
 
-# ─── Main entry ────────────────────────────────────────────────────────────
+# ─── Pages ─────────────────────────────────────────────────────────────────
 
 
-def _resolve_selected_country() -> str:
-    """Determine which country to display, with sidebar selectbox + map click
-    both writing to st.session_state.country."""
-    if "country" not in st.session_state:
-        st.session_state.country = "US"
-    return st.session_state.country
+def _sidebar_format(iso2: str) -> str:
+    c = get_country(iso2)
+    if c.tier == Tier.TIER_1:
+        return c.name
+    if c.tier == Tier.TIER_2:
+        return f"{c.name}  · Tier 2"
+    return f"{c.name}  · fundamentals only"
 
 
-def main() -> None:
-    load_dotenv()
-    st.set_page_config(
-        page_title="Dalio Machine",
-        layout="wide",
-        page_icon="📊",
-    )
-    _inject_design_css()
-
-    today = date.today().strftime("%a %d %b %Y").upper()
-    st.markdown(
-        f"""
-<div class="masthead">
-  <div class="meta">
-    <span>Vol. I &nbsp;·&nbsp; {today}</span>
-    <span>A regime lens, not an oracle</span>
-  </div>
-  <h1 class="title">Dalio Machine</h1>
-  <p class="subtitle">
-    A macro-cycle research lens for the late-cycle world — short-term &amp;
-    long-term debt cycles, mapped to allocation tilts. Decision-support for
-    a diversified base portfolio, not market-timing signals.
-  </p>
-</div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    with _open_session() as s:
-        countries_with_data = {c.iso2 for c in CYCLE_COUNTRIES if _has_data(s, c.iso2)}
-        points = compute_world_view(s)
-
-    # ─── Sidebar (country selector) ────────────────────────────────
-    def _format(iso2: str) -> str:
-        c = get_country(iso2)
-        suffix = "" if iso2 in countries_with_data else "  (no data)"
-        tier_tag = "" if c.tier == Tier.TIER_1 else "  · Tier 2"
-        return f"{c.name}{tier_tag}{suffix}"
-
-    if "country" not in st.session_state:
-        st.session_state.country = "US"
+def render_shared_sidebar() -> tuple[str, str]:
+    """Sidebar widgets shared by every page — created in the entrypoint BEFORE
+    `pg.run()` so their state persists across pages. Returns
+    ``(selected_iso2, home_currency)``."""
+    options = [c.iso2 for c in COUNTRIES]
     selected = st.sidebar.selectbox(
         "Country",
-        [c.iso2 for c in CYCLE_COUNTRIES],
-        format_func=_format,
+        options,
+        index=options.index("US"),
+        format_func=_sidebar_format,
         key="country",
+        bind="query-params",
     )
     country = get_country(selected)
-
     if country.tier == Tier.TIER_2:
         st.sidebar.warning(
             f"**Tier 2** — coverage thinner for {country.name}. "
             "Lower implicit confidence."
+        )
+    elif country.tier == Tier.TIER_3:
+        st.sidebar.info(
+            f"**Fundamentals only** — {country.name} has no cycle classifiers; "
+            "see the Fundamentals page."
         )
     st.sidebar.divider()
     st.sidebar.markdown(
@@ -1565,6 +1501,18 @@ def main() -> None:
             "investor's view)."
         ),
     )
+    return selected, home_currency
+
+
+def render_cycles_page() -> None:
+    """The original dashboard (slices 1–17): world cycle map + country brief."""
+    selected: str = st.session_state.get("country", "US")
+    home_currency: str = st.session_state.get("home_currency", "SEK")
+    country = get_country(selected)
+
+    with _open_session() as s:
+        countries_with_data = {c.iso2 for c in CYCLE_COUNTRIES if _has_data(s, c.iso2)}
+        points = compute_world_view(s)
 
     # ─── World map ────────────────────────────────────────────────
     st.markdown(
@@ -1574,16 +1522,19 @@ def main() -> None:
         'The Eurozone shows as a single bloc; click any member to select it.</p>',
         unsafe_allow_html=True,
     )
-    clicked_iso2 = cycle_click_target(_render_world_map(points, selected_iso2=selected))
-    if clicked_iso2 and clicked_iso2 != selected:
-        st.session_state.country = clicked_iso2
-        st.rerun()
+    _render_world_map(points, selected_iso2=selected)
 
     # ─── Country detail ───────────────────────────────────────────
+    if not country.has_cycle_wiring:
+        st.info(
+            f"**{country.name}** is a fundamentals-only player — no short-/long-term "
+            "cycle classifiers. Open the **Fundamentals** page for its scorecard."
+        )
+        return
     if selected not in countries_with_data:
         st.warning(
-            f"No data for **{country.name}** yet. "
-            "Slice 3 (Tier-2 fan-out: IN, BR) is the next step."
+            f"No cycle data for **{country.name}** yet — run "
+            f"`dalio-fetch-fred {selected}` and `dalio-fetch-bis {selected}`."
         )
         return
 
@@ -1640,6 +1591,48 @@ def main() -> None:
 
     with st.expander("The bigger picture (Dalio's full framework — qualitative)"):
         _render_big_cycle_panel(selected, country.name)
+
+
+# ─── Main entry ────────────────────────────────────────────────────────────
+
+
+def main() -> None:
+    load_dotenv()
+    st.set_page_config(
+        page_title="Dalio Machine",
+        layout="wide",
+        page_icon="📊",
+    )
+    _inject_design_css()
+
+    today = date.today().strftime("%a %d %b %Y").upper()
+    st.markdown(
+        f"""
+<div class="masthead">
+  <div class="meta">
+    <span>Vol. I &nbsp;·&nbsp; {today}</span>
+    <span>A regime lens, not an oracle</span>
+  </div>
+  <h1 class="title">Dalio Machine</h1>
+  <p class="subtitle">
+    A macro-cycle research lens for the late-cycle world — short-term &amp;
+    long-term debt cycles, mapped to allocation tilts — and a world
+    fundamentals map. Decision-support for a diversified base portfolio,
+    not market-timing signals.
+  </p>
+</div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    render_shared_sidebar()
+
+    pg = st.navigation([
+        st.Page(render_cycles_page, title="Cycles", icon="🌀", default=True),
+        st.Page(render_fundamentals_page, title="Fundamentals", icon="🗺️",
+                url_path="fundamentals"),
+    ])
+    pg.run()
 
 
 if __name__ == "__main__":
