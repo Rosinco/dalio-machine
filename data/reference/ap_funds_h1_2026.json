@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "method_note": "Direct transcription of publisher tables; checked against rendered physical PDF pages on 2026-09-08. This is model-checked, not a named human review. Transfers are not investment flows.",
+  "releases": [
+    {
+      "fund": "AP2",
+      "report_date": "2026-06-30",
+      "title": "Andra AP-fondens halvårsrapport 2026",
+      "source_url": "https://ap2.se/wp-content/uploads/2026/08/Halvarsrapport-2026.pdf",
+      "official_domains": ["ap2.se"],
+      "sha256": "0014316e60401290e5d62913c2ec858fedb87e5c6dce538c60198589d6760abb",
+      "page_count": 9,
+      "rows": [
+        {"record_type":"balance_sheet","item_code":"total_assets","reported_amount":563399,"reported_unit":"SEK_mn","amount_sek_mn":563399,"exposure_pct":null,"basis":"balance_sheet","row_role":"total","physical_page":6,"table_heading":"Balansräkning"},
+        {"record_type":"balance_sheet","item_code":"fund_capital","reported_amount":550474,"reported_unit":"SEK_mn","amount_sek_mn":550474,"exposure_pct":null,"basis":"fund_capital","row_role":"total","physical_page":6,"table_heading":"Balansräkning"},
+        {"record_type":"period_flow","item_code":"pension_system_net_flow","reported_amount":-4468,"reported_unit":"SEK_mn","amount_sek_mn":-4468,"exposure_pct":null,"basis":"period_flow","row_role":"total","physical_page":6,"table_heading":"Balansräkning","period_start":"2026-01-01","period_end":"2026-06-30","notes":"Negative from the fund perspective: paid to the pension system."},
+        {"record_type":"reorganisation_transfer","item_code":"transfer_in_from_ap6","reported_amount":31796,"reported_unit":"SEK_mn","amount_sek_mn":31796,"exposure_pct":null,"basis":"transfer_without_consideration","row_role":"total","physical_page":6,"table_heading":"Balansräkning","period_start":"2026-01-01","period_end":"2026-06-30","notes":"Keep separate from purchases, sales and pension cash flows."},
+        {"record_type":"reorganisation_transfer","item_code":"transfer_in_from_ap6_fund_investments_component","reported_amount":25.8,"reported_unit":"SEK_bn","amount_sek_mn":25800,"exposure_pct":null,"basis":"rounded_transfer_component","row_role":"component","physical_page":2,"table_heading":"Resultat för första halvåret 2026","quality_flag":"rounded_components","notes":"Rounded component of the exact SEK 31,796mn transfer; not an additional transfer."},
+        {"record_type":"reorganisation_transfer","item_code":"transfer_in_from_ap6_cash_component","reported_amount":6.0,"reported_unit":"SEK_bn","amount_sek_mn":6000,"exposure_pct":null,"basis":"rounded_transfer_component","row_role":"component","physical_page":2,"table_heading":"Resultat för första halvåret 2026","quality_flag":"rounded_components","notes":"Rounded component of the exact SEK 31,796mn transfer; not an additional transfer."},
+        {"record_type":"management","item_code":"external_management_share","reported_amount":null,"reported_unit":null,"amount_sek_mn":null,"exposure_pct":22.0,"basis":"fund_capital","row_role":"metric","physical_page":7,"table_heading":"Tioårsöversikt"},
+        {"record_type":"asset_allocation","item_code":"swedish_equities","reported_amount":53,"reported_unit":"SEK_bn","amount_sek_mn":53000,"exposure_pct":9.5,"basis":"actual_portfolio_exposure","row_role":"detail","physical_page":4,"table_heading":"Tillgångsslagens exponering och avkastning 30 juni 2026"},
+        {"record_type":"asset_allocation","item_code":"developed_market_equities","reported_amount":132,"reported_unit":"SEK_bn","amount_sek_mn":132000,"exposure_pct":23.9,"basis":"actual_portfolio_exposure","row_role":"detail","physical_page":4,"table_heading":"Tillgångsslagens exponering och avkastning 30 juni 2026"},
+        {"record_type":"asset_allocation","item_code":"emerging_market_equities","reported_amount":66,"reported_unit":"SEK_bn","amount_sek_mn":66000,"exposure_pct":12.0,"basis":"actual_portfolio_exposure","row_role":"detail","physical_page":4,"table_heading":"Tillgångsslagens exponering och avkastning 30 juni 2026"},
+        {"record_type":"asset_allocation","item_code":"private_equity","reported_amount":84,"reported_unit":"SEK_bn","amount_sek_mn":84000,"exposure_pct":15.3,"basis":"actual_portfolio_exposure","row_role":"detail","physical_page":4,"table_heading":"Tillgångsslagens exponering och avkastning 30 juni 2026"},
+        {"record_type":"asset_allocation","item_code":"real_assets","reported_amount":71,"reported_unit":"SEK_bn","amount_sek_mn":71000,"exposure_pct":12.9,"basis":"actual_portfolio_exposure","row_role":"detail","physical_page":4,"table_heading":"Tillgångsslagens exponering och avkastning 30 juni 2026"},
+        {"record_type":"asset_allocation","item_code":"equities","reported_amount":405,"reported_unit":"SEK_bn","amount_sek_mn":405000,"exposure_pct":73.6,"basis":"actual_portfolio_exposure","row_role":"subtotal","physical_page":4,"table_heading":"Tillgångsslagens exponering och avkastning 30 juni 2026","quality_flag":"rounded_components"},
+        {"record_type":"asset_allocation","item_code":"developed_market_government_bonds","reported_amount":55,"reported_unit":"SEK_bn","amount_sek_mn":55000,"exposure_pct":10.0,"basis":"actual_portfolio_exposure","row_role":"detail","physical_page":4,"table_heading":"Tillgångsslagens exponering och avkastning 30 juni 2026"},
+        {"record_type":"asset_allocation","item_code":"developed_market_credit_bonds","reported_amount":47,"reported_unit":"SEK_bn","amount_sek_mn":47000,"exposure_pct":8.5,"basis":"actual_portfolio_exposure","row_role":"detail","physical_page":4,"table_heading":"Tillgångsslagens exponering och avkastning 30 juni 2026"},
+        {"record_type":"asset_allocation","item_code":"emerging_market_bonds","reported_amount":26,"reported_unit":"SEK_bn","amount_sek_mn":26000,"exposure_pct":4.8,"basis":"actual_portfolio_exposure","row_role":"detail","physical_page":4,"table_heading":"Tillgångsslagens exponering och avkastning 30 juni 2026"},
+        {"record_type":"asset_allocation","item_code":"unlisted_credit","reported_amount":20,"reported_unit":"SEK_bn","amount_sek_mn":20000,"exposure_pct":3.7,"basis":"actual_portfolio_exposure","row_role":"detail","physical_page":4,"table_heading":"Tillgångsslagens exponering och avkastning 30 juni 2026"},
+        {"record_type":"asset_allocation","item_code":"fixed_income","reported_amount":148,"reported_unit":"SEK_bn","amount_sek_mn":148000,"exposure_pct":26.9,"basis":"actual_portfolio_exposure","row_role":"subtotal","physical_page":4,"table_heading":"Tillgångsslagens exponering och avkastning 30 juni 2026","quality_flag":"rounded_components"},
+        {"record_type":"asset_allocation","item_code":"other","reported_amount":-3,"reported_unit":"SEK_bn","amount_sek_mn":-3000,"exposure_pct":-0.5,"basis":"actual_portfolio_exposure","row_role":"detail","physical_page":4,"table_heading":"Tillgångsslagens exponering och avkastning 30 juni 2026","notes":"Market value of currency hedging, overlay and absolute-return positions."},
+        {"record_type":"asset_allocation","item_code":"total","reported_amount":550,"reported_unit":"SEK_bn","amount_sek_mn":550000,"exposure_pct":100.0,"basis":"actual_portfolio_exposure","row_role":"total","physical_page":4,"table_heading":"Tillgångsslagens exponering och avkastning 30 juni 2026","quality_flag":"rounded_components"},
+        {"record_type":"currency_exposure","item_code":"currency_exposure","reported_amount":null,"reported_unit":null,"amount_sek_mn":null,"exposure_pct":31.2,"basis":"actual_portfolio_exposure","row_role":"metric","physical_page":4,"table_heading":"Tillgångsslagens exponering och avkastning 30 juni 2026"}
+      ]
+    },
+    {
+      "fund": "AP3",
+      "report_date": "2026-06-30",
+      "title": "AP3 Interim Report January-June 2026",
+      "source_url": "https://a.storyblok.com/f/257759/x/b2844ce771/halvarsrapport_2026_eng_.pdf",
+      "official_domains": ["storyblok.com"],
+      "sha256": "3372a2e27df9654af6b8183b83a08a6c42dcb7595da9736ca7996ad7095d95d7",
+      "page_count": 7,
+      "rows": [
+        {"record_type":"balance_sheet","item_code":"assets_under_management","reported_amount":891.0,"reported_unit":"SEK_bn","amount_sek_mn":891000,"exposure_pct":null,"basis":"fund_capital","row_role":"total","physical_page":4,"table_heading":"Summary of AP3’s earnings as at 30 June 2026"},
+        {"record_type":"balance_sheet","item_code":"total_assets","reported_amount":961023,"reported_unit":"SEK_mn","amount_sek_mn":961023,"exposure_pct":null,"basis":"balance_sheet","row_role":"total","physical_page":6,"table_heading":"Balance sheet"},
+        {"record_type":"balance_sheet","item_code":"fund_capital","reported_amount":891038,"reported_unit":"SEK_mn","amount_sek_mn":891038,"exposure_pct":null,"basis":"fund_capital","row_role":"total","physical_page":6,"table_heading":"Balance sheet"},
+        {"record_type":"period_flow","item_code":"pension_system_net_flow","reported_amount":-4468,"reported_unit":"SEK_mn","amount_sek_mn":-4468,"exposure_pct":null,"basis":"period_flow","row_role":"total","physical_page":6,"table_heading":"Balance sheet","period_start":"2026-01-01","period_end":"2026-06-30","notes":"Negative from the fund perspective: paid to the pension system."},
+        {"record_type":"reorganisation_transfer","item_code":"transfer_in_from_ap1","reported_amount":255765,"reported_unit":"SEK_mn","amount_sek_mn":255765,"exposure_pct":null,"basis":"transfer_without_consideration","row_role":"total","physical_page":6,"table_heading":"Balance sheet","period_start":"2026-01-01","period_end":"2026-06-30","notes":"Effective 2026-01-01; keep separate from investment flows."},
+        {"record_type":"management","item_code":"external_management_share","reported_amount":null,"reported_unit":null,"amount_sek_mn":null,"exposure_pct":11.0,"basis":"fund_capital","row_role":"metric","physical_page":5,"table_heading":"AP3’s portfolio"},
+        {"record_type":"asset_allocation","item_code":"listed_equities","reported_amount":488.4,"reported_unit":"SEK_bn","amount_sek_mn":488400,"exposure_pct":55.1,"basis":"market_value_and_exposure","row_role":"detail","physical_page":5,"table_heading":"Market value and return by asset class"},
+        {"record_type":"asset_allocation","item_code":"fixed_income_investments","reported_amount":184.1,"reported_unit":"SEK_bn","amount_sek_mn":184100,"exposure_pct":23.8,"basis":"market_value_and_exposure","row_role":"detail","physical_page":5,"table_heading":"Market value and return by asset class"},
+        {"record_type":"asset_allocation","item_code":"alternative_investments","reported_amount":205.3,"reported_unit":"SEK_bn","amount_sek_mn":205300,"exposure_pct":23.0,"basis":"market_value_and_exposure","row_role":"detail","physical_page":5,"table_heading":"Market value and return by asset class"},
+        {"record_type":"asset_allocation","item_code":"other_investments","reported_amount":13.3,"reported_unit":"SEK_bn","amount_sek_mn":13300,"exposure_pct":1.6,"basis":"market_value_and_exposure","row_role":"detail","physical_page":5,"table_heading":"Market value and return by asset class"},
+        {"record_type":"asset_allocation","item_code":"total","reported_amount":891.0,"reported_unit":"SEK_bn","amount_sek_mn":891000,"exposure_pct":102.9,"basis":"market_value_and_exposure","row_role":"total","physical_page":5,"table_heading":"Market value and return by asset class","quality_flag":"publisher_non_additive","notes":"Publisher total retained. Detail market values round to SEK 891.1bn; published class exposures do not arithmetically sum to the published 102.9% total."},
+        {"record_type":"currency_exposure","item_code":"currency_exposure","reported_amount":null,"reported_unit":null,"amount_sek_mn":null,"exposure_pct":23.2,"basis":"market_value_and_exposure","row_role":"metric","physical_page":5,"table_heading":"AP3’s portfolio","quality_flag":"publisher_non_additive","notes":"Publisher states currency exposure cannot be added to total exposure."}
+      ]
+    },
+    {
+      "fund": "AP4",
+      "report_date": "2026-06-30",
+      "title": "Fjärde AP-fondens halvårsrapport 2026",
+      "source_url": "https://www.ap4.se/globalassets/rapporter-och-innehav/2026/ap4-halvarsrapport_2026_se.pdf",
+      "official_domains": ["ap4.se"],
+      "sha256": "275a5f72cc7fab87fc8356989eebf50cb5e0ecf960da42c1b59b875f3a26f6aa",
+      "page_count": 13,
+      "rows": [
+        {"record_type":"balance_sheet","item_code":"total_assets","reported_amount":907437,"reported_unit":"SEK_mn","amount_sek_mn":907437,"exposure_pct":null,"basis":"balance_sheet","row_role":"total","physical_page":12,"table_heading":"Balansräkning"},
+        {"record_type":"balance_sheet","item_code":"fund_capital","reported_amount":885526,"reported_unit":"SEK_mn","amount_sek_mn":885526,"exposure_pct":null,"basis":"fund_capital","row_role":"total","physical_page":12,"table_heading":"Balansräkning"},
+        {"record_type":"period_flow","item_code":"pension_system_net_flow","reported_amount":-4468,"reported_unit":"SEK_mn","amount_sek_mn":-4468,"exposure_pct":null,"basis":"period_flow","row_role":"total","physical_page":12,"table_heading":"Balansräkning","period_start":"2026-01-01","period_end":"2026-06-30","notes":"Negative from the fund perspective: paid to the pension system."},
+        {"record_type":"reorganisation_transfer","item_code":"transfer_in_from_ap1","reported_amount":255765,"reported_unit":"SEK_mn","amount_sek_mn":255765,"exposure_pct":null,"basis":"transfer_without_consideration","row_role":"total","physical_page":12,"table_heading":"Balansräkning","period_start":"2026-01-01","period_end":"2026-06-30","notes":"Effective 2026-01-01; keep separate from investment flows."},
+        {"record_type":"segregated_portfolio","item_code":"ap1_retained_assets","reported_amount":8.6,"reported_unit":"SEK_bn","amount_sek_mn":8600,"exposure_pct":null,"basis":"segregated_administration","row_role":"metric","physical_page":8,"table_heading":"Konsolidering av AP-fonder - och förstärkning av AP4","notes":"Value at 2026-06-30; not AP4 fund capital and not an investment flow."},
+        {"record_type":"management","item_code":"external_management_share","reported_amount":null,"reported_unit":null,"amount_sek_mn":null,"exposure_pct":17.0,"basis":"fund_capital","row_role":"metric","physical_page":10,"table_heading":"Flerårsöversikt"},
+        {"record_type":"asset_allocation","item_code":"global_equities","reported_amount":333.7,"reported_unit":"SEK_bn","amount_sek_mn":333700,"exposure_pct":37.7,"basis":"market_value_and_exposure","row_role":"detail","physical_page":6,"table_heading":"Tillgångsslagens marknadsvärde och avkastning första halvåret 2026"},
+        {"record_type":"asset_allocation","item_code":"swedish_equities","reported_amount":136.6,"reported_unit":"SEK_bn","amount_sek_mn":136600,"exposure_pct":15.4,"basis":"market_value_and_exposure","row_role":"detail","physical_page":6,"table_heading":"Tillgångsslagens marknadsvärde och avkastning första halvåret 2026"},
+        {"record_type":"asset_allocation","item_code":"defensive_equities","reported_amount":67.5,"reported_unit":"SEK_bn","amount_sek_mn":67500,"exposure_pct":7.6,"basis":"market_value_and_exposure","row_role":"detail","physical_page":6,"table_heading":"Tillgångsslagens marknadsvärde och avkastning första halvåret 2026"},
+        {"record_type":"asset_allocation","item_code":"global_fixed_income","reported_amount":149.7,"reported_unit":"SEK_bn","amount_sek_mn":149700,"exposure_pct":16.9,"basis":"market_value_and_exposure","row_role":"detail","physical_page":6,"table_heading":"Tillgångsslagens marknadsvärde och avkastning första halvåret 2026"},
+        {"record_type":"asset_allocation","item_code":"swedish_fixed_income","reported_amount":66.4,"reported_unit":"SEK_bn","amount_sek_mn":66400,"exposure_pct":7.5,"basis":"market_value_and_exposure","row_role":"detail","physical_page":6,"table_heading":"Tillgångsslagens marknadsvärde och avkastning första halvåret 2026"},
+        {"record_type":"asset_allocation","item_code":"real_assets","reported_amount":131.5,"reported_unit":"SEK_bn","amount_sek_mn":131500,"exposure_pct":14.9,"basis":"market_value_and_exposure","row_role":"detail","physical_page":6,"table_heading":"Tillgångsslagens marknadsvärde och avkastning första halvåret 2026"},
+        {"record_type":"asset_allocation","item_code":"other_assets","reported_amount":0.0,"reported_unit":"SEK_bn","amount_sek_mn":0.0,"exposure_pct":0.0,"basis":"market_value_and_exposure","row_role":"detail","physical_page":6,"table_heading":"Tillgångsslagens marknadsvärde och avkastning första halvåret 2026"},
+        {"record_type":"asset_allocation","item_code":"currency","reported_amount":0.0,"reported_unit":"SEK_bn","amount_sek_mn":0.0,"exposure_pct":0.0,"basis":"market_value_and_exposure","row_role":"detail","physical_page":6,"table_heading":"Tillgångsslagens marknadsvärde och avkastning första halvåret 2026"},
+        {"record_type":"asset_allocation","item_code":"total_investments","reported_amount":885.4,"reported_unit":"SEK_bn","amount_sek_mn":885400,"exposure_pct":100.0,"basis":"market_value_and_exposure","row_role":"total","physical_page":6,"table_heading":"Tillgångsslagens marknadsvärde och avkastning första halvåret 2026","quality_flag":"rounded_components"}
+      ]
+    }
+  ]
+}

@@ -1,11 +1,16 @@
-"""ETL pipeline: fetch BIS Total Credit + DSR → upsert into SQLite."""
+"""ETL pipeline: fetch BIS Total Credit + DSR → release ledger + SQLite."""
+
 from __future__ import annotations
 
 import argparse
 import logging
 import sys
+from datetime import UTC, datetime
 
+import pandas as pd
 from dotenv import load_dotenv
+from sqlalchemy import Engine
+from sqlalchemy.orm import Session
 
 from dalio.data_sources.bis import (
     ALL_DSR,
@@ -16,10 +21,74 @@ from dalio.data_sources.bis import (
     DsrSpec,
     TotalCreditSpec,
 )
-from dalio.pipelines.fetch_fred import upsert_observations
 from dalio.storage.db import init_db, make_engine, make_session_factory
+from dalio.storage.releases import (
+    IngestResult,
+    ProjectionScope,
+    ReleaseMeta,
+    ingest_release_snapshot,
+    make_partition_key,
+)
 
 logger = logging.getLogger(__name__)
+
+
+def _single_native_series(frame: pd.DataFrame, source_family: str) -> str:
+    """Return the native BIS series id, rejecting incomplete/mixed partitions."""
+    if frame.empty:
+        raise ValueError("BIS returned an empty snapshot; release not recorded")
+
+    missing = {"source", "series_id"} - set(frame.columns)
+    if missing:
+        raise ValueError(f"BIS snapshot missing partition columns: {sorted(missing)}")
+
+    sources = frame["source"].drop_duplicates().tolist()
+    if sources != [source_family]:
+        raise ValueError(f"BIS snapshot must contain source {source_family!r}, got {sources!r}")
+
+    series_ids = frame["series_id"].drop_duplicates().tolist()
+    if len(series_ids) != 1 or pd.isna(series_ids[0]):
+        raise ValueError("BIS snapshot must contain exactly one non-null native series_id")
+    series_id = str(series_ids[0]).strip()
+    if not series_id:
+        raise ValueError("BIS snapshot native series_id must not be empty")
+    return series_id
+
+
+def _ingest_bis_release(
+    session: Session,
+    frame: pd.DataFrame,
+    *,
+    country: str,
+    indicator: str,
+    source_family: str,
+    retrieved_at: datetime,
+) -> tuple[IngestResult, str]:
+    """Append one complete native-series snapshot and refresh its projection."""
+    series_id = _single_native_series(frame, source_family)
+    result = ingest_release_snapshot(
+        session,
+        frame,
+        ReleaseMeta(
+            partition_key=make_partition_key(
+                source_family,
+                series_id,
+                country,
+                indicator,
+            ),
+            source_family=source_family,
+            # BIS does not expose a reliable release timestamp in these frames.
+            # Retrieval time is therefore the conservative point-in-time clock.
+            available_at=retrieved_at,
+            retrieved_at=retrieved_at,
+            projection=ProjectionScope(
+                country=country,
+                indicator=indicator,
+                sources=(source_family,),
+            ),
+        ),
+    )
+    return result, series_id
 
 
 def run_pipeline(
@@ -27,11 +96,15 @@ def run_pipeline(
     dsr_specs: tuple[DsrSpec, ...] = TIER_1_DSR,
     source: BisSource | None = None,
     use_cache: bool = True,
+    *,
+    engine: Engine | None = None,
+    retrieved_at: datetime | None = None,
 ) -> dict[str, dict]:
     src = source or BisSource()
-    engine = make_engine()
-    init_db(engine)
-    session_factory = make_session_factory(engine)
+    run_at = retrieved_at or datetime.now(UTC)
+    db_engine = engine or make_engine()
+    init_db(db_engine)
+    session_factory = make_session_factory(db_engine)
 
     summary: dict[str, dict] = {}
     with session_factory() as session:
@@ -39,15 +112,33 @@ def run_pipeline(
             key = f"{spec.country}/{spec.indicator}"
             try:
                 df = src.fetch_total_credit(spec, use_cache=use_cache)
-                ins, skp = upsert_observations(session, df)
+                result, series_id = _ingest_bis_release(
+                    session,
+                    df,
+                    country=spec.country,
+                    indicator=spec.indicator,
+                    source_family="BIS_TC",
+                    retrieved_at=run_at,
+                )
+                ins, skp = result.changed_rows, result.unchanged_rows
                 summary[key] = {
                     "country": spec.country,
                     "indicator": spec.indicator,
                     "rows": len(df),
                     "inserted": ins,
                     "skipped": skp,
+                    "removed": result.removed_rows,
+                    "release_id": result.release_id,
+                    "release_created": result.created,
+                    "series_id": series_id,
                 }
-                logger.info("Fetched %s: %d rows (%d new/updated)", key, len(df), ins)
+                logger.info(
+                    "Fetched %s: %d rows (%d new/updated, %d unchanged)",
+                    key,
+                    len(df),
+                    ins,
+                    skp,
+                )
             except Exception as e:  # noqa: BLE001
                 logger.exception("Failed %s: %s", key, e)
                 summary[key] = {
@@ -60,15 +151,33 @@ def run_pipeline(
             key = f"{spec.country}/{spec.indicator}"
             try:
                 df = src.fetch_dsr(spec, use_cache=use_cache)
-                ins, skp = upsert_observations(session, df)
+                result, series_id = _ingest_bis_release(
+                    session,
+                    df,
+                    country=spec.country,
+                    indicator=spec.indicator,
+                    source_family="BIS_DSR",
+                    retrieved_at=run_at,
+                )
+                ins, skp = result.changed_rows, result.unchanged_rows
                 summary[key] = {
                     "country": spec.country,
                     "indicator": spec.indicator,
                     "rows": len(df),
                     "inserted": ins,
                     "skipped": skp,
+                    "removed": result.removed_rows,
+                    "release_id": result.release_id,
+                    "release_created": result.created,
+                    "series_id": series_id,
                 }
-                logger.info("Fetched %s: %d rows (%d new/updated)", key, len(df), ins)
+                logger.info(
+                    "Fetched %s: %d rows (%d new/updated, %d unchanged)",
+                    key,
+                    len(df),
+                    ins,
+                    skp,
+                )
             except Exception as e:  # noqa: BLE001
                 logger.exception("Failed %s: %s", key, e)
                 summary[key] = {

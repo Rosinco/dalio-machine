@@ -10,7 +10,10 @@ CPI thresholds get a floor: countries with chronically near-zero inflation
 (Japan) shouldn't end up with a 0.8% "elevated" trigger, because that
 would fire constantly without meaning what the framework says it means.
 """
+
 from __future__ import annotations
+
+from datetime import date
 
 import numpy as np
 from sqlalchemy import select
@@ -25,18 +28,26 @@ MIN_OBSERVATIONS = 40
 
 
 def compute_country_quantiles(
-    session: Session, country: str, indicator: str
+    session: Session,
+    country: str,
+    indicator: str,
+    as_of: date | None = None,
 ) -> dict[str, float] | None:
     """Return q50/q75/q90/q95 of `indicator` for `country`. None if too few.
 
     Uses all observations in the DB regardless of source — duplicates are
     rare since the (country, indicator, date, source) constraint allows
     only one row per source-day, and most indicators only have one source.
+    When ``as_of`` is supplied, observations with a later economic/reference
+    date are excluded. The default remains the full current history.
     """
-    rows = session.execute(
-        select(Observation.value)
-        .where(Observation.country == country, Observation.indicator == indicator)
-    ).scalars().all()
+    stmt = select(Observation.value).where(
+        Observation.country == country,
+        Observation.indicator == indicator,
+    )
+    if as_of is not None:
+        stmt = stmt.where(Observation.date <= as_of)
+    rows = session.execute(stmt).scalars().all()
     if len(rows) < MIN_OBSERVATIONS:
         return None
     values = np.asarray(rows, dtype=float)
@@ -48,17 +59,33 @@ def compute_country_quantiles(
     }
 
 
-def compute_country_thresholds(session: Session, country: str) -> Thresholds:
+def compute_country_thresholds(
+    session: Session,
+    country: str,
+    as_of: date | None = None,
+) -> Thresholds:
     """Build per-country thresholds from historical quantiles.
 
     Each field falls back to its default when the source indicator has
     fewer than MIN_OBSERVATIONS rows. Floors are applied to CPI thresholds
     so chronically-low-inflation countries don't end up with absurdly low
-    "elevated" / "peak" triggers.
+    "elevated" / "peak" triggers. ``as_of`` applies the same economic-date
+    cutoff to every source indicator; omitting it preserves full-history
+    calibration for live callers.
     """
-    debt = compute_country_quantiles(session, country, "total_credit_pct_gdp")
-    dsr = compute_country_quantiles(session, country, "debt_service_ratio")
-    cpi = compute_country_quantiles(session, country, "cpi_yoy")
+    debt = compute_country_quantiles(
+        session,
+        country,
+        "total_credit_pct_gdp",
+        as_of=as_of,
+    )
+    dsr = compute_country_quantiles(
+        session,
+        country,
+        "debt_service_ratio",
+        as_of=as_of,
+    )
+    cpi = compute_country_quantiles(session, country, "cpi_yoy", as_of=as_of)
 
     return Thresholds(
         debt_late_cycle_low=debt["q75"] if debt else DEFAULT_THRESHOLDS.debt_late_cycle_low,
@@ -78,9 +105,13 @@ def threshold_deltas(country_t: Thresholds) -> dict[str, tuple[float, float, flo
     calibration choices visible.
     """
     fields = (
-        "debt_late_cycle_low", "debt_extreme",
-        "dsr_stretched", "dsr_distress", "dsr_extreme",
-        "cpi_elevated", "cpi_peak",
+        "debt_late_cycle_low",
+        "debt_extreme",
+        "dsr_stretched",
+        "dsr_distress",
+        "dsr_extreme",
+        "cpi_elevated",
+        "cpi_peak",
     )
     out: dict[str, tuple[float, float, float]] = {}
     for f in fields:

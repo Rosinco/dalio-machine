@@ -27,6 +27,7 @@ from datetime import date, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from dalio.scoring.source_priority import source_rank_expression
 from dalio.scoring.thresholds import DEFAULT_THRESHOLDS, Thresholds
 from dalio.storage.db import Observation
 
@@ -116,6 +117,7 @@ class PhaseClassification:
 def _value_at_or_before(
     session: Session, country: str, indicator: str, target: date,
 ) -> tuple[float, date] | None:
+    source_rank = source_rank_expression(Observation.source, country, indicator)
     row = session.execute(
         select(Observation)
         .where(
@@ -123,9 +125,9 @@ def _value_at_or_before(
             Observation.indicator == indicator,
             Observation.date <= target,
         )
-        # Freshest observation wins regardless of source; the source tie-break
-        # keeps two sources on the same date deterministic (replay.py).
-        .order_by(Observation.date.desc(), Observation.source.asc())
+        # Freshest economic date remains primary. Provider preference resolves
+        # same-date ties, then source name keeps unknown providers deterministic.
+        .order_by(Observation.date.desc(), source_rank.asc(), Observation.source.asc())
         .limit(1)
     ).scalar_one_or_none()
     if row is None:
@@ -194,7 +196,7 @@ def extract_features(
     hy_spread_z = None
     if country == "US":
         from dalio.scoring.asset_signals import compute_asset_signals
-        sigs = compute_asset_signals(session, country)
+        sigs = compute_asset_signals(session, country, as_of=cap)
         hy_spread = sigs.hy_spread_latest
         hy_spread_z = sigs.hy_spread_z
 
@@ -437,5 +439,5 @@ def classify(
     features = extract_features(session, country, as_of=as_of)
     if thresholds is None:
         from dalio.scoring.calibration import compute_country_thresholds
-        thresholds = compute_country_thresholds(session, country)
+        thresholds = compute_country_thresholds(session, country, as_of=as_of)
     return classify_features(features, thresholds)

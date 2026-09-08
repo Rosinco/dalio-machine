@@ -1,10 +1,11 @@
-"""ETL pipeline: fetch FRED series → upsert into SQLite."""
+"""ETL pipeline: fetch FRED → immutable release + current SQLite projection."""
 from __future__ import annotations
 
 import argparse
 import logging
 import sys
 from collections.abc import Iterable
+from datetime import UTC, datetime
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -18,6 +19,12 @@ from dalio.data_sources.fred import (
     specs_for_countries,
 )
 from dalio.storage.db import Observation, init_db, make_engine, make_session_factory
+from dalio.storage.releases import (
+    ProjectionScope,
+    ReleaseMeta,
+    ingest_release_snapshot,
+    make_partition_key,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +34,11 @@ _CHUNK = 5000
 
 
 def upsert_observations(session: Session, df: pd.DataFrame) -> tuple[int, int]:
-    """Set-based upsert of a long-format frame into `observations`.
+    """Legacy-compatible set-based upsert into ``observations``.
+
+    Kept for callers that depend on the original helper and its return contract.
+    New provider pipelines must use ``ingest_release_snapshot`` so revisions and
+    omissions remain reproducible rather than being overwritten here.
 
     Returns ``(inserted, skipped)`` where *inserted* counts new **and changed**
     rows and *skipped* counts rows whose value is unchanged — the same contract
@@ -98,8 +109,11 @@ def upsert_observations(session: Session, df: pd.DataFrame) -> tuple[int, int]:
 def run_pipeline(
     specs: Iterable[FredSeriesSpec],
     source: FredSource | None = None,
+    *,
+    retrieved_at: datetime | None = None,
 ) -> dict[str, dict]:
     src = source or FredSource()
+    run_at = retrieved_at or datetime.now(UTC)
     engine = make_engine()
     init_db(engine)
     session_factory = make_session_factory(engine)
@@ -110,13 +124,33 @@ def run_pipeline(
             key = f"{spec.country}/{spec.indicator}"
             try:
                 df = src.fetch(spec)
-                ins, skp = upsert_observations(session, df)
+                result = ingest_release_snapshot(
+                    session,
+                    df,
+                    ReleaseMeta(
+                        partition_key=make_partition_key(
+                            "FRED", spec.series_id, spec.country, spec.indicator,
+                        ),
+                        source_family="FRED",
+                        available_at=run_at,
+                        retrieved_at=run_at,
+                        projection=ProjectionScope(
+                            country=spec.country,
+                            indicator=spec.indicator,
+                            sources=("FRED",),
+                        ),
+                    ),
+                )
+                ins, skp = result.changed_rows, result.unchanged_rows
                 summary[key] = {
                     "country": spec.country,
                     "indicator": spec.indicator,
                     "rows": len(df),
                     "inserted": ins,
                     "skipped": skp,
+                    "removed": result.removed_rows,
+                    "release_id": result.release_id,
+                    "release_created": result.created,
                     "series_id": spec.series_id,
                 }
                 logger.info(

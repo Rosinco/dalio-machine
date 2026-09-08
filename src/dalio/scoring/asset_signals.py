@@ -37,19 +37,26 @@ class AssetSignals:
 
 
 def _zscore_latest(
-    session: Session, country: str, indicator: str, window_days: int = 365 * 20,
+    session: Session,
+    country: str,
+    indicator: str,
+    window_days: int = 365 * 20,
+    as_of: date | None = None,
 ) -> tuple[float | None, float | None]:
     """Return (latest, z) where z is the latest value's z-score against the
     country's last `window_days` of history. Both None when the indicator
-    is absent or has too few observations.
+    is absent or has too few observations. ``as_of`` anchors both ends of
+    the window so historical classification cannot see future prices.
     """
-    cutoff = date.today() - timedelta(days=window_days)
+    cap = as_of or date.today()
+    cutoff = cap - timedelta(days=window_days)
     rows = session.execute(
         select(Observation.value, Observation.date)
         .where(
             Observation.country == country,
             Observation.indicator == indicator,
             Observation.date >= cutoff,
+            Observation.date <= cap,
         )
         .order_by(Observation.date.asc())
     ).all()
@@ -65,12 +72,18 @@ def _zscore_latest(
     return latest, float(z)
 
 
-def compute_asset_signals(session: Session, country: str) -> AssetSignals:
+def compute_asset_signals(
+    session: Session,
+    country: str,
+    as_of: date | None = None,
+) -> AssetSignals:
     """Build the asset-signal snapshot for a country. Currently US-only —
     other countries simply return AssetSignals(country=country) with all
     values None.
     """
     if country != "US":
         return AssetSignals(country=country)
-    hy_latest, hy_z = _zscore_latest(session, country, "hy_spread")
+    hy_latest, hy_z = _zscore_latest(
+        session, country, "hy_spread", as_of=as_of,
+    )
     return AssetSignals(country=country, hy_spread_latest=hy_latest, hy_spread_z=hy_z)

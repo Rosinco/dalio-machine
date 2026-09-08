@@ -1,4 +1,4 @@
-"""ETL pipeline: fetch World Fundamentals Map indicators → upsert into SQLite.
+"""ETL pipeline: fetch fundamentals → release ledger + current projection.
 
 Sources are pulled per indicator for the whole basket in one paginated call
 (World Bank). IMF WEO (slice 20), the BIS extension (slice 22), IMF IMTS
@@ -16,9 +16,9 @@ import argparse
 import logging
 import sys
 from collections.abc import Sequence
+from datetime import UTC, datetime
 
 from dotenv import load_dotenv
-from sqlalchemy import delete
 
 from dalio.countries import COUNTRIES, Country, get_country
 from dalio.data_sources.bis import (
@@ -31,6 +31,7 @@ from dalio.data_sources.bis import (
 from dalio.data_sources.imf_datamapper import (
     IMF_FUNDAMENTALS,
     SOURCE_FORECAST,
+    SOURCE_HISTORY,
     ImfDataMapperSource,
     ImfSpec,
     derive_interest_burden,
@@ -46,27 +47,18 @@ from dalio.data_sources.worldbank import (
     derive_member_mean,
     derive_world_share,
 )
-from dalio.pipelines.fetch_fred import upsert_observations
-from dalio.storage.db import Observation, init_db, make_engine, make_session_factory
+from dalio.storage.db import init_db, make_engine, make_session_factory
+from dalio.storage.releases import (
+    ProjectionScope,
+    ReleaseMeta,
+    ingest_release_snapshot,
+    make_partition_key,
+)
 
 logger = logging.getLogger(__name__)
 
 IMPLEMENTED_SOURCES: tuple[str, ...] = ("wb", "imf", "bis", "imts", "oec")
 PLANNED_SOURCES: dict[str, str] = {}
-
-
-def delete_forecasts(session, indicator: str, iso2s: Sequence[str]) -> int:
-    """A WEO vintage supersedes the previous one entirely: drop old forecast
-    rows before inserting the new ones (history rows are upserted as usual)."""
-    res = session.execute(
-        delete(Observation).where(
-            Observation.indicator == indicator,
-            Observation.source == SOURCE_FORECAST,
-            Observation.country.in_(list(iso2s)),
-        )
-    )
-    session.commit()
-    return int(res.rowcount or 0)
 
 
 def run_pipeline(
@@ -83,11 +75,13 @@ def run_pipeline(
     imts_source: ImtsSource | None = None,
     imts_specs: Sequence[ImtsSpec] = IMTS_FLOWS,
     oec_source: OecSource | None = None,
+    retrieved_at: datetime | None = None,
 ) -> dict[str, dict]:
-    """Fetch every spec of every requested source and upsert. Returns a
+    """Fetch every spec into complete source-partition releases. Returns a
     per-spec summary keyed ``"{source}/{indicator}"``; errors are collected,
     never raised, so one dead series cannot sink the batch."""
     basket = tuple(countries) if countries else COUNTRIES
+    run_at = retrieved_at or datetime.now(UTC)
     engine = make_engine()
     init_db(engine)
     session_factory = make_session_factory(engine)
@@ -97,15 +91,156 @@ def run_pipeline(
     eu_members = [c.iso2 for c in basket if c.eu_member]
     has_eu = any(c.iso2 == "EU" for c in basket)
 
-    def _store(key: str, df, series_id: str, indicator: str, source_family: str = "wb") -> None:
-        ins, skp = upsert_observations(session, df)
+    def _store_release(
+        key: str,
+        df,
+        series_id: str,
+        indicator: str,
+        summary_source: str = "wb",
+    ) -> None:
+        """Store complete independently replaceable non-WEO partitions.
+
+        Multi-country provider calls and IMTS partner flows are split on their
+        actual country, indicator, source and native series id. An empty frame
+        records the legacy zero-row summary but cannot erase a prior projection.
+        """
+        inserted = skipped = removed = created = 0
+        release_ids: list[int] = []
+        if not df.empty:
+            partition_columns = ["country", "indicator", "source", "series_id"]
+            missing = set(partition_columns) - set(df.columns)
+            if missing:
+                raise ValueError(f"release snapshot missing partition columns: {sorted(missing)}")
+            if df[partition_columns].isna().any().any():
+                raise ValueError("release snapshot partition fields must not be null")
+
+            partitions = df[partition_columns].drop_duplicates()
+            duplicate_scopes = partitions.duplicated(
+                subset=["country", "indicator", "source"], keep=False,
+            )
+            if duplicate_scopes.any():
+                raise ValueError(
+                    "one current projection scope contains multiple native series ids"
+                )
+
+            for partition, snapshot in df.groupby(
+                partition_columns, sort=True, dropna=False,
+            ):
+                country, native_indicator, native_source, native_series_id = map(
+                    str, partition,
+                )
+                result = ingest_release_snapshot(
+                    session,
+                    snapshot.reset_index(drop=True),
+                    ReleaseMeta(
+                        partition_key=make_partition_key(
+                            native_source,
+                            native_series_id,
+                            country,
+                            native_indicator,
+                        ),
+                        source_family=native_source,
+                        available_at=run_at,
+                        retrieved_at=run_at,
+                        projection=ProjectionScope(
+                            country=country,
+                            indicator=native_indicator,
+                            sources=(native_source,),
+                        ),
+                    ),
+                )
+                inserted += result.changed_rows
+                skipped += result.unchanged_rows
+                removed += result.removed_rows
+                created += int(result.created)
+                release_ids.append(result.release_id)
+
         summary[key] = {
-            "source": source_family, "indicator": indicator, "series_id": series_id,
-            "rows": len(df), "inserted": ins, "skipped": skp,
+            "source": summary_source, "indicator": indicator, "series_id": series_id,
+            "rows": len(df), "inserted": inserted, "skipped": skipped,
             "countries": int(df["country"].nunique()) if not df.empty else 0,
+            "removed": removed,
+            "release_ids": release_ids,
+            "releases_created": created,
         }
         logger.info("Stored %s: %d rows / %d countries (%d new/updated)",
-                    key, len(df), summary[key]["countries"], ins)
+                    key, len(df), summary[key]["countries"], inserted)
+
+    def _store_imf_release(
+        key: str,
+        df,
+        series_id: str,
+        indicator: str,
+        expected_iso2s: Sequence[str],
+    ) -> None:
+        """Store a WEO response as complete country/indicator release snapshots.
+
+        One DataMapper call returns both history and forecasts for many countries.
+        Each country is an independently replaceable current projection, while its
+        prior complete responses remain in the release ledger for point-in-time use.
+        """
+        if df.empty:
+            raise ValueError("IMF WEO release snapshot is empty; current data left unchanged")
+
+        inserted = skipped = removed = created = 0
+        release_ids: list[int] = []
+        for iso2, country_frame in df.groupby("country", sort=True):
+            result = ingest_release_snapshot(
+                session,
+                country_frame.reset_index(drop=True),
+                ReleaseMeta(
+                    partition_key=make_partition_key(
+                        SOURCE_HISTORY,
+                        series_id,
+                        str(iso2),
+                        indicator,
+                    ),
+                    source_family=SOURCE_HISTORY,
+                    available_at=run_at,
+                    retrieved_at=run_at,
+                    projection=ProjectionScope(
+                        country=str(iso2),
+                        indicator=indicator,
+                        sources=(SOURCE_HISTORY, SOURCE_FORECAST),
+                    ),
+                ),
+            )
+            inserted += result.changed_rows
+            skipped += result.unchanged_rows
+            removed += result.removed_rows
+            created += int(result.created)
+            release_ids.append(result.release_id)
+
+        present = {str(country) for country in df["country"].unique()}
+        missing = sorted(set(expected_iso2s) - present)
+        if missing:
+            logger.warning(
+                "IMF WEO %s returned no rows for %s; prior current partitions, if any, "
+                "remain unchanged",
+                indicator,
+                ", ".join(missing),
+            )
+
+        summary[key] = {
+            "source": "imf",
+            "indicator": indicator,
+            "series_id": series_id,
+            "rows": len(df),
+            "inserted": inserted,
+            "skipped": skipped,
+            "countries": len(present),
+            "removed": removed,
+            "release_ids": release_ids,
+            "releases_created": created,
+        }
+        logger.info(
+            "Stored %s: %d rows / %d countries (%d new/updated, %d removed)",
+            key,
+            len(df),
+            len(present),
+            inserted,
+            removed,
+        )
 
     with session_factory() as session:
         for source in sources:
@@ -117,8 +252,7 @@ def run_pipeline(
                     key = f"imf/{spec.indicator}"
                     try:
                         df = imf.fetch(spec, basket, use_cache=use_cache)
-                        delete_forecasts(session, spec.indicator, iso2s)
-                        _store(key, df, spec.imf_code, spec.indicator, "imf")
+                        _store_imf_release(key, df, spec.imf_code, spec.indicator, iso2s)
                         fetched[spec.indicator] = df
                     except Exception as e:  # noqa: BLE001 — collect per-series
                         logger.exception("Failed %s: %s", key, e)
@@ -126,11 +260,16 @@ def run_pipeline(
                                         "series_id": spec.imf_code, "error": str(e)}
                 if "primary_balance_pct_gdp" in fetched and "fiscal_balance_pct_gdp" in fetched:
                     try:
-                        delete_forecasts(session, "interest_burden_pct_gdp", iso2s)
-                        _store("imf/interest_burden_pct_gdp",
-                               derive_interest_burden(fetched["primary_balance_pct_gdp"],
-                                                      fetched["fiscal_balance_pct_gdp"]),
-                               "primary-overall", "interest_burden_pct_gdp", "imf")
+                        _store_imf_release(
+                            "imf/interest_burden_pct_gdp",
+                            derive_interest_burden(
+                                fetched["primary_balance_pct_gdp"],
+                                fetched["fiscal_balance_pct_gdp"],
+                            ),
+                            "primary-overall",
+                            "interest_burden_pct_gdp",
+                            iso2s,
+                        )
                     except Exception as e:  # noqa: BLE001
                         logger.exception("Failed imf/interest_burden_pct_gdp: %s", e)
                         summary["imf/interest_burden_pct_gdp"] = {
@@ -146,7 +285,7 @@ def run_pipeline(
                     try:
                         df = (bis.fetch_dsr(spec, use_cache=use_cache) if isinstance(spec, DsrSpec)
                               else bis.fetch_total_credit(spec, use_cache=use_cache))
-                        _store(key, df, spec.indicator, spec.indicator, "bis")
+                        _store_release(key, df, spec.indicator, spec.indicator, "bis")
                     except Exception as e:  # noqa: BLE001 — collect per-series (SA/RU expected)
                         logger.warning("Failed %s: %s", key, e)
                         summary[key] = {"source": "bis", "indicator": spec.indicator,
@@ -157,7 +296,13 @@ def run_pipeline(
                     key = f"imts/{spec.indicator_prefix}"
                     try:
                         df = imts.fetch(spec, basket, use_cache=use_cache)
-                        _store(key, df, spec.imts_code, spec.indicator_prefix + "_*", "imts")
+                        _store_release(
+                            key,
+                            df,
+                            spec.imts_code,
+                            spec.indicator_prefix + "_*",
+                            "imts",
+                        )
                     except Exception as e:  # noqa: BLE001 — collect per-flow
                         logger.exception("Failed %s: %s", key, e)
                         summary[key] = {"source": "imts", "indicator": spec.indicator_prefix + "_*",
@@ -167,10 +312,15 @@ def run_pipeline(
                 key = f"oec/{INDICATOR_ECI}"
                 try:
                     df = oec.fetch_eci(basket, use_cache=use_cache)
-                    _store(key, df, OEC_SERIES_ID, INDICATOR_ECI, "oec")
+                    _store_release(key, df, OEC_SERIES_ID, INDICATOR_ECI, "oec")
                     if has_eu and eu_members:
-                        _store(f"{key}:EU", derive_member_mean(df, eu_members, "EU"),
-                               OEC_SERIES_ID + ":member-mean", INDICATOR_ECI, "oec")
+                        _store_release(
+                            f"{key}:EU",
+                            derive_member_mean(df, eu_members, "EU"),
+                            OEC_SERIES_ID + ":member-mean",
+                            INDICATOR_ECI,
+                            "oec",
+                        )
                 except Exception as e:  # noqa: BLE001
                     logger.exception("Failed %s: %s", key, e)
                     summary[key] = {"source": "oec", "indicator": INDICATOR_ECI,
@@ -181,14 +331,23 @@ def run_pipeline(
                     key = f"wb/{spec.indicator}"
                     try:
                         df = wb.fetch(spec, basket, use_cache=use_cache)
-                        _store(key, df, spec.wb_code, spec.indicator)
+                        _store_release(key, df, spec.wb_code, spec.indicator)
                         if spec.indicator in world_shares:
                             out = world_shares[spec.indicator]
-                            _store(f"wb/{out}", derive_world_share(df, out), spec.wb_code + "÷WLD", out)
+                            _store_release(
+                                f"wb/{out}",
+                                derive_world_share(df, out),
+                                spec.wb_code + "÷WLD",
+                                out,
+                            )
                         if has_eu and spec.indicator in WB_MEMBER_MEAN_INDICATORS and eu_members:
                             dkey = f"wb/{spec.indicator}:EU"
-                            _store(dkey, derive_member_mean(df, eu_members, "EU"),
-                                   spec.wb_code + ":member-mean", spec.indicator)
+                            _store_release(
+                                dkey,
+                                derive_member_mean(df, eu_members, "EU"),
+                                spec.wb_code + ":member-mean",
+                                spec.indicator,
+                            )
                     except Exception as e:  # noqa: BLE001 — collect per-series
                         logger.exception("Failed %s: %s", key, e)
                         summary[key] = {"source": "wb", "indicator": spec.indicator,

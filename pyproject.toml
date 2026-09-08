@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "dalio-machine"
 version = "0.1.0"
-description = "Macro-cycle dashboard built on Ray Dalio's economic machine framework. Tracks short-term debt cycle, long-term debt cycle, and big-cycle indicators across major economies for asset allocation decision support."
+description = "Point-in-time macro history and risk observatory for economic cycles, institutional evidence, global fundamentals, and household-investor decision support."
 readme = "README.md"
 requires-python = ">=3.12"
 authors = [{ name = "Adam Boman" }]
 license = { text = "MIT" }
-keywords = ["macro", "economics", "dalio", "debt-cycle", "asset-allocation"]
+keywords = ["macro", "economics", "economic-history", "debt-cycle", "risk", "asset-allocation"]
 
 dependencies = [
     "fredapi>=0.5.2",
@@ -37,6 +37,19 @@ dalio-fetch-fred = "dalio.pipelines.fetch_fred:main"
 dalio-fetch-bis = "dalio.pipelines.fetch_bis:main"
 dalio-fetch-fundamentals = "dalio.pipelines.fetch_fundamentals:main"
 dalio-fetch-cycle = "dalio.pipelines.fetch_cycle:main"
+dalio-fetch-riksbank = "dalio.pipelines.fetch_riksbank:main"
+dalio-fetch-debt-holders = "dalio.pipelines.fetch_debt_holders:main"
+dalio-fetch-flows = "dalio.pipelines.fetch_flows:main"
+dalio-fetch-positions = "dalio.pipelines.fetch_positions:main"
+dalio-fetch-sovereign-debt = "dalio.pipelines.fetch_sovereign_debt:main"
+dalio-fetch-commodities = "dalio.pipelines.fetch_commodities:main"
+dalio-fetch-money-liquidity = "dalio.pipelines.fetch_money_liquidity:main"
+dalio-fetch-shadow-liquidity = "dalio.pipelines.fetch_shadow_liquidity:main"
+dalio-liquidity-brief = "dalio.pipelines.build_liquidity_brief:main"
+dalio-ingest-ap-funds = "dalio.pipelines.ingest_ap_funds:main"
+dalio-ingest-reports = "dalio.pipelines.ingest_reports:main"
+dalio-bootstrap-history = "dalio.pipelines.bootstrap_history:main"
+dalio-audit-observatory = "dalio.storage.inventory:main"
 dalio-score = "dalio.pipelines.score_fundamentals:main"
 dalio-app = "dalio.app.streamlit_app:main"
 

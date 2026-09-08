@@ -1354,9 +1354,10 @@ def _render_regime_replay(country_iso2: str, country_name: str) -> None:
     st.caption(
         f"Quarterly long-term-phase classification for {country_name} from "
         f"{start.year} to {end.year}. Markers colored by phase using the same "
-        "palette as the world map. The classifier sees only data available at "
-        "each quarter — its 2008/2020/2022 calls are what the lens would have "
-        "produced in real time, not in hindsight."
+        "palette as the world map. Feature values and calibration windows stop "
+        "at each quarter, so future-dated observations cannot leak backwards. "
+        "This still uses today's revised history; it is not a real-time vintage "
+        "reconstruction for dates before the release ledger began."
     )
 
 

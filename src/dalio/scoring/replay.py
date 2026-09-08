@@ -5,13 +5,16 @@ dashboard only shows "current phase" — a user has no way to verify the
 classifier's calls against known events (2008, 2020, 2022). The replay
 DataFrame is the substrate for the "Historical regime path" expander.
 
-Reuses the same `classify` functions as the live dashboard, with their
-`as_of` parameter capping all "latest" lookups at the historical date.
-Per-country thresholds are computed once over the *full* available history
-(not historically expanding) — using only data the classifier could have
-seen at each step would be more honest but adds complexity for marginal
-gain on a 35-year window.
+Reuses the same `classify` functions as the live dashboard. At each cursor,
+an expanding-window calibration cutoff excludes observations with later
+economic/reference dates, and the same threshold set is passed to both
+classifiers alongside their historical feature-extraction cursor.
+
+This is still a revised-data, economic-date replay over the current
+``observations`` projection. It is not a true "known at the time" replay:
+revisions and publication lags require release-vintage materialization.
 """
+
 from __future__ import annotations
 
 from datetime import date
@@ -20,6 +23,7 @@ import pandas as pd
 from dateutil.relativedelta import relativedelta
 from sqlalchemy.orm import Session
 
+from dalio.scoring.calibration import compute_country_thresholds
 from dalio.scoring.long_term import classify as classify_long_term
 from dalio.scoring.short_term import classify as classify_short_term
 
@@ -41,7 +45,8 @@ def replay_classifications(
       date, st_stage, st_label, st_confidence,
       lt_phase, lt_label, lt_confidence
 
-    Empty DataFrame if no observations exist for the country.
+    The replay uses revised values indexed by economic/reference date; it does
+    not yet reconstruct the source release vintage known at each cursor.
     """
     delta_map = {
         "M": relativedelta(months=1),
@@ -53,17 +58,30 @@ def replay_classifications(
     rows: list[dict] = []
     cursor = start
     while cursor <= end:
-        st = classify_short_term(session, country, as_of=cursor)
-        lt = classify_long_term(session, country, as_of=cursor)
-        rows.append({
-            "date": cursor,
-            "st_stage": st.stage,
-            "st_label": st.stage_label,
-            "st_confidence": st.confidence,
-            "lt_phase": lt.phase,
-            "lt_label": lt.phase_label,
-            "lt_confidence": lt.confidence,
-        })
+        thresholds = compute_country_thresholds(session, country, as_of=cursor)
+        st = classify_short_term(
+            session,
+            country,
+            thresholds=thresholds,
+            as_of=cursor,
+        )
+        lt = classify_long_term(
+            session,
+            country,
+            thresholds=thresholds,
+            as_of=cursor,
+        )
+        rows.append(
+            {
+                "date": cursor,
+                "st_stage": st.stage,
+                "st_label": st.stage_label,
+                "st_confidence": st.confidence,
+                "lt_phase": lt.phase,
+                "lt_label": lt.phase_label,
+                "lt_confidence": lt.confidence,
+            }
+        )
         cursor = cursor + delta
 
     return pd.DataFrame(rows)
