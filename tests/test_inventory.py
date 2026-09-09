@@ -11,6 +11,11 @@ from pathlib import Path
 import pytest
 from sqlalchemy import insert, select
 
+from dalio.communications.catalogue import (
+    COMMUNICATION_CATALOGUE_SHA256,
+    COMMUNICATION_SOURCES,
+    CommunicationSourceSpec,
+)
 from dalio.data_sources.bis_global_liquidity import (
     BIS_GLI_CATALOGUE_VINTAGE_PREFIX,
     BIS_GLOBAL_LIQUIDITY_SERIES,
@@ -45,20 +50,35 @@ from dalio.data_sources.worldbank_commodities import (
 )
 from dalio.data_sources.worldbank_qpsd import QPSD_COUNTRIES, QPSD_SERIES
 from dalio.storage import inventory as inventory_module
+from dalio.storage.communications import (
+    CommunicationArtifactMeta,
+    CommunicationEventMeta,
+    record_communication_artifact_metadata,
+)
 from dalio.storage.db import (
     AllocatorFact,
     Claim,
     ClaimCitation,
+    CommunicationArtifact,
+    CommunicationArtifactContent,
+    CommunicationArtifactRetrieval,
+    CommunicationEvent,
+    CommunicationExtraction,
+    CommunicationExtractionFinalization,
+    CommunicationSegment,
+    CommunicationSourcePolicySnapshot,
     DataRelease,
     DataReleaseArtifact,
     DebtHolderPosition,
     DocumentExtraction,
     DocumentPage,
     Observation,
+    Organization,
     ReleaseObservation,
     ReportDocument,
     init_db,
     make_engine,
+    make_session_factory,
 )
 from dalio.storage.inventory import build_observatory_inventory, render_inventory_summary
 from dalio.storage.releases import make_partition_key
@@ -144,6 +164,321 @@ def _shadow_release(
         content_sha256=spec.native_series_id.encode().hex().ljust(64, "0")[:64],
         row_count=row_count,
     )
+
+
+def _canonical_sha256(value: dict) -> str:
+    encoded = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _trust_test_communication_catalogue(monkeypatch) -> None:
+    catalogue_sha256 = "a" * 64
+    evaluated_at = datetime(2026, 1, 10, tzinfo=UTC)
+    source = CommunicationSourceSpec(
+        source_id="test_bank_letters",
+        organization_id="test_bank",
+        organization_name="Test Bank",
+        organization_type="bank",
+        jurisdiction="US",
+        language="en",
+        landing_url="https://example.test/letters",
+        official_domains=("example.test",),
+        host_organization="Test Bank",
+        publisher="Test Bank",
+        transcriber=None,
+        transcriber_attribution="not_applicable",
+        material_types=("ceo_letter",),
+        commodity_families=(),
+        verified_archive_start_year=2000,
+        coverage_note="Official annual letters.",
+        provenance_tier="official_authored_text",
+        rights_status="cleared",
+        rights_basis_url="https://example.test/terms",
+        rights_note="Test rights review permits this fixture.",
+        acquisition_status="manual_collection_ready",
+        acquisition_note="Manual test capture only.",
+        automated_collection_allowed=False,
+        rights_checked_by="human:test_reviewer",
+        rights_checked_at=datetime(2026, 1, 1, tzinfo=UTC),
+    )
+    import dalio.communications.catalogue as catalogue_module
+    import dalio.storage.communications as communications_storage
+
+    monkeypatch.setattr(catalogue_module, "COMMUNICATION_SOURCES", (source,))
+    monkeypatch.setattr(communications_storage, "COMMUNICATION_CATALOGUE_SHA256", catalogue_sha256)
+    monkeypatch.setattr(communications_storage, "CATALOGUE_EVALUATED_AT", evaluated_at)
+    monkeypatch.setattr(
+        inventory_module,
+        "_communication_catalogue_summary",
+        lambda: {
+            "validation_status": "valid",
+            "source_policy_count": 1,
+            "organization_count": 1,
+            "sha256": catalogue_sha256,
+            "error": None,
+        },
+    )
+
+
+def _insert_communication_corpus(
+    engine,
+    *,
+    finalize: bool,
+    valid_text_hash: bool = True,
+    valid_corpus_hash: bool = True,
+) -> Path:
+    catalogue_sha256 = "a" * 64
+    source_id = "test_bank_letters"
+    organization_id = "test_bank"
+    checked_at = datetime(2026, 1, 1)
+    evaluated_at = datetime(2026, 1, 10)
+    landing_url = "https://example.test/letters"
+    rights_basis_url = "https://example.test/terms"
+    policy_values = {
+        "catalogue_sha256": catalogue_sha256,
+        "source_id": source_id,
+        "organization_id": organization_id,
+        "organization_name": "Test Bank",
+        "organization_type": "bank",
+        "jurisdiction": "US",
+        "language": "en",
+        "landing_url": landing_url,
+        "official_domains_json": '["example.test"]',
+        "host_organization": "Test Bank",
+        "publisher": "Test Bank",
+        "transcriber": None,
+        "transcriber_attribution": "not_applicable",
+        "material_types_json": '["ceo_letter"]',
+        "commodity_families_json": "[]",
+        "verified_archive_start_year": 2000,
+        "coverage_note": "Official annual letters.",
+        "source_provenance_tier": "official_authored_text",
+        "rights_status": "cleared",
+        "rights_basis_url": rights_basis_url,
+        "rights_note": "Test rights review permits this fixture.",
+        "acquisition_status": "manual_collection_ready",
+        "acquisition_note": "Manual test capture only.",
+        "automated_collection_allowed": False,
+        "rights_checked_by": "human:test_reviewer",
+        "rights_checked_at": checked_at,
+        "catalogue_evaluated_at": evaluated_at,
+    }
+    policy_payload = {
+        "source_id": source_id,
+        "organization_id": organization_id,
+        "organization_name": "Test Bank",
+        "organization_type": "bank",
+        "jurisdiction": "US",
+        "language": "en",
+        "landing_url": landing_url,
+        "official_domains": ["example.test"],
+        "host_organization": "Test Bank",
+        "publisher": "Test Bank",
+        "transcriber": None,
+        "transcriber_attribution": "not_applicable",
+        "material_types": ["ceo_letter"],
+        "commodity_families": [],
+        "verified_archive_start_year": 2000,
+        "coverage_note": "Official annual letters.",
+        "provenance_tier": "official_authored_text",
+        "rights_status": "cleared",
+        "rights_basis_url": rights_basis_url,
+        "rights_note": "Test rights review permits this fixture.",
+        "acquisition_status": "manual_collection_ready",
+        "acquisition_note": "Manual test capture only.",
+        "automated_collection_allowed": False,
+        "rights_checked_by": "human:test_reviewer",
+        "rights_checked_at": "2026-01-01T00:00:00Z",
+        "catalogue_sha256": catalogue_sha256,
+        "catalogue_evaluated_at": "2026-01-10T00:00:00Z",
+    }
+    policy_values["policy_sha256"] = _canonical_sha256(policy_payload)
+
+    event_semantic = {
+        "organization_id": organization_id,
+        "event_key": "annual_letter_2025",
+        "event_type": "annual_report",
+        "title": "2025 annual letter",
+        "event_date": "2026-01-02",
+        "event_started_at": None,
+        "reference_start": "2025-01-01",
+        "reference_end": "2025-12-31",
+    }
+    event_sha256 = _canonical_sha256(event_semantic)
+    event_known_at = datetime(2026, 1, 2)
+    artifact_published_at = datetime(2026, 1, 3)
+    artifact_available_at = datetime(2026, 1, 3)
+    artifact_retrieved_at = datetime(2026, 1, 4)
+    artifact_known_at = datetime(2026, 1, 4)
+    artifact_url = "https://example.test/letters/2025.txt"
+    artifact_semantic = {
+        "event_version_sha256": event_sha256,
+        "source_id": source_id,
+        "catalogue_sha256": catalogue_sha256,
+        "artifact_key": "official_letter_en",
+        "artifact_role": "ceo_letter",
+        "material_type": "ceo_letter",
+        "language": "en",
+        "translation_status": "original",
+        "mime_type": "text/plain",
+        "origin_type": "publisher_authored",
+        "provenance_tier": "official_authored_text",
+        "rights_status": "cleared",
+        "acquisition_status": "manual_collection_ready",
+        "rights_checked_by": "human:test_reviewer",
+        "rights_checked_at": checked_at.isoformat(),
+        "host_organization": "Test Bank",
+        "publisher": "Test Bank",
+        "transcriber": None,
+        "transcriber_attribution": "not_applicable",
+        "published_at": artifact_published_at.isoformat(),
+        "available_at": artifact_available_at.isoformat(),
+        "landing_url": landing_url,
+        "artifact_url": artifact_url,
+    }
+    artifact_sha256 = _canonical_sha256(artifact_semantic)
+
+    content_bytes = "Försiktig återhämtning — inflationen avtar.".encode()
+    content_sha256 = hashlib.sha256(content_bytes).hexdigest()
+    relative_blob = Path("artifacts/communications/sha256") / content_sha256[:2] / content_sha256
+    database_path = Path(engine.url.database)
+    blob_path = database_path.parent / relative_blob
+    blob_path.parent.mkdir(parents=True, exist_ok=True)
+    blob_path.write_bytes(content_bytes)
+
+    segment_text = content_bytes.decode()
+    segment = {
+        "ordinal": 1,
+        "segment_kind": "letter",
+        "speaker_name": "Test CEO",
+        "speaker_role": "Chief Executive Officer",
+        "speaker_side": "publisher",
+        "section_title": None,
+        "text": segment_text,
+        "page_start": 1,
+        "page_end": 1,
+        "paragraph_start": 1,
+        "paragraph_end": 1,
+        "start_ms": None,
+        "end_ms": None,
+    }
+    corpus_sha256 = _canonical_sha256(
+        {
+            "canonicalization": "communication_segments_json_v1",
+            "segments": [segment],
+        }
+    )
+
+    with engine.begin() as connection:
+        connection.execute(insert(Organization).values(organization_id=organization_id))
+        connection.execute(insert(CommunicationSourcePolicySnapshot).values(**policy_values))
+        event_id = connection.execute(
+            insert(CommunicationEvent).values(
+                organization_id=organization_id,
+                event_key="annual_letter_2025",
+                event_type="annual_report",
+                title="2025 annual letter",
+                event_date=date(2026, 1, 2),
+                event_started_at=None,
+                reference_start=date(2025, 1, 1),
+                reference_end=date(2025, 12, 31),
+                metadata_known_at=event_known_at,
+                event_version_sha256=event_sha256,
+            )
+        ).inserted_primary_key[0]
+        artifact_id = connection.execute(
+            insert(CommunicationArtifact).values(
+                event_id=event_id,
+                source_id=source_id,
+                catalogue_sha256=catalogue_sha256,
+                event_version_sha256=event_sha256,
+                artifact_key="official_letter_en",
+                artifact_role="ceo_letter",
+                material_type="ceo_letter",
+                language="en",
+                translation_status="original",
+                mime_type="text/plain",
+                origin_type="publisher_authored",
+                provenance_tier="official_authored_text",
+                rights_status="cleared",
+                acquisition_status="manual_collection_ready",
+                rights_basis_url=rights_basis_url,
+                rights_note="Test rights review permits this fixture.",
+                rights_checked_by="human:test_reviewer",
+                rights_checked_at=checked_at,
+                host_organization="Test Bank",
+                publisher="Test Bank",
+                transcriber=None,
+                transcriber_attribution="not_applicable",
+                published_at=artifact_published_at,
+                available_at=artifact_available_at,
+                retrieved_at=artifact_retrieved_at,
+                metadata_known_at=artifact_known_at,
+                landing_url=landing_url,
+                artifact_url=artifact_url,
+                artifact_version_sha256=artifact_sha256,
+            )
+        ).inserted_primary_key[0]
+        retrieval_id = connection.execute(
+            insert(CommunicationArtifactRetrieval).values(
+                artifact_id=artifact_id,
+                retrieved_at=artifact_retrieved_at,
+                metadata_known_at=artifact_known_at,
+                landing_url=landing_url,
+                artifact_url=artifact_url,
+            )
+        ).inserted_primary_key[0]
+        content_id = connection.execute(
+            insert(CommunicationArtifactContent).values(
+                artifact_id=artifact_id,
+                retrieval_id=retrieval_id,
+                content_sha256=content_sha256,
+                size_bytes=len(content_bytes),
+                blob_path=relative_blob.as_posix(),
+                captured_at=datetime(2026, 1, 5),
+            )
+        ).inserted_primary_key[0]
+        extraction_id = connection.execute(
+            insert(CommunicationExtraction).values(
+                artifact_content_id=content_id,
+                run_key="test_run_1",
+                extractor_name="test_plain_text",
+                extractor_version="1",
+                extractor_config_sha256="b" * 64,
+                extracted_at=datetime(2026, 1, 6),
+                run_sha256="c" * 64,
+            )
+        ).inserted_primary_key[0]
+        connection.execute(
+            insert(CommunicationSegment).values(
+                extraction_id=extraction_id,
+                **segment,
+                text_sha256=(
+                    hashlib.sha256(segment_text.encode()).hexdigest()
+                    if valid_text_hash
+                    else "0" * 64
+                ),
+                char_count=len(segment_text),
+            )
+        )
+        if finalize:
+            connection.execute(
+                insert(CommunicationExtractionFinalization).values(
+                    extraction_id=extraction_id,
+                    finalized_at=datetime(2026, 1, 7),
+                    segment_count=1,
+                    total_char_count=len(segment_text),
+                    corpus_sha256=corpus_sha256 if valid_corpus_hash else "0" * 64,
+                    canonicalization_version="communication_segments_json_v1",
+                )
+            )
+    return blob_path
 
 
 def _insert_test_release_artifacts(
@@ -233,6 +568,37 @@ def test_empty_inventory_is_json_safe_and_distinguishes_absent_tables(tmp_path):
     assert inventory["market_history"]["money_liquidity"]["stored_series"] == 0
     assert inventory["reports"]["review_count"] == 0
     assert inventory["reports"]["review_outcomes"] == []
+    communications = inventory["communications"]
+    assert communications["catalogue_source_policy_count"] == len(COMMUNICATION_SOURCES)
+    assert communications["catalogue_organization_count"] == len(
+        {source.organization_id for source in COMMUNICATION_SOURCES}
+    )
+    assert communications["catalogue_sha256"] == COMMUNICATION_CATALOGUE_SHA256
+    assert communications["archive_coverage_status"] == "not_measured"
+    assert all(communications["table_presence"].values())
+    assert communications["organization_count"] == 0
+    assert communications["source_policy_snapshot_count"] == 0
+    assert communications["event_count"] == 0
+    assert communications["event_version_count"] == 0
+    assert communications["artifact_version_count"] == 0
+    assert communications["artifact_retrieval_count"] == 0
+    assert communications["artifact_content_count"] == 0
+    assert communications["stored_content_artifact_count"] == 0
+    assert communications["extraction_count"] == 0
+    assert communications["finalized_extraction_count"] == 0
+    assert communications["segment_count"] == 0
+    assert communications["finalized_segment_count"] == 0
+    assert communications["unfinalized_segment_count"] == 0
+    assert communications["incomplete_extraction_count"] == 0
+    assert communications["represented_source_count"] == 0
+    assert communications["stored_catalogue_hashes"] == []
+    assert communications["schema_contract_status"] == "valid"
+    assert communications["trigger_check_status"] == "valid"
+    assert communications["missing_required_triggers"] == []
+    assert communications["invalid_required_triggers"] == []
+    assert communications["foreign_key_violation_count"] == 0
+    assert communications["integrity_failures"] == []
+    assert communications["integrity_status"] == "valid"
     assert (
         inventory["market_history"]["money_liquidity"]["catalogue_semantic_sha256"]
         == money_liquidity_catalogue_sha256()
@@ -262,6 +628,232 @@ def test_empty_inventory_is_json_safe_and_distinguishes_absent_tables(tmp_path):
         "row_count": 0,
     }
     assert inventory["readiness"]["report_evidence"] == "empty"
+    assert inventory["readiness"]["institutional_communications"] == "empty"
+    assert (
+        f"Institutional communications: {len(COMMUNICATION_SOURCES)} source policies"
+        in render_inventory_summary(inventory)
+    )
+
+
+def test_invalid_communications_catalogue_does_not_disable_numeric_inventory(tmp_path, monkeypatch):
+    engine = make_engine(tmp_path / "invalid-communications-policy.db")
+    init_db(engine)
+    monkeypatch.setattr(
+        inventory_module,
+        "_communication_catalogue_summary",
+        lambda: {
+            "validation_status": "invalid",
+            "source_policy_count": None,
+            "organization_count": None,
+            "sha256": None,
+            "error": "ValueError: deliberately broken policy",
+        },
+    )
+
+    inventory = build_observatory_inventory(engine)
+
+    assert inventory["observations"]["row_count"] == 0
+    assert inventory["communications"]["catalogue_validation_status"] == "invalid"
+    assert inventory["communications"]["event_version_count"] == 0
+    assert inventory["communications"]["artifact_content_count"] == 0
+    assert inventory["communications"]["integrity_status"] == "valid"
+    assert inventory["readiness"]["institutional_communications"] == "policy_invalid"
+
+
+def test_current_catalogue_metadata_is_verified_but_not_text_ready(tmp_path):
+    engine = make_engine(tmp_path / "communications-current-metadata.db")
+    init_db(engine)
+    source = next(
+        item for item in COMMUNICATION_SOURCES if item.source_id == "fed_fomc_press_conferences_en"
+    )
+    known_at = datetime(2026, 9, 2, tzinfo=UTC)
+    with make_session_factory(engine)() as session:
+        record_communication_artifact_metadata(
+            session,
+            CommunicationEventMeta(
+                organization_id=source.organization_id,
+                event_key="fomc_2026_07_29",
+                event_type="central_bank_press_conference",
+                title="FOMC press conference",
+                event_date=date(2026, 7, 29),
+                metadata_known_at=known_at,
+            ),
+            CommunicationArtifactMeta(
+                source_id=source.source_id,
+                catalogue_sha256=COMMUNICATION_CATALOGUE_SHA256,
+                artifact_key="official_transcript_en",
+                artifact_role="full_transcript",
+                material_type="press_conference_transcript",
+                language="en",
+                translation_status="original",
+                mime_type="application/pdf",
+                origin_type="official_published_transcript",
+                provenance_tier="official_published_transcript",
+                host_organization=source.host_organization,
+                publisher=source.publisher,
+                transcriber=None,
+                transcriber_attribution="not_disclosed",
+                rights_status=source.rights_status,
+                acquisition_status=source.acquisition_status,
+                rights_checked_by="human:test_reviewer",
+                rights_checked_at=known_at,
+                published_at=datetime(2026, 7, 29, tzinfo=UTC),
+                available_at=datetime(2026, 7, 29, tzinfo=UTC),
+                retrieved_at=known_at,
+                metadata_known_at=known_at,
+                landing_url=source.landing_url,
+                artifact_url=(
+                    "https://www.federalreserve.gov/mediacenter/files/FOMCpresconf20260729.pdf"
+                ),
+            ),
+        )
+        session.commit()
+
+    inventory = build_observatory_inventory(engine)
+    communications = inventory["communications"]
+
+    assert communications["source_policy_snapshot_count"] == 1
+    assert communications["current_catalogue_snapshot_check_status"] == "valid"
+    assert communications["untrusted_catalogue_hash_count"] == 0
+    assert communications["event_version_sha256_mismatch_count"] == 0
+    assert communications["artifact_version_sha256_mismatch_count"] == 0
+    assert communications["missing_base_artifact_retrieval_count"] == 0
+    assert communications["artifact_content_count"] == 0
+    assert communications["integrity_status"] == "valid"
+    assert inventory["readiness"]["institutional_communications"] == "metadata_only"
+
+
+def test_unfinalized_communication_segments_are_not_analysis_ready(tmp_path, monkeypatch):
+    _trust_test_communication_catalogue(monkeypatch)
+    engine = make_engine(tmp_path / "communications-unfinalized.db")
+    init_db(engine)
+    _insert_communication_corpus(engine, finalize=False)
+
+    communications = build_observatory_inventory(engine)["communications"]
+
+    assert communications["artifact_content_count"] == 1
+    assert communications["verified_archived_blob_count"] == 1
+    assert communications["extraction_count"] == 1
+    assert communications["finalized_extraction_count"] == 0
+    assert communications["valid_finalized_extraction_count"] == 0
+    assert communications["segment_count"] == 1
+    assert communications["finalized_segment_count"] == 0
+    assert communications["unfinalized_segment_count"] == 1
+    assert communications["incomplete_extraction_count"] == 1
+    assert communications["integrity_status"] == "valid"
+    inventory = build_observatory_inventory(engine)
+    assert inventory["readiness"]["institutional_communications"] == ("artifacts_unextracted")
+
+
+def test_verified_finalized_communication_corpus_is_analysis_ready(tmp_path, monkeypatch):
+    _trust_test_communication_catalogue(monkeypatch)
+    engine = make_engine(tmp_path / "communications-finalized.db")
+    init_db(engine)
+    _insert_communication_corpus(engine, finalize=True)
+
+    inventory = build_observatory_inventory(engine)
+    communications = inventory["communications"]
+
+    assert communications["source_policy_snapshot_count"] == 1
+    assert communications["event_version_sha256_mismatch_count"] == 0
+    assert communications["artifact_version_sha256_mismatch_count"] == 0
+    assert communications["policy_binding_mismatch_count"] == 0
+    assert communications["artifact_retrieval_count"] == 1
+    assert communications["missing_base_artifact_retrieval_count"] == 0
+    assert communications["artifact_content_count"] == 1
+    assert communications["verified_archived_blob_count"] == 1
+    assert communications["extraction_content_binding_mismatch_count"] == 0
+    assert communications["finalized_extraction_count"] == 1
+    assert communications["valid_finalized_extraction_count"] == 1
+    assert communications["finalized_segment_count"] == 1
+    assert communications["segment_text_sha256_mismatch_count"] == 0
+    assert communications["segment_char_count_mismatch_count"] == 0
+    assert communications["corpus_sha256_mismatch_count"] == 0
+    assert communications["integrity_status"] == "valid"
+    assert inventory["readiness"]["institutional_communications"] == "available"
+    assert communications["integrity_assurance_scope"] == ("structural_byte_hash_reproducibility")
+    assert communications["transcript_semantic_fidelity_status"] == "not_verified"
+    assert communications["extractor_execution_trust_status"] == "not_verified"
+    assert "do not prove transcript semantic fidelity" in communications["integrity_assurance_note"]
+
+
+@pytest.mark.parametrize(
+    ("valid_text_hash", "valid_corpus_hash", "failure"),
+    [
+        (False, True, "segment_text_sha256"),
+        (True, False, "corpus_sha256"),
+    ],
+)
+def test_communication_hash_mismatch_fails_closed(
+    tmp_path,
+    valid_text_hash,
+    valid_corpus_hash,
+    failure,
+    monkeypatch,
+):
+    _trust_test_communication_catalogue(monkeypatch)
+    engine = make_engine(tmp_path / f"communications-bad-{failure}.db")
+    init_db(engine)
+    _insert_communication_corpus(
+        engine,
+        finalize=True,
+        valid_text_hash=valid_text_hash,
+        valid_corpus_hash=valid_corpus_hash,
+    )
+
+    inventory = build_observatory_inventory(engine)
+    communications = inventory["communications"]
+
+    assert failure in communications["integrity_failures"]
+    assert communications["valid_finalized_extraction_count"] == 0
+    assert communications["integrity_status"] == "invalid"
+    assert inventory["readiness"]["institutional_communications"] == "invalid"
+
+
+def test_communication_inventory_rehashes_blob_and_trigger_contract(tmp_path, monkeypatch):
+    _trust_test_communication_catalogue(monkeypatch)
+    engine = make_engine(tmp_path / "communications-contract.db")
+    init_db(engine)
+    blob_path = _insert_communication_corpus(engine, finalize=True)
+    blob_path.write_bytes(b"tampered bytes")
+
+    tampered_blob = build_observatory_inventory(engine)
+
+    assert tampered_blob["communications"]["archived_blob_sha256_mismatch_count"] == 1
+    assert tampered_blob["readiness"]["institutional_communications"] == "invalid"
+
+    other_engine = make_engine(tmp_path / "communications-weak-trigger.db")
+    init_db(other_engine)
+    with other_engine.begin() as connection:
+        connection.exec_driver_sql("DROP TRIGGER communication_content_matches_retrieval")
+        connection.exec_driver_sql(
+            "CREATE TRIGGER communication_content_matches_retrieval "
+            "BEFORE INSERT ON communication_artifact_contents BEGIN SELECT 1; END"
+        )
+
+    weak_trigger = build_observatory_inventory(other_engine)
+
+    assert weak_trigger["communications"]["schema_contract_status"] == "invalid"
+    assert (
+        "communication_content_matches_retrieval"
+        in weak_trigger["communications"]["invalid_required_triggers"]
+    )
+    assert weak_trigger["readiness"]["institutional_communications"] == "invalid"
+
+
+def test_unknown_communication_catalogue_hash_is_not_self_authenticating(tmp_path):
+    engine = make_engine(tmp_path / "communications-untrusted-catalogue.db")
+    init_db(engine)
+    _insert_communication_corpus(engine, finalize=True)
+
+    inventory = build_observatory_inventory(engine)
+    communications = inventory["communications"]
+
+    assert communications["untrusted_catalogue_hash_count"] == 1
+    assert communications["untrusted_catalogue_hashes"] == ["a" * 64]
+    assert "untrusted_catalogue_hash" in communications["integrity_failures"]
+    assert communications["integrity_status"] == "invalid"
+    assert inventory["readiness"]["institutional_communications"] == "invalid"
 
 
 def test_inventory_reports_structured_coverage_and_evidence_without_mutating(tmp_path):
@@ -612,6 +1204,7 @@ def test_inventory_reports_structured_coverage_and_evidence_without_mutating(tmp
         "debt_holder_positions": "available",
         "allocator_disclosures": "available",
         "report_evidence": "available",
+        "institutional_communications": "empty",
         "bilateral_positions": "partial",
         "commodity_history": "empty",
         "money_liquidity": "empty",
@@ -1588,5 +2181,8 @@ def test_inventory_handles_a_database_with_only_an_older_table(tmp_path):
     assert inventory["releases"]["release_count"] is None
     assert inventory["debt_holders"]["table_present"] is False
     assert inventory["reports"]["document_count"] is None
+    assert inventory["communications"]["event_version_count"] is None
+    assert inventory["communications"]["artifact_version_count"] is None
+    assert inventory["readiness"]["institutional_communications"] == "table_absent"
     assert inventory["cross_border_positions"]["table_present"] is False
     assert inventory["cross_border_positions"]["row_count"] is None

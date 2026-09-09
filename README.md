@@ -30,6 +30,19 @@ A separate read-only review packet now places 20 tightly bounded, page-cited mod
 
 The separate `dalio-report-review` gate can prepare and validate a blank decision document, report progress, and—only from a TTY after showing every candidate/outcome, confirming the canonical full-decision hash and making a verified database backup—atomically record an operator-attributed approve/revise/reject batch. Human-only use is operating policy; the local identity is not cryptographically authenticated. Nobody has used the gate on the live packet: there are still zero human decisions and zero verified report claims.
 
+Institutional press conferences, earnings communications and executive letters
+now have a separate rights-gated foundation. The checked catalogue covers 20
+first-party source policies for 18 organizations: four central banks, seven
+major banks and seven commodity companies spanning six commodity families. The event, artifact,
+byte-capture, extraction and speaker-segment schemas preserve publication clocks,
+authorship, transcriber/caption provenance, rights state, changed source bytes,
+corrections and exact locators.
+This is deliberately a source-policy and storage foundation: **zero historical
+communication events, files or transcript segments have been collected**, no
+automated acquisition is authorized and archive completeness is not yet measured.
+Future byte and segment hashes will prove reproducibility, not transcription
+fidelity; extracted text still needs trusted execution or named human review.
+
 ## Why
 
 Reading Dalio's framework as a *lens* (not an oracle): the dashboard surfaces where each economy sits in the long-term debt cycle, four-stage short-term debt cycle, and big-cycle power framework. Use it to understand constraints and diversified-portfolio fragilities, not to time entry or exit.
@@ -105,7 +118,7 @@ commands verify every expected SHA-256 before opening a database transaction.
 They do not download documents; the review-packet command only reads
 already-ingested evidence.
 
-From Windows Explorer, this checkout is available at `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine`; the local SQLite file is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\dalio.db`, and durable source evidence is under `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\artifacts`. The latest generated liquidity brief is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\snapshots\liquidity_latest.md`; the latest unverified report review is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\report_claims_latest.md`; and the untouched human decision sheet is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\report_decisions_2026-09-09_20c687f1cb907c71.json`. See `data/README.md` before copying, deleting or rebuilding anything under `data/`.
+From Windows Explorer, this checkout is available at `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine`; the local SQLite file is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\dalio.db`, and durable source evidence is under `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\artifacts`. The communications source-policy catalogue is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\src\dalio\communications\catalogue.py`; a future rights-cleared archive will live under `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\artifacts\communications`. The latest generated liquidity brief is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\snapshots\liquidity_latest.md`; the latest unverified report review is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\report_claims_latest.md`; and the untouched human decision sheet is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\report_decisions_2026-09-09_20c687f1cb907c71.json`. See `data/README.md` before copying, deleting or rebuilding anything under `data/`.
 
 Riksbank SWEA contributes eight daily Swedish series: policy rate; 2-, 5- and 10-year government yields; and SEK per USD, EUR, NOK and GBP. No key is required. Keyless runs use a safe 13-second request interval for the official 5-calls/minute limit; when `RIKSBANK_API_KEY` is set, the adapter sends it in `Ocp-Apim-Subscription-Key` automatically. The NOK feed starts on 2023-11-27 because older observations were quoted per 100 NOK and are not mixed into the current per-1-NOK series.
 
@@ -220,4 +233,4 @@ Tier drives dashboard confidence labels — Tier 2 readings are flagged as such.
 
 ## Status
 
-Pre-alpha. The cycle and fundamentals product is working, and the raw-history foundation now includes sovereign-debt anatomy, Swedish debt holders, IMF financial-account transactions, 127,970 bilateral investment-position rows, three Swedish AP-fund disclosures, a ten-document official-report corpus, 63,179 monthly commodity observations, ten official-money histories and 22 separate shadow-liquidity histories. Read-only liquidity diagnostics, a 20-item report review queue and an append-only human decision gate are available, but this is not a complete global money-flow map, a universal M5, an additive liquidity total, a causal or deposit-flow model, or an investable commodity return history: all 20 report candidates still need named human review; allocator history has only one H1 2026 release per fund; QPSD and IMF position coverage are voluntary and uneven; and debt cash-flow schedules, broader banking/funding channels and horizon risk scenarios remain to be built. See `project_context.md`, ADRs 0004–0011 and `data/README.md` for current boundaries.
+Pre-alpha. The cycle and fundamentals product is working, and the raw-history foundation now includes sovereign-debt anatomy, Swedish debt holders, IMF financial-account transactions, 127,970 bilateral investment-position rows, three Swedish AP-fund disclosures, a ten-document official-report corpus, 63,179 monthly commodity observations, ten official-money histories and 22 separate shadow-liquidity histories. Read-only liquidity diagnostics, a 20-item report review queue, an append-only human decision gate and a 20-policy/18-organization institutional-communications schema foundation are available. This is not a complete global money-flow map, a communications corpus, a universal M5, an additive liquidity total, a causal or deposit-flow model, or an investable commodity return history: all 20 report candidates still need named human review; the communications ledger is empty and rights-gated; allocator history has only one H1 2026 release per fund; QPSD and IMF position coverage are voluntary and uneven; and debt cash-flow schedules, broader banking/funding channels and horizon risk scenarios remain to be built. See `project_context.md`, ADRs 0004–0012 and `data/README.md` for current boundaries.

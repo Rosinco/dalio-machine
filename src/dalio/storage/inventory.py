@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import calendar
 import hashlib
+import ipaddress
 import json
 import math
 import os
@@ -78,6 +79,15 @@ _EXPECTED_TABLES = (
     "allocator_facts",
     "claim_citations",
     "claims",
+    "communication_schema_contract",
+    "communication_artifacts",
+    "communication_artifact_retrievals",
+    "communication_artifact_contents",
+    "communication_events",
+    "communication_extractions",
+    "communication_extraction_finalizations",
+    "communication_segments",
+    "communication_source_policy_snapshots",
     "cross_border_positions",
     "data_release_artifacts",
     "data_releases",
@@ -85,9 +95,398 @@ _EXPECTED_TABLES = (
     "document_extractions",
     "document_pages",
     "observations",
+    "organization_commodity_coverage",
+    "organizations",
     "release_observations",
     "report_candidate_reviews",
     "report_documents",
+)
+
+_COMMUNICATION_TABLE_NAMES = (
+    "communication_schema_contract",
+    "organizations",
+    "communication_source_policy_snapshots",
+    "organization_commodity_coverage",
+    "communication_events",
+    "communication_artifacts",
+    "communication_artifact_retrievals",
+    "communication_artifact_contents",
+    "communication_extractions",
+    "communication_segments",
+    "communication_extraction_finalizations",
+)
+_COMMUNICATION_REQUIRED_COLUMNS = {
+    "communication_schema_contract": frozenset(
+        {
+            "contract_id",
+            "schema_version",
+            "schema_sha256",
+            "trigger_sha256",
+            "installed_at",
+        }
+    ),
+    "organizations": frozenset({"organization_id"}),
+    "communication_source_policy_snapshots": frozenset(
+        {
+            "catalogue_sha256",
+            "source_id",
+            "organization_id",
+            "organization_name",
+            "organization_type",
+            "jurisdiction",
+            "language",
+            "landing_url",
+            "official_domains_json",
+            "host_organization",
+            "publisher",
+            "transcriber",
+            "transcriber_attribution",
+            "material_types_json",
+            "commodity_families_json",
+            "verified_archive_start_year",
+            "coverage_note",
+            "source_provenance_tier",
+            "rights_status",
+            "rights_basis_url",
+            "rights_note",
+            "acquisition_status",
+            "acquisition_note",
+            "automated_collection_allowed",
+            "rights_checked_by",
+            "rights_checked_at",
+            "catalogue_evaluated_at",
+            "policy_sha256",
+        }
+    ),
+    "organization_commodity_coverage": frozenset(
+        {
+            "id",
+            "organization_id",
+            "coverage_key",
+            "commodity_family",
+            "exposure_role",
+            "source_id",
+            "catalogue_sha256",
+            "mapping_status",
+            "effective_from",
+            "effective_to",
+            "evidence_url",
+            "evidence_note",
+            "published_at",
+            "available_at",
+            "retrieved_at",
+            "metadata_known_at",
+            "coverage_version_sha256",
+            "supersedes_exposure_id",
+        }
+    ),
+    "communication_events": frozenset(
+        {
+            "id",
+            "organization_id",
+            "event_key",
+            "event_type",
+            "title",
+            "event_date",
+            "event_started_at",
+            "reference_start",
+            "reference_end",
+            "metadata_known_at",
+            "event_version_sha256",
+            "supersedes_event_id",
+        }
+    ),
+    "communication_artifacts": frozenset(
+        {
+            "id",
+            "event_id",
+            "source_id",
+            "catalogue_sha256",
+            "event_version_sha256",
+            "artifact_key",
+            "artifact_role",
+            "material_type",
+            "language",
+            "translation_status",
+            "mime_type",
+            "origin_type",
+            "provenance_tier",
+            "rights_status",
+            "rights_basis_url",
+            "rights_note",
+            "acquisition_status",
+            "rights_checked_by",
+            "rights_checked_at",
+            "host_organization",
+            "publisher",
+            "transcriber",
+            "transcriber_attribution",
+            "published_at",
+            "available_at",
+            "retrieved_at",
+            "metadata_known_at",
+            "landing_url",
+            "artifact_url",
+            "artifact_version_sha256",
+            "supersedes_artifact_id",
+        }
+    ),
+    "communication_artifact_retrievals": frozenset(
+        {
+            "id",
+            "artifact_id",
+            "retrieved_at",
+            "metadata_known_at",
+            "landing_url",
+            "artifact_url",
+        }
+    ),
+    "communication_artifact_contents": frozenset(
+        {
+            "id",
+            "artifact_id",
+            "retrieval_id",
+            "content_sha256",
+            "size_bytes",
+            "blob_path",
+            "captured_at",
+            "supersedes_content_id",
+        }
+    ),
+    "communication_extractions": frozenset(
+        {"id", "artifact_content_id", "run_key", "extracted_at"}
+    ),
+    "communication_segments": frozenset(
+        {
+            "extraction_id",
+            "ordinal",
+            "segment_kind",
+            "speaker_name",
+            "speaker_role",
+            "speaker_side",
+            "section_title",
+            "text",
+            "text_sha256",
+            "char_count",
+            "page_start",
+            "page_end",
+            "paragraph_start",
+            "paragraph_end",
+            "start_ms",
+            "end_ms",
+        }
+    ),
+    "communication_extraction_finalizations": frozenset(
+        {
+            "extraction_id",
+            "finalized_at",
+            "segment_count",
+            "total_char_count",
+            "corpus_sha256",
+            "canonicalization_version",
+        }
+    ),
+}
+_COMMUNICATION_REQUIRED_TRIGGERS = frozenset(
+    {
+        *(f"{name}_reject_update" for name in _COMMUNICATION_TABLE_NAMES),
+        *(f"{name}_reject_delete" for name in _COMMUNICATION_TABLE_NAMES),
+        "communication_artifacts_match_policy",
+        "communication_policy_snapshot_validate",
+        "communication_coverage_matches_policy",
+        "communication_event_successor_order",
+        "communication_artifact_reject_duplicate_root",
+        "communication_artifact_successor_order",
+        "communication_coverage_successor_order",
+        "communication_coverage_reject_overlapping_head",
+        "communication_retrieval_matches_artifact",
+        "communication_content_matches_retrieval",
+        "communication_content_successor_order",
+        "communication_extractions_require_content",
+        "communication_segments_reject_after_finalization",
+        "communication_extraction_finalization_validate",
+    }
+)
+_COMMUNICATION_CUSTOM_TRIGGER_FRAGMENTS = {
+    "communication_policy_snapshot_validate": (
+        "json_each(new.official_domains_json)",
+        "json_each(new.material_types_json)",
+        "json_each(new.commodity_families_json)",
+        "new.rights_basis_url",
+    ),
+    "communication_artifacts_match_policy": (
+        "policy.rights_note = new.rights_note",
+        "policy.language = new.language",
+        "event.event_version_sha256 = new.event_version_sha256",
+        "json_each(policy.material_types_json)",
+        "json_each(policy.official_domains_json)",
+    ),
+    "communication_coverage_matches_policy": (
+        "policy.organization_type = 'commodity_company'",
+        "policy.coverage_note = new.evidence_note",
+        "json_each(policy.commodity_families_json)",
+        "json_each(policy.official_domains_json)",
+    ),
+    "communication_event_successor_order": (
+        "prior.organization_id = new.organization_id",
+        "prior.event_key = new.event_key",
+        "new.metadata_known_at > prior.metadata_known_at",
+    ),
+    "communication_artifact_reject_duplicate_root": (
+        "prior_event.organization_id = new_event.organization_id",
+        "prior_event.event_key = new_event.event_key",
+        "prior.source_id = new.source_id",
+        "prior.artifact_key = new.artifact_key",
+    ),
+    "communication_artifact_successor_order": (
+        "prior.id = new.supersedes_artifact_id",
+        "prior_event.organization_id = new_event.organization_id",
+        "prior_event.event_key = new_event.event_key",
+        "new.metadata_known_at > prior.metadata_known_at",
+    ),
+    "communication_coverage_successor_order": (
+        "prior.id = new.supersedes_exposure_id",
+        "prior.coverage_key = new.coverage_key",
+        "not exists",
+        "new.metadata_known_at > prior.metadata_known_at",
+    ),
+    "communication_coverage_reject_overlapping_head": (
+        "prior.commodity_family = new.commodity_family",
+        "prior.exposure_role = new.exposure_role",
+        "not exists",
+        "prior.effective_from <= coalesce(new.effective_to, '9999-12-31')",
+    ),
+    "communication_retrieval_matches_artifact": (
+        "artifact.id = new.artifact_id",
+        "artifact.landing_url = new.landing_url",
+        "artifact.artifact_url = new.artifact_url",
+        "new.retrieved_at >= artifact.available_at",
+    ),
+    "communication_content_matches_retrieval": (
+        "retrieval.artifact_id = artifact.id",
+        "retrieval.id = new.retrieval_id",
+        "artifact.rights_status in ('cleared', 'internal_only')",
+        "new.captured_at >= retrieval.metadata_known_at",
+    ),
+    "communication_content_successor_order": (
+        "prior.id = new.supersedes_content_id",
+        "prior.artifact_id = new.artifact_id",
+        "not exists",
+        "new.captured_at > prior.captured_at",
+    ),
+    "communication_extractions_require_content": (
+        "from communication_artifact_contents",
+        "id = new.artifact_content_id",
+        "new.extracted_at >= captured_at",
+    ),
+    "communication_segments_reject_after_finalization": (
+        "from communication_extraction_finalizations",
+        "extraction_id = new.extraction_id",
+    ),
+    "communication_extraction_finalization_validate": (
+        "new.finalized_at >= extraction.extracted_at",
+        "select count(*) from communication_segments",
+        "select min(ordinal) from communication_segments",
+        "select max(ordinal) from communication_segments",
+        "select sum(char_count) from communication_segments",
+    ),
+}
+_COMMUNICATION_CANONICALIZATION = "communication_segments_json_v1"
+_COMMUNICATION_MATERIAL_TYPES = frozenset(
+    {
+        "annual_report",
+        "ceo_letter",
+        "financial_results",
+        "management_review",
+        "monetary_policy_statement",
+        "press_conference_transcript",
+        "press_conference_video",
+        "questions_and_answers",
+        "results_transcript",
+        "speech_text",
+        "subtitles",
+    }
+)
+_COMMUNICATION_COMMODITY_FAMILIES = frozenset(
+    {
+        "agricultural_raw_materials",
+        "base_metals",
+        "energy",
+        "fertilizers",
+        "food_and_beverages",
+        "precious_metals",
+    }
+)
+_COMMUNICATION_TRANSCRIPT_MATERIAL_TYPES = frozenset(
+    {
+        "press_conference_transcript",
+        "questions_and_answers",
+        "results_transcript",
+        "subtitles",
+    }
+)
+_COMMUNICATION_RIGHTS_TO_ACQUISITION = {
+    "cleared": "manual_collection_ready",
+    "internal_only": "manual_internal_only",
+    "metadata_only": "metadata_only",
+    "permission_required": "blocked_pending_permission",
+    "rights_review_required": "manual_review_required",
+}
+_COMMUNICATION_ROLE_MATERIALS = {
+    "prepared_remarks": frozenset(
+        {
+            "financial_results",
+            "management_review",
+            "monetary_policy_statement",
+            "speech_text",
+        }
+    ),
+    "q_and_a_transcript": frozenset({"questions_and_answers"}),
+    "full_transcript": frozenset({"press_conference_transcript", "results_transcript"}),
+    "ceo_letter": frozenset({"ceo_letter"}),
+    "chair_letter": frozenset({"annual_report", "management_review"}),
+    "annual_report": frozenset({"annual_report"}),
+    "subtitles": frozenset({"subtitles"}),
+    "webcast_video": frozenset({"press_conference_video"}),
+}
+_COMMUNICATION_MATERIAL_ORIGINS = {
+    "annual_report": frozenset({"publisher_authored"}),
+    "ceo_letter": frozenset({"publisher_authored"}),
+    "financial_results": frozenset({"publisher_authored"}),
+    "management_review": frozenset({"publisher_authored"}),
+    "monetary_policy_statement": frozenset({"publisher_authored"}),
+    "speech_text": frozenset({"publisher_authored"}),
+    "questions_and_answers": frozenset({"official_published_transcript", "official_hosted_vendor"}),
+    "press_conference_transcript": frozenset(
+        {"official_published_transcript", "official_hosted_vendor"}
+    ),
+    "results_transcript": frozenset({"official_published_transcript", "official_hosted_vendor"}),
+    "subtitles": frozenset({"official_caption", "automatic_caption", "local_asr"}),
+    "press_conference_video": frozenset({"official_published_media"}),
+}
+_COMMUNICATION_ORIGIN_PROVENANCE = {
+    "publisher_authored": "official_authored_text",
+    "official_published_transcript": "official_published_transcript",
+    "official_published_media": "official_published_media",
+    "official_hosted_vendor": "official_hosted_third_party",
+    "official_caption": "official_caption",
+    "automatic_caption": "official_hosted_automatic_caption",
+    "local_asr": "local_derived_asr",
+}
+_COMMUNICATION_CANONICAL_SEGMENT_FIELDS = (
+    "ordinal",
+    "segment_kind",
+    "speaker_name",
+    "speaker_role",
+    "speaker_side",
+    "section_title",
+    "text",
+    "page_start",
+    "page_end",
+    "paragraph_start",
+    "paragraph_end",
+    "start_ms",
+    "end_ms",
 )
 
 EXPECTED_SERIES_IDS_BY_WORKSHEET = EXPECTED_PINK_SHEET_SERIES_IDS_BY_WORKSHEET
@@ -137,6 +536,31 @@ def _count(connection: Connection, table: Table | None) -> int | None:
     if table is None:
         return None
     return int(connection.scalar(select(func.count()).select_from(table)) or 0)
+
+
+def _communication_catalogue_summary() -> dict[str, Any]:
+    """Keep a broken optional policy catalogue from disabling numeric inventory."""
+    try:
+        from dalio.communications.catalogue import (
+            COMMUNICATION_CATALOGUE_SHA256,
+            COMMUNICATION_SOURCES,
+        )
+
+        return {
+            "validation_status": "valid",
+            "source_policy_count": len(COMMUNICATION_SOURCES),
+            "organization_count": len({source.organization_id for source in COMMUNICATION_SOURCES}),
+            "sha256": COMMUNICATION_CATALOGUE_SHA256,
+            "error": None,
+        }
+    except Exception as exc:
+        return {
+            "validation_status": "invalid",
+            "source_policy_count": None,
+            "organization_count": None,
+            "sha256": None,
+            "error": f"{type(exc).__name__}: {exc}",
+        }
 
 
 def _latest_release_ids(releases: Table | None):
@@ -1842,6 +2266,1485 @@ def _reports_inventory(
     }
 
 
+def _communication_corpus_sha256(segments: list[dict[str, Any]]) -> str:
+    """Hash the exact, versioned communication-segment canonical form."""
+    payload = {
+        "canonicalization": _COMMUNICATION_CANONICALIZATION,
+        "segments": [
+            {field: segment[field] for field in _COMMUNICATION_CANONICAL_SEGMENT_FIELDS}
+            for segment in segments
+        ],
+    }
+    encoded = json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _communication_policy_payload(row: dict[str, Any]) -> dict[str, Any]:
+    """Reconstruct the exact semantic object hashed by the storage helper."""
+
+    def json_string_list(field: str) -> list[str]:
+        value = json.loads(row[field])
+        if (
+            not isinstance(value, list)
+            or any(not isinstance(item, str) for item in value)
+            or value != sorted(set(value))
+        ):
+            raise ValueError(f"{field} must be a sorted, duplicate-free string array")
+        return value
+
+    def utc_text(value: Any) -> str | None:
+        if value is None:
+            return None
+        if not isinstance(value, datetime):
+            raise ValueError("policy clocks must be datetimes")
+        normalized = value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+        return normalized.isoformat().replace("+00:00", "Z")
+
+    return {
+        "source_id": row["source_id"],
+        "organization_id": row["organization_id"],
+        "organization_name": row["organization_name"],
+        "organization_type": row["organization_type"],
+        "jurisdiction": row["jurisdiction"],
+        "language": row["language"],
+        "landing_url": row["landing_url"],
+        "official_domains": json_string_list("official_domains_json"),
+        "host_organization": row["host_organization"],
+        "publisher": row["publisher"],
+        "transcriber": row["transcriber"],
+        "transcriber_attribution": row["transcriber_attribution"],
+        "material_types": json_string_list("material_types_json"),
+        "commodity_families": json_string_list("commodity_families_json"),
+        "verified_archive_start_year": row["verified_archive_start_year"],
+        "coverage_note": row["coverage_note"],
+        "provenance_tier": row["source_provenance_tier"],
+        "rights_status": row["rights_status"],
+        "rights_basis_url": row["rights_basis_url"],
+        "rights_note": row["rights_note"],
+        "acquisition_status": row["acquisition_status"],
+        "acquisition_note": row["acquisition_note"],
+        "automated_collection_allowed": bool(row["automated_collection_allowed"]),
+        "rights_checked_by": row["rights_checked_by"],
+        "rights_checked_at": utc_text(row["rights_checked_at"]),
+        "catalogue_sha256": row["catalogue_sha256"],
+        "catalogue_evaluated_at": utc_text(row["catalogue_evaluated_at"]),
+    }
+
+
+def _canonical_dict_sha256(value: dict[str, Any]) -> str:
+    encoded = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _communication_policy_semantically_valid(
+    row: dict[str, Any],
+    payload: dict[str, Any],
+) -> bool:
+    identifier = re.compile(r"^[a-z][a-z0-9_]*$")
+    materials = set(payload["material_types"])
+    has_transcript = bool(materials & _COMMUNICATION_TRANSCRIPT_MATERIAL_TYPES)
+    attribution = row["transcriber_attribution"]
+    transcriber = row["transcriber"]
+    publisher = row["publisher"]
+    provenance = row["source_provenance_tier"]
+    reviewer = row["rights_checked_by"]
+    checked_at = row["rights_checked_at"]
+    evaluated_at = row["catalogue_evaluated_at"]
+    rights_status = row["rights_status"]
+
+    transcriber_valid = (
+        (
+            attribution in {"artifact_specific", "not_applicable", "not_disclosed"}
+            and transcriber is None
+        )
+        or (attribution == "publisher" and transcriber == publisher)
+        or (
+            attribution == "named_third_party"
+            and isinstance(transcriber, str)
+            and bool(transcriber.strip())
+            and transcriber != publisher
+        )
+    )
+    provenance_valid = (
+        provenance
+        in {
+            "official_archive_mixed",
+            "official_authored_text",
+            "official_published_transcript",
+            "official_hosted_third_party",
+        }
+        and not (provenance == "official_authored_text" and has_transcript)
+        and not (provenance == "official_published_transcript" and not has_transcript)
+        and not (provenance == "official_hosted_third_party" and attribution != "named_third_party")
+        and not (attribution == "named_third_party" and provenance != "official_hosted_third_party")
+    )
+    reviewer_pair = (reviewer is None) == (checked_at is None)
+    reviewer_valid = reviewer_pair and (
+        reviewer is None
+        or (
+            isinstance(reviewer, str)
+            and reviewer.startswith("human:")
+            and reviewer != "human:"
+            and isinstance(checked_at, datetime)
+            and isinstance(evaluated_at, datetime)
+            and checked_at <= evaluated_at
+        )
+    )
+    archive_year = row["verified_archive_start_year"]
+    archive_year_valid = archive_year is None or (
+        isinstance(archive_year, int)
+        and not isinstance(archive_year, bool)
+        and isinstance(evaluated_at, datetime)
+        and 1900 <= archive_year <= evaluated_at.year
+    )
+    required_text_fields = (
+        "organization_name",
+        "host_organization",
+        "publisher",
+        "coverage_note",
+        "rights_note",
+        "acquisition_note",
+    )
+    return all(
+        (
+            isinstance(row["source_id"], str),
+            identifier.fullmatch(row["source_id"]) is not None,
+            len(row["source_id"]) <= 96,
+            isinstance(row["organization_id"], str),
+            identifier.fullmatch(row["organization_id"]) is not None,
+            len(row["organization_id"]) <= 96,
+            row["organization_type"] in {"central_bank", "bank", "commodity_company"},
+            isinstance(row["jurisdiction"], str),
+            re.fullmatch(r"[A-Z]{2,3}", row["jurisdiction"]) is not None,
+            isinstance(row["language"], str),
+            re.fullmatch(r"[a-z]{2,3}", row["language"]) is not None,
+            all(
+                isinstance(row[field], str) and bool(row[field].strip())
+                for field in required_text_fields
+            ),
+            bool(materials),
+            (has_transcript and attribution != "not_applicable")
+            or (not has_transcript and attribution == "not_applicable"),
+            transcriber_valid,
+            provenance_valid,
+            rights_status in _COMMUNICATION_RIGHTS_TO_ACQUISITION,
+            row["acquisition_status"] == _COMMUNICATION_RIGHTS_TO_ACQUISITION.get(rights_status),
+            row["automated_collection_allowed"] is False,
+            reviewer_valid,
+            rights_status not in {"cleared", "internal_only"} or reviewer is not None,
+            rights_status
+            not in {"cleared", "internal_only", "metadata_only", "permission_required"}
+            or row["rights_basis_url"] is not None,
+            isinstance(evaluated_at, datetime),
+            archive_year_valid,
+        )
+    )
+
+
+def _communication_artifact_semantically_valid(row: dict[str, Any]) -> bool:
+    role_materials = _COMMUNICATION_ROLE_MATERIALS.get(row["artifact_role"], frozenset())
+    material_origins = _COMMUNICATION_MATERIAL_ORIGINS.get(row["material_type"], frozenset())
+    expected_provenance = _COMMUNICATION_ORIGIN_PROVENANCE.get(row["origin_type"])
+    transcriber = row["transcriber"]
+    attribution = row["transcriber_attribution"]
+    publisher = row["publisher"]
+    if row["origin_type"] in {"publisher_authored", "official_published_media"}:
+        transcriber_valid = transcriber is None and attribution == "not_applicable"
+    elif row["origin_type"] in {"official_hosted_vendor", "automatic_caption", "local_asr"}:
+        transcriber_valid = (
+            isinstance(transcriber, str)
+            and bool(transcriber.strip())
+            and transcriber != publisher
+            and attribution == "named_third_party"
+        )
+    elif row["origin_type"] in {"official_published_transcript", "official_caption"}:
+        transcriber_valid = (
+            (transcriber is None and attribution == "not_disclosed")
+            or (transcriber == publisher and attribution == "publisher")
+            or (
+                isinstance(transcriber, str)
+                and bool(transcriber.strip())
+                and transcriber != publisher
+                and attribution == "named_third_party"
+            )
+        )
+    else:
+        transcriber_valid = False
+    identifier = re.compile(r"^[a-z][a-z0-9_]*$")
+    return all(
+        (
+            isinstance(row["artifact_key"], str),
+            identifier.fullmatch(row["artifact_key"]) is not None,
+            len(row["artifact_key"]) <= 128,
+            row["material_type"] in role_materials,
+            row["origin_type"] in material_origins,
+            row["provenance_tier"] == expected_provenance,
+            row["translation_status"] in {"original", "official_translation"},
+            transcriber_valid,
+            row["rights_status"] in _COMMUNICATION_RIGHTS_TO_ACQUISITION,
+            row["acquisition_status"]
+            == _COMMUNICATION_RIGHTS_TO_ACQUISITION.get(row["rights_status"]),
+            isinstance(row["rights_checked_by"], str),
+            row["rights_checked_by"].startswith("human:"),
+            row["rights_checked_by"] != "human:",
+            all(
+                isinstance(row[field], str) and bool(row[field].strip())
+                for field in (
+                    "language",
+                    "mime_type",
+                    "host_organization",
+                    "publisher",
+                    "rights_note",
+                )
+            ),
+        )
+    )
+
+
+def _file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _communication_ddl_sha256(
+    connection: Connection,
+    object_types: tuple[str, ...],
+) -> str:
+    table_placeholders = ",".join("?" for _ in _COMMUNICATION_TABLE_NAMES)
+    type_placeholders = ",".join("?" for _ in object_types)
+    rows = connection.exec_driver_sql(
+        "SELECT type, name, tbl_name, sql FROM sqlite_master "
+        f"WHERE tbl_name IN ({table_placeholders}) "
+        f"AND type IN ({type_placeholders}) AND sql IS NOT NULL "
+        "ORDER BY type, name, tbl_name",
+        (*_COMMUNICATION_TABLE_NAMES, *object_types),
+    ).all()
+    canonical = [
+        {
+            "type": str(row[0]),
+            "name": str(row[1]),
+            "table": str(row[2]),
+            "sql": " ".join(str(row[3]).split()),
+        }
+        for row in rows
+    ]
+    encoded = json.dumps(
+        canonical,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _communication_url_matches_domains(value: Any, domains: list[str]) -> bool:
+    if not isinstance(value, str) or not value or value != value.strip():
+        return False
+    if "\\" in value or any(ord(character) < 33 or ord(character) == 127 for character in value):
+        return False
+    parsed = urlparse(value)
+    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+        return False
+    try:
+        if parsed.port is not None:
+            return False
+    except ValueError:
+        return False
+    host = parsed.hostname.lower()
+    if host.endswith(".") or host == "localhost":
+        return False
+    try:
+        ipaddress.ip_address(host)
+    except ValueError:
+        pass
+    else:
+        return False
+    dns_label = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
+    if any(dns_label.fullmatch(label) is None for label in host.split(".")):
+        return False
+    return any(host == domain or host.endswith(f".{domain}") for domain in domains)
+
+
+def _communication_iso(value: Any) -> str:
+    if not isinstance(value, (date, datetime)):
+        raise ValueError("communication semantic clock must be a date or datetime")
+    return value.isoformat()
+
+
+def _communication_lineage_mismatch_count(
+    rows: list[dict[str, Any]],
+    *,
+    id_field: str,
+    predecessor_field: str,
+    identity_fields: tuple[str, ...],
+    clock_field: str,
+) -> int:
+    """Count broken roots, branches, identity/clock links, and disconnected cycles."""
+    by_id = {int(row[id_field]): row for row in rows}
+    by_identity: dict[tuple[Any, ...], list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        by_identity[tuple(row[field] for field in identity_fields)].append(row)
+
+    mismatches = 0
+    successor_counts: dict[int, int] = defaultdict(int)
+    for row in rows:
+        predecessor_id = row[predecessor_field]
+        if predecessor_id is not None:
+            successor_counts[int(predecessor_id)] += 1
+    mismatches += sum(count > 1 for count in successor_counts.values())
+
+    for identity, identity_rows in by_identity.items():
+        roots = [row for row in identity_rows if row[predecessor_field] is None]
+        mismatches += len(roots) != 1
+        for row in identity_rows:
+            predecessor_id = row[predecessor_field]
+            if predecessor_id is None:
+                continue
+            predecessor = by_id.get(int(predecessor_id))
+            try:
+                forward_clock = (
+                    predecessor is not None and row[clock_field] > predecessor[clock_field]
+                )
+            except TypeError:
+                forward_clock = False
+            if (
+                predecessor is None
+                or tuple(predecessor[field] for field in identity_fields) != identity
+                or not forward_clock
+            ):
+                mismatches += 1
+
+        for row in identity_rows:
+            seen: set[int] = set()
+            cursor = row
+            while cursor[predecessor_field] is not None:
+                cursor_id = int(cursor[id_field])
+                if cursor_id in seen:
+                    mismatches += 1
+                    break
+                seen.add(cursor_id)
+                predecessor = by_id.get(int(cursor[predecessor_field]))
+                if predecessor is None:
+                    break
+                cursor = predecessor
+    return mismatches
+
+
+def _communication_integrity_inventory(
+    connection: Connection,
+    tables: dict[str, Table],
+    *,
+    catalogue: dict[str, Any],
+) -> dict[str, Any]:
+    """Re-verify the stored communications corpus instead of trusting row headers."""
+    table_presence = {name: name in tables for name in _COMMUNICATION_TABLE_NAMES}
+    missing_columns = {
+        name: sorted(required - set(tables[name].c.keys()))
+        for name, required in _COMMUNICATION_REQUIRED_COLUMNS.items()
+        if name in tables and not required.issubset(tables[name].c.keys())
+    }
+
+    trigger_check_status = "unsupported"
+    missing_triggers = sorted(_COMMUNICATION_REQUIRED_TRIGGERS)
+    invalid_triggers: list[str] = []
+    trigger_check_error: str | None = None
+    foreign_key_check_status = "unsupported"
+    foreign_key_violations: list[dict[str, Any]] = []
+    foreign_key_check_error: str | None = None
+    if connection.dialect.name == "sqlite":
+        try:
+            stored_trigger_sql = {
+                str(row[0]): str(row[1] or "")
+                for row in connection.exec_driver_sql(
+                    "SELECT name, sql FROM sqlite_master WHERE type = 'trigger'"
+                )
+            }
+            stored_triggers = set(stored_trigger_sql)
+            missing_triggers = sorted(_COMMUNICATION_REQUIRED_TRIGGERS - stored_triggers)
+            for trigger_name in sorted(_COMMUNICATION_REQUIRED_TRIGGERS & stored_triggers):
+                normalized_sql = re.sub(
+                    r"\s+", " ", stored_trigger_sql[trigger_name].lower()
+                ).strip()
+                fragments = _COMMUNICATION_CUSTOM_TRIGGER_FRAGMENTS.get(trigger_name)
+                if fragments is None:
+                    operation = "update" if trigger_name.endswith("_reject_update") else "delete"
+                    table_name = trigger_name.removesuffix(f"_reject_{operation}")
+                    fragments = (
+                        f"before {operation} on {table_name}",
+                        "select raise(abort",
+                    )
+                if any(fragment not in normalized_sql for fragment in fragments):
+                    invalid_triggers.append(trigger_name)
+            trigger_check_status = (
+                "valid" if not missing_triggers and not invalid_triggers else "invalid"
+            )
+        except Exception as exc:  # pragma: no cover - corrupt SQLite catalogue defence
+            trigger_check_status = "error"
+            trigger_check_error = f"{type(exc).__name__}: {exc}"
+        try:
+            for row in connection.exec_driver_sql("PRAGMA foreign_key_check"):
+                if str(row[0]) not in _COMMUNICATION_TABLE_NAMES:
+                    continue
+                foreign_key_violations.append(
+                    {
+                        "table": str(row[0]),
+                        "row_id": row[1],
+                        "parent_table": str(row[2]),
+                        "foreign_key_index": int(row[3]),
+                    }
+                )
+            foreign_key_check_status = "valid" if not foreign_key_violations else "invalid"
+        except Exception as exc:  # pragma: no cover - corrupt SQLite catalogue defence
+            foreign_key_check_status = "error"
+            foreign_key_check_error = f"{type(exc).__name__}: {exc}"
+
+    result: dict[str, Any] = {
+        "missing_required_columns": missing_columns,
+        "trigger_check_status": trigger_check_status,
+        "missing_required_triggers": missing_triggers,
+        "invalid_required_triggers": invalid_triggers,
+        "trigger_check_error": trigger_check_error,
+        "foreign_key_check_status": foreign_key_check_status,
+        "foreign_key_violation_count": len(foreign_key_violations),
+        "foreign_key_violations": foreign_key_violations,
+        "foreign_key_check_error": foreign_key_check_error,
+        "schema_contract_status": "not_checked",
+        "schema_contract_row_count": None,
+        "schema_contract_version": None,
+        "expected_schema_contract_version": None,
+        "stored_schema_sha256": None,
+        "stored_trigger_sha256": None,
+        "actual_schema_sha256": None,
+        "actual_trigger_sha256": None,
+        "expected_schema_sha256": None,
+        "expected_trigger_sha256": None,
+        "policy_snapshot_json_malformed_count": None,
+        "policy_snapshot_semantic_mismatch_count": None,
+        "policy_snapshot_sha256_mismatch_count": None,
+        "current_catalogue_snapshot_check_status": "not_checked",
+        "current_catalogue_snapshot_mismatch_count": None,
+        "untrusted_catalogue_hash_count": None,
+        "untrusted_catalogue_hashes": [],
+        "event_version_sha256_mismatch_count": None,
+        "artifact_version_sha256_mismatch_count": None,
+        "artifact_semantic_mismatch_count": None,
+        "coverage_version_sha256_mismatch_count": None,
+        "event_lineage_mismatch_count": None,
+        "artifact_lineage_mismatch_count": None,
+        "coverage_lineage_mismatch_count": None,
+        "content_lineage_mismatch_count": None,
+        "communication_clock_mismatch_count": None,
+        "artifact_policy_binding_mismatch_count": None,
+        "commodity_policy_binding_mismatch_count": None,
+        "policy_binding_mismatch_count": None,
+        "missing_base_artifact_retrieval_count": None,
+        "orphan_artifact_retrieval_count": None,
+        "artifact_retrieval_mismatch_count": None,
+        "content_retrieval_binding_mismatch_count": None,
+        "archived_blob_path_mismatch_count": None,
+        "archived_blob_missing_count": None,
+        "archived_blob_size_mismatch_count": None,
+        "archived_blob_sha256_mismatch_count": None,
+        "archived_blob_read_error_count": None,
+        "verified_archived_blob_count": None,
+        "extraction_content_binding_mismatch_count": None,
+        "incomplete_extraction_count": None,
+        "finalized_segment_count": None,
+        "unfinalized_segment_count": None,
+        "segment_text_sha256_mismatch_count": None,
+        "segment_char_count_mismatch_count": None,
+        "finalization_structure_mismatch_count": None,
+        "unsupported_canonicalization_count": None,
+        "corpus_sha256_mismatch_count": None,
+        "canonicalization_error_count": None,
+        "valid_finalized_extraction_count": None,
+        "integrity_failures": [],
+        "integrity_status": "table_absent",
+    }
+    if not all(table_presence.values()):
+        return result
+    if missing_columns:
+        result["integrity_failures"] = ["required_columns"]
+        result["integrity_status"] = "invalid"
+        return result
+
+    contract_status = "error"
+    try:
+        from dalio.storage.db import (
+            COMMUNICATION_SCHEMA_SHA256,
+            COMMUNICATION_SCHEMA_VERSION,
+            COMMUNICATION_TRIGGER_SHA256,
+        )
+
+        contract = tables["communication_schema_contract"]
+        contract_rows = (
+            connection.execute(
+                select(
+                    contract.c.contract_id,
+                    contract.c.schema_version,
+                    contract.c.schema_sha256,
+                    contract.c.trigger_sha256,
+                )
+            )
+            .mappings()
+            .all()
+        )
+        actual_schema_sha256 = _communication_ddl_sha256(connection, ("table", "index"))
+        actual_trigger_sha256 = _communication_ddl_sha256(connection, ("trigger",))
+        contract_row = dict(contract_rows[0]) if len(contract_rows) == 1 else None
+        contract_status = (
+            "valid"
+            if (
+                contract_row is not None
+                and contract_row["contract_id"] == "institutional_communications"
+                and int(contract_row["schema_version"]) == COMMUNICATION_SCHEMA_VERSION
+                and contract_row["schema_sha256"] == COMMUNICATION_SCHEMA_SHA256
+                and contract_row["trigger_sha256"] == COMMUNICATION_TRIGGER_SHA256
+                and actual_schema_sha256 == COMMUNICATION_SCHEMA_SHA256
+                and actual_trigger_sha256 == COMMUNICATION_TRIGGER_SHA256
+            )
+            else "invalid"
+        )
+        result.update(
+            {
+                "schema_contract_status": contract_status,
+                "schema_contract_row_count": len(contract_rows),
+                "schema_contract_version": (
+                    contract_row["schema_version"] if contract_row is not None else None
+                ),
+                "expected_schema_contract_version": COMMUNICATION_SCHEMA_VERSION,
+                "stored_schema_sha256": (
+                    contract_row["schema_sha256"] if contract_row is not None else None
+                ),
+                "stored_trigger_sha256": (
+                    contract_row["trigger_sha256"] if contract_row is not None else None
+                ),
+                "actual_schema_sha256": actual_schema_sha256,
+                "actual_trigger_sha256": actual_trigger_sha256,
+                "expected_schema_sha256": COMMUNICATION_SCHEMA_SHA256,
+                "expected_trigger_sha256": COMMUNICATION_TRIGGER_SHA256,
+            }
+        )
+    except Exception as exc:  # pragma: no cover - corrupt SQLite catalogue defence
+        result["schema_contract_status"] = f"error: {type(exc).__name__}: {exc}"
+
+    policies = tables["communication_source_policy_snapshots"]
+    coverage = tables["organization_commodity_coverage"]
+    events = tables["communication_events"]
+    artifacts = tables["communication_artifacts"]
+    extractions = tables["communication_extractions"]
+    segments = tables["communication_segments"]
+    finalizations = tables["communication_extraction_finalizations"]
+
+    policy_rows = [
+        dict(row)
+        for row in connection.execute(
+            select(
+                *(
+                    policies.c[field]
+                    for field in sorted(
+                        _COMMUNICATION_REQUIRED_COLUMNS["communication_source_policy_snapshots"]
+                    )
+                )
+            )
+        ).mappings()
+    ]
+    policy_by_key = {
+        (str(row["catalogue_sha256"]), str(row["source_id"])): row for row in policy_rows
+    }
+    malformed_policy_json_count = 0
+    policy_semantic_mismatch_count = 0
+    policy_hash_mismatch_count = 0
+    policy_materials: dict[tuple[str, str], list[str]] = {}
+    policy_commodity_families: dict[tuple[str, str], list[str]] = {}
+    policy_domains: dict[tuple[str, str], list[str]] = {}
+    for policy in policy_rows:
+        key = (str(policy["catalogue_sha256"]), str(policy["source_id"]))
+        try:
+            payload = _communication_policy_payload(policy)
+            expected_hash = _canonical_dict_sha256(payload)
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError, UnicodeEncodeError):
+            malformed_policy_json_count += 1
+            continue
+        policy_materials[key] = payload["material_types"]
+        policy_commodity_families[key] = payload["commodity_families"]
+        policy_domains[key] = payload["official_domains"]
+        policy_hash_mismatch_count += expected_hash != policy["policy_sha256"]
+        is_commodity_company = policy["organization_type"] == "commodity_company"
+        if (
+            not _communication_policy_semantically_valid(policy, payload)
+            or not payload["official_domains"]
+            or any(
+                not _communication_url_matches_domains(f"https://{domain}/", [domain])
+                for domain in payload["official_domains"]
+            )
+            or not _communication_url_matches_domains(
+                policy["landing_url"], payload["official_domains"]
+            )
+            or (
+                policy["rights_basis_url"] is not None
+                and not _communication_url_matches_domains(
+                    policy["rights_basis_url"], payload["official_domains"]
+                )
+            )
+            or not set(payload["material_types"]).issubset(_COMMUNICATION_MATERIAL_TYPES)
+            or not set(payload["commodity_families"]).issubset(_COMMUNICATION_COMMODITY_FAMILIES)
+            or (is_commodity_company != bool(payload["commodity_families"]))
+        ):
+            policy_semantic_mismatch_count += 1
+
+    current_snapshot_check_status = "not_checked"
+    current_snapshot_mismatch_count: int | None = None
+    if catalogue["validation_status"] == "valid":
+        try:
+            from dalio.communications.catalogue import COMMUNICATION_SOURCES
+            from dalio.storage.communications import _source_policy_values
+
+            expected_current = {
+                (catalogue["sha256"], source.source_id): _source_policy_values(source)
+                for source in COMMUNICATION_SOURCES
+            }
+            current_snapshot_mismatch_count = 0
+            for key, policy in policy_by_key.items():
+                if key[0] != catalogue["sha256"]:
+                    continue
+                expected = expected_current.get(key)
+                if expected is None or any(
+                    policy[field] != expected_value for field, expected_value in expected.items()
+                ):
+                    current_snapshot_mismatch_count += 1
+            current_snapshot_check_status = (
+                "valid" if current_snapshot_mismatch_count == 0 else "invalid"
+            )
+        except Exception as exc:  # pragma: no cover - optional catalogue defence
+            current_snapshot_check_status = f"error: {type(exc).__name__}: {exc}"
+    event_rows = [
+        dict(row)
+        for row in connection.execute(
+            select(
+                events.c.id,
+                events.c.organization_id,
+                events.c.event_key,
+                events.c.event_type,
+                events.c.title,
+                events.c.event_date,
+                events.c.event_started_at,
+                events.c.reference_start,
+                events.c.reference_end,
+                events.c.metadata_known_at,
+                events.c.event_version_sha256,
+                events.c.supersedes_event_id,
+            )
+        ).mappings()
+    ]
+    event_by_id = {int(row["id"]): row for row in event_rows}
+    event_hash_mismatch_count = 0
+    for event in event_rows:
+        try:
+            expected_event_hash = _canonical_dict_sha256(
+                {
+                    "organization_id": event["organization_id"],
+                    "event_key": event["event_key"],
+                    "event_type": event["event_type"],
+                    "title": event["title"],
+                    "event_date": _communication_iso(event["event_date"]),
+                    "event_started_at": (
+                        _communication_iso(event["event_started_at"])
+                        if event["event_started_at"] is not None
+                        else None
+                    ),
+                    "reference_start": (
+                        _communication_iso(event["reference_start"])
+                        if event["reference_start"] is not None
+                        else None
+                    ),
+                    "reference_end": (
+                        _communication_iso(event["reference_end"])
+                        if event["reference_end"] is not None
+                        else None
+                    ),
+                }
+            )
+        except (TypeError, ValueError, UnicodeEncodeError):
+            expected_event_hash = None
+        event_hash_mismatch_count += expected_event_hash != event["event_version_sha256"]
+    event_lineage_mismatch_count = _communication_lineage_mismatch_count(
+        event_rows,
+        id_field="id",
+        predecessor_field="supersedes_event_id",
+        identity_fields=("organization_id", "event_key"),
+        clock_field="metadata_known_at",
+    )
+    artifact_rows = [
+        dict(row)
+        for row in connection.execute(
+            select(
+                artifacts.c.id,
+                artifacts.c.event_id,
+                artifacts.c.catalogue_sha256,
+                artifacts.c.source_id,
+                artifacts.c.event_version_sha256,
+                artifacts.c.artifact_key,
+                artifacts.c.artifact_role,
+                artifacts.c.material_type,
+                artifacts.c.language,
+                artifacts.c.translation_status,
+                artifacts.c.mime_type,
+                artifacts.c.origin_type,
+                artifacts.c.provenance_tier,
+                artifacts.c.rights_status,
+                artifacts.c.rights_basis_url,
+                artifacts.c.rights_note,
+                artifacts.c.acquisition_status,
+                artifacts.c.rights_checked_by,
+                artifacts.c.rights_checked_at,
+                artifacts.c.host_organization,
+                artifacts.c.publisher,
+                artifacts.c.transcriber,
+                artifacts.c.transcriber_attribution,
+                artifacts.c.published_at,
+                artifacts.c.available_at,
+                artifacts.c.retrieved_at,
+                artifacts.c.metadata_known_at,
+                artifacts.c.landing_url,
+                artifacts.c.artifact_url,
+                artifacts.c.artifact_version_sha256,
+                artifacts.c.supersedes_artifact_id,
+            )
+        ).mappings()
+    ]
+    artifact_by_id = {int(row["id"]): row for row in artifact_rows}
+
+    retrieval_table = tables["communication_artifact_retrievals"]
+    retrieval_rows = [
+        dict(row)
+        for row in connection.execute(
+            select(
+                retrieval_table.c.id,
+                retrieval_table.c.artifact_id,
+                retrieval_table.c.retrieved_at,
+                retrieval_table.c.metadata_known_at,
+                retrieval_table.c.landing_url,
+                retrieval_table.c.artifact_url,
+            )
+        ).mappings()
+    ]
+    exact_retrieval_artifact_ids: set[int] = set()
+    bad_retrieval_ids: set[int] = set()
+    orphan_retrieval_count = 0
+    retrieval_mismatch_count = 0
+    clock_mismatch_count = 0
+    for retrieval in retrieval_rows:
+        artifact_id = int(retrieval["artifact_id"])
+        artifact = artifact_by_id.get(artifact_id)
+        if artifact is None:
+            orphan_retrieval_count += 1
+            bad_retrieval_ids.add(int(retrieval["id"]))
+            continue
+        if (
+            retrieval["landing_url"] != artifact["landing_url"]
+            or retrieval["artifact_url"] != artifact["artifact_url"]
+            or retrieval["retrieved_at"] < artifact["available_at"]
+            or retrieval["metadata_known_at"] < retrieval["retrieved_at"]
+            or retrieval["metadata_known_at"] < artifact["metadata_known_at"]
+        ):
+            retrieval_mismatch_count += 1
+            bad_retrieval_ids.add(int(retrieval["id"]))
+            clock_mismatch_count += (
+                retrieval["metadata_known_at"] < retrieval["retrieved_at"]
+                or retrieval["metadata_known_at"] < artifact["metadata_known_at"]
+                or retrieval["retrieved_at"] < artifact["available_at"]
+            )
+            continue
+        if (
+            retrieval["retrieved_at"] == artifact["retrieved_at"]
+            and retrieval["metadata_known_at"] == artifact["metadata_known_at"]
+        ):
+            exact_retrieval_artifact_ids.add(artifact_id)
+    missing_base_retrieval_count = len(set(artifact_by_id) - exact_retrieval_artifact_ids)
+
+    artifact_policy_mismatches = 0
+    artifact_hash_mismatch_count = 0
+    artifact_semantic_mismatch_count = 0
+    for artifact in artifact_rows:
+        event = event_by_id.get(int(artifact["event_id"]))
+        policy_key = (str(artifact["catalogue_sha256"]), str(artifact["source_id"]))
+        policy = policy_by_key.get(policy_key)
+        materials = policy_materials.get(policy_key, [])
+        domains = policy_domains.get(policy_key, [])
+        if (
+            event is None
+            or policy is None
+            or policy["organization_id"] != event["organization_id"]
+            or policy["rights_status"] != artifact["rights_status"]
+            or policy["rights_basis_url"] != artifact["rights_basis_url"]
+            or policy["rights_note"] != artifact["rights_note"]
+            or policy["acquisition_status"] != artifact["acquisition_status"]
+            or policy["language"] != artifact["language"]
+            or artifact["material_type"] not in materials
+            or not _communication_url_matches_domains(artifact["landing_url"], domains)
+            or not _communication_url_matches_domains(artifact["artifact_url"], domains)
+            or event["event_version_sha256"] != artifact["event_version_sha256"]
+        ):
+            artifact_policy_mismatches += 1
+        artifact_semantic_mismatch_count += not _communication_artifact_semantically_valid(artifact)
+
+        try:
+            expected_artifact_hash = _canonical_dict_sha256(
+                {
+                    "event_version_sha256": artifact["event_version_sha256"],
+                    "source_id": artifact["source_id"],
+                    "catalogue_sha256": artifact["catalogue_sha256"],
+                    "artifact_key": artifact["artifact_key"],
+                    "artifact_role": artifact["artifact_role"],
+                    "material_type": artifact["material_type"],
+                    "language": artifact["language"],
+                    "translation_status": artifact["translation_status"],
+                    "mime_type": artifact["mime_type"],
+                    "origin_type": artifact["origin_type"],
+                    "provenance_tier": artifact["provenance_tier"],
+                    "rights_status": artifact["rights_status"],
+                    "acquisition_status": artifact["acquisition_status"],
+                    "rights_checked_by": artifact["rights_checked_by"],
+                    "rights_checked_at": _communication_iso(artifact["rights_checked_at"]),
+                    "host_organization": artifact["host_organization"],
+                    "publisher": artifact["publisher"],
+                    "transcriber": artifact["transcriber"],
+                    "transcriber_attribution": artifact["transcriber_attribution"],
+                    "published_at": (
+                        _communication_iso(artifact["published_at"])
+                        if artifact["published_at"] is not None
+                        else None
+                    ),
+                    "available_at": _communication_iso(artifact["available_at"]),
+                    "landing_url": artifact["landing_url"],
+                    "artifact_url": artifact["artifact_url"],
+                }
+            )
+        except (TypeError, ValueError, UnicodeEncodeError):
+            expected_artifact_hash = None
+        artifact_hash_mismatch_count += (
+            expected_artifact_hash != artifact["artifact_version_sha256"]
+        )
+        if (
+            (event is not None and artifact["metadata_known_at"] < event["metadata_known_at"])
+            or (
+                artifact["published_at"] is not None
+                and artifact["available_at"] < artifact["published_at"]
+            )
+            or artifact["retrieved_at"] < artifact["available_at"]
+            or artifact["metadata_known_at"] < artifact["retrieved_at"]
+            or artifact["metadata_known_at"] < artifact["rights_checked_at"]
+        ):
+            clock_mismatch_count += 1
+
+    artifact_lineage_rows: list[dict[str, Any]] = []
+    for artifact in artifact_rows:
+        event = event_by_id.get(int(artifact["event_id"]))
+        artifact_lineage_rows.append(
+            {
+                **artifact,
+                "event_organization_id": (event["organization_id"] if event is not None else None),
+                "event_key": event["event_key"] if event is not None else None,
+            }
+        )
+    artifact_lineage_mismatch_count = _communication_lineage_mismatch_count(
+        artifact_lineage_rows,
+        id_field="id",
+        predecessor_field="supersedes_artifact_id",
+        identity_fields=(
+            "event_organization_id",
+            "event_key",
+            "source_id",
+            "artifact_key",
+        ),
+        clock_field="metadata_known_at",
+    )
+
+    content_table = tables["communication_artifact_contents"]
+    content_rows = [
+        dict(row)
+        for row in connection.execute(
+            select(
+                *(
+                    content_table.c[field]
+                    for field in sorted(
+                        _COMMUNICATION_REQUIRED_COLUMNS["communication_artifact_contents"]
+                    )
+                )
+            )
+        ).mappings()
+    ]
+    content_by_id = {int(row["id"]): row for row in content_rows}
+    retrieval_by_id = {int(row["id"]): row for row in retrieval_rows}
+    bad_content_bindings: set[int] = set()
+    blob_path_mismatches = 0
+    blob_missing_count = 0
+    blob_size_mismatches = 0
+    blob_hash_mismatches = 0
+    blob_read_errors = 0
+    verified_content_ids: set[int] = set()
+    database = connection.engine.url.database
+    if database in {None, "", ":memory:"} and connection.dialect.name == "sqlite":
+        database = next(
+            (
+                str(row[2])
+                for row in connection.exec_driver_sql("PRAGMA database_list")
+                if str(row[1]) == "main" and str(row[2])
+            ),
+            None,
+        )
+    database_parent = (
+        Path(database).resolve().parent if database not in {None, "", ":memory:"} else None
+    )
+    for content in content_rows:
+        content_id = int(content["id"])
+        artifact = artifact_by_id.get(int(content["artifact_id"]))
+        retrieval = retrieval_by_id.get(int(content["retrieval_id"]))
+        if (
+            artifact is None
+            or retrieval is None
+            or int(retrieval["artifact_id"]) != int(content["artifact_id"])
+            or int(content["retrieval_id"]) in bad_retrieval_ids
+            or artifact["rights_status"] not in {"cleared", "internal_only"}
+            or content["captured_at"] < retrieval["retrieved_at"]
+            or content["captured_at"] < retrieval["metadata_known_at"]
+        ):
+            bad_content_bindings.add(content_id)
+        if retrieval is not None and (
+            content["captured_at"] < retrieval["retrieved_at"]
+            or content["captured_at"] < retrieval["metadata_known_at"]
+        ):
+            clock_mismatch_count += 1
+
+        digest = str(content["content_sha256"])
+        relative_blob = Path(str(content["blob_path"]))
+        parts = relative_blob.parts
+        filename = parts[-1] if parts else ""
+        path_has_content_address = (
+            len(parts) == 5
+            and parts[:3] == ("artifacts", "communications", "sha256")
+            and parts[3] == digest[:2]
+            and filename == digest
+        )
+        if database_parent is None or not path_has_content_address:
+            blob_path_mismatches += 1
+            continue
+        candidate = (database_parent / relative_blob).resolve()
+        try:
+            candidate.relative_to(database_parent)
+        except ValueError:
+            blob_path_mismatches += 1
+            continue
+        if not candidate.is_file():
+            blob_missing_count += 1
+            continue
+        try:
+            actual_size = candidate.stat().st_size
+            actual_hash = _file_sha256(candidate)
+        except OSError:
+            blob_read_errors += 1
+            continue
+        size_matches = actual_size == content["size_bytes"]
+        hash_matches = actual_hash == content["content_sha256"]
+        blob_size_mismatches += not size_matches
+        blob_hash_mismatches += not hash_matches
+        if size_matches and hash_matches:
+            verified_content_ids.add(content_id)
+
+    content_lineage_mismatch_count = _communication_lineage_mismatch_count(
+        content_rows,
+        id_field="id",
+        predecessor_field="supersedes_content_id",
+        identity_fields=("artifact_id",),
+        clock_field="captured_at",
+    )
+
+    coverage_rows = [
+        dict(row)
+        for row in connection.execute(
+            select(
+                coverage.c.id,
+                coverage.c.organization_id,
+                coverage.c.coverage_key,
+                coverage.c.commodity_family,
+                coverage.c.exposure_role,
+                coverage.c.mapping_status,
+                coverage.c.effective_from,
+                coverage.c.effective_to,
+                coverage.c.source_id,
+                coverage.c.catalogue_sha256,
+                coverage.c.evidence_url,
+                coverage.c.evidence_note,
+                coverage.c.published_at,
+                coverage.c.available_at,
+                coverage.c.retrieved_at,
+                coverage.c.metadata_known_at,
+                coverage.c.coverage_version_sha256,
+                coverage.c.supersedes_exposure_id,
+            )
+        ).mappings()
+    ]
+    coverage_policy_mismatches = 0
+    coverage_hash_mismatch_count = 0
+    for row in coverage_rows:
+        policy_key = (str(row["catalogue_sha256"]), str(row["source_id"]))
+        policy = policy_by_key.get(policy_key)
+        if (
+            policy is None
+            or policy["organization_id"] != row["organization_id"]
+            or policy["organization_type"] != "commodity_company"
+            or row["commodity_family"] not in policy_commodity_families.get(policy_key, [])
+            or row["evidence_note"] != policy["coverage_note"]
+            or not _communication_url_matches_domains(
+                row["evidence_url"], policy_domains.get(policy_key, [])
+            )
+        ):
+            coverage_policy_mismatches += 1
+        try:
+            expected_coverage_hash = _canonical_dict_sha256(
+                {
+                    "organization_id": row["organization_id"],
+                    "coverage_key": row["coverage_key"],
+                    "commodity_family": row["commodity_family"],
+                    "exposure_role": row["exposure_role"],
+                    "mapping_status": row["mapping_status"],
+                    "effective_from": _communication_iso(row["effective_from"]),
+                    "effective_to": (
+                        _communication_iso(row["effective_to"])
+                        if row["effective_to"] is not None
+                        else None
+                    ),
+                    "source_id": row["source_id"],
+                    "catalogue_sha256": row["catalogue_sha256"],
+                    "evidence_url": row["evidence_url"],
+                    "evidence_note": row["evidence_note"],
+                    "published_at": (
+                        _communication_iso(row["published_at"])
+                        if row["published_at"] is not None
+                        else None
+                    ),
+                    "available_at": _communication_iso(row["available_at"]),
+                    "retrieved_at": _communication_iso(row["retrieved_at"]),
+                }
+            )
+        except (TypeError, ValueError, UnicodeEncodeError):
+            expected_coverage_hash = None
+        coverage_hash_mismatch_count += expected_coverage_hash != row["coverage_version_sha256"]
+        if (
+            (row["published_at"] is not None and row["available_at"] < row["published_at"])
+            or row["retrieved_at"] < row["available_at"]
+            or row["metadata_known_at"] < row["retrieved_at"]
+        ):
+            clock_mismatch_count += 1
+
+    coverage_lineage_mismatch_count = _communication_lineage_mismatch_count(
+        coverage_rows,
+        id_field="id",
+        predecessor_field="supersedes_exposure_id",
+        identity_fields=("organization_id", "coverage_key"),
+        clock_field="metadata_known_at",
+    )
+    superseded_coverage_ids = {
+        int(row["supersedes_exposure_id"])
+        for row in coverage_rows
+        if row["supersedes_exposure_id"] is not None
+    }
+    coverage_heads: dict[tuple[Any, ...], list[dict[str, Any]]] = defaultdict(list)
+    for row in coverage_rows:
+        if int(row["id"]) not in superseded_coverage_ids:
+            coverage_heads[
+                (row["organization_id"], row["commodity_family"], row["exposure_role"])
+            ].append(row)
+    for heads in coverage_heads.values():
+        for left_index, left in enumerate(heads):
+            left_end = left["effective_to"] or date.max
+            for right in heads[left_index + 1 :]:
+                right_end = right["effective_to"] or date.max
+                coverage_lineage_mismatch_count += (
+                    left["effective_from"] <= right_end and right["effective_from"] <= left_end
+                )
+
+    stored_catalogue_hashes = {
+        str(row["catalogue_sha256"]) for row in (*policy_rows, *artifact_rows, *coverage_rows)
+    }
+    untrusted_catalogue_hashes = sorted(stored_catalogue_hashes - {str(catalogue["sha256"])})
+
+    extraction_rows = [
+        dict(row)
+        for row in connection.execute(
+            select(
+                extractions.c.id,
+                extractions.c.artifact_content_id,
+                extractions.c.extracted_at,
+            )
+        ).mappings()
+    ]
+    extraction_ids = {int(row["id"]) for row in extraction_rows}
+    extraction_by_id = {int(row["id"]): row for row in extraction_rows}
+    bad_extraction_bindings: set[int] = set()
+    for extraction in extraction_rows:
+        extraction_id = int(extraction["id"])
+        content_id = int(extraction["artifact_content_id"])
+        content = content_by_id.get(content_id)
+        if (
+            content is None
+            or content_id in bad_content_bindings
+            or content_id not in verified_content_ids
+            or extraction["extracted_at"] < content["captured_at"]
+        ):
+            bad_extraction_bindings.add(extraction_id)
+        if content is not None and extraction["extracted_at"] < content["captured_at"]:
+            clock_mismatch_count += 1
+
+    segment_rows = [
+        dict(row)
+        for row in connection.execute(
+            select(
+                *(
+                    segments.c[field]
+                    for field in ("extraction_id", *_COMMUNICATION_CANONICAL_SEGMENT_FIELDS)
+                ),
+                segments.c.text_sha256,
+                segments.c.char_count,
+            ).order_by(segments.c.extraction_id, segments.c.ordinal)
+        ).mappings()
+    ]
+    segments_by_extraction: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    text_hash_mismatch_ids: set[int] = set()
+    char_count_mismatch_ids: set[int] = set()
+    text_hash_mismatch_count = 0
+    char_count_mismatch_count = 0
+    for segment in segment_rows:
+        extraction_id = int(segment["extraction_id"])
+        segments_by_extraction[extraction_id].append(segment)
+        text_value = segment["text"]
+        if isinstance(text_value, str):
+            try:
+                expected_text_hash = hashlib.sha256(text_value.encode("utf-8")).hexdigest()
+            except UnicodeEncodeError:
+                expected_text_hash = None
+            expected_char_count = len(text_value)
+        else:
+            expected_text_hash = None
+            expected_char_count = None
+        if expected_text_hash != segment["text_sha256"]:
+            text_hash_mismatch_count += 1
+            text_hash_mismatch_ids.add(extraction_id)
+        if expected_char_count != segment["char_count"]:
+            char_count_mismatch_count += 1
+            char_count_mismatch_ids.add(extraction_id)
+
+    finalization_rows = [
+        dict(row)
+        for row in connection.execute(
+            select(
+                finalizations.c.extraction_id,
+                finalizations.c.finalized_at,
+                finalizations.c.segment_count,
+                finalizations.c.total_char_count,
+                finalizations.c.corpus_sha256,
+                finalizations.c.canonicalization_version,
+            )
+        ).mappings()
+    ]
+    finalized_ids = {int(row["extraction_id"]) for row in finalization_rows}
+    bad_structure_ids: set[int] = set()
+    unsupported_canonicalization_ids: set[int] = set()
+    corpus_hash_mismatch_ids: set[int] = set()
+    canonicalization_error_ids: set[int] = set()
+    for finalization in finalization_rows:
+        extraction_id = int(finalization["extraction_id"])
+        extraction = extraction_by_id.get(extraction_id)
+        extraction_segments = segments_by_extraction.get(extraction_id, [])
+        ordinals = [segment["ordinal"] for segment in extraction_segments]
+        stored_char_counts = [segment["char_count"] for segment in extraction_segments]
+        stored_char_sum = (
+            sum(stored_char_counts)
+            if all(isinstance(value, int) for value in stored_char_counts)
+            else None
+        )
+        exact_char_sum = (
+            sum(len(segment["text"]) for segment in extraction_segments)
+            if all(isinstance(segment["text"], str) for segment in extraction_segments)
+            else None
+        )
+        if (
+            extraction_id not in extraction_ids
+            or len(extraction_segments) != finalization["segment_count"]
+            or ordinals != list(range(1, len(extraction_segments) + 1))
+            or stored_char_sum != finalization["total_char_count"]
+            or exact_char_sum != finalization["total_char_count"]
+        ):
+            bad_structure_ids.add(extraction_id)
+        if extraction is not None and finalization["finalized_at"] < extraction["extracted_at"]:
+            clock_mismatch_count += 1
+            bad_structure_ids.add(extraction_id)
+        if finalization["canonicalization_version"] != _COMMUNICATION_CANONICALIZATION:
+            unsupported_canonicalization_ids.add(extraction_id)
+            continue
+        try:
+            expected_corpus_hash = _communication_corpus_sha256(extraction_segments)
+        except (KeyError, TypeError, ValueError, UnicodeEncodeError):
+            canonicalization_error_ids.add(extraction_id)
+            continue
+        if expected_corpus_hash != finalization["corpus_sha256"]:
+            corpus_hash_mismatch_ids.add(extraction_id)
+
+    locally_invalid_finalizations = (
+        bad_extraction_bindings
+        | text_hash_mismatch_ids
+        | char_count_mismatch_ids
+        | bad_structure_ids
+        | unsupported_canonicalization_ids
+        | corpus_hash_mismatch_ids
+        | canonicalization_error_ids
+    )
+    result.update(
+        {
+            "policy_snapshot_json_malformed_count": malformed_policy_json_count,
+            "policy_snapshot_semantic_mismatch_count": policy_semantic_mismatch_count,
+            "policy_snapshot_sha256_mismatch_count": policy_hash_mismatch_count,
+            "current_catalogue_snapshot_check_status": current_snapshot_check_status,
+            "current_catalogue_snapshot_mismatch_count": current_snapshot_mismatch_count,
+            "untrusted_catalogue_hash_count": len(untrusted_catalogue_hashes),
+            "untrusted_catalogue_hashes": untrusted_catalogue_hashes,
+            "event_version_sha256_mismatch_count": event_hash_mismatch_count,
+            "artifact_version_sha256_mismatch_count": artifact_hash_mismatch_count,
+            "artifact_semantic_mismatch_count": artifact_semantic_mismatch_count,
+            "coverage_version_sha256_mismatch_count": coverage_hash_mismatch_count,
+            "event_lineage_mismatch_count": event_lineage_mismatch_count,
+            "artifact_lineage_mismatch_count": artifact_lineage_mismatch_count,
+            "coverage_lineage_mismatch_count": coverage_lineage_mismatch_count,
+            "content_lineage_mismatch_count": content_lineage_mismatch_count,
+            "communication_clock_mismatch_count": clock_mismatch_count,
+            "artifact_policy_binding_mismatch_count": artifact_policy_mismatches,
+            "commodity_policy_binding_mismatch_count": coverage_policy_mismatches,
+            "policy_binding_mismatch_count": (
+                artifact_policy_mismatches + coverage_policy_mismatches
+            ),
+            "missing_base_artifact_retrieval_count": missing_base_retrieval_count,
+            "orphan_artifact_retrieval_count": orphan_retrieval_count,
+            "artifact_retrieval_mismatch_count": retrieval_mismatch_count,
+            "content_retrieval_binding_mismatch_count": len(bad_content_bindings),
+            "archived_blob_path_mismatch_count": blob_path_mismatches,
+            "archived_blob_missing_count": blob_missing_count,
+            "archived_blob_size_mismatch_count": blob_size_mismatches,
+            "archived_blob_sha256_mismatch_count": blob_hash_mismatches,
+            "archived_blob_read_error_count": blob_read_errors,
+            "verified_archived_blob_count": len(verified_content_ids),
+            "extraction_content_binding_mismatch_count": len(bad_extraction_bindings),
+            "incomplete_extraction_count": len(extraction_ids - finalized_ids),
+            "finalized_segment_count": sum(
+                len(segments_by_extraction.get(extraction_id, []))
+                for extraction_id in finalized_ids
+            ),
+            "unfinalized_segment_count": sum(
+                len(extraction_segments)
+                for extraction_id, extraction_segments in segments_by_extraction.items()
+                if extraction_id not in finalized_ids
+            ),
+            "segment_text_sha256_mismatch_count": text_hash_mismatch_count,
+            "segment_char_count_mismatch_count": char_count_mismatch_count,
+            "finalization_structure_mismatch_count": len(bad_structure_ids),
+            "unsupported_canonicalization_count": len(unsupported_canonicalization_ids),
+            "corpus_sha256_mismatch_count": len(corpus_hash_mismatch_ids),
+            "canonicalization_error_count": len(canonicalization_error_ids),
+            "valid_finalized_extraction_count": len(finalized_ids - locally_invalid_finalizations),
+        }
+    )
+
+    failure_counts = (
+        ("policy_snapshot_json", result["policy_snapshot_json_malformed_count"]),
+        ("policy_snapshot_semantics", result["policy_snapshot_semantic_mismatch_count"]),
+        ("policy_snapshot_sha256", result["policy_snapshot_sha256_mismatch_count"]),
+        ("current_catalogue_snapshot", result["current_catalogue_snapshot_mismatch_count"]),
+        ("untrusted_catalogue_hash", result["untrusted_catalogue_hash_count"]),
+        ("event_version_sha256", result["event_version_sha256_mismatch_count"]),
+        ("artifact_version_sha256", result["artifact_version_sha256_mismatch_count"]),
+        ("artifact_semantics", result["artifact_semantic_mismatch_count"]),
+        ("coverage_version_sha256", result["coverage_version_sha256_mismatch_count"]),
+        ("event_lineage", result["event_lineage_mismatch_count"]),
+        ("artifact_lineage", result["artifact_lineage_mismatch_count"]),
+        ("coverage_lineage", result["coverage_lineage_mismatch_count"]),
+        ("content_lineage", result["content_lineage_mismatch_count"]),
+        ("communication_clocks", result["communication_clock_mismatch_count"]),
+        ("policy_binding", result["policy_binding_mismatch_count"]),
+        ("missing_base_artifact_retrieval", result["missing_base_artifact_retrieval_count"]),
+        ("orphan_artifact_retrieval", result["orphan_artifact_retrieval_count"]),
+        ("artifact_retrieval", result["artifact_retrieval_mismatch_count"]),
+        ("content_retrieval_binding", result["content_retrieval_binding_mismatch_count"]),
+        ("archived_blob_path", result["archived_blob_path_mismatch_count"]),
+        ("archived_blob_missing", result["archived_blob_missing_count"]),
+        ("archived_blob_size", result["archived_blob_size_mismatch_count"]),
+        ("archived_blob_sha256", result["archived_blob_sha256_mismatch_count"]),
+        ("archived_blob_read", result["archived_blob_read_error_count"]),
+        ("extraction_content_binding", result["extraction_content_binding_mismatch_count"]),
+        ("segment_text_sha256", result["segment_text_sha256_mismatch_count"]),
+        ("segment_char_count", result["segment_char_count_mismatch_count"]),
+        ("finalization_structure", result["finalization_structure_mismatch_count"]),
+        ("canonicalization_version", result["unsupported_canonicalization_count"]),
+        ("corpus_sha256", result["corpus_sha256_mismatch_count"]),
+        ("canonicalization", result["canonicalization_error_count"]),
+    )
+    failures = [reason for reason, count in failure_counts if count]
+    if trigger_check_status != "valid":
+        failures.append("required_triggers")
+    if foreign_key_check_status != "valid":
+        failures.append("foreign_keys")
+    if contract_status != "valid":
+        failures.append("schema_contract")
+    if catalogue["validation_status"] == "valid" and current_snapshot_check_status != "valid":
+        failures.append("current_catalogue_snapshot_check")
+    result["integrity_failures"] = failures
+    result["integrity_status"] = "invalid" if failures else "valid"
+    return result
+
+
+def _communications_inventory(
+    connection: Connection,
+    tables: dict[str, Table],
+) -> dict[str, Any]:
+    """Describe collected communication evidence without implying archive completeness."""
+    catalogue = _communication_catalogue_summary()
+    organizations = tables.get("organizations")
+    policies = tables.get("communication_source_policy_snapshots")
+    coverage = tables.get("organization_commodity_coverage")
+    events = tables.get("communication_events")
+    artifacts = tables.get("communication_artifacts")
+    retrievals = tables.get("communication_artifact_retrievals")
+    contents = tables.get("communication_artifact_contents")
+    extractions = tables.get("communication_extractions")
+    segments = tables.get("communication_segments")
+    finalizations = tables.get("communication_extraction_finalizations")
+
+    def counts_by(table: Table | None, field: str) -> list[dict[str, Any]]:
+        if table is None or field not in table.c:
+            return []
+        return _execute_rows(
+            connection,
+            select(table.c[field].label(field), func.count().label("row_count"))
+            .group_by(table.c[field])
+            .order_by(table.c[field]),
+        )
+
+    event_version_count = _count(connection, events)
+    logical_event_count: int | None = None
+    first_event_date = None
+    latest_event_date = None
+    if events is not None and {"organization_id", "event_key", "event_date"}.issubset(
+        events.c.keys()
+    ):
+        logical_event_count = len(
+            connection.execute(
+                select(events.c.organization_id, events.c.event_key).distinct()
+            ).all()
+        )
+        first_event_date, latest_event_date = connection.execute(
+            select(func.min(events.c.event_date), func.max(events.c.event_date))
+        ).one()
+
+    artifact_version_count = _count(connection, artifacts)
+    represented_source_count: int | None = None
+    stored_content_artifact_count: int | None = None
+    archived_artifact_count: int | None = None
+    first_available_at = None
+    latest_available_at = None
+    catalogue_hashes: set[str] = set()
+    if artifacts is not None:
+        if "source_id" in artifacts.c:
+            represented_source_count = int(
+                connection.scalar(select(func.count(func.distinct(artifacts.c.source_id)))) or 0
+            )
+        if "available_at" in artifacts.c:
+            first_available_at, latest_available_at = connection.execute(
+                select(func.min(artifacts.c.available_at), func.max(artifacts.c.available_at))
+            ).one()
+    if contents is not None and "artifact_id" in contents.c:
+        stored_content_artifact_count = int(
+            connection.scalar(select(func.count(func.distinct(contents.c.artifact_id)))) or 0
+        )
+        archived_artifact_count = stored_content_artifact_count
+    for table in (policies, coverage, artifacts):
+        if table is not None and "catalogue_sha256" in table.c:
+            catalogue_hashes.update(
+                str(value)
+                for value in connection.scalars(select(table.c.catalogue_sha256).distinct()).all()
+                if value is not None
+            )
+
+    integrity = _communication_integrity_inventory(
+        connection,
+        tables,
+        catalogue=catalogue,
+    )
+    return {
+        "catalogue_validation_status": catalogue["validation_status"],
+        "catalogue_source_policy_count": catalogue["source_policy_count"],
+        "catalogue_organization_count": catalogue["organization_count"],
+        "catalogue_sha256": catalogue["sha256"],
+        "catalogue_error": catalogue["error"],
+        "archive_coverage_status": "not_measured",
+        "archive_coverage_note": (
+            "No complete event universe is pinned yet; counts describe stored evidence only."
+        ),
+        "integrity_assurance_scope": "structural_byte_hash_reproducibility",
+        "transcript_semantic_fidelity_status": "not_verified",
+        "extractor_execution_trust_status": "not_verified",
+        "integrity_assurance_note": (
+            "Valid integrity and available readiness prove structural, byte, and hash "
+            "reproducibility only; they do not prove transcript semantic fidelity or "
+            "trusted extractor execution."
+        ),
+        "table_presence": {name: name in tables for name in _COMMUNICATION_TABLE_NAMES},
+        "organization_count": _count(connection, organizations),
+        "source_policy_snapshot_count": _count(connection, policies),
+        "commodity_mapping_count": _count(connection, coverage),
+        "event_count": logical_event_count,
+        "event_version_count": event_version_count,
+        "artifact_version_count": artifact_version_count,
+        "artifact_retrieval_count": _count(connection, retrievals),
+        "artifact_content_count": _count(connection, contents),
+        "stored_content_artifact_count": stored_content_artifact_count,
+        "archived_artifact_count": archived_artifact_count,
+        "extraction_count": _count(connection, extractions),
+        "finalized_extraction_count": _count(connection, finalizations),
+        "segment_count": _count(connection, segments),
+        "represented_source_count": represented_source_count,
+        "stored_catalogue_hashes": sorted(catalogue_hashes),
+        "first_event_date": _json_value(first_event_date),
+        "latest_event_date": _json_value(latest_event_date),
+        "first_available_at": _json_value(first_available_at),
+        "latest_available_at": _json_value(latest_available_at),
+        "events_by_type": counts_by(events, "event_type"),
+        "artifacts_by_role": counts_by(artifacts, "artifact_role"),
+        "artifacts_by_origin": counts_by(artifacts, "origin_type"),
+        "artifacts_by_provenance": counts_by(artifacts, "provenance_tier"),
+        "artifacts_by_rights": counts_by(artifacts, "rights_status"),
+        "artifacts_by_acquisition": counts_by(artifacts, "acquisition_status"),
+        "commodity_mappings_by_status": counts_by(coverage, "mapping_status"),
+        "segments_by_kind": counts_by(segments, "segment_kind"),
+        "segments_by_speaker_side": counts_by(segments, "speaker_side"),
+        "finalizations_by_canonicalization": counts_by(finalizations, "canonicalization_version"),
+        **integrity,
+    }
+
+
 def _cross_border_inventory(
     connection: Connection,
     table: Table | None,
@@ -2021,6 +3924,22 @@ def _report_readiness(reports: dict[str, Any]) -> str:
     return "empty"
 
 
+def _communications_readiness(communications: dict[str, Any]) -> str:
+    if communications["catalogue_validation_status"] != "valid":
+        return "policy_invalid"
+    if not all(communications["table_presence"].values()):
+        return "table_absent"
+    if communications["integrity_status"] != "valid":
+        return "invalid"
+    if communications["event_version_count"] == 0:
+        return "empty"
+    if communications["valid_finalized_extraction_count"] > 0:
+        return "available"
+    if communications["artifact_content_count"] > 0:
+        return "artifacts_unextracted"
+    return "metadata_only"
+
+
 def build_observatory_inventory(
     engine: Engine,
     *,
@@ -2064,6 +3983,7 @@ def build_observatory_inventory(
             latest_release_ids,
         )
         reports = _reports_inventory(connection, tables)
+        communications = _communications_inventory(connection, tables)
         cross_border = _cross_border_inventory(
             connection,
             tables.get("cross_border_positions"),
@@ -2089,6 +4009,7 @@ def build_observatory_inventory(
         "debt_holder_positions": _availability(debt_holders["current_row_count"]),
         "allocator_disclosures": _availability(allocators["current_row_count"]),
         "report_evidence": _report_readiness(reports),
+        "institutional_communications": _communications_readiness(communications),
         "bilateral_positions": (
             "table_absent"
             if not cross_border["table_present"]
@@ -2120,6 +4041,7 @@ def build_observatory_inventory(
         "debt_holders": debt_holders,
         "allocators": allocators,
         "reports": reports,
+        "communications": communications,
         "cross_border_positions": cross_border,
         "market_history": market_history,
         "readiness": readiness,
@@ -2135,6 +4057,7 @@ def render_inventory_summary(inventory: dict[str, Any]) -> str:
     debt = inventory["debt_holders"]
     allocators = inventory["allocators"]
     reports = inventory["reports"]
+    communications = inventory["communications"]
     positions = inventory["cross_border_positions"]
     market = inventory["market_history"]
     commodities = market["commodities"]
@@ -2167,6 +4090,16 @@ def render_inventory_summary(inventory: dict[str, Any]) -> str:
             f"{count_text(reports['page_count'])} pages; "
             f"{count_text(reports['claim_count'])} claims; "
             f"{count_text(reports['review_count'])} human decisions",
+            "Institutional communications: "
+            f"{communications['catalogue_source_policy_count']} source policies; "
+            f"{communications['catalogue_organization_count']} organizations; "
+            f"{count_text(communications['event_version_count'])} event versions; "
+            f"{count_text(communications['artifact_version_count'])} artifact versions; "
+            f"{count_text(communications['artifact_content_count'])} content captures; "
+            f"{count_text(communications['finalized_extraction_count'])} finalized extractions; "
+            f"{count_text(communications['finalized_segment_count'])} finalized segments; "
+            f"readiness {inventory['readiness']['institutional_communications']}; "
+            "semantic fidelity/extractor trust not verified; archive coverage not measured",
             position_line,
             f"Commodity history: {commodities['ready_series']}/"
             f"{commodities['expected_series']} expected series ready; "

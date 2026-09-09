@@ -13,6 +13,18 @@ The live local database is:
 
 `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\dalio.db`
 
+The institutional-communications source-policy catalogue is:
+
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\src\dalio\communications\catalogue.py`
+
+The reserved content-addressed root for future, rights-cleared communication
+artifacts is:
+
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\artifacts\communications`
+
+That artifact directory is intentionally absent/empty in the first slice. A
+catalogued link is not permission to archive or transcribe its content.
+
 The latest human-readable liquidity brief is:
 
 `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\snapshots\liquidity_latest.md`
@@ -87,10 +99,29 @@ backup-file SHA-256
 The live database after adding only the empty immutable table and its guards is
 SHA-256 `e483fe67b35a07d2d3ad031c3c6ad2fe8462a1baf64a48731f61126c255bcc74`.
 
+The SQLite-native backup made immediately before installing the empty
+institutional-communications schema is:
+
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\backups\dalio-before-communications-schema-2026-09-09.db`
+
+Its source database SHA-256 was the preceding
+`e483fe67b35a07d2d3ad031c3c6ad2fe8462a1baf64a48731f61126c255bcc74`.
+The native backup passed row-by-row schema/content, integrity and foreign-key
+verification and has backup-file SHA-256
+`7857fde8fae443029ec8c6a8427ca717c5d66b0f5f92691e84320f4c6ef71b93`.
+After adding only the empty communications tables and guards, the live database
+has SHA-256 `8c982d3449c335129d6ffc6906409d40c310959f2c8b016a23b39076cd9e63db`.
+Its pinned communications table/index fingerprint is
+`1fe8247a31b767f933b3c6f8646ee8b2536da2655bc8fc087ef99fe5f68dedb3`
+and trigger fingerprint is
+`62d2f2c2c9b152aeede8d4d4c203f05c24aba5697b311e534956053f6a315007`.
+
 ## Validated refresh inventory (2026-09-09)
 
 The counts below are from the fully validated live `dalio.db` after installing
-the empty report-decision ledger. No review or claim rows were added.
+the empty institutional-communications schema on top of the empty
+report-decision ledger. No communication evidence, review or claim rows were
+added.
 Run the read-only inventory commands below to reproduce the inventory.
 
 | Evidence | Stored coverage |
@@ -106,6 +137,7 @@ Run the read-only inventory commands below to reproduce the inventory.
 | Official institutional reports | 10 documents; 852 extracted pages; 0 verified claims |
 | Report review queue | 5 latest documents; 20 unverified model drafts; 0 promoted claims |
 | Human report decisions | 0 decisions; 0 verified claims; blank review only |
+| Institutional communications | 20 source policies / 18 organizations; valid schema/integrity contract; 0 events; 0 artifacts; 0 content captures; 0 extracted segments; archive coverage not measured |
 | World Bank monthly commodity history | 63,179 rows; 70 prices + 17 indices; 1960-01–2026-08 |
 | Official-money history | 5,794 rows; 10/10 pinned native series |
 | Separate liquidity frontier | 20,676 rows; 22/22 series (3 BIS + 19 OFR) |
@@ -130,6 +162,7 @@ dalio-audit-observatory --db data/dalio.db --json
 | `reference/report_claim_candidates.json` | Checked, versioned candidate propositions and exact page locators for the report-review queue | Review input only; structural/excerpt checks do not make a candidate verified |
 | `artifacts/allocators/sha256/` | Content-addressed copies of official allocator PDFs | Durable evidence; do not treat as a disposable cache |
 | `artifacts/reports/sha256/` | Content-addressed copies of official central-bank/IMF/BIS PDFs | Durable evidence; do not treat as a disposable cache |
+| `artifacts/communications/` | Reserved content-addressed home for exact rights-cleared press-conference, earnings-communication, letter, caption and media artifacts | Empty by design until an exact artifact passes a documented rights review |
 | `artifacts/worldbank_commodities/<hash-prefix>/` | Exact World Bank Pink Sheet XLSX vintages and deterministic native-series catalogues, addressed by workbook SHA-256 | Durable evidence; do not treat as a disposable cache |
 | `artifacts/money_liquidity/` | Content-addressed validated official-money response bodies and per-series missingness ledgers | Durable release evidence; paths and full hashes are bound in `data_release_artifacts` and rechecked by inventory |
 | `artifacts/liquidity_frontier/` | Content-addressed BIS/OFR responses, provider semantic catalogues and OFR per-series payload/missingness ledgers | Durable release evidence; paths and full hashes are bound in `data_release_artifacts` and rechecked by inventory |
@@ -167,6 +200,20 @@ Different questions require different storage shapes:
 - `allocator_facts` contains 48 AP2/AP3/AP4 H1 2026 disclosure facts tied to
   exact PDF artifacts and physical pages. Administrative transfers, allocations
   and exposures remain distinct, and publisher rounding is preserved.
+- Institutional communications use a sibling ledger rather than the bounded
+  report manifest. Stable organizations, effective-dated commodity selection
+  mappings, versioned events, representation-specific artifacts, retrieval-bound
+  byte captures, reproducible extractions and speaker-addressable segments remain separate. Host, historical
+  publisher, transcriber/caption origin, rights state, publication/availability/
+  retrieval clocks and page/paragraph/timecode locators are explicit. The live
+  tables are empty: the 20-policy catalogue covers 18 organizations and is
+  source-discovery policy, not a downloaded corpus or evidence that an archive
+  is complete. Immutable link metadata can precede a rights-cleared byte capture;
+  changed bytes at the same URL append another capture rather than rewriting the
+  artifact. Inventory can rehash archived bytes and deterministic segment
+  structures, but those checks do not prove transcript fidelity or trusted
+  extractor execution; later text must pass a trusted-execution or named-human
+  semantic review boundary before it supports analysis.
 - World Bank Pink Sheet observations retain all 71 `Monthly Prices` columns
   (70 prices plus the publisher's natural-gas index) and all 16 `Monthly Indices`
   columns as separate monthly `WLD` series. The raw benchmark label, stable
@@ -472,6 +519,12 @@ deterministic input layout.
 
 ## Known gaps
 
+- Institutional communication history has not yet been collected. The 20-policy,
+  18-organization catalogue covers a balanced first-party discovery universe, but no complete
+  event universe is pinned, no source authorizes automated content acquisition,
+  no transcript/subtitle/letter bytes or segments exist, and no communication
+  text can feed scenarios or investor conclusions. The next slice needs preserved
+  archive-index evidence and per-artifact rights review before ingestion.
 - None of the 852 report pages has yet become a named, human-verified atomic
   claim, so central-bank/IMF/BIS conclusions do not yet feed risk analysis. The
   bounded 20-item review packet has shipped, but every item remains an

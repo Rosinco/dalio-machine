@@ -10,6 +10,8 @@ and citation tables protected by foreign keys and append-only database triggers.
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 import sqlite3
 import tempfile
@@ -18,6 +20,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     Column,
     Date,
@@ -25,6 +28,7 @@ from sqlalchemy import (
     Engine,
     Float,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     String,
@@ -32,6 +36,7 @@ from sqlalchemy import (
     UniqueConstraint,
     create_engine,
     event,
+    inspect,
     text,
 )
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -355,6 +360,993 @@ class AllocatorFact(Base):
     __table_args__ = (
         UniqueConstraint("release_id", "fact_key", name="uq_allocator_release_fact"),
         Index("ix_allocator_lookup", "fund", "as_of_date", "record_type", "item_code"),
+    )
+
+
+class CommunicationSchemaContract(Base):
+    """Pinned SQLite DDL contract for the institutional-communications ledger."""
+
+    __tablename__ = "communication_schema_contract"
+
+    contract_id = Column(String(64), primary_key=True)
+    schema_version = Column(Integer, nullable=False)
+    schema_sha256 = Column(String(64), nullable=False)
+    trigger_sha256 = Column(String(64), nullable=False)
+    installed_at = Column(DateTime, nullable=False)
+
+    __table_args__ = (
+        CheckConstraint(
+            "contract_id = 'institutional_communications'",
+            name="ck_communication_schema_contract_id",
+        ),
+        CheckConstraint(
+            "schema_version = 1",
+            name="ck_communication_schema_contract_version",
+        ),
+        CheckConstraint(
+            "length(schema_sha256) = 64 "
+            "AND schema_sha256 NOT GLOB '*[^0-9a-f]*' "
+            "AND length(trigger_sha256) = 64 "
+            "AND trigger_sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_communication_schema_contract_sha256",
+        ),
+    )
+
+
+class Organization(Base):
+    """Stable identity anchor; descriptive metadata remains catalogue-versioned."""
+
+    __tablename__ = "organizations"
+
+    organization_id = Column(String(96), primary_key=True)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
+
+    __table_args__ = (
+        CheckConstraint(
+            "length(organization_id) BETWEEN 1 AND 96 "
+            "AND organization_id = trim(organization_id) "
+            "AND substr(organization_id, 1, 1) GLOB '[a-z]' "
+            "AND organization_id NOT GLOB '*[^a-z0-9_]*'",
+            name="ck_organization_id",
+        ),
+    )
+
+
+class CommunicationSourcePolicySnapshot(Base):
+    """Immutable copy of one validated source policy used by persisted metadata.
+
+    The checked-in catalogue is executable policy, while this table makes the
+    exact policy consulted for an old write auditable after the Python catalogue
+    changes.  Rows inserted outside the validated helper are not a trust
+    boundary; SQLite constraints only provide structural defence in depth.
+    """
+
+    __tablename__ = "communication_source_policy_snapshots"
+
+    catalogue_sha256 = Column(String(64), primary_key=True)
+    source_id = Column(String(96), primary_key=True)
+    organization_id = Column(
+        String(96),
+        ForeignKey("organizations.organization_id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    organization_name = Column(String(192), nullable=False)
+    organization_type = Column(String(32), nullable=False)
+    jurisdiction = Column(String(32), nullable=False)
+    language = Column(String(16), nullable=False)
+    landing_url = Column(Text, nullable=False)
+    official_domains_json = Column(Text, nullable=False)
+    host_organization = Column(String(192), nullable=False)
+    publisher = Column(String(192), nullable=False)
+    transcriber = Column(String(192), nullable=True)
+    transcriber_attribution = Column(String(32), nullable=False)
+    material_types_json = Column(Text, nullable=False)
+    commodity_families_json = Column(Text, nullable=False)
+    verified_archive_start_year = Column(Integer, nullable=True)
+    coverage_note = Column(Text, nullable=False)
+    source_provenance_tier = Column(String(32), nullable=False)
+    rights_status = Column(String(32), nullable=False)
+    rights_basis_url = Column(Text, nullable=True)
+    rights_note = Column(Text, nullable=False)
+    acquisition_status = Column(String(32), nullable=False)
+    acquisition_note = Column(Text, nullable=False)
+    automated_collection_allowed = Column(Boolean, nullable=False)
+    rights_checked_by = Column(String(192), nullable=True)
+    rights_checked_at = Column(DateTime, nullable=True)
+    catalogue_evaluated_at = Column(DateTime, nullable=False)
+    policy_sha256 = Column(String(64), nullable=False)
+    persisted_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
+
+    __table_args__ = (
+        CheckConstraint(
+            "length(catalogue_sha256) = 64 AND catalogue_sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_communication_policy_catalogue_sha256",
+        ),
+        CheckConstraint(
+            "length(source_id) BETWEEN 1 AND 96 AND source_id = trim(source_id) "
+            "AND substr(source_id, 1, 1) GLOB '[a-z]' "
+            "AND source_id NOT GLOB '*[^a-z0-9_]*'",
+            name="ck_communication_policy_source_id",
+        ),
+        CheckConstraint(
+            "organization_type IN ('central_bank', 'bank', 'commodity_company')",
+            name="ck_communication_policy_organization_type",
+        ),
+        CheckConstraint(
+            "source_provenance_tier IN "
+            "('official_archive_mixed', 'official_authored_text', "
+            "'official_published_transcript', 'official_hosted_third_party')",
+            name="ck_communication_policy_provenance",
+        ),
+        CheckConstraint(
+            "transcriber_attribution IN "
+            "('artifact_specific', 'named_third_party', 'not_applicable', "
+            "'not_disclosed', 'publisher')",
+            name="ck_communication_policy_transcriber_attribution",
+        ),
+        CheckConstraint(
+            "(transcriber_attribution IN ('artifact_specific', 'not_applicable', "
+            "'not_disclosed') AND transcriber IS NULL) OR "
+            "(transcriber_attribution = 'publisher' AND transcriber = publisher) OR "
+            "(transcriber_attribution = 'named_third_party' AND transcriber IS NOT NULL "
+            "AND length(trim(transcriber)) > 0 AND transcriber <> publisher)",
+            name="ck_communication_policy_transcriber",
+        ),
+        CheckConstraint(
+            "rights_status IN "
+            "('cleared', 'internal_only', 'permission_required', 'metadata_only', "
+            "'rights_review_required')",
+            name="ck_communication_policy_rights",
+        ),
+        CheckConstraint(
+            "(rights_status = 'cleared' AND acquisition_status = 'manual_collection_ready') OR "
+            "(rights_status = 'internal_only' AND acquisition_status = 'manual_internal_only') OR "
+            "(rights_status = 'permission_required' "
+            "AND acquisition_status = 'blocked_pending_permission') OR "
+            "(rights_status = 'metadata_only' AND acquisition_status = 'metadata_only') OR "
+            "(rights_status = 'rights_review_required' "
+            "AND acquisition_status = 'manual_review_required')",
+            name="ck_communication_policy_rights_acquisition",
+        ),
+        CheckConstraint(
+            "rights_status NOT IN ('cleared', 'internal_only', 'metadata_only', "
+            "'permission_required') OR rights_basis_url IS NOT NULL",
+            name="ck_communication_policy_required_rights_basis",
+        ),
+        CheckConstraint(
+            "rights_basis_url IS NULL OR "
+            "(rights_basis_url = trim(rights_basis_url) "
+            "AND substr(rights_basis_url, 1, 8) = 'https://' "
+            "AND instr(rights_basis_url, ' ') = 0 "
+            "AND instr(rights_basis_url, char(9)) = 0 "
+            "AND instr(rights_basis_url, char(10)) = 0 "
+            "AND instr(rights_basis_url, char(13)) = 0 "
+            "AND instr(rights_basis_url, '\\') = 0 "
+            "AND instr(substr(rights_basis_url, 9), '/') > 1)",
+            name="ck_communication_policy_rights_basis_url",
+        ),
+        CheckConstraint(
+            "landing_url = trim(landing_url) AND substr(landing_url, 1, 8) = 'https://' "
+            "AND instr(landing_url, ' ') = 0 AND instr(landing_url, char(9)) = 0 "
+            "AND instr(landing_url, char(10)) = 0 AND instr(landing_url, char(13)) = 0 "
+            "AND instr(landing_url, '\\') = 0 "
+            "AND instr(substr(landing_url, 9), '/') > 1",
+            name="ck_communication_policy_landing_url",
+        ),
+        CheckConstraint(
+            "length(trim(organization_name)) > 0 "
+            "AND length(trim(jurisdiction)) > 0 AND length(trim(language)) > 0 "
+            "AND length(trim(host_organization)) > 0 AND length(trim(publisher)) > 0 "
+            "AND length(trim(coverage_note)) > 0 AND length(trim(rights_note)) > 0 "
+            "AND length(trim(acquisition_note)) > 0 "
+            "AND json_valid(official_domains_json) = 1 "
+            "AND json_type(official_domains_json) = 'array' "
+            "AND json_array_length(official_domains_json) > 0 "
+            "AND json_valid(material_types_json) = 1 "
+            "AND json_type(material_types_json) = 'array' "
+            "AND json_array_length(material_types_json) > 0 "
+            "AND json_valid(commodity_families_json) = 1 "
+            "AND json_type(commodity_families_json) = 'array'",
+            name="ck_communication_policy_required_text",
+        ),
+        CheckConstraint(
+            "verified_archive_start_year IS NULL OR "
+            "verified_archive_start_year BETWEEN 1900 AND 9999",
+            name="ck_communication_policy_archive_year",
+        ),
+        CheckConstraint(
+            "automated_collection_allowed = 0",
+            name="ck_communication_policy_automation_disabled",
+        ),
+        CheckConstraint(
+            "(rights_checked_by IS NULL AND rights_checked_at IS NULL) OR "
+            "(rights_checked_by IS NOT NULL AND length(trim(rights_checked_by)) > 6 "
+            "AND substr(rights_checked_by, 1, 6) = 'human:' "
+            "AND rights_checked_at IS NOT NULL)",
+            name="ck_communication_policy_rights_review",
+        ),
+        CheckConstraint(
+            "length(policy_sha256) = 64 AND policy_sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_communication_policy_sha256",
+        ),
+    )
+
+
+class OrganizationCommodityCoverage(Base):
+    """Effective-dated selection taxonomy, not an analytical exposure claim."""
+
+    __tablename__ = "organization_commodity_coverage"
+
+    id = Column(Integer, primary_key=True)
+    organization_id = Column(
+        String(96),
+        ForeignKey("organizations.organization_id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    coverage_key = Column(String(128), nullable=False)
+    commodity_family = Column(String(96), nullable=False, index=True)
+    exposure_role = Column(String(24), nullable=False)
+    mapping_status = Column(String(32), nullable=False, index=True)
+    effective_from = Column(Date, nullable=False)
+    effective_to = Column(Date, nullable=True)
+    source_id = Column(String(96), nullable=False, index=True)
+    catalogue_sha256 = Column(String(64), nullable=False, index=True)
+    evidence_url = Column(Text, nullable=False)
+    evidence_note = Column(Text, nullable=False)
+    published_at = Column(DateTime, nullable=True)
+    available_at = Column(DateTime, nullable=False, index=True)
+    retrieved_at = Column(DateTime, nullable=False)
+    metadata_known_at = Column(DateTime, nullable=False, index=True)
+    coverage_version_sha256 = Column(String(64), nullable=False, index=True)
+    supersedes_exposure_id = Column(
+        Integer,
+        ForeignKey("organization_commodity_coverage.id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
+    reviewed_by = Column(String(192), nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["catalogue_sha256", "source_id"],
+            [
+                "communication_source_policy_snapshots.catalogue_sha256",
+                "communication_source_policy_snapshots.source_id",
+            ],
+            ondelete="RESTRICT",
+            name="fk_organization_commodity_source_policy",
+        ),
+        UniqueConstraint(
+            "organization_id",
+            "coverage_key",
+            "metadata_known_at",
+            name="uq_organization_commodity_exposure_version",
+        ),
+        Index(
+            "ix_organization_commodity_exposure_effective",
+            "organization_id",
+            "commodity_family",
+            "effective_from",
+            "effective_to",
+        ),
+        Index(
+            "uq_organization_commodity_exposure_successor",
+            "supersedes_exposure_id",
+            unique=True,
+            sqlite_where=text("supersedes_exposure_id IS NOT NULL"),
+        ),
+        Index(
+            "uq_organization_commodity_exposure_root",
+            "organization_id",
+            "coverage_key",
+            unique=True,
+            sqlite_where=text("supersedes_exposure_id IS NULL"),
+        ),
+        CheckConstraint(
+            "length(coverage_key) BETWEEN 1 AND 128 "
+            "AND coverage_key = trim(coverage_key) "
+            "AND substr(coverage_key, 1, 1) GLOB '[a-z]' "
+            "AND coverage_key NOT GLOB '*[^a-z0-9_]*'",
+            name="ck_organization_commodity_coverage_key",
+        ),
+        CheckConstraint(
+            "length(commodity_family) BETWEEN 1 AND 96 "
+            "AND commodity_family = trim(commodity_family) "
+            "AND substr(commodity_family, 1, 1) GLOB '[a-z]' "
+            "AND commodity_family NOT GLOB '*[^a-z0-9_]*'",
+            name="ck_organization_commodity_family",
+        ),
+        CheckConstraint(
+            "exposure_role IN ('producer', 'processor', 'trader', 'consumer', 'integrated')",
+            name="ck_organization_commodity_exposure_role",
+        ),
+        CheckConstraint(
+            "mapping_status IN ('selection_taxonomy', 'evidence_reviewed')",
+            name="ck_organization_commodity_mapping_status",
+        ),
+        CheckConstraint(
+            "length(source_id) BETWEEN 1 AND 96 "
+            "AND source_id = trim(source_id) "
+            "AND substr(source_id, 1, 1) GLOB '[a-z]' "
+            "AND source_id NOT GLOB '*[^a-z0-9_]*'",
+            name="ck_organization_commodity_source_id",
+        ),
+        CheckConstraint(
+            "length(catalogue_sha256) = 64 AND catalogue_sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_organization_commodity_catalogue_sha256",
+        ),
+        CheckConstraint(
+            "effective_to IS NULL OR effective_to >= effective_from",
+            name="ck_organization_commodity_effective_period",
+        ),
+        CheckConstraint(
+            "published_at IS NULL OR available_at >= published_at",
+            name="ck_organization_commodity_published_clock",
+        ),
+        CheckConstraint(
+            "retrieved_at >= available_at AND metadata_known_at >= retrieved_at",
+            name="ck_organization_commodity_retrieval_clock",
+        ),
+        CheckConstraint(
+            "evidence_url = trim(evidence_url) "
+            "AND substr(evidence_url, 1, 8) = 'https://' "
+            "AND instr(evidence_url, ' ') = 0 AND instr(evidence_url, char(9)) = 0 "
+            "AND instr(evidence_url, char(10)) = 0 "
+            "AND instr(evidence_url, char(13)) = 0 "
+            "AND instr(evidence_url, '\\') = 0 "
+            "AND instr(substr(evidence_url, 9), '/') > 1 "
+            "AND length(trim(evidence_note)) > 0",
+            name="ck_organization_commodity_evidence",
+        ),
+        CheckConstraint(
+            "length(coverage_version_sha256) = 64 "
+            "AND coverage_version_sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_organization_commodity_version_sha256",
+        ),
+        CheckConstraint(
+            "supersedes_exposure_id IS NULL OR supersedes_exposure_id <> id",
+            name="ck_organization_commodity_not_self_superseding",
+        ),
+        CheckConstraint(
+            "(mapping_status = 'selection_taxonomy' "
+            "AND reviewed_by IS NULL AND reviewed_at IS NULL) OR "
+            "(mapping_status = 'evidence_reviewed' "
+            "AND reviewed_by IS NOT NULL AND length(trim(reviewed_by)) > 6 "
+            "AND substr(reviewed_by, 1, 6) = 'human:' AND reviewed_at IS NOT NULL)",
+            name="ck_organization_commodity_review",
+        ),
+    )
+
+
+class CommunicationEvent(Base):
+    """One dated institutional communication, independent of its representations."""
+
+    __tablename__ = "communication_events"
+
+    id = Column(Integer, primary_key=True)
+    organization_id = Column(
+        String(96),
+        ForeignKey("organizations.organization_id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    event_key = Column(String(128), nullable=False)
+    event_type = Column(String(64), nullable=False, index=True)
+    title = Column(Text, nullable=False)
+    event_date = Column(Date, nullable=False, index=True)
+    event_started_at = Column(DateTime, nullable=True)
+    reference_start = Column(Date, nullable=True)
+    reference_end = Column(Date, nullable=True)
+    metadata_known_at = Column(DateTime, nullable=False, index=True)
+    event_version_sha256 = Column(String(64), nullable=False, index=True)
+    supersedes_event_id = Column(
+        Integer,
+        ForeignKey("communication_events.id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
+
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "event_key",
+            "metadata_known_at",
+            name="uq_communication_event_version",
+        ),
+        Index(
+            "uq_communication_event_successor",
+            "supersedes_event_id",
+            unique=True,
+            sqlite_where=text("supersedes_event_id IS NOT NULL"),
+        ),
+        Index(
+            "uq_communication_event_root",
+            "organization_id",
+            "event_key",
+            unique=True,
+            sqlite_where=text("supersedes_event_id IS NULL"),
+        ),
+        Index(
+            "ix_communication_event_history",
+            "organization_id",
+            "event_type",
+            "event_date",
+        ),
+        CheckConstraint(
+            "length(event_key) BETWEEN 1 AND 128 "
+            "AND event_key = trim(event_key) "
+            "AND substr(event_key, 1, 1) GLOB '[a-z]' "
+            "AND event_key NOT GLOB '*[^a-z0-9_]*'",
+            name="ck_communication_event_key",
+        ),
+        CheckConstraint(
+            "length(event_type) BETWEEN 1 AND 64 "
+            "AND event_type = trim(event_type) "
+            "AND substr(event_type, 1, 1) GLOB '[a-z]' "
+            "AND event_type NOT GLOB '*[^a-z0-9_]*'",
+            name="ck_communication_event_type",
+        ),
+        CheckConstraint(
+            "length(trim(title)) > 0",
+            name="ck_communication_event_required_text",
+        ),
+        CheckConstraint(
+            "(reference_start IS NULL AND reference_end IS NULL) OR "
+            "(reference_start IS NOT NULL AND reference_end IS NOT NULL "
+            "AND reference_end >= reference_start)",
+            name="ck_communication_event_reference_period",
+        ),
+        CheckConstraint(
+            "length(event_version_sha256) = 64 AND event_version_sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_communication_event_version_sha256",
+        ),
+        CheckConstraint(
+            "supersedes_event_id IS NULL OR supersedes_event_id <> id",
+            name="ck_communication_event_not_self_superseding",
+        ),
+    )
+
+
+class CommunicationArtifact(Base):
+    """One immutable official, hosted, captioned, or locally transcribed artifact."""
+
+    __tablename__ = "communication_artifacts"
+
+    id = Column(Integer, primary_key=True)
+    event_id = Column(
+        Integer,
+        ForeignKey("communication_events.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    source_id = Column(String(96), nullable=False, index=True)
+    catalogue_sha256 = Column(String(64), nullable=False, index=True)
+    event_version_sha256 = Column(String(64), nullable=False, index=True)
+    artifact_key = Column(String(128), nullable=False)
+    artifact_role = Column(String(32), nullable=False, index=True)
+    material_type = Column(String(48), nullable=False, index=True)
+    language = Column(String(16), nullable=False)
+    translation_status = Column(String(32), nullable=False)
+    mime_type = Column(String(96), nullable=False)
+    origin_type = Column(String(32), nullable=False, index=True)
+    provenance_tier = Column(String(32), nullable=False, index=True)
+    rights_status = Column(String(32), nullable=False, index=True)
+    acquisition_status = Column(String(32), nullable=False, index=True)
+    rights_basis_url = Column(Text, nullable=True)
+    rights_note = Column(Text, nullable=False)
+    rights_checked_by = Column(String(192), nullable=False)
+    rights_checked_at = Column(DateTime, nullable=False)
+    host_organization = Column(String(192), nullable=False)
+    publisher = Column(String(192), nullable=False)
+    transcriber = Column(String(192), nullable=True)
+    transcriber_attribution = Column(String(32), nullable=False)
+    published_at = Column(DateTime, nullable=True)
+    available_at = Column(DateTime, nullable=False, index=True)
+    retrieved_at = Column(DateTime, nullable=False)
+    metadata_known_at = Column(DateTime, nullable=False, index=True)
+    landing_url = Column(Text, nullable=False)
+    artifact_url = Column(Text, nullable=False)
+    artifact_version_sha256 = Column(String(64), nullable=False, index=True)
+    supersedes_artifact_id = Column(
+        Integer,
+        ForeignKey("communication_artifacts.id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["catalogue_sha256", "source_id"],
+            [
+                "communication_source_policy_snapshots.catalogue_sha256",
+                "communication_source_policy_snapshots.source_id",
+            ],
+            ondelete="RESTRICT",
+            name="fk_communication_artifact_source_policy",
+        ),
+        UniqueConstraint(
+            "event_id",
+            "source_id",
+            "artifact_key",
+            "metadata_known_at",
+            name="uq_communication_artifact_version",
+        ),
+        Index(
+            "uq_communication_artifact_successor",
+            "supersedes_artifact_id",
+            unique=True,
+            sqlite_where=text("supersedes_artifact_id IS NOT NULL"),
+        ),
+        Index(
+            "ix_communication_artifact_history",
+            "event_id",
+            "artifact_role",
+            "available_at",
+        ),
+        CheckConstraint(
+            "length(source_id) BETWEEN 1 AND 96 "
+            "AND source_id = trim(source_id) "
+            "AND substr(source_id, 1, 1) GLOB '[a-z]' "
+            "AND source_id NOT GLOB '*[^a-z0-9_]*'",
+            name="ck_communication_artifact_source_id",
+        ),
+        CheckConstraint(
+            "length(catalogue_sha256) = 64 AND catalogue_sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_communication_artifact_catalogue_sha256",
+        ),
+        CheckConstraint(
+            "length(artifact_key) BETWEEN 1 AND 128 "
+            "AND artifact_key = trim(artifact_key) "
+            "AND substr(artifact_key, 1, 1) GLOB '[a-z]' "
+            "AND artifact_key NOT GLOB '*[^a-z0-9_]*'",
+            name="ck_communication_artifact_key",
+        ),
+        CheckConstraint(
+            "artifact_role IN "
+            "('prepared_remarks', 'q_and_a_transcript', 'full_transcript', "
+            "'ceo_letter', 'chair_letter', 'annual_report', 'subtitles', "
+            "'webcast_video')",
+            name="ck_communication_artifact_role",
+        ),
+        CheckConstraint(
+            "(artifact_role = 'prepared_remarks' AND material_type IN "
+            "('financial_results', 'management_review', 'monetary_policy_statement', "
+            "'speech_text')) OR "
+            "(artifact_role = 'q_and_a_transcript' "
+            "AND material_type = 'questions_and_answers') OR "
+            "(artifact_role = 'full_transcript' AND material_type IN "
+            "('press_conference_transcript', 'results_transcript')) OR "
+            "(artifact_role = 'ceo_letter' AND material_type = 'ceo_letter') OR "
+            "(artifact_role = 'chair_letter' "
+            "AND material_type IN ('annual_report', 'management_review')) OR "
+            "(artifact_role = 'annual_report' AND material_type = 'annual_report') OR "
+            "(artifact_role = 'subtitles' AND material_type = 'subtitles') OR "
+            "(artifact_role = 'webcast_video' "
+            "AND material_type = 'press_conference_video')",
+            name="ck_communication_artifact_role_material",
+        ),
+        CheckConstraint(
+            "translation_status IN ('original', 'official_translation')",
+            name="ck_communication_artifact_translation_status",
+        ),
+        CheckConstraint(
+            "origin_type IN "
+            "('publisher_authored', 'official_published_transcript', "
+            "'official_published_media', 'official_hosted_vendor', 'official_caption', "
+            "'automatic_caption', 'local_asr')",
+            name="ck_communication_artifact_origin",
+        ),
+        CheckConstraint(
+            "(origin_type = 'publisher_authored' "
+            "AND provenance_tier = 'official_authored_text') OR "
+            "(origin_type = 'official_published_transcript' "
+            "AND provenance_tier = 'official_published_transcript') OR "
+            "(origin_type = 'official_published_media' "
+            "AND provenance_tier = 'official_published_media') OR "
+            "(origin_type = 'official_hosted_vendor' "
+            "AND provenance_tier = 'official_hosted_third_party') OR "
+            "(origin_type = 'official_caption' "
+            "AND provenance_tier = 'official_caption') OR "
+            "(origin_type = 'automatic_caption' "
+            "AND provenance_tier = 'official_hosted_automatic_caption') OR "
+            "(origin_type = 'local_asr' AND provenance_tier = 'local_derived_asr')",
+            name="ck_communication_artifact_provenance_tier",
+        ),
+        CheckConstraint(
+            "(material_type IN ('annual_report', 'ceo_letter', 'financial_results', "
+            "'management_review', 'monetary_policy_statement', 'speech_text') "
+            "AND origin_type = 'publisher_authored') OR "
+            "(material_type IN ('questions_and_answers', 'press_conference_transcript', "
+            "'results_transcript') AND origin_type IN "
+            "('official_published_transcript', 'official_hosted_vendor')) OR "
+            "(material_type = 'subtitles' AND origin_type IN "
+            "('official_caption', 'automatic_caption', 'local_asr')) OR "
+            "(material_type = 'press_conference_video' "
+            "AND origin_type = 'official_published_media')",
+            name="ck_communication_artifact_material_origin",
+        ),
+        CheckConstraint(
+            "rights_status IN "
+            "('cleared', 'internal_only', 'permission_required', 'metadata_only', "
+            "'rights_review_required')",
+            name="ck_communication_artifact_rights",
+        ),
+        CheckConstraint(
+            "acquisition_status IN "
+            "('blocked_pending_permission', 'manual_collection_ready', "
+            "'manual_internal_only', 'manual_review_required', 'metadata_only')",
+            name="ck_communication_artifact_acquisition",
+        ),
+        CheckConstraint(
+            "(rights_status = 'cleared' AND acquisition_status = 'manual_collection_ready') OR "
+            "(rights_status = 'internal_only' "
+            "AND acquisition_status = 'manual_internal_only') OR "
+            "(rights_status = 'permission_required' "
+            "AND acquisition_status = 'blocked_pending_permission') OR "
+            "(rights_status = 'metadata_only' AND acquisition_status = 'metadata_only') OR "
+            "(rights_status = 'rights_review_required' "
+            "AND acquisition_status = 'manual_review_required')",
+            name="ck_communication_artifact_rights_acquisition",
+        ),
+        CheckConstraint(
+            "rights_status <> 'permission_required' OR rights_basis_url IS NOT NULL",
+            name="ck_communication_artifact_required_rights_basis",
+        ),
+        CheckConstraint(
+            "rights_basis_url IS NULL OR "
+            "(rights_basis_url = trim(rights_basis_url) "
+            "AND substr(rights_basis_url, 1, 8) = 'https://' "
+            "AND instr(rights_basis_url, ' ') = 0 "
+            "AND instr(rights_basis_url, char(9)) = 0 "
+            "AND instr(rights_basis_url, char(10)) = 0 "
+            "AND instr(rights_basis_url, char(13)) = 0 "
+            "AND instr(rights_basis_url, '\\') = 0 "
+            "AND instr(substr(rights_basis_url, 9), '/') > 1)",
+            name="ck_communication_artifact_rights_basis_url",
+        ),
+        CheckConstraint(
+            "length(trim(language)) > 0 AND length(trim(mime_type)) > 0 "
+            "AND length(trim(host_organization)) > 0 AND length(trim(publisher)) > 0 "
+            "AND length(trim(landing_url)) > 0 AND length(trim(artifact_url)) > 0",
+            name="ck_communication_artifact_required_text",
+        ),
+        CheckConstraint(
+            "transcriber_attribution IN "
+            "('named_third_party', 'not_applicable', 'not_disclosed', 'publisher')",
+            name="ck_communication_artifact_transcriber_attribution",
+        ),
+        CheckConstraint(
+            "(origin_type IN ('publisher_authored', 'official_published_media') "
+            "AND transcriber IS NULL "
+            "AND transcriber_attribution = 'not_applicable') OR "
+            "(origin_type IN ('official_hosted_vendor', 'automatic_caption', 'local_asr') "
+            "AND transcriber IS NOT NULL AND length(trim(transcriber)) > 0 "
+            "AND transcriber <> publisher "
+            "AND transcriber_attribution = 'named_third_party') OR "
+            "(origin_type IN ('official_published_transcript', 'official_caption') AND "
+            "((transcriber IS NULL AND transcriber_attribution = 'not_disclosed') OR "
+            "(transcriber = publisher AND transcriber_attribution = 'publisher') OR "
+            "(transcriber IS NOT NULL AND length(trim(transcriber)) > 0 "
+            "AND transcriber <> publisher "
+            "AND transcriber_attribution = 'named_third_party')))",
+            name="ck_communication_artifact_transcriber",
+        ),
+        CheckConstraint(
+            "length(trim(rights_note)) > 0 "
+            "AND length(trim(rights_checked_by)) > 6 "
+            "AND substr(rights_checked_by, 1, 6) = 'human:'",
+            name="ck_communication_artifact_rights_review",
+        ),
+        CheckConstraint(
+            "published_at IS NULL OR available_at >= published_at",
+            name="ck_communication_artifact_published_clock",
+        ),
+        CheckConstraint(
+            "retrieved_at >= available_at AND metadata_known_at >= retrieved_at",
+            name="ck_communication_artifact_retrieval_clock",
+        ),
+        CheckConstraint(
+            "metadata_known_at >= rights_checked_at",
+            name="ck_communication_artifact_rights_known_clock",
+        ),
+        CheckConstraint(
+            "landing_url = trim(landing_url) AND artifact_url = trim(artifact_url) "
+            "AND substr(landing_url, 1, 8) = 'https://' "
+            "AND substr(artifact_url, 1, 8) = 'https://' "
+            "AND instr(landing_url, ' ') = 0 AND instr(artifact_url, ' ') = 0 "
+            "AND instr(landing_url, char(9)) = 0 AND instr(artifact_url, char(9)) = 0 "
+            "AND instr(landing_url, char(10)) = 0 AND instr(artifact_url, char(10)) = 0 "
+            "AND instr(landing_url, char(13)) = 0 AND instr(artifact_url, char(13)) = 0 "
+            "AND instr(landing_url, '\\') = 0 AND instr(artifact_url, '\\') = 0 "
+            "AND instr(substr(landing_url, 9), '/') > 1 "
+            "AND instr(substr(artifact_url, 9), '/') > 1",
+            name="ck_communication_artifact_urls",
+        ),
+        CheckConstraint(
+            "supersedes_artifact_id IS NULL OR supersedes_artifact_id <> id",
+            name="ck_communication_artifact_not_self_superseding",
+        ),
+        CheckConstraint(
+            "length(event_version_sha256) = 64 AND event_version_sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_communication_artifact_event_version_sha256",
+        ),
+        CheckConstraint(
+            "length(artifact_version_sha256) = 64 "
+            "AND artifact_version_sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_communication_artifact_version_sha256",
+        ),
+    )
+
+
+class CommunicationArtifactRetrieval(Base):
+    """Append-only observation that an unchanged artifact link was revisited."""
+
+    __tablename__ = "communication_artifact_retrievals"
+
+    id = Column(Integer, primary_key=True)
+    artifact_id = Column(
+        Integer,
+        ForeignKey("communication_artifacts.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    retrieved_at = Column(DateTime, nullable=False, index=True)
+    metadata_known_at = Column(DateTime, nullable=False, index=True)
+    landing_url = Column(Text, nullable=False)
+    artifact_url = Column(Text, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "artifact_id",
+            "retrieved_at",
+            name="uq_communication_artifact_retrieval_clock",
+        ),
+        CheckConstraint(
+            "landing_url = trim(landing_url) AND artifact_url = trim(artifact_url) "
+            "AND substr(landing_url, 1, 8) = 'https://' "
+            "AND substr(artifact_url, 1, 8) = 'https://' "
+            "AND instr(landing_url, ' ') = 0 AND instr(artifact_url, ' ') = 0 "
+            "AND instr(landing_url, char(9)) = 0 AND instr(artifact_url, char(9)) = 0 "
+            "AND instr(landing_url, char(10)) = 0 AND instr(artifact_url, char(10)) = 0 "
+            "AND instr(landing_url, char(13)) = 0 AND instr(artifact_url, char(13)) = 0 "
+            "AND instr(landing_url, '\\') = 0 AND instr(artifact_url, '\\') = 0 "
+            "AND instr(substr(landing_url, 9), '/') > 1 "
+            "AND instr(substr(artifact_url, 9), '/') > 1",
+            name="ck_communication_artifact_retrieval_urls",
+        ),
+        CheckConstraint(
+            "metadata_known_at >= retrieved_at",
+            name="ck_communication_artifact_retrieval_metadata_clock",
+        ),
+    )
+
+
+class CommunicationArtifactContent(Base):
+    """One immutable byte capture made during an artifact retrieval.
+
+    Keeping captures separate lets link metadata be discovered before rights are
+    cleared and lets changed bytes at an unchanged official URL append without
+    rewriting the artifact record.
+    """
+
+    __tablename__ = "communication_artifact_contents"
+
+    id = Column(Integer, primary_key=True)
+    artifact_id = Column(
+        Integer,
+        ForeignKey("communication_artifacts.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    retrieval_id = Column(
+        Integer,
+        ForeignKey("communication_artifact_retrievals.id", ondelete="RESTRICT"),
+        nullable=False,
+        unique=True,
+    )
+    content_sha256 = Column(String(64), nullable=False, index=True)
+    size_bytes = Column(Integer, nullable=False)
+    blob_path = Column(Text, nullable=False)
+    captured_at = Column(DateTime, nullable=False, index=True)
+    supersedes_content_id = Column(
+        Integer,
+        ForeignKey("communication_artifact_contents.id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
+
+    __table_args__ = (
+        Index(
+            "uq_communication_artifact_content_successor",
+            "supersedes_content_id",
+            unique=True,
+            sqlite_where=text("supersedes_content_id IS NOT NULL"),
+        ),
+        Index(
+            "uq_communication_artifact_content_root",
+            "artifact_id",
+            unique=True,
+            sqlite_where=text("supersedes_content_id IS NULL"),
+        ),
+        CheckConstraint(
+            "length(content_sha256) = 64 AND content_sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_communication_artifact_content_sha256",
+        ),
+        CheckConstraint(
+            "size_bytes > 0",
+            name="ck_communication_artifact_content_size",
+        ),
+        CheckConstraint(
+            "blob_path = 'artifacts/communications/sha256/' "
+            "|| substr(content_sha256, 1, 2) || '/' || content_sha256",
+            name="ck_communication_artifact_content_path",
+        ),
+        CheckConstraint(
+            "supersedes_content_id IS NULL OR supersedes_content_id <> id",
+            name="ck_communication_artifact_content_not_self_superseding",
+        ),
+    )
+
+
+class CommunicationExtraction(Base):
+    """Immutable extraction anchor; it is not complete until finalized."""
+
+    __tablename__ = "communication_extractions"
+
+    id = Column(Integer, primary_key=True)
+    artifact_content_id = Column(
+        Integer,
+        ForeignKey("communication_artifact_contents.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    run_key = Column(String(128), nullable=False)
+    extractor_name = Column(String(128), nullable=False)
+    extractor_version = Column(String(128), nullable=False)
+    extractor_config_sha256 = Column(String(64), nullable=False)
+    extracted_at = Column(DateTime, nullable=False)
+    run_sha256 = Column(String(64), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "artifact_content_id",
+            "run_key",
+            name="uq_communication_extraction_version",
+        ),
+        CheckConstraint(
+            "length(run_key) BETWEEN 1 AND 128 "
+            "AND run_key = trim(run_key) "
+            "AND substr(run_key, 1, 1) GLOB '[a-z]' "
+            "AND run_key NOT GLOB '*[^a-z0-9_]*'",
+            name="ck_communication_extraction_run_key",
+        ),
+        CheckConstraint(
+            "length(trim(extractor_name)) > 0 AND length(trim(extractor_version)) > 0",
+            name="ck_communication_extraction_required_text",
+        ),
+        CheckConstraint(
+            "length(extractor_config_sha256) = 64 "
+            "AND extractor_config_sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_communication_extraction_inputs_sha256",
+        ),
+        CheckConstraint(
+            "length(run_sha256) = 64 AND run_sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_communication_extraction_run_sha256",
+        ),
+    )
+
+
+class CommunicationSegment(Base):
+    """Speaker- and locator-addressable text from one communication extraction."""
+
+    __tablename__ = "communication_segments"
+
+    extraction_id = Column(
+        Integer,
+        ForeignKey("communication_extractions.id", ondelete="RESTRICT"),
+        primary_key=True,
+    )
+    ordinal = Column(Integer, primary_key=True)
+    segment_kind = Column(String(32), nullable=False, index=True)
+    speaker_name = Column(String(192), nullable=True)
+    speaker_role = Column(String(192), nullable=True)
+    speaker_side = Column(String(16), nullable=False, index=True)
+    section_title = Column(Text, nullable=True)
+    text = Column(Text, nullable=False)
+    text_sha256 = Column(String(64), nullable=False)
+    char_count = Column(Integer, nullable=False)
+    page_start = Column(Integer, nullable=True)
+    page_end = Column(Integer, nullable=True)
+    paragraph_start = Column(Integer, nullable=True)
+    paragraph_end = Column(Integer, nullable=True)
+    start_ms = Column(Integer, nullable=True)
+    end_ms = Column(Integer, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint("ordinal > 0", name="ck_communication_segment_ordinal"),
+        CheckConstraint(
+            "segment_kind IN "
+            "('prepared_remarks', 'q_and_a_question', 'q_and_a_answer', "
+            "'letter', 'narrative', 'heading', 'other')",
+            name="ck_communication_segment_kind",
+        ),
+        CheckConstraint(
+            "speaker_side IN ('publisher', 'external', 'moderator', 'unknown')",
+            name="ck_communication_segment_speaker_side",
+        ),
+        CheckConstraint(
+            "(segment_kind <> 'q_and_a_question' OR speaker_side <> 'publisher') "
+            "AND (segment_kind <> 'q_and_a_answer' "
+            "OR speaker_side IN ('publisher', 'unknown')) "
+            "AND (segment_kind NOT IN ('prepared_remarks', 'letter') "
+            "OR speaker_side = 'publisher')",
+            name="ck_communication_segment_kind_side",
+        ),
+        CheckConstraint(
+            "length(trim(text)) > 0 AND char_count = length(text)",
+            name="ck_communication_segment_text",
+        ),
+        CheckConstraint(
+            "length(text_sha256) = 64 AND text_sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_communication_segment_sha256",
+        ),
+        CheckConstraint(
+            "(page_start IS NULL AND page_end IS NULL) OR "
+            "(page_start IS NOT NULL AND page_end IS NOT NULL "
+            "AND page_start > 0 AND page_end >= page_start)",
+            name="ck_communication_segment_pages",
+        ),
+        CheckConstraint(
+            "(paragraph_start IS NULL AND paragraph_end IS NULL) OR "
+            "(paragraph_start IS NOT NULL AND paragraph_end IS NOT NULL "
+            "AND paragraph_start > 0 AND paragraph_end >= paragraph_start)",
+            name="ck_communication_segment_paragraphs",
+        ),
+        CheckConstraint(
+            "(start_ms IS NULL AND end_ms IS NULL) OR "
+            "(start_ms IS NOT NULL AND end_ms IS NOT NULL "
+            "AND start_ms >= 0 AND end_ms > start_ms)",
+            name="ck_communication_segment_timecodes",
+        ),
+    )
+
+
+class CommunicationExtractionFinalization(Base):
+    """Completion marker inserted only after all immutable segments exist."""
+
+    __tablename__ = "communication_extraction_finalizations"
+
+    extraction_id = Column(
+        Integer,
+        ForeignKey("communication_extractions.id", ondelete="RESTRICT"),
+        primary_key=True,
+    )
+    finalized_at = Column(DateTime, nullable=False)
+    segment_count = Column(Integer, nullable=False)
+    total_char_count = Column(Integer, nullable=False)
+    corpus_sha256 = Column(String(64), nullable=False)
+    canonicalization_version = Column(String(64), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint(
+            "segment_count > 0 AND total_char_count > 0",
+            name="ck_communication_extraction_finalization_count",
+        ),
+        CheckConstraint(
+            "length(corpus_sha256) = 64 AND corpus_sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_communication_extraction_finalization_sha256",
+        ),
+        CheckConstraint(
+            "canonicalization_version = 'communication_segments_json_v1'",
+            name="ck_communication_extraction_canonicalization",
+        ),
     )
 
 
@@ -692,6 +1684,17 @@ for _immutable_model in (
     DebtHolderPosition,
     CrossBorderPosition,
     AllocatorFact,
+    CommunicationSchemaContract,
+    Organization,
+    CommunicationSourcePolicySnapshot,
+    OrganizationCommodityCoverage,
+    CommunicationEvent,
+    CommunicationArtifact,
+    CommunicationArtifactRetrieval,
+    CommunicationArtifactContent,
+    CommunicationExtraction,
+    CommunicationSegment,
+    CommunicationExtractionFinalization,
     ReportDocument,
     DocumentExtraction,
     DocumentPage,
@@ -1081,7 +2084,117 @@ def _migrate_release_recurrence_constraint(engine: Engine) -> None:
             raw_connection.close()
 
 
+_COMMUNICATION_SCHEMA_TABLES = (
+    "communication_schema_contract",
+    "organizations",
+    "communication_source_policy_snapshots",
+    "organization_commodity_coverage",
+    "communication_events",
+    "communication_artifacts",
+    "communication_artifact_retrievals",
+    "communication_artifact_contents",
+    "communication_extractions",
+    "communication_segments",
+    "communication_extraction_finalizations",
+)
+_COMMUNICATION_CUSTOM_TRIGGERS = (
+    "communication_policy_snapshot_validate",
+    "communication_artifacts_match_policy",
+    "communication_coverage_matches_policy",
+    "communication_event_successor_order",
+    "communication_artifact_reject_duplicate_root",
+    "communication_artifact_successor_order",
+    "communication_coverage_successor_order",
+    "communication_coverage_reject_overlapping_head",
+    "communication_retrieval_matches_artifact",
+    "communication_content_matches_retrieval",
+    "communication_content_successor_order",
+    "communication_extractions_require_content",
+    "communication_segments_reject_after_finalization",
+    "communication_extraction_finalization_validate",
+)
+COMMUNICATION_SCHEMA_VERSION = 1
+COMMUNICATION_SCHEMA_SHA256 = "1fe8247a31b767f933b3c6f8646ee8b2536da2655bc8fc087ef99fe5f68dedb3"
+COMMUNICATION_TRIGGER_SHA256 = "62d2f2c2c9b152aeede8d4d4c203f05c24aba5697b311e534956053f6a315007"
+
+
+def _communication_ddl_sha256(connection, object_types: tuple[str, ...]) -> str:
+    placeholders = ",".join("?" for _ in _COMMUNICATION_SCHEMA_TABLES)
+    type_placeholders = ",".join("?" for _ in object_types)
+    rows = connection.exec_driver_sql(
+        "SELECT type, name, tbl_name, sql FROM sqlite_master "
+        f"WHERE tbl_name IN ({placeholders}) "
+        f"AND type IN ({type_placeholders}) AND sql IS NOT NULL "
+        "ORDER BY type, name, tbl_name",
+        (*_COMMUNICATION_SCHEMA_TABLES, *object_types),
+    ).all()
+    canonical = [
+        {
+            "type": str(row[0]),
+            "name": str(row[1]),
+            "table": str(row[2]),
+            "sql": " ".join(str(row[3]).split()),
+        }
+        for row in rows
+    ]
+    payload = json.dumps(
+        canonical,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _preflight_communication_schema(engine: Engine) -> None:
+    """Refuse an unknown pre-existing communications table layout.
+
+    ``create_all`` is additive and would otherwise silently leave an older,
+    weaker table definition in place.  A first install has no domain tables. An
+    existing install must contain the complete, fingerprinted schema contract.
+    """
+
+    inspector = inspect(engine)
+    present = set(inspector.get_table_names())
+    present_communication = present.intersection(_COMMUNICATION_SCHEMA_TABLES)
+    if not present_communication:
+        return
+    if present_communication != set(_COMMUNICATION_SCHEMA_TABLES):
+        missing_tables = sorted(set(_COMMUNICATION_SCHEMA_TABLES) - present)
+        raise RuntimeError(
+            f"incomplete institutional-communications schema; missing tables={missing_tables!r}"
+        )
+    for table_name in _COMMUNICATION_SCHEMA_TABLES:
+        expected = {column.name for column in Base.metadata.tables[table_name].columns}
+        actual = {str(column["name"]) for column in inspector.get_columns(table_name)}
+        if actual != expected:
+            missing = sorted(expected - actual)
+            unexpected = sorted(actual - expected)
+            raise RuntimeError(
+                "unknown institutional-communications schema for "
+                f"{table_name}: missing={missing!r}, unexpected={unexpected!r}"
+            )
+    with engine.connect() as connection:
+        rows = connection.exec_driver_sql(
+            "SELECT schema_version, schema_sha256, trigger_sha256 "
+            "FROM communication_schema_contract "
+            "WHERE contract_id = 'institutional_communications'"
+        ).all()
+        if len(rows) != 1:
+            raise RuntimeError("institutional-communications schema contract is missing")
+        version, stored_schema_sha256, stored_trigger_sha256 = rows[0]
+        actual_schema_sha256 = _communication_ddl_sha256(connection, ("table", "index"))
+        if (
+            int(version) != COMMUNICATION_SCHEMA_VERSION
+            or str(stored_schema_sha256) != COMMUNICATION_SCHEMA_SHA256
+            or actual_schema_sha256 != COMMUNICATION_SCHEMA_SHA256
+            or str(stored_trigger_sha256) != COMMUNICATION_TRIGGER_SHA256
+        ):
+            raise RuntimeError("institutional-communications schema fingerprint mismatch")
+
+
 def init_db(engine: Engine) -> None:
+    _preflight_communication_schema(engine)
     _migrate_release_recurrence_constraint(engine)
     Base.metadata.create_all(engine)
     immutable_tables = (
@@ -1091,6 +2204,17 @@ def init_db(engine: Engine) -> None:
         "debt_holder_positions",
         "cross_border_positions",
         "allocator_facts",
+        "communication_schema_contract",
+        "organizations",
+        "communication_source_policy_snapshots",
+        "organization_commodity_coverage",
+        "communication_events",
+        "communication_artifacts",
+        "communication_artifact_retrievals",
+        "communication_artifact_contents",
+        "communication_extractions",
+        "communication_segments",
+        "communication_extraction_finalizations",
         "report_documents",
         "document_extractions",
         "document_pages",
@@ -1099,6 +2223,8 @@ def init_db(engine: Engine) -> None:
         "report_candidate_reviews",
     )
     with engine.begin() as connection:
+        for trigger_name in _COMMUNICATION_CUSTOM_TRIGGERS:
+            connection.exec_driver_sql(f"DROP TRIGGER IF EXISTS {trigger_name}")
         for table_name in immutable_tables:
             connection.exec_driver_sql(
                 f"""
@@ -1117,6 +2243,399 @@ def init_db(engine: Engine) -> None:
                     SELECT RAISE(ABORT, '{table_name} rows are immutable');
                 END
                 """
+            )
+        connection.exec_driver_sql(
+            """
+            CREATE TRIGGER IF NOT EXISTS communication_policy_snapshot_validate
+            BEFORE INSERT ON communication_source_policy_snapshots
+            WHEN EXISTS (
+                SELECT 1 FROM json_each(NEW.official_domains_json)
+                WHERE type <> 'text' OR value <> lower(value) OR instr(value, '.') = 0
+                   OR value LIKE '.%' OR value LIKE '%.' OR instr(value, '..') > 0
+                   OR instr(value, '/') > 0 OR instr(value, ':') > 0
+                   OR instr(value, '@') > 0 OR instr(value, '\\') > 0
+                   OR instr(value, ' ') > 0
+            ) OR EXISTS (
+                SELECT 1 FROM json_each(NEW.material_types_json)
+                WHERE type <> 'text' OR value NOT IN (
+                    'annual_report', 'ceo_letter', 'financial_results',
+                    'management_review', 'monetary_policy_statement',
+                    'press_conference_transcript', 'press_conference_video',
+                    'questions_and_answers', 'results_transcript', 'speech_text',
+                    'subtitles'
+                )
+            ) OR EXISTS (
+                SELECT 1 FROM json_each(NEW.commodity_families_json)
+                WHERE type <> 'text' OR value NOT IN (
+                    'agricultural_raw_materials', 'base_metals', 'energy',
+                    'fertilizers', 'food_and_beverages', 'precious_metals'
+                )
+            ) OR (
+                NEW.organization_type = 'commodity_company'
+                AND json_array_length(NEW.commodity_families_json) = 0
+            ) OR (
+                NEW.organization_type <> 'commodity_company'
+                AND json_array_length(NEW.commodity_families_json) <> 0
+            ) OR NOT EXISTS (
+                SELECT 1 FROM json_each(NEW.official_domains_json) AS domain
+                WHERE lower(substr(
+                    NEW.landing_url,
+                    9,
+                    instr(substr(NEW.landing_url, 9), '/') - 1
+                )) = domain.value
+                   OR lower(substr(
+                       NEW.landing_url,
+                       9,
+                       instr(substr(NEW.landing_url, 9), '/') - 1
+                   )) LIKE '%.' || domain.value
+            ) OR (
+                NEW.rights_basis_url IS NOT NULL AND NOT EXISTS (
+                    SELECT 1 FROM json_each(NEW.official_domains_json) AS domain
+                    WHERE lower(substr(
+                        NEW.rights_basis_url,
+                        9,
+                        instr(substr(NEW.rights_basis_url, 9), '/') - 1
+                    )) = domain.value
+                       OR lower(substr(
+                           NEW.rights_basis_url,
+                           9,
+                           instr(substr(NEW.rights_basis_url, 9), '/') - 1
+                       )) LIKE '%.' || domain.value
+                )
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'invalid communication source policy snapshot');
+            END
+            """
+        )
+        connection.exec_driver_sql(
+            """
+            CREATE TRIGGER IF NOT EXISTS communication_artifacts_match_policy
+            BEFORE INSERT ON communication_artifacts
+            WHEN NOT EXISTS (
+                SELECT 1
+                FROM communication_source_policy_snapshots AS policy
+                JOIN communication_events AS event ON event.id = NEW.event_id
+                WHERE policy.catalogue_sha256 = NEW.catalogue_sha256
+                  AND policy.source_id = NEW.source_id
+                  AND policy.organization_id = event.organization_id
+                  AND policy.rights_status = NEW.rights_status
+                  AND policy.acquisition_status = NEW.acquisition_status
+                  AND policy.rights_basis_url IS NEW.rights_basis_url
+                  AND policy.rights_note = NEW.rights_note
+                  AND policy.language = NEW.language
+                  AND event.event_version_sha256 = NEW.event_version_sha256
+                  AND EXISTS (
+                      SELECT 1 FROM json_each(policy.material_types_json)
+                      WHERE value = NEW.material_type
+                  )
+                  AND EXISTS (
+                      SELECT 1 FROM json_each(policy.official_domains_json) AS domain
+                      WHERE lower(substr(
+                          NEW.landing_url,
+                          9,
+                          instr(substr(NEW.landing_url, 9), '/') - 1
+                      )) = domain.value
+                         OR lower(substr(
+                             NEW.landing_url,
+                             9,
+                             instr(substr(NEW.landing_url, 9), '/') - 1
+                         )) LIKE '%.' || domain.value
+                  )
+                  AND EXISTS (
+                      SELECT 1 FROM json_each(policy.official_domains_json) AS domain
+                      WHERE lower(substr(
+                          NEW.artifact_url,
+                          9,
+                          instr(substr(NEW.artifact_url, 9), '/') - 1
+                      )) = domain.value
+                         OR lower(substr(
+                             NEW.artifact_url,
+                             9,
+                             instr(substr(NEW.artifact_url, 9), '/') - 1
+                         )) LIKE '%.' || domain.value
+                  )
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'communication artifact conflicts with source policy or event');
+            END
+            """
+        )
+        connection.exec_driver_sql(
+            """
+            CREATE TRIGGER IF NOT EXISTS communication_coverage_matches_policy
+            BEFORE INSERT ON organization_commodity_coverage
+            WHEN NOT EXISTS (
+                SELECT 1
+                FROM communication_source_policy_snapshots AS policy
+                WHERE policy.catalogue_sha256 = NEW.catalogue_sha256
+                  AND policy.source_id = NEW.source_id
+                  AND policy.organization_id = NEW.organization_id
+                  AND policy.organization_type = 'commodity_company'
+                  AND policy.coverage_note = NEW.evidence_note
+                  AND EXISTS (
+                      SELECT 1 FROM json_each(policy.commodity_families_json)
+                      WHERE value = NEW.commodity_family
+                  )
+                  AND EXISTS (
+                      SELECT 1 FROM json_each(policy.official_domains_json) AS domain
+                      WHERE lower(substr(
+                          NEW.evidence_url,
+                          9,
+                          instr(substr(NEW.evidence_url, 9), '/') - 1
+                      )) = domain.value
+                         OR lower(substr(
+                             NEW.evidence_url,
+                             9,
+                             instr(substr(NEW.evidence_url, 9), '/') - 1
+                         )) LIKE '%.' || domain.value
+                  )
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'commodity coverage conflicts with source policy');
+            END
+            """
+        )
+        connection.exec_driver_sql(
+            """
+            CREATE TRIGGER IF NOT EXISTS communication_event_successor_order
+            BEFORE INSERT ON communication_events
+            WHEN NEW.supersedes_event_id IS NOT NULL AND NOT EXISTS (
+                SELECT 1 FROM communication_events AS prior
+                WHERE prior.id = NEW.supersedes_event_id
+                  AND prior.organization_id = NEW.organization_id
+                  AND prior.event_key = NEW.event_key
+                  AND NEW.metadata_known_at > prior.metadata_known_at
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'invalid or backward communication event successor');
+            END
+            """
+        )
+        connection.exec_driver_sql(
+            """
+            CREATE TRIGGER IF NOT EXISTS communication_artifact_reject_duplicate_root
+            BEFORE INSERT ON communication_artifacts
+            WHEN NEW.supersedes_artifact_id IS NULL AND EXISTS (
+                SELECT 1
+                FROM communication_artifacts AS prior
+                JOIN communication_events AS prior_event ON prior_event.id = prior.event_id
+                JOIN communication_events AS new_event ON new_event.id = NEW.event_id
+                WHERE prior.supersedes_artifact_id IS NULL
+                  AND prior_event.organization_id = new_event.organization_id
+                  AND prior_event.event_key = new_event.event_key
+                  AND prior.source_id = NEW.source_id
+                  AND prior.artifact_key = NEW.artifact_key
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'duplicate communication artifact lineage root');
+            END
+            """
+        )
+        connection.exec_driver_sql(
+            """
+            CREATE TRIGGER IF NOT EXISTS communication_artifact_successor_order
+            BEFORE INSERT ON communication_artifacts
+            WHEN NEW.supersedes_artifact_id IS NOT NULL AND NOT EXISTS (
+                SELECT 1
+                FROM communication_artifacts AS prior
+                JOIN communication_events AS prior_event ON prior_event.id = prior.event_id
+                JOIN communication_events AS new_event ON new_event.id = NEW.event_id
+                WHERE prior.id = NEW.supersedes_artifact_id
+                  AND prior_event.organization_id = new_event.organization_id
+                  AND prior_event.event_key = new_event.event_key
+                  AND prior.source_id = NEW.source_id
+                  AND prior.artifact_key = NEW.artifact_key
+                  AND NEW.metadata_known_at > prior.metadata_known_at
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'invalid or backward communication artifact successor');
+            END
+            """
+        )
+        connection.exec_driver_sql(
+            """
+            CREATE TRIGGER IF NOT EXISTS communication_coverage_successor_order
+            BEFORE INSERT ON organization_commodity_coverage
+            WHEN NEW.supersedes_exposure_id IS NOT NULL AND NOT EXISTS (
+                SELECT 1 FROM organization_commodity_coverage AS prior
+                WHERE prior.id = NEW.supersedes_exposure_id
+                  AND prior.organization_id = NEW.organization_id
+                  AND prior.coverage_key = NEW.coverage_key
+                  AND NOT EXISTS (
+                      SELECT 1 FROM organization_commodity_coverage AS successor
+                      WHERE successor.supersedes_exposure_id = prior.id
+                  )
+                  AND NEW.metadata_known_at > prior.metadata_known_at
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'invalid or backward commodity coverage successor');
+            END
+            """
+        )
+        connection.exec_driver_sql(
+            """
+            CREATE TRIGGER IF NOT EXISTS communication_coverage_reject_overlapping_head
+            BEFORE INSERT ON organization_commodity_coverage
+            WHEN EXISTS (
+                SELECT 1
+                FROM organization_commodity_coverage AS prior
+                WHERE prior.organization_id = NEW.organization_id
+                  AND prior.commodity_family = NEW.commodity_family
+                  AND prior.exposure_role = NEW.exposure_role
+                  AND prior.id IS NOT NEW.supersedes_exposure_id
+                  AND NOT EXISTS (
+                      SELECT 1 FROM organization_commodity_coverage AS successor
+                      WHERE successor.supersedes_exposure_id = prior.id
+                  )
+                  AND prior.effective_from <= COALESCE(NEW.effective_to, '9999-12-31')
+                  AND NEW.effective_from <= COALESCE(prior.effective_to, '9999-12-31')
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'overlapping commodity coverage lineage heads');
+            END
+            """
+        )
+        connection.exec_driver_sql(
+            """
+            CREATE TRIGGER IF NOT EXISTS communication_retrieval_matches_artifact
+            BEFORE INSERT ON communication_artifact_retrievals
+            WHEN NOT EXISTS (
+                SELECT 1 FROM communication_artifacts AS artifact
+                WHERE artifact.id = NEW.artifact_id
+                  AND artifact.landing_url = NEW.landing_url
+                  AND artifact.artifact_url = NEW.artifact_url
+                  AND NEW.retrieved_at >= artifact.available_at
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'retrieval observation conflicts with artifact');
+            END
+            """
+        )
+        connection.exec_driver_sql(
+            """
+            CREATE TRIGGER IF NOT EXISTS communication_content_matches_retrieval
+            BEFORE INSERT ON communication_artifact_contents
+            WHEN NOT EXISTS (
+                SELECT 1
+                FROM communication_artifacts AS artifact
+                JOIN communication_artifact_retrievals AS retrieval
+                  ON retrieval.artifact_id = artifact.id
+                WHERE artifact.id = NEW.artifact_id
+                  AND retrieval.id = NEW.retrieval_id
+                  AND artifact.rights_status IN ('cleared', 'internal_only')
+                  AND NEW.captured_at >= retrieval.retrieved_at
+                  AND NEW.captured_at >= retrieval.metadata_known_at
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'content capture conflicts with retrieval or rights policy');
+            END
+            """
+        )
+        connection.exec_driver_sql(
+            """
+            CREATE TRIGGER IF NOT EXISTS communication_content_successor_order
+            BEFORE INSERT ON communication_artifact_contents
+            WHEN NEW.supersedes_content_id IS NOT NULL AND NOT EXISTS (
+                SELECT 1 FROM communication_artifact_contents AS prior
+                WHERE prior.id = NEW.supersedes_content_id
+                  AND prior.artifact_id = NEW.artifact_id
+                  AND NOT EXISTS (
+                      SELECT 1 FROM communication_artifact_contents AS successor
+                      WHERE successor.supersedes_content_id = prior.id
+                  )
+                  AND NEW.captured_at > prior.captured_at
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'invalid or backward content-capture successor');
+            END
+            """
+        )
+        connection.exec_driver_sql(
+            """
+            CREATE TRIGGER IF NOT EXISTS communication_extractions_require_content
+            BEFORE INSERT ON communication_extractions
+            WHEN NOT EXISTS (
+                SELECT 1
+                FROM communication_artifact_contents
+                WHERE id = NEW.artifact_content_id
+                  AND NEW.extracted_at >= captured_at
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'communication extraction requires archived content');
+            END
+            """
+        )
+        connection.exec_driver_sql(
+            """
+            CREATE TRIGGER IF NOT EXISTS communication_segments_reject_after_finalization
+            BEFORE INSERT ON communication_segments
+            WHEN EXISTS (
+                SELECT 1 FROM communication_extraction_finalizations
+                WHERE extraction_id = NEW.extraction_id
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'finalized communication extraction cannot gain segments');
+            END
+            """
+        )
+        connection.exec_driver_sql(
+            """
+            CREATE TRIGGER IF NOT EXISTS communication_extraction_finalization_validate
+            BEFORE INSERT ON communication_extraction_finalizations
+            WHEN NOT EXISTS (
+                SELECT 1
+                FROM communication_extractions AS extraction
+                WHERE extraction.id = NEW.extraction_id
+                  AND NEW.finalized_at >= extraction.extracted_at
+                  AND NEW.segment_count = (
+                      SELECT COUNT(*) FROM communication_segments
+                      WHERE extraction_id = NEW.extraction_id
+                  )
+                  AND 1 = (
+                      SELECT MIN(ordinal) FROM communication_segments
+                      WHERE extraction_id = NEW.extraction_id
+                  )
+                  AND NEW.segment_count = (
+                      SELECT MAX(ordinal) FROM communication_segments
+                      WHERE extraction_id = NEW.extraction_id
+                  )
+                  AND NEW.total_char_count = (
+                      SELECT SUM(char_count) FROM communication_segments
+                      WHERE extraction_id = NEW.extraction_id
+                  )
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'communication extraction finalization does not match segments');
+            END
+            """
+        )
+        schema_sha256 = _communication_ddl_sha256(connection, ("table", "index"))
+        trigger_sha256 = _communication_ddl_sha256(connection, ("trigger",))
+        if schema_sha256 != COMMUNICATION_SCHEMA_SHA256:
+            raise RuntimeError("generated institutional-communications schema fingerprint mismatch")
+        if trigger_sha256 != COMMUNICATION_TRIGGER_SHA256:
+            raise RuntimeError(
+                "generated institutional-communications trigger fingerprint mismatch"
+            )
+        existing_contract = connection.exec_driver_sql(
+            "SELECT COUNT(*) FROM communication_schema_contract "
+            "WHERE contract_id = 'institutional_communications'"
+        ).scalar_one()
+        if existing_contract == 0:
+            connection.exec_driver_sql(
+                "INSERT INTO communication_schema_contract "
+                "(contract_id, schema_version, schema_sha256, trigger_sha256, installed_at) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (
+                    "institutional_communications",
+                    COMMUNICATION_SCHEMA_VERSION,
+                    schema_sha256,
+                    trigger_sha256,
+                    datetime.now(UTC)
+                    .replace(tzinfo=None)
+                    .isoformat(sep=" ", timespec="microseconds"),
+                ),
             )
 
 
