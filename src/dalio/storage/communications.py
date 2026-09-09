@@ -22,10 +22,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from dalio.communications.catalogue import (
-    CATALOGUE_EVALUATED_AT,
-    COMMUNICATION_CATALOGUE_SHA256,
-    COMMUNICATION_SOURCES,
+    CommunicationCatalogueSnapshot,
     CommunicationSourceSpec,
+    resolve_communication_catalogue_snapshot,
 )
 from dalio.storage.db import (
     CommunicationArtifact,
@@ -38,7 +37,6 @@ from dalio.storage.db import (
     OrganizationCommodityCoverage,
 )
 
-_SOURCES_BY_ID = {source.source_id: source for source in COMMUNICATION_SOURCES}
 _ID = re.compile(r"^[a-z][a-z0-9_]*$")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _DNS_LABEL = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
@@ -120,9 +118,7 @@ _ROLE_SCOPE_KEYS = {
     "webcast_video": "webcast_video",
 }
 _SECTION_SCOPE_CANONICALIZATION = "communication_artifact_section_scopes_json_v1"
-_EXPLICIT_SECTION_SCOPE_SOURCE_IDS = frozenset(
-    {"ecb_monetary_policy_press_conferences_en"}
-)
+_EXPLICIT_SECTION_SCOPE_SOURCE_IDS = frozenset({"ecb_monetary_policy_press_conferences_en"})
 
 
 @dataclass(frozen=True)
@@ -297,16 +293,23 @@ def _official_url(url: str, source: CommunicationSourceSpec, field: str) -> str:
     return clean
 
 
-def _source(source_id: str, catalogue_sha256: str) -> CommunicationSourceSpec:
+def _source(
+    source_id: str,
+    catalogue_sha256: str,
+) -> tuple[CommunicationSourceSpec, CommunicationCatalogueSnapshot]:
     source_key = _identifier(source_id, "source_id")
     if _SHA256.fullmatch(catalogue_sha256) is None:
         raise ValueError("catalogue_sha256 must be 64 lowercase hexadecimal characters")
-    if catalogue_sha256 != COMMUNICATION_CATALOGUE_SHA256:
-        raise ValueError("artifact must bind the current communication policy catalogue")
-    source = _SOURCES_BY_ID.get(source_key)
+    catalogue = resolve_communication_catalogue_snapshot(catalogue_sha256)
+    source = next(
+        (candidate for candidate in catalogue.sources if candidate.source_id == source_key),
+        None,
+    )
     if source is None:
-        raise ValueError(f"source_id is not in the communication catalogue: {source_key}")
-    return source
+        raise ValueError(
+            f"source_id is not in the bound communication catalogue snapshot: {source_key}"
+        )
+    return source, catalogue
 
 
 def _canonical_sha256(value: dict) -> str:
@@ -551,7 +554,10 @@ def _ensure_organization(session: Session, organization_id: str) -> None:
         session.flush()
 
 
-def _source_policy_values(source: CommunicationSourceSpec) -> dict[str, object]:
+def _source_policy_values(
+    source: CommunicationSourceSpec,
+    catalogue: CommunicationCatalogueSnapshot,
+) -> dict[str, object]:
     """Return the exact validated policy snapshot persisted for a source."""
     payload = asdict(source)
     for field in ("commodity_families", "material_types", "official_domains"):
@@ -562,12 +568,16 @@ def _source_policy_values(source: CommunicationSourceSpec) -> dict[str, object]:
         if checked_at is not None
         else None
     )
+    catalogue_evaluated_at = _utc_naive(catalogue.evaluated_at)
+    catalogue_evaluated_at_text = (
+        catalogue.evaluated_at.astimezone(UTC).isoformat().replace("+00:00", "Z")
+    )
     payload["rights_checked_at"] = checked_at_text
-    payload["catalogue_sha256"] = COMMUNICATION_CATALOGUE_SHA256
-    payload["catalogue_evaluated_at"] = CATALOGUE_EVALUATED_AT.isoformat().replace("+00:00", "Z")
+    payload["catalogue_sha256"] = catalogue.catalogue_sha256
+    payload["catalogue_evaluated_at"] = catalogue_evaluated_at_text
     policy_sha256 = _canonical_sha256(payload)
     return {
-        "catalogue_sha256": COMMUNICATION_CATALOGUE_SHA256,
+        "catalogue_sha256": catalogue.catalogue_sha256,
         "source_id": source.source_id,
         "organization_id": source.organization_id,
         "organization_name": source.organization_name,
@@ -597,7 +607,7 @@ def _source_policy_values(source: CommunicationSourceSpec) -> dict[str, object]:
         "rights_checked_at": (
             _utc_naive(source.rights_checked_at) if source.rights_checked_at is not None else None
         ),
-        "catalogue_evaluated_at": _utc_naive(CATALOGUE_EVALUATED_AT),
+        "catalogue_evaluated_at": catalogue_evaluated_at,
         "policy_sha256": policy_sha256,
     }
 
@@ -605,10 +615,11 @@ def _source_policy_values(source: CommunicationSourceSpec) -> dict[str, object]:
 def _ensure_source_policy_snapshot(
     session: Session,
     source: CommunicationSourceSpec,
+    catalogue: CommunicationCatalogueSnapshot,
 ) -> CommunicationSourcePolicySnapshot:
     """Flush a validated policy snapshot; the caller owns the transaction."""
-    values = _source_policy_values(source)
-    key = (COMMUNICATION_CATALOGUE_SHA256, source.source_id)
+    values = _source_policy_values(source, catalogue)
+    key = (catalogue.catalogue_sha256, source.source_id)
     existing = session.get(CommunicationSourcePolicySnapshot, key)
     if existing is not None:
         for field, expected in values.items():
@@ -789,9 +800,7 @@ def _artifact_version(
             "transcriber_attribution": meta.transcriber_attribution,
             "published_at": meta.published_at.isoformat() if meta.published_at else None,
             "available_at": meta.available_at.isoformat(),
-            "section_scopes": [
-                _section_scope_dict(scope) for scope in section_scopes
-            ],
+            "section_scopes": [_section_scope_dict(scope) for scope in section_scopes],
             # A repeat retrieval does not create another public artifact version.
             "landing_url": meta.landing_url,
             "artifact_url": meta.artifact_url,
@@ -979,7 +988,7 @@ def record_communication_artifact_metadata(
     This helper never commits or rolls back.  The caller owns the surrounding
     transaction and must commit all flushed rows together or roll them back.
     """
-    source = _source(artifact_meta.source_id, artifact_meta.catalogue_sha256)
+    source, catalogue = _source(artifact_meta.source_id, artifact_meta.catalogue_sha256)
     event_input = _normalize_event(event_meta)
     if event_input.organization_id != source.organization_id:
         raise ValueError("source_id does not belong to the event organization")
@@ -997,15 +1006,13 @@ def record_communication_artifact_metadata(
         source.source_id in _EXPLICIT_SECTION_SCOPE_SOURCE_IDS
         and artifact_input.artifact_role == "q_and_a_transcript"
         and artifact_input.material_type == "questions_and_answers"
-        and tuple(scope.scope_key for scope in normalized_scopes)
-        != ("prepared_remarks", "q_and_a")
+        and tuple(scope.scope_key for scope in normalized_scopes) != ("prepared_remarks", "q_and_a")
     ):
         raise ValueError(
-            "mixed ECB Q&A representation must declare ordered "
-            "prepared_remarks and q_and_a scopes"
+            "mixed ECB Q&A representation must declare ordered prepared_remarks and q_and_a scopes"
         )
     _ensure_organization(session, source.organization_id)
-    _ensure_source_policy_snapshot(session, source)
+    _ensure_source_policy_snapshot(session, source, catalogue)
     event, event_created = _append_event(session, event_input)
     if artifact_input.metadata_known_at < event.metadata_known_at:
         raise ValueError("artifact metadata cannot be known before its event metadata")
@@ -1120,7 +1127,7 @@ def append_catalogue_commodity_coverage(
     Changed semantics require an explicit predecessor.  The caller owns commit
     and rollback; this helper only validates, appends, and flushes.
     """
-    source = _source(meta.source_id, meta.catalogue_sha256)
+    source, catalogue = _source(meta.source_id, meta.catalogue_sha256)
     organization_id = _identifier(meta.organization_id, "organization_id")
     coverage_key = _identifier(meta.coverage_key, "coverage_key", max_length=128)
     family = _identifier(meta.commodity_family, "commodity_family")
@@ -1162,7 +1169,7 @@ def append_catalogue_commodity_coverage(
     }
     coverage_version_sha256 = _canonical_sha256(semantic)
     _ensure_organization(session, organization_id)
-    _ensure_source_policy_snapshot(session, source)
+    _ensure_source_policy_snapshot(session, source, catalogue)
     head = (
         session.execute(
             select(OrganizationCommodityCoverage)

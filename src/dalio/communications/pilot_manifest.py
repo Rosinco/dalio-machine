@@ -12,15 +12,15 @@ import hashlib
 import ipaddress
 import json
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
 from urllib.parse import urlsplit
 
 from dalio.communications.catalogue import (
-    COMMUNICATION_CATALOGUE_SHA256,
-    COMMUNICATION_SOURCES,
     CommunicationSourceSpec,
+    resolve_communication_catalogue_snapshot,
 )
 
 PILOT_MANIFEST_SCHEMA_VERSION = 1
@@ -63,7 +63,6 @@ _EXPECTED_RIGHTS_BASIS_URLS = {
     "federal_reserve": "https://www.federalreserve.gov/disclaimer.htm",
     "ecb": "https://www.ecb.europa.eu/services/using-our-site/disclaimer/html/index.en.html",
 }
-_SOURCES_BY_ID = {source.source_id: source for source in COMMUNICATION_SOURCES}
 _ID_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 _ACTOR_RE = re.compile(r"^(?:agent|human|model):[a-z0-9][a-z0-9_.-]*$")
 _DNS_LABEL_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
@@ -491,8 +490,13 @@ def _official_url(value: object, source: CommunicationSourceSpec, field: str) ->
     return raw
 
 
-def _source(source_id: str, organization_id: str, field: str) -> CommunicationSourceSpec:
-    source = _SOURCES_BY_ID.get(source_id)
+def _source(
+    source_id: str,
+    organization_id: str,
+    field: str,
+    sources_by_id: Mapping[str, CommunicationSourceSpec],
+) -> CommunicationSourceSpec:
+    source = sources_by_id.get(source_id)
     if source is None:
         raise ValueError(f"{field} is not in the communication source catalogue")
     if source.organization_id != organization_id:
@@ -511,6 +515,7 @@ def _parse_representation_spec(
     *,
     organization_id: str,
     field: str,
+    sources_by_id: Mapping[str, CommunicationSourceSpec],
 ) -> tuple[RepresentationSpec, CommunicationSourceSpec]:
     payload = _object(value, field)
     _exact_fields(payload, _REPRESENTATION_SPEC_FIELDS, field)
@@ -542,7 +547,7 @@ def _parse_representation_spec(
         raise ValueError(
             f"{field} does not match the selected {organization_id} pilot representation"
         )
-    source = _source(spec.source_id, organization_id, f"{field}.source_id")
+    source = _source(spec.source_id, organization_id, f"{field}.source_id", sources_by_id)
     if spec.material_type not in source.material_types:
         raise ValueError(f"{field}.material_type is not declared by its source")
     return spec, source
@@ -568,7 +573,11 @@ def _parse_rights_review(
     )
 
 
-def _parse_denominator(value: object, index: int) -> OrganizationDenominator:
+def _parse_denominator(
+    value: object,
+    index: int,
+    sources_by_id: Mapping[str, CommunicationSourceSpec],
+) -> OrganizationDenominator:
     field = f"scope.organizations[{index}]"
     payload = _object(value, field)
     _exact_fields(payload, _DENOMINATOR_FIELDS, field)
@@ -581,6 +590,7 @@ def _parse_denominator(value: object, index: int) -> OrganizationDenominator:
         payload["representation_spec"],
         organization_id=organization_id,
         field=f"{field}.representation_spec",
+        sources_by_id=sources_by_id,
     )
     checked_at = _datetime(payload["checked_at"], f"{field}.checked_at")
     assert checked_at is not None
@@ -618,7 +628,7 @@ def _parse_denominator(value: object, index: int) -> OrganizationDenominator:
     )
 
 
-def _parse_scope(value: object) -> PilotScope:
+def _parse_scope(value: object, sources_by_id: Mapping[str, CommunicationSourceSpec]) -> PilotScope:
     payload = _object(value, "scope")
     _exact_fields(payload, _SCOPE_FIELDS, "scope")
     start_date = _date(payload["start_date"], "scope.start_date")
@@ -628,7 +638,7 @@ def _parse_scope(value: object) -> PilotScope:
     if (start_date, end_date) != (_PILOT_START_DATE, _PILOT_END_DATE):
         raise ValueError("scope must be exactly the closed 2025 calendar year")
     organizations = tuple(
-        _parse_denominator(item, index)
+        _parse_denominator(item, index, sources_by_id)
         for index, item in enumerate(_array(payload["organizations"], "scope.organizations"))
     )
     organization_ids = [item.organization_id for item in organizations]
@@ -648,11 +658,12 @@ def _parse_candidate(
     representation_checked_at: datetime,
     event_date: date,
     field: str,
+    sources_by_id: Mapping[str, CommunicationSourceSpec],
 ) -> ArtifactCandidate:
     payload = _object(value, field)
     _exact_fields(payload, _CANDIDATE_FIELDS, field)
     source_id = _identifier(payload["source_id"], f"{field}.source_id", max_length=96)
-    source = _source(source_id, organization_id, f"{field}.source_id")
+    source = _source(source_id, organization_id, f"{field}.source_id", sources_by_id)
     artifact_role = _identifier(payload["artifact_role"], f"{field}.artifact_role", max_length=32)
     material_type = _identifier(payload["material_type"], f"{field}.material_type", max_length=48)
     if (source_id, artifact_role, material_type) != (
@@ -696,7 +707,7 @@ def _parse_candidate(
         payload["host_organization"], f"{field}.host_organization", max_length=192
     )
     if host_organization != source.host_organization or publisher != source.publisher:
-        raise ValueError(f"{field} host and publisher must match the current source catalogue")
+        raise ValueError(f"{field} host and publisher must match the bound catalogue snapshot")
     if transcriber is not None or transcriber_attribution != "not_disclosed":
         raise ValueError(f"{field} must keep transcriber null and attribution not_disclosed")
     published_at = _datetime(payload["published_at"], f"{field}.published_at", nullable=True)
@@ -758,6 +769,7 @@ def _parse_representation(
     event_date: date,
     event_metadata_known_at: datetime,
     field: str,
+    sources_by_id: Mapping[str, CommunicationSourceSpec],
 ) -> CandidateRepresentation:
     payload = _object(value, field)
     _exact_fields(payload, _REPRESENTATION_FIELDS, field)
@@ -778,7 +790,7 @@ def _parse_representation(
     )
     if tuple(section_coverage) != tuple(spec.section_coverage):
         raise ValueError(f"{field}.section_coverage conflicts with its denominator")
-    source = _source(spec.source_id, organization_id, f"{field}.source_id")
+    source = _source(spec.source_id, organization_id, f"{field}.source_id", sources_by_id)
     status_evidence_url = _official_url(
         payload["status_evidence_url"], source, f"{field}.status_evidence_url"
     )
@@ -790,6 +802,7 @@ def _parse_representation(
         representation_checked_at=checked_at,
         event_date=event_date,
         field=f"{field}.candidate",
+        sources_by_id=sources_by_id,
     )
     if status_evidence_url != candidate.landing_url:
         raise ValueError(f"{field}.status_evidence_url must equal the candidate landing_url")
@@ -808,6 +821,7 @@ def _parse_event(
     value: object,
     index: int,
     denominators: dict[str, OrganizationDenominator],
+    sources_by_id: Mapping[str, CommunicationSourceSpec],
 ) -> PilotEvent:
     field = f"events[{index}]"
     payload = _object(value, field)
@@ -859,6 +873,7 @@ def _parse_event(
             event_date=event_date,
             event_metadata_known_at=metadata_known_at,
             field=f"{field}.representation",
+            sources_by_id=sources_by_id,
         ),
     )
 
@@ -938,17 +953,19 @@ def load_pilot_manifest(path: Path) -> CommunicationPilotManifest:
     if methodology_version != PILOT_METHODOLOGY_VERSION:
         raise ValueError(f"methodology_version must be {PILOT_METHODOLOGY_VERSION}")
     catalogue_sha256 = _string(root["catalogue_sha256"], "catalogue_sha256", max_length=64)
-    if catalogue_sha256 != COMMUNICATION_CATALOGUE_SHA256:
-        raise ValueError("catalogue_sha256 must bind the current communication source catalogue")
-    scope = _parse_scope(root["scope"])
+    catalogue = resolve_communication_catalogue_snapshot(catalogue_sha256)
+    sources_by_id = {source.source_id: source for source in catalogue.sources}
+    scope = _parse_scope(root["scope"], sources_by_id)
     denominators = {item.organization_id: item for item in scope.organizations}
     events = tuple(
-        _parse_event(item, index, denominators)
+        _parse_event(item, index, denominators, sources_by_id)
         for index, item in enumerate(_array(root["events"], "events"))
     )
     created_at = _datetime(root["created_at"], "created_at")
     as_known_at = _datetime(root["as_known_at"], "as_known_at")
     assert created_at is not None and as_known_at is not None
+    if catalogue.evaluated_at > created_at or catalogue.evaluated_at > as_known_at:
+        raise ValueError("manifest clocks precede the bound catalogue evaluation time")
     manifest = CommunicationPilotManifest(
         schema_version=schema_version,
         methodology_version=methodology_version,

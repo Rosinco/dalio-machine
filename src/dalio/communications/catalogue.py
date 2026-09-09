@@ -17,9 +17,10 @@ import hashlib
 import ipaddress
 import json
 import re
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
+from types import MappingProxyType
 from urllib.parse import urlsplit
 
 ORGANIZATION_TYPES = frozenset({"central_bank", "bank", "commodity_company"})
@@ -203,7 +204,36 @@ class CommunicationSourceSpec:
         return bool(TRANSCRIPT_MATERIAL_TYPES.intersection(self.material_types))
 
 
-COMMUNICATION_SOURCES: tuple[CommunicationSourceSpec, ...] = (
+@dataclass(frozen=True)
+class CommunicationCatalogueSnapshot:
+    """One immutable source-policy catalogue vintage addressed by its semantic hash."""
+
+    catalogue_sha256: str
+    schema_version: int
+    evaluated_at: datetime
+    sources: tuple[CommunicationSourceSpec, ...]
+
+    def __post_init__(self) -> None:
+        if (
+            not isinstance(self.catalogue_sha256, str)
+            or re.fullmatch(r"[0-9a-f]{64}", self.catalogue_sha256) is None
+        ):
+            raise ValueError("catalogue_sha256 must be a lowercase SHA-256")
+        schema_version = _catalogue_schema_version(self.schema_version)
+        evaluated_at = _catalogue_evaluated_at(self.evaluated_at)
+        if not isinstance(self.sources, tuple) or not self.sources:
+            raise ValueError("catalogue snapshot sources must be a non-empty tuple")
+        expected_sha256 = _communication_catalogue_sha256(
+            self.sources,
+            schema_version=schema_version,
+            evaluated_at=evaluated_at,
+        )
+        if self.catalogue_sha256 != expected_sha256:
+            raise ValueError("catalogue_sha256 does not match the snapshot semantics")
+        object.__setattr__(self, "evaluated_at", evaluated_at)
+
+
+_COMMUNICATION_SOURCES_2026_09_09: tuple[CommunicationSourceSpec, ...] = (
     # Central banks: official policy text and event archives.  These records do
     # not assume that captions, embedded media, and transcript text share rights.
     CommunicationSourceSpec(
@@ -779,6 +809,10 @@ COMMUNICATION_SOURCES: tuple[CommunicationSourceSpec, ...] = (
     ),
 )
 
+# Public current-vintage alias.  Historical tuples remain separately named so a
+# future additive catalogue release can retain this exact source-policy snapshot.
+COMMUNICATION_SOURCES = _COMMUNICATION_SOURCES_2026_09_09
+
 
 def _required_string(value: object, field: str, source_id: str) -> str:
     if not isinstance(value, str) or not value.strip():
@@ -880,8 +914,25 @@ def _validate_distinct_tuple(
         raise ValueError(f"{source_id} {field} contains duplicates")
 
 
-def validate_communication_sources(sources: Sequence[CommunicationSourceSpec]) -> None:
+def _catalogue_schema_version(value: object) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise ValueError("catalogue schema_version must be an integer >= 1")
+    return value
+
+
+def _catalogue_evaluated_at(value: object) -> datetime:
+    if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("catalogue evaluated_at must be a timezone-aware datetime")
+    return value.astimezone(UTC)
+
+
+def validate_communication_sources(
+    sources: Sequence[CommunicationSourceSpec],
+    *,
+    evaluated_at: datetime = CATALOGUE_EVALUATED_AT,
+) -> None:
     """Reject ambiguous provenance, unsafe URLs, and permissive collection metadata."""
+    evaluation_time = _catalogue_evaluated_at(evaluated_at)
     seen_source_ids: set[str] = set()
     organization_identity: dict[str, tuple[str, str, str]] = {}
 
@@ -1006,7 +1057,7 @@ def validate_communication_sources(sources: Sequence[CommunicationSourceSpec]) -
         if spec.verified_archive_start_year is not None and (
             isinstance(spec.verified_archive_start_year, bool)
             or not isinstance(spec.verified_archive_start_year, int)
-            or not 1900 <= spec.verified_archive_start_year <= CATALOGUE_EVALUATED_AT.year
+            or not 1900 <= spec.verified_archive_start_year <= evaluation_time.year
         ):
             raise ValueError(f"{spec.source_id} has an invalid verified_archive_start_year")
         _required_string(spec.coverage_note, "coverage_note", spec.source_id)
@@ -1045,7 +1096,7 @@ def validate_communication_sources(sources: Sequence[CommunicationSourceSpec]) -
                 or spec.rights_checked_at.utcoffset() is None
             ):
                 raise ValueError(f"{spec.source_id} rights_checked_at must include a timezone")
-            if spec.rights_checked_at.astimezone(UTC) > CATALOGUE_EVALUATED_AT:
+            if spec.rights_checked_at.astimezone(UTC) > evaluation_time:
                 raise ValueError(
                     f"{spec.source_id} rights_checked_at cannot be later than the catalogue "
                     "evaluation time"
@@ -1093,9 +1144,15 @@ def validate_pilot_coverage(sources: Sequence[CommunicationSourceSpec]) -> None:
         )
 
 
-def communication_catalogue_sha256(sources: Sequence[CommunicationSourceSpec]) -> str:
-    """Return a hash independent of source and set-like tuple ordering."""
-    validate_communication_sources(sources)
+def _communication_catalogue_sha256(
+    sources: Sequence[CommunicationSourceSpec],
+    *,
+    schema_version: int,
+    evaluated_at: datetime,
+) -> str:
+    validated_schema_version = _catalogue_schema_version(schema_version)
+    validated_evaluated_at = _catalogue_evaluated_at(evaluated_at)
+    validate_communication_sources(sources, evaluated_at=validated_evaluated_at)
     canonical_sources: list[dict[str, object]] = []
     for source in sorted(sources, key=lambda candidate: candidate.source_id):
         source_payload = asdict(source)
@@ -1109,8 +1166,8 @@ def communication_catalogue_sha256(sources: Sequence[CommunicationSourceSpec]) -
         )
         canonical_sources.append(source_payload)
     payload = {
-        "evaluated_at": CATALOGUE_EVALUATED_AT.isoformat().replace("+00:00", "Z"),
-        "schema_version": CATALOGUE_SCHEMA_VERSION,
+        "evaluated_at": validated_evaluated_at.isoformat().replace("+00:00", "Z"),
+        "schema_version": validated_schema_version,
         "sources": canonical_sources,
     }
     canonical = json.dumps(
@@ -1122,9 +1179,79 @@ def communication_catalogue_sha256(sources: Sequence[CommunicationSourceSpec]) -
     return hashlib.sha256(canonical).hexdigest()
 
 
+def communication_catalogue_sha256(sources: Sequence[CommunicationSourceSpec]) -> str:
+    """Return a current-vintage hash independent of source and tuple ordering."""
+    return _communication_catalogue_sha256(
+        sources,
+        schema_version=CATALOGUE_SCHEMA_VERSION,
+        evaluated_at=CATALOGUE_EVALUATED_AT,
+    )
+
+
+def communication_catalogue_snapshot(
+    sources: Sequence[CommunicationSourceSpec],
+    *,
+    schema_version: int,
+    evaluated_at: datetime,
+) -> CommunicationCatalogueSnapshot:
+    """Return a validated immutable catalogue snapshot with a bound semantic hash."""
+    frozen_sources = tuple(sources)
+    validated_schema_version = _catalogue_schema_version(schema_version)
+    validated_evaluated_at = _catalogue_evaluated_at(evaluated_at)
+    return CommunicationCatalogueSnapshot(
+        catalogue_sha256=_communication_catalogue_sha256(
+            frozen_sources,
+            schema_version=validated_schema_version,
+            evaluated_at=validated_evaluated_at,
+        ),
+        schema_version=validated_schema_version,
+        evaluated_at=validated_evaluated_at,
+        sources=frozen_sources,
+    )
+
+
 validate_communication_sources(COMMUNICATION_SOURCES)
 validate_pilot_coverage(COMMUNICATION_SOURCES)
-COMMUNICATION_CATALOGUE_SHA256 = communication_catalogue_sha256(COMMUNICATION_SOURCES)
+_FROZEN_2026_09_09_CATALOGUE_SHA256 = (
+    "67d7049f1c63648c7b2d99dfee9eab290e2aca6469e9b872d0c605daaf716dc6"
+)
+_FROZEN_2026_09_09_CATALOGUE = communication_catalogue_snapshot(
+    _COMMUNICATION_SOURCES_2026_09_09,
+    schema_version=2,
+    evaluated_at=datetime(2026, 9, 9, 7, 0, 0, tzinfo=UTC),
+)
+if _FROZEN_2026_09_09_CATALOGUE.catalogue_sha256 != _FROZEN_2026_09_09_CATALOGUE_SHA256:
+    raise RuntimeError("the frozen 2026-09-09 communication catalogue snapshot changed")
+
+_CURRENT_COMMUNICATION_CATALOGUE = communication_catalogue_snapshot(
+    COMMUNICATION_SOURCES,
+    schema_version=CATALOGUE_SCHEMA_VERSION,
+    evaluated_at=CATALOGUE_EVALUATED_AT,
+)
+COMMUNICATION_CATALOGUE_SHA256 = _CURRENT_COMMUNICATION_CATALOGUE.catalogue_sha256
+COMMUNICATION_CATALOGUE_SNAPSHOTS: Mapping[str, CommunicationCatalogueSnapshot] = MappingProxyType(
+    {
+        _FROZEN_2026_09_09_CATALOGUE.catalogue_sha256: _FROZEN_2026_09_09_CATALOGUE,
+        _CURRENT_COMMUNICATION_CATALOGUE.catalogue_sha256: _CURRENT_COMMUNICATION_CATALOGUE,
+    }
+)
+
+
+def resolve_communication_catalogue_snapshot(
+    catalogue_sha256: str,
+) -> CommunicationCatalogueSnapshot:
+    """Resolve one exact policy vintage; unknown hashes never fall back to current policy."""
+    if (
+        not isinstance(catalogue_sha256, str)
+        or re.fullmatch(r"[0-9a-f]{64}", catalogue_sha256) is None
+    ):
+        raise ValueError("catalogue_sha256 must be a lowercase SHA-256")
+    snapshot = COMMUNICATION_CATALOGUE_SNAPSHOTS.get(catalogue_sha256)
+    if snapshot is None:
+        raise ValueError("catalogue_sha256 must bind a known communication catalogue snapshot")
+    if snapshot.catalogue_sha256 != catalogue_sha256:
+        raise RuntimeError("communication catalogue snapshot registry key does not match its value")
+    return snapshot
 
 
 __all__ = [
@@ -1132,6 +1259,7 @@ __all__ = [
     "CATALOGUE_EVALUATED_AT",
     "CATALOGUE_SCHEMA_VERSION",
     "COMMUNICATION_CATALOGUE_SHA256",
+    "COMMUNICATION_CATALOGUE_SNAPSHOTS",
     "COMMUNICATION_SOURCES",
     "MATERIAL_TYPES",
     "ORGANIZATION_TYPES",
@@ -1139,8 +1267,11 @@ __all__ = [
     "REQUIRED_COMMODITY_FAMILIES",
     "RIGHTS_STATUSES",
     "TRANSCRIBER_ATTRIBUTIONS",
+    "CommunicationCatalogueSnapshot",
     "CommunicationSourceSpec",
+    "communication_catalogue_snapshot",
     "communication_catalogue_sha256",
+    "resolve_communication_catalogue_snapshot",
     "validate_communication_sources",
     "validate_pilot_coverage",
 ]

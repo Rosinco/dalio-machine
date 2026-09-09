@@ -17,6 +17,13 @@ The institutional-communications source-policy catalogue is:
 
 `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\src\dalio\communications\catalogue.py`
 
+Checked manifests bind a full immutable catalogue snapshot by SHA-256. The
+current catalogue may grow without repinning or reinterpreting older manifests;
+database metadata writes also persist the bound snapshot's own hash, evaluation
+clock and policy values. Unknown or future-dated snapshot bindings are rejected.
+This compatibility mechanism changes no rights status and authorizes no
+source-content collection.
+
 The checked, metadata-only 2025 Fed/ECB pilot manifest is:
 
 `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\reference\communication_pilot_events.json`

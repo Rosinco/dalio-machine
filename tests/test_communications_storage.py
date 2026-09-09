@@ -2,13 +2,18 @@
 
 from dataclasses import replace
 from datetime import UTC, date, datetime
+from types import MappingProxyType
 
 import pytest
 from sqlalchemy import func, select
 
+import dalio.communications.catalogue as catalogue_module
 from dalio.communications.catalogue import (
+    CATALOGUE_SCHEMA_VERSION,
     COMMUNICATION_CATALOGUE_SHA256,
+    COMMUNICATION_CATALOGUE_SNAPSHOTS,
     COMMUNICATION_SOURCES,
+    communication_catalogue_snapshot,
 )
 from dalio.storage.communications import (
     CommodityCoverageMeta,
@@ -21,6 +26,7 @@ from dalio.storage.db import (
     CommunicationArtifact,
     CommunicationArtifactContent,
     CommunicationEvent,
+    CommunicationSourcePolicySnapshot,
     OrganizationCommodityCoverage,
     init_db,
     make_engine,
@@ -124,6 +130,101 @@ def test_metadata_record_is_catalogue_bound_idempotent_and_has_artifact_clocks(
     assert not hasattr(event, "available_at")
 
 
+def test_metadata_record_persists_the_exact_registered_catalogue_snapshot(
+    session_factory,
+    monkeypatch,
+):
+    current_source = SOURCES["fed_fomc_press_conferences_en"]
+    historical_source = replace(
+        current_source,
+        source_id="fed_historical_press_conferences_en",
+        publisher="Historical Board of Governors",
+    )
+    historical_evaluated_at = datetime(2025, 1, 15, 9, tzinfo=UTC)
+    historical_sources = tuple(
+        historical_source if source.source_id == current_source.source_id else source
+        for source in COMMUNICATION_SOURCES
+    )
+    historical_snapshot = communication_catalogue_snapshot(
+        historical_sources,
+        schema_version=CATALOGUE_SCHEMA_VERSION,
+        evaluated_at=historical_evaluated_at,
+    )
+    historical_hash = historical_snapshot.catalogue_sha256
+    monkeypatch.setattr(
+        catalogue_module,
+        "COMMUNICATION_CATALOGUE_SNAPSHOTS",
+        MappingProxyType(
+            {
+                **COMMUNICATION_CATALOGUE_SNAPSHOTS,
+                historical_hash: historical_snapshot,
+            }
+        ),
+    )
+    historical_artifact = replace(
+        _artifact(),
+        source_id=historical_source.source_id,
+        catalogue_sha256=historical_hash,
+        publisher=historical_source.publisher,
+    )
+    coverage_source = SOURCES["bhp_financial_results_en"]
+    historical_coverage = CommodityCoverageMeta(
+        source_id=coverage_source.source_id,
+        catalogue_sha256=historical_hash,
+        organization_id=coverage_source.organization_id,
+        coverage_key="bhp_historical_base_metals_producer",
+        commodity_family="base_metals",
+        exposure_role="producer",
+        effective_from=date(2002, 1, 1),
+        available_at=_at(1),
+        retrieved_at=_at(2),
+        metadata_known_at=_at(2),
+        evidence_url=coverage_source.landing_url,
+    )
+
+    with session_factory() as session:
+        result = record_communication_artifact_metadata(
+            session,
+            _event(),
+            historical_artifact,
+        )
+        artifact = session.get(CommunicationArtifact, result.artifact_id)
+        policy = session.get(
+            CommunicationSourcePolicySnapshot,
+            (historical_hash, historical_source.source_id),
+        )
+        coverage_id = append_catalogue_commodity_coverage(session, historical_coverage)
+        coverage = session.get(OrganizationCommodityCoverage, coverage_id)
+        coverage_policy = session.get(
+            CommunicationSourcePolicySnapshot,
+            (historical_hash, coverage_source.source_id),
+        )
+
+    assert artifact.catalogue_sha256 == historical_hash
+    assert artifact.source_id == historical_source.source_id
+    assert policy.catalogue_sha256 == historical_hash
+    assert policy.catalogue_evaluated_at == historical_evaluated_at.replace(tzinfo=None)
+    assert policy.source_id == historical_source.source_id
+    assert policy.publisher == historical_source.publisher
+    assert coverage.catalogue_sha256 == historical_hash
+    assert coverage.source_id == coverage_source.source_id
+    assert coverage_policy.catalogue_evaluated_at == historical_evaluated_at.replace(tzinfo=None)
+    assert coverage_policy.coverage_note == coverage_source.coverage_note
+
+    with (
+        session_factory() as session,
+        pytest.raises(
+            ValueError,
+            match="not in the bound communication catalogue snapshot",
+        ),
+    ):
+        record_communication_artifact_metadata(
+            session,
+            _event(),
+            replace(historical_artifact, catalogue_sha256=COMMUNICATION_CATALOGUE_SHA256),
+        )
+
+
 def test_event_and_artifact_corrections_append_successor_versions(session_factory):
     with session_factory() as session:
         first = record_communication_artifact_metadata(session, _event(), _artifact())
@@ -216,7 +317,7 @@ def test_historical_artifact_keeps_its_period_publisher_not_current_archive_name
         (
             _event(),
             replace(_artifact(), catalogue_sha256="0" * 64),
-            "current communication policy catalogue",
+            "known communication catalogue snapshot",
         ),
         (
             _event(),

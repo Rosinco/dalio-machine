@@ -3,10 +3,23 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
+from datetime import timedelta
 from pathlib import Path
+from types import MappingProxyType
 
 import pytest
 
+import dalio.communications.catalogue as catalogue_module
+from dalio.communications.catalogue import (
+    CATALOGUE_EVALUATED_AT,
+    CATALOGUE_SCHEMA_VERSION,
+    COMMUNICATION_CATALOGUE_SHA256,
+    COMMUNICATION_CATALOGUE_SNAPSHOTS,
+    COMMUNICATION_SOURCES,
+    communication_catalogue_sha256,
+    communication_catalogue_snapshot,
+)
 from dalio.communications.institution_year_manifest import (
     BOE_2025_MANIFEST_SHA256,
     INSTITUTION_YEAR_MANIFEST_SCHEMA_VERSION,
@@ -346,7 +359,7 @@ def test_completeness_basis_is_bound_to_representation_role(tmp_path):
 def test_catalogue_binding_source_semantics_and_clocks_are_fail_closed(tmp_path):
     payload = _payload()
     payload["catalogue_sha256"] = "0" * 64
-    with pytest.raises(ValueError, match="current communication source catalogue"):
+    with pytest.raises(ValueError, match="known communication catalogue snapshot"):
         load_institution_year_manifest(_write(tmp_path, payload))
 
     payload = _payload()
@@ -359,6 +372,69 @@ def test_catalogue_binding_source_semantics_and_clocks_are_fail_closed(tmp_path)
     payload = _payload()
     _events(payload)[0]["metadata_known_at"] = "2026-09-09T11:21:48Z"
     with pytest.raises(ValueError, match="checked_at follows"):
+        load_institution_year_manifest(_write(tmp_path, payload))
+
+
+def test_loader_uses_only_sources_from_the_bound_catalogue_snapshot(tmp_path, monkeypatch):
+    base = next(
+        source
+        for source in COMMUNICATION_SOURCES
+        if source.source_id == "boe_monetary_policy_press_conferences_en"
+    )
+    added = replace(base, source_id="boe_future_press_conferences_en")
+    expanded_sources = (*COMMUNICATION_SOURCES, added)
+    expanded_hash = communication_catalogue_sha256(expanded_sources)
+    expanded_snapshot = communication_catalogue_snapshot(
+        expanded_sources,
+        schema_version=CATALOGUE_SCHEMA_VERSION,
+        evaluated_at=CATALOGUE_EVALUATED_AT,
+    )
+    assert expanded_snapshot.catalogue_sha256 == expanded_hash
+    monkeypatch.setattr(
+        catalogue_module,
+        "COMMUNICATION_CATALOGUE_SNAPSHOTS",
+        MappingProxyType({**COMMUNICATION_CATALOGUE_SNAPSHOTS, expanded_hash: expanded_snapshot}),
+    )
+
+    payload = _payload()
+    payload["catalogue_sha256"] = expanded_hash
+    for spec in _scope(payload)["representation_specs"]:
+        if spec["source_id"] == base.source_id:
+            spec["source_id"] = added.source_id
+    for event in _events(payload):
+        for observation in _representations(event):
+            locator = observation["locator"]
+            if isinstance(locator, dict) and locator["source_id"] == base.source_id:
+                locator["source_id"] = added.source_id
+
+    assert (
+        load_institution_year_manifest(_write(tmp_path, payload)).catalogue_sha256 == expanded_hash
+    )
+    payload["catalogue_sha256"] = COMMUNICATION_CATALOGUE_SHA256
+    with pytest.raises(ValueError, match="not in the communication source catalogue"):
+        load_institution_year_manifest(_write(tmp_path, payload))
+
+
+def test_institution_year_manifest_cannot_predate_its_catalogue_snapshot(tmp_path, monkeypatch):
+    future_snapshot = communication_catalogue_snapshot(
+        COMMUNICATION_SOURCES,
+        schema_version=CATALOGUE_SCHEMA_VERSION,
+        evaluated_at=CATALOGUE_EVALUATED_AT + timedelta(days=1),
+    )
+    monkeypatch.setattr(
+        catalogue_module,
+        "COMMUNICATION_CATALOGUE_SNAPSHOTS",
+        MappingProxyType(
+            {
+                **COMMUNICATION_CATALOGUE_SNAPSHOTS,
+                future_snapshot.catalogue_sha256: future_snapshot,
+            }
+        ),
+    )
+    payload = _payload()
+    payload["catalogue_sha256"] = future_snapshot.catalogue_sha256
+
+    with pytest.raises(ValueError, match="clocks precede.*catalogue evaluation time"):
         load_institution_year_manifest(_write(tmp_path, payload))
 
 

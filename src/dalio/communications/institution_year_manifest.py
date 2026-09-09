@@ -12,15 +12,15 @@ import hashlib
 import ipaddress
 import json
 import re
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 from dalio.communications.catalogue import (
-    COMMUNICATION_CATALOGUE_SHA256,
-    COMMUNICATION_SOURCES,
     CommunicationSourceSpec,
+    resolve_communication_catalogue_snapshot,
 )
 
 INSTITUTION_YEAR_MANIFEST_SCHEMA_VERSION = 1
@@ -28,7 +28,6 @@ INSTITUTION_YEAR_METHODOLOGY_VERSION = "communication-institution-year-metadata-
 BOE_2025_MANIFEST_ID = "boe_2025_mpr_press_conferences"
 BOE_2025_MANIFEST_SHA256 = "4bba6c8415de46718a5ae6906d0d09e9041f7be1903dbeef7be4f40223717eb2"
 
-_SOURCES_BY_ID = {source.source_id: source for source in COMMUNICATION_SOURCES}
 _ID = re.compile(r"^[a-z][a-z0-9_]*$")
 _ACTOR = re.compile(r"^(?:agent|model):[a-z0-9][a-z0-9_.-]*$")
 _DNS_LABEL = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
@@ -343,13 +342,7 @@ def _host(url: str, field: str) -> str:
     if "\\" in url or any(character.isspace() or ord(character) < 32 for character in url):
         raise ValueError(f"{field} cannot contain whitespace or control characters")
     parts = urlsplit(url)
-    if (
-        parts.scheme != "https"
-        or parts.username
-        or parts.password
-        or parts.port
-        or parts.fragment
-    ):
+    if parts.scheme != "https" or parts.username or parts.password or parts.port or parts.fragment:
         raise ValueError(f"{field} must be a simple HTTPS URL")
     raw_hostname = parts.hostname or ""
     if raw_hostname.endswith("."):
@@ -378,8 +371,13 @@ def _official_url(value: object, source: CommunicationSourceSpec, field: str) ->
     return url
 
 
-def _source(source_id: str, organization_id: str, field: str) -> CommunicationSourceSpec:
-    source = _SOURCES_BY_ID.get(source_id)
+def _source(
+    source_id: str,
+    organization_id: str,
+    field: str,
+    sources_by_id: Mapping[str, CommunicationSourceSpec],
+) -> CommunicationSourceSpec:
+    source = sources_by_id.get(source_id)
     if source is None:
         raise ValueError(f"{field} is not in the communication source catalogue")
     if source.organization_id != organization_id:
@@ -388,14 +386,17 @@ def _source(source_id: str, organization_id: str, field: str) -> CommunicationSo
 
 
 def _parse_spec(
-    value: object, organization_id: str, index: int
+    value: object,
+    organization_id: str,
+    index: int,
+    sources_by_id: Mapping[str, CommunicationSourceSpec],
 ) -> InstitutionYearRepresentationSpec:
     field = f"scope.representation_specs[{index}]"
     payload = _object(value, field)
     _exact(payload, _SPEC_FIELDS, field)
     representation_key = _identifier(payload["representation_key"], f"{field}.representation_key")
     source_id = _identifier(payload["source_id"], f"{field}.source_id")
-    source = _source(source_id, organization_id, f"{field}.source_id")
+    source = _source(source_id, organization_id, f"{field}.source_id", sources_by_id)
     artifact_role = _identifier(payload["artifact_role"], f"{field}.artifact_role")
     material_type = _identifier(payload["material_type"], f"{field}.material_type")
     if _ROLE_MATERIALS.get(artifact_role) != material_type:
@@ -447,13 +448,14 @@ def _parse_locator(
     spec: InstitutionYearRepresentationSpec,
     checked_at: datetime,
     field: str,
+    sources_by_id: Mapping[str, CommunicationSourceSpec],
 ) -> InstitutionYearLocator:
     payload = _object(value, field)
     _exact(payload, _LOCATOR_FIELDS, field)
     source_id = _identifier(payload["source_id"], f"{field}.source_id")
     if source_id != spec.source_id:
         raise ValueError(f"{field}.source_id conflicts with its representation specification")
-    source = _source(source_id, organization_id, f"{field}.source_id")
+    source = _source(source_id, organization_id, f"{field}.source_id", sources_by_id)
     locator_kind = _string(payload["locator_kind"], f"{field}.locator_kind", max_length=64)
     if locator_kind not in _LOCATOR_KINDS:
         raise ValueError(f"{field}.locator_kind is unsupported")
@@ -599,6 +601,7 @@ def _parse_observation(
     event_known_at: datetime,
     index: int,
     field_prefix: str,
+    sources_by_id: Mapping[str, CommunicationSourceSpec],
 ) -> InstitutionYearRepresentationObservation:
     field = f"{field_prefix}.representations[{index}]"
     payload = _object(value, field)
@@ -616,7 +619,12 @@ def _parse_observation(
     assert checked_at is not None
     if checked_at > event_known_at:
         raise ValueError(f"{field}.checked_at follows event metadata_known_at")
-    source = _source(spec.source_id, organization_id, f"{field}.representation_key")
+    source = _source(
+        spec.source_id,
+        organization_id,
+        f"{field}.representation_key",
+        sources_by_id,
+    )
     evidence_url = _official_url(
         payload["status_evidence_url"], source, f"{field}.status_evidence_url"
     )
@@ -635,6 +643,7 @@ def _parse_observation(
             spec=spec,
             checked_at=checked_at,
             field=f"{field}.locator",
+            sources_by_id=sources_by_id,
         )
         expected_status = {
             "official_direct_artifact": "direct_artifact_link",
@@ -654,7 +663,9 @@ def _parse_observation(
     )
 
 
-def _parse_scope(value: object) -> InstitutionYearScope:
+def _parse_scope(
+    value: object, sources_by_id: Mapping[str, CommunicationSourceSpec]
+) -> InstitutionYearScope:
     field = "scope"
     payload = _object(value, field)
     _exact(payload, _SCOPE_FIELDS, field)
@@ -666,12 +677,20 @@ def _parse_scope(value: object) -> InstitutionYearScope:
         raise ValueError("scope must cover exactly one calendar year")
     event_type = _identifier(payload["event_type"], "scope.event_type")
     raw_specs = _array(payload["representation_specs"], "scope.representation_specs")
-    specs = tuple(_parse_spec(item, organization_id, index) for index, item in enumerate(raw_specs))
+    specs = tuple(
+        _parse_spec(item, organization_id, index, sources_by_id)
+        for index, item in enumerate(raw_specs)
+    )
     spec_keys = [spec.representation_key for spec in specs]
     if len(spec_keys) != len(set(spec_keys)):
         raise ValueError("scope.representation_specs contains duplicate representation keys")
     sources = [
-        _source(source_id, organization_id, "scope.representation_specs.source_id")
+        _source(
+            source_id,
+            organization_id,
+            "scope.representation_specs.source_id",
+            sources_by_id,
+        )
         for source_id in {spec.source_id for spec in specs}
     ]
     denominator_source_url = _string(
@@ -716,7 +735,12 @@ def _parse_scope(value: object) -> InstitutionYearScope:
     )
 
 
-def _parse_event(value: object, scope: InstitutionYearScope, index: int) -> InstitutionYearEvent:
+def _parse_event(
+    value: object,
+    scope: InstitutionYearScope,
+    index: int,
+    sources_by_id: Mapping[str, CommunicationSourceSpec],
+) -> InstitutionYearEvent:
     field = f"events[{index}]"
     payload = _object(value, field)
     _exact(payload, _EVENT_FIELDS, field)
@@ -744,6 +768,7 @@ def _parse_event(value: object, scope: InstitutionYearScope, index: int) -> Inst
             event_known_at=metadata_known_at,
             index=observation_index,
             field_prefix=field,
+            sources_by_id=sources_by_id,
         )
         for observation_index, item in enumerate(
             _array(payload["representations"], f"{field}.representations")
@@ -799,18 +824,21 @@ def load_institution_year_manifest(path: Path) -> InstitutionYearManifest:
         raise ValueError("unsupported institution-year manifest schema_version")
     if root["methodology_version"] != INSTITUTION_YEAR_METHODOLOGY_VERSION:
         raise ValueError("unsupported institution-year methodology_version")
-    if root["catalogue_sha256"] != COMMUNICATION_CATALOGUE_SHA256:
-        raise ValueError("manifest must bind the current communication source catalogue")
+    catalogue_sha256 = _string(root["catalogue_sha256"], "catalogue_sha256", max_length=64)
+    catalogue = resolve_communication_catalogue_snapshot(catalogue_sha256)
+    sources_by_id = {source.source_id: source for source in catalogue.sources}
     if root["content_capture_authorized"] is not False:
         raise ValueError("institution-year metadata cannot authorize content capture")
-    scope = _parse_scope(root["scope"])
+    scope = _parse_scope(root["scope"], sources_by_id)
     created_at = _datetime(root["created_at"], "created_at")
     as_known_at = _datetime(root["as_known_at"], "as_known_at")
     assert created_at is not None and as_known_at is not None
+    if catalogue.evaluated_at > created_at or catalogue.evaluated_at > as_known_at:
+        raise ValueError("manifest clocks precede the bound catalogue evaluation time")
     if created_at > as_known_at or scope.checked_at > as_known_at:
         raise ValueError("manifest clocks follow as_known_at")
     events = tuple(
-        _parse_event(item, scope, index)
+        _parse_event(item, scope, index, sources_by_id)
         for index, item in enumerate(_array(root["events"], "events"))
     )
     event_keys = [event.event_key for event in events]
@@ -832,7 +860,7 @@ def load_institution_year_manifest(path: Path) -> InstitutionYearManifest:
     return InstitutionYearManifest(
         schema_version=INSTITUTION_YEAR_MANIFEST_SCHEMA_VERSION,
         methodology_version=INSTITUTION_YEAR_METHODOLOGY_VERSION,
-        catalogue_sha256=COMMUNICATION_CATALOGUE_SHA256,
+        catalogue_sha256=catalogue_sha256,
         manifest_id=_identifier(root["manifest_id"], "manifest_id"),
         created_by=_actor(root["created_by"], "created_by"),
         created_at=created_at,

@@ -1,20 +1,27 @@
 """Rights-aware, metadata-only institutional communications source catalogue."""
 
 from dataclasses import FrozenInstanceError, replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
+from types import MappingProxyType
 from urllib.parse import urlsplit
 
 import pytest
 
+import dalio.communications.catalogue as catalogue_module
 from dalio.communications.catalogue import (
     ACQUISITION_STATUSES,
+    CATALOGUE_EVALUATED_AT,
     CATALOGUE_SCHEMA_VERSION,
     COMMUNICATION_CATALOGUE_SHA256,
+    COMMUNICATION_CATALOGUE_SNAPSHOTS,
     COMMUNICATION_SOURCES,
     REQUIRED_COMMODITY_FAMILIES,
     RIGHTS_STATUSES,
+    CommunicationCatalogueSnapshot,
     CommunicationSourceSpec,
     communication_catalogue_sha256,
+    communication_catalogue_snapshot,
+    resolve_communication_catalogue_snapshot,
     validate_communication_sources,
     validate_pilot_coverage,
 )
@@ -152,6 +159,88 @@ def test_catalogue_fingerprint_is_canonical_and_change_sensitive():
         COMMUNICATION_SOURCES[1:]
     )
     assert communication_catalogue_sha256(changed) != COMMUNICATION_CATALOGUE_SHA256
+
+
+def test_catalogue_snapshot_registry_is_immutable_and_resolves_exact_hashes(monkeypatch):
+    snapshot = resolve_communication_catalogue_snapshot(COMMUNICATION_CATALOGUE_SHA256)
+
+    assert snapshot.catalogue_sha256 == COMMUNICATION_CATALOGUE_SHA256
+    assert snapshot.schema_version == CATALOGUE_SCHEMA_VERSION
+    assert snapshot.sources == COMMUNICATION_SOURCES
+    with pytest.raises(TypeError):
+        COMMUNICATION_CATALOGUE_SNAPSHOTS["0" * 64] = snapshot  # type: ignore[index]
+    with pytest.raises(ValueError, match="known communication catalogue snapshot"):
+        resolve_communication_catalogue_snapshot("0" * 64)
+    with pytest.raises(ValueError, match="lowercase SHA-256"):
+        resolve_communication_catalogue_snapshot("A" * 64)
+
+    changed = (replace(COMMUNICATION_SOURCES[0], publisher="Changed publisher"),) + (
+        COMMUNICATION_SOURCES[1:]
+    )
+    monkeypatch.setattr(catalogue_module, "COMMUNICATION_SOURCES", changed)
+    assert resolve_communication_catalogue_snapshot(COMMUNICATION_CATALOGUE_SHA256) is snapshot
+    assert snapshot.sources[0].publisher != "Changed publisher"
+
+
+def test_catalogue_snapshot_factory_binds_and_freezes_its_exact_vintage():
+    evaluated_at = CATALOGUE_EVALUATED_AT - timedelta(minutes=1)
+    snapshot = communication_catalogue_snapshot(
+        list(COMMUNICATION_SOURCES),
+        schema_version=CATALOGUE_SCHEMA_VERSION,
+        evaluated_at=evaluated_at,
+    )
+
+    assert snapshot.sources == COMMUNICATION_SOURCES
+    assert isinstance(snapshot.sources, tuple)
+    assert snapshot.evaluated_at == evaluated_at
+    assert snapshot.catalogue_sha256 != COMMUNICATION_CATALOGUE_SHA256
+
+
+def test_catalogue_snapshot_rejects_unbound_or_ambiguous_semantics(monkeypatch):
+    with pytest.raises(ValueError, match="does not match the snapshot semantics"):
+        CommunicationCatalogueSnapshot(
+            catalogue_sha256="0" * 64,
+            schema_version=CATALOGUE_SCHEMA_VERSION,
+            evaluated_at=CATALOGUE_EVALUATED_AT,
+            sources=COMMUNICATION_SOURCES,
+        )
+    with pytest.raises(ValueError, match="schema_version"):
+        communication_catalogue_snapshot(
+            COMMUNICATION_SOURCES,
+            schema_version=True,  # type: ignore[arg-type]
+            evaluated_at=CATALOGUE_EVALUATED_AT,
+        )
+    with pytest.raises(ValueError, match="timezone-aware"):
+        communication_catalogue_snapshot(
+            COMMUNICATION_SOURCES,
+            schema_version=CATALOGUE_SCHEMA_VERSION,
+            evaluated_at=datetime(2026, 9, 9),
+        )
+
+    snapshot = resolve_communication_catalogue_snapshot(COMMUNICATION_CATALOGUE_SHA256)
+    wrong_key = "1" * 64
+    monkeypatch.setattr(
+        catalogue_module,
+        "COMMUNICATION_CATALOGUE_SNAPSHOTS",
+        MappingProxyType({wrong_key: snapshot}),
+    )
+    with pytest.raises(RuntimeError, match="registry key"):
+        resolve_communication_catalogue_snapshot(wrong_key)
+
+
+def test_catalogue_snapshot_validates_rights_clocks_against_its_own_vintage():
+    rights_checked_at = CATALOGUE_EVALUATED_AT - timedelta(minutes=1)
+    reviewed = replace(
+        COMMUNICATION_SOURCES[0],
+        rights_checked_by="human:test-reviewer",
+        rights_checked_at=rights_checked_at,
+    )
+    with pytest.raises(ValueError, match="evaluation time"):
+        communication_catalogue_snapshot(
+            (reviewed, *COMMUNICATION_SOURCES[1:]),
+            schema_version=CATALOGUE_SCHEMA_VERSION,
+            evaluated_at=rights_checked_at - timedelta(seconds=1),
+        )
 
 
 def test_catalogue_is_metadata_only_and_keeps_provenance_roles_separate():

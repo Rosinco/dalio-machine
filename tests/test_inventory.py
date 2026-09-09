@@ -7,15 +7,21 @@ import json
 from dataclasses import replace
 from datetime import UTC, date, datetime
 from pathlib import Path
+from types import MappingProxyType
 
 import pytest
 from sqlalchemy import insert, select
 from sqlalchemy.exc import IntegrityError
 
 from dalio.communications.catalogue import (
+    CATALOGUE_SCHEMA_VERSION as COMMUNICATION_CATALOGUE_SCHEMA_VERSION,
+)
+from dalio.communications.catalogue import (
     COMMUNICATION_CATALOGUE_SHA256,
+    COMMUNICATION_CATALOGUE_SNAPSHOTS,
     COMMUNICATION_SOURCES,
     CommunicationSourceSpec,
+    communication_catalogue_snapshot,
 )
 from dalio.data_sources.bis_global_liquidity import (
     BIS_GLI_CATALOGUE_VINTAGE_PREFIX,
@@ -180,8 +186,7 @@ def _canonical_sha256(value: dict) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def _trust_test_communication_catalogue(monkeypatch) -> None:
-    catalogue_sha256 = "a" * 64
+def _register_test_communication_catalogue(monkeypatch):
     evaluated_at = datetime(2026, 1, 10, tzinfo=UTC)
     source = CommunicationSourceSpec(
         source_id="test_bank_letters",
@@ -211,11 +216,32 @@ def _trust_test_communication_catalogue(monkeypatch) -> None:
         rights_checked_at=datetime(2026, 1, 1, tzinfo=UTC),
     )
     import dalio.communications.catalogue as catalogue_module
-    import dalio.storage.communications as communications_storage
 
-    monkeypatch.setattr(catalogue_module, "COMMUNICATION_SOURCES", (source,))
-    monkeypatch.setattr(communications_storage, "COMMUNICATION_CATALOGUE_SHA256", catalogue_sha256)
-    monkeypatch.setattr(communications_storage, "CATALOGUE_EVALUATED_AT", evaluated_at)
+    monkeypatch.setattr(
+        catalogue_module,
+        "_APPROVED_OFFICIAL_DOMAINS",
+        frozenset({*catalogue_module._APPROVED_OFFICIAL_DOMAINS, "example.test"}),
+    )
+    snapshot = communication_catalogue_snapshot(
+        (source,),
+        schema_version=COMMUNICATION_CATALOGUE_SCHEMA_VERSION,
+        evaluated_at=evaluated_at,
+    )
+    monkeypatch.setattr(
+        catalogue_module,
+        "COMMUNICATION_CATALOGUE_SNAPSHOTS",
+        MappingProxyType(
+            {
+                **COMMUNICATION_CATALOGUE_SNAPSHOTS,
+                snapshot.catalogue_sha256: snapshot,
+            }
+        ),
+    )
+    return snapshot
+
+
+def _trust_test_communication_catalogue(monkeypatch) -> str:
+    snapshot = _register_test_communication_catalogue(monkeypatch)
     monkeypatch.setattr(
         inventory_module,
         "_communication_catalogue_summary",
@@ -223,22 +249,24 @@ def _trust_test_communication_catalogue(monkeypatch) -> None:
             "validation_status": "valid",
             "source_policy_count": 1,
             "organization_count": 1,
-            "sha256": catalogue_sha256,
+            "sha256": snapshot.catalogue_sha256,
             "error": None,
         },
     )
+    return snapshot.catalogue_sha256
 
 
 def _insert_communication_corpus(
     engine,
     *,
     finalize: bool,
+    catalogue_sha256: str = "a" * 64,
+    policy_publisher: str = "Test Bank",
     valid_text_hash: bool = True,
     valid_corpus_hash: bool = True,
     segment_kind: str = "letter",
     speaker_side: str = "publisher",
 ) -> Path:
-    catalogue_sha256 = "a" * 64
     source_id = "test_bank_letters"
     organization_id = "test_bank"
     checked_at = datetime(2026, 1, 1)
@@ -256,7 +284,7 @@ def _insert_communication_corpus(
         "landing_url": landing_url,
         "official_domains_json": '["example.test"]',
         "host_organization": "Test Bank",
-        "publisher": "Test Bank",
+        "publisher": policy_publisher,
         "transcriber": None,
         "transcriber_attribution": "not_applicable",
         "material_types_json": '["ceo_letter"]',
@@ -284,7 +312,7 @@ def _insert_communication_corpus(
         "landing_url": landing_url,
         "official_domains": ["example.test"],
         "host_organization": "Test Bank",
-        "publisher": "Test Bank",
+        "publisher": policy_publisher,
         "transcriber": None,
         "transcriber_attribution": "not_applicable",
         "material_types": ["ceo_letter"],
@@ -451,9 +479,7 @@ def _insert_communication_corpus(
         scope_set_sha256 = _canonical_sha256(
             {
                 "artifact_version_sha256": artifact_sha256,
-                "canonicalization_version": (
-                    "communication_artifact_section_scopes_json_v1"
-                ),
+                "canonicalization_version": ("communication_artifact_section_scopes_json_v1"),
                 "section_scopes": [section_scope],
             }
         )
@@ -465,9 +491,7 @@ def _insert_communication_corpus(
                 scopes_json=scopes_json,
                 scope_set_sha256=scope_set_sha256,
                 metadata_known_at=artifact_known_at,
-                canonicalization_version=(
-                    "communication_artifact_section_scopes_json_v1"
-                ),
+                canonicalization_version=("communication_artifact_section_scopes_json_v1"),
             )
         )
         retrieval_id = connection.execute(
@@ -884,10 +908,10 @@ def test_communication_inventory_reports_one_capture_multi_section_scope(tmp_pat
 
 
 def test_unfinalized_communication_segments_are_not_analysis_ready(tmp_path, monkeypatch):
-    _trust_test_communication_catalogue(monkeypatch)
+    catalogue_sha256 = _trust_test_communication_catalogue(monkeypatch)
     engine = make_engine(tmp_path / "communications-unfinalized.db")
     init_db(engine)
-    _insert_communication_corpus(engine, finalize=False)
+    _insert_communication_corpus(engine, finalize=False, catalogue_sha256=catalogue_sha256)
 
     communications = build_observatory_inventory(engine)["communications"]
 
@@ -906,10 +930,10 @@ def test_unfinalized_communication_segments_are_not_analysis_ready(tmp_path, mon
 
 
 def test_verified_finalized_communication_corpus_is_analysis_ready(tmp_path, monkeypatch):
-    _trust_test_communication_catalogue(monkeypatch)
+    catalogue_sha256 = _trust_test_communication_catalogue(monkeypatch)
     engine = make_engine(tmp_path / "communications-finalized.db")
     init_db(engine)
-    _insert_communication_corpus(engine, finalize=True)
+    _insert_communication_corpus(engine, finalize=True, catalogue_sha256=catalogue_sha256)
 
     inventory = build_observatory_inventory(engine)
     communications = inventory["communications"]
@@ -943,14 +967,57 @@ def test_verified_finalized_communication_corpus_is_analysis_ready(tmp_path, mon
     assert "do not prove transcript semantic fidelity" in communications["integrity_assurance_note"]
 
 
+def test_registered_historical_communication_snapshot_remains_trusted(tmp_path, monkeypatch):
+    snapshot = _register_test_communication_catalogue(monkeypatch)
+    engine = make_engine(tmp_path / "communications-registered-historical.db")
+    init_db(engine)
+    _insert_communication_corpus(
+        engine,
+        finalize=False,
+        catalogue_sha256=snapshot.catalogue_sha256,
+    )
+
+    inventory = build_observatory_inventory(engine)
+    communications = inventory["communications"]
+
+    assert communications["registered_catalogue_snapshot_check_status"] == "valid"
+    assert communications["registered_catalogue_snapshot_mismatch_count"] == 0
+    assert communications["current_catalogue_snapshot_check_status"] == "valid"
+    assert communications["current_catalogue_snapshot_mismatch_count"] == 0
+    assert communications["untrusted_catalogue_hash_count"] == 0
+    assert communications["integrity_status"] == "valid"
+
+
+def test_registered_historical_policy_must_match_its_exact_snapshot(tmp_path, monkeypatch):
+    snapshot = _register_test_communication_catalogue(monkeypatch)
+    engine = make_engine(tmp_path / "communications-forged-historical-policy.db")
+    init_db(engine)
+    _insert_communication_corpus(
+        engine,
+        finalize=False,
+        catalogue_sha256=snapshot.catalogue_sha256,
+        policy_publisher="Forged Test Bank",
+    )
+
+    inventory = build_observatory_inventory(engine)
+    communications = inventory["communications"]
+
+    assert communications["policy_snapshot_sha256_mismatch_count"] == 0
+    assert communications["registered_catalogue_snapshot_check_status"] == "invalid"
+    assert communications["registered_catalogue_snapshot_mismatch_count"] == 1
+    assert communications["untrusted_catalogue_hash_count"] == 0
+    assert "registered_catalogue_snapshot" in communications["integrity_failures"]
+    assert communications["integrity_status"] == "invalid"
+
+
 def test_communication_inventory_rejects_scope_clock_after_retrieval_and_capture(
     tmp_path,
     monkeypatch,
 ):
-    _trust_test_communication_catalogue(monkeypatch)
+    catalogue_sha256 = _trust_test_communication_catalogue(monkeypatch)
     engine = make_engine(tmp_path / "communications-scope-clock.db")
     init_db(engine)
-    _insert_communication_corpus(engine, finalize=True)
+    _insert_communication_corpus(engine, finalize=True, catalogue_sha256=catalogue_sha256)
     _tamper_immutable_communication_row(
         engine,
         table_name="communication_artifact_section_scope_sets",
@@ -994,21 +1061,17 @@ def test_communication_corpus_v2_hash_binds_section_ordinal():
 
     assert inventory_module._communication_corpus_sha256(
         [segment], "communication_segments_json_v2"
-    ) != inventory_module._communication_corpus_sha256(
-        [moved], "communication_segments_json_v2"
-    )
+    ) != inventory_module._communication_corpus_sha256([moved], "communication_segments_json_v2")
     assert inventory_module._communication_corpus_sha256(
         [segment], "communication_segments_json_v1"
-    ) == inventory_module._communication_corpus_sha256(
-        [moved], "communication_segments_json_v1"
-    )
+    ) == inventory_module._communication_corpus_sha256([moved], "communication_segments_json_v1")
 
 
 def test_communication_inventory_rejects_missing_scope_declaration(tmp_path, monkeypatch):
-    _trust_test_communication_catalogue(monkeypatch)
+    catalogue_sha256 = _trust_test_communication_catalogue(monkeypatch)
     engine = make_engine(tmp_path / "communications-missing-scope.db")
     init_db(engine)
-    _insert_communication_corpus(engine, finalize=False)
+    _insert_communication_corpus(engine, finalize=False, catalogue_sha256=catalogue_sha256)
     _tamper_immutable_communication_row(
         engine,
         table_name="communication_artifact_section_scope_sets",
@@ -1027,18 +1090,15 @@ def test_communication_inventory_rejects_missing_scope_declaration(tmp_path, mon
 
 
 def test_communication_inventory_rejects_malformed_scope_json(tmp_path, monkeypatch):
-    _trust_test_communication_catalogue(monkeypatch)
+    catalogue_sha256 = _trust_test_communication_catalogue(monkeypatch)
     engine = make_engine(tmp_path / "communications-malformed-scope.db")
     init_db(engine)
-    _insert_communication_corpus(engine, finalize=False)
+    _insert_communication_corpus(engine, finalize=False, catalogue_sha256=catalogue_sha256)
     _tamper_immutable_communication_row(
         engine,
         table_name="communication_artifact_section_scope_sets",
         operation="update",
-        sql=(
-            "UPDATE communication_artifact_section_scope_sets "
-            "SET scopes_json = 'not-json'"
-        ),
+        sql=("UPDATE communication_artifact_section_scope_sets SET scopes_json = 'not-json'"),
     )
 
     inventory = build_observatory_inventory(engine)
@@ -1054,10 +1114,10 @@ def test_communication_inventory_rejects_invalid_segment_scope_binding(
     tmp_path,
     monkeypatch,
 ):
-    _trust_test_communication_catalogue(monkeypatch)
+    catalogue_sha256 = _trust_test_communication_catalogue(monkeypatch)
     engine = make_engine(tmp_path / "communications-bad-segment-scope.db")
     init_db(engine)
-    _insert_communication_corpus(engine, finalize=False)
+    _insert_communication_corpus(engine, finalize=False, catalogue_sha256=catalogue_sha256)
     _tamper_immutable_communication_row(
         engine,
         table_name="communication_segments",
@@ -1075,7 +1135,7 @@ def test_communication_inventory_rejects_invalid_segment_scope_binding(
 
 
 def test_communication_scope_rejects_incompatible_segment_kind(tmp_path, monkeypatch):
-    _trust_test_communication_catalogue(monkeypatch)
+    catalogue_sha256 = _trust_test_communication_catalogue(monkeypatch)
     engine = make_engine(tmp_path / "communications-scope-kind-trigger.db")
     init_db(engine)
 
@@ -1083,6 +1143,7 @@ def test_communication_scope_rejects_incompatible_segment_kind(tmp_path, monkeyp
         _insert_communication_corpus(
             engine,
             finalize=False,
+            catalogue_sha256=catalogue_sha256,
             segment_kind="q_and_a_question",
             speaker_side="external",
         )
@@ -1092,10 +1153,10 @@ def test_communication_inventory_detects_tampered_segment_kind_scope(
     tmp_path,
     monkeypatch,
 ):
-    _trust_test_communication_catalogue(monkeypatch)
+    catalogue_sha256 = _trust_test_communication_catalogue(monkeypatch)
     engine = make_engine(tmp_path / "communications-scope-kind-inventory.db")
     init_db(engine)
-    _insert_communication_corpus(engine, finalize=True)
+    _insert_communication_corpus(engine, finalize=True, catalogue_sha256=catalogue_sha256)
     _tamper_immutable_communication_row(
         engine,
         table_name="communication_segments",
@@ -1119,10 +1180,10 @@ def test_communication_inventory_detects_tampered_segment_speaker_semantics(
     tmp_path,
     monkeypatch,
 ):
-    _trust_test_communication_catalogue(monkeypatch)
+    catalogue_sha256 = _trust_test_communication_catalogue(monkeypatch)
     engine = make_engine(tmp_path / "communications-segment-speaker.db")
     init_db(engine)
-    _insert_communication_corpus(engine, finalize=True)
+    _insert_communication_corpus(engine, finalize=True, catalogue_sha256=catalogue_sha256)
     _tamper_immutable_communication_row(
         engine,
         table_name="communication_segments",
@@ -1138,7 +1199,9 @@ def test_communication_inventory_detects_tampered_segment_speaker_semantics(
                         for field in inventory_module._COMMUNICATION_CANONICAL_SEGMENT_FIELDS_V2
                     )
                 )
-            ).mappings().one()
+            )
+            .mappings()
+            .one()
         )
     corpus_sha256 = inventory_module._communication_corpus_sha256(
         [segment],
@@ -1149,8 +1212,7 @@ def test_communication_inventory_detects_tampered_segment_speaker_semantics(
         table_name="communication_extraction_finalizations",
         operation="update",
         sql=(
-            "UPDATE communication_extraction_finalizations "
-            f"SET corpus_sha256 = '{corpus_sha256}'"
+            f"UPDATE communication_extraction_finalizations SET corpus_sha256 = '{corpus_sha256}'"
         ),
     )
 
@@ -1168,10 +1230,10 @@ def test_communication_inventory_rejects_finalized_scope_without_substantive_tex
     tmp_path,
     monkeypatch,
 ):
-    _trust_test_communication_catalogue(monkeypatch)
+    catalogue_sha256 = _trust_test_communication_catalogue(monkeypatch)
     engine = make_engine(tmp_path / "communications-empty-finalized-scope.db")
     init_db(engine)
-    _insert_communication_corpus(engine, finalize=True)
+    _insert_communication_corpus(engine, finalize=True, catalogue_sha256=catalogue_sha256)
     _tamper_immutable_communication_row(
         engine,
         table_name="communication_segments",
@@ -1202,12 +1264,13 @@ def test_communication_hash_mismatch_fails_closed(
     failure,
     monkeypatch,
 ):
-    _trust_test_communication_catalogue(monkeypatch)
+    catalogue_sha256 = _trust_test_communication_catalogue(monkeypatch)
     engine = make_engine(tmp_path / f"communications-bad-{failure}.db")
     init_db(engine)
     _insert_communication_corpus(
         engine,
         finalize=True,
+        catalogue_sha256=catalogue_sha256,
         valid_text_hash=valid_text_hash,
         valid_corpus_hash=valid_corpus_hash,
     )
@@ -1222,10 +1285,12 @@ def test_communication_hash_mismatch_fails_closed(
 
 
 def test_communication_inventory_rehashes_blob_and_trigger_contract(tmp_path, monkeypatch):
-    _trust_test_communication_catalogue(monkeypatch)
+    catalogue_sha256 = _trust_test_communication_catalogue(monkeypatch)
     engine = make_engine(tmp_path / "communications-contract.db")
     init_db(engine)
-    blob_path = _insert_communication_corpus(engine, finalize=True)
+    blob_path = _insert_communication_corpus(
+        engine, finalize=True, catalogue_sha256=catalogue_sha256
+    )
     blob_path.write_bytes(b"tampered bytes")
 
     tampered_blob = build_observatory_inventory(engine)

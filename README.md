@@ -44,6 +44,12 @@ links and current official rights notices for human review. **No communication
 content bytes, database event/artifact rows or transcript segments have been
 collected**, and no automated acquisition is authorized. The pilot's 16/16 means
 link coverage only—not a rights-cleared or analysis-ready corpus.
+Checked communication manifests resolve their catalogue SHA-256 to the complete
+frozen source-policy vintage that produced it. Growing the current catalogue can
+therefore neither invalidate an old manifest nor reinterpret it through newer
+publisher, transcriber or rights metadata; unknown snapshots fail closed.
+Communication metadata writes persist that same snapshot's hash, evaluation
+clock and policy values rather than stamping current catalogue metadata.
 An independent 2025 Bank of England cohort closes all four Monetary Policy
 Report press-conference events and measures representations separately: 4/4
 exact Bank-hosted transcript links, 4/4 official-page video locators (3/4 exact
@@ -233,8 +239,9 @@ and [ADR 0011](decisions/0011-human-report-claim-decisions.md).
 
 `dalio-communication-rights-packet` reads only the checked
 `data/reference/communication_pilot_events.json` manifest. It validates the
-fixed 2025 Fed/ECB 8+8 denominator, current source-catalogue hash, exact official
-domains, selected representation form, provenance and conservative clocks, then
+fixed 2025 Fed/ECB 8+8 denominator, manifest-bound source-catalogue snapshot,
+exact official domains, selected representation form, provenance and
+conservative clocks, then
 writes `communication_rights_latest.{json,md}` plus a hash-addressed immutable
 pair under `data/review/`. It performs no network, database or source-content
 reads.
@@ -258,7 +265,9 @@ result means four official-page locators, including one ID-only observation; it
 does not mean four exact URLs or any verified captions. Fixed and hash-addressed
 JSON/Markdown outputs are written under `data/review/` with
 `content_capture_authorized=false`. See
-[ADR 0015](decisions/0015-boe-2025-communication-metadata-inventory.md).
+[ADR 0015](decisions/0015-boe-2025-communication-metadata-inventory.md). The
+immutable source-policy snapshot contract is documented in
+[ADR 0016](decisions/0016-communication-catalogue-snapshots.md).
 
 ## Tests
 
@@ -287,4 +296,4 @@ Tier drives dashboard confidence labels — Tier 2 readings are flagged as such.
 
 ## Status
 
-Pre-alpha. The cycle and fundamentals product is working, and the raw-history foundation now includes sovereign-debt anatomy, Swedish debt holders, IMF financial-account transactions, 127,970 bilateral investment-position rows, three Swedish AP-fund disclosures, a ten-document official-report corpus, 63,179 monthly commodity observations, ten official-money histories and 22 separate shadow-liquidity histories. Read-only liquidity diagnostics, a 20-item report review queue, an append-only human decision gate and a 20-policy/18-organization institutional-communications schema foundation are available. A closed 2025 Fed/ECB pilot adds 16/16 exact first-party text links and an offline rights-review packet; a separate closed 2025 BoE cohort adds representation-specific metadata for four MPR press conferences. The ordered one-artifact/one-byte-lineage, multi-section storage contract is ready, but there is no source content or database communication evidence. This is not a complete global money-flow map, a communications corpus, a universal M5, an additive liquidity total, a causal or deposit-flow model, or an investable commodity return history: all 20 report candidates still need named human review; every communication representation remains rights-gated; allocator history has only one H1 2026 release per fund; QPSD and IMF position coverage are voluntary and uneven; and debt cash-flow schedules, broader banking/funding channels and horizon risk scenarios remain to be built. See `project_context.md`, ADRs 0004–0015 and `data/README.md` for current boundaries.
+Pre-alpha. The cycle and fundamentals product is working, and the raw-history foundation now includes sovereign-debt anatomy, Swedish debt holders, IMF financial-account transactions, 127,970 bilateral investment-position rows, three Swedish AP-fund disclosures, a ten-document official-report corpus, 63,179 monthly commodity observations, ten official-money histories and 22 separate shadow-liquidity histories. Read-only liquidity diagnostics, a 20-item report review queue, an append-only human decision gate and a 20-policy/18-organization institutional-communications schema foundation are available. A closed 2025 Fed/ECB pilot adds 16/16 exact first-party text links and an offline rights-review packet; a separate closed 2025 BoE cohort adds representation-specific metadata for four MPR press conferences. Checked manifests bind immutable source-policy snapshots, and the ordered one-artifact/one-byte-lineage, multi-section storage contract is ready, but there is no source content or database communication evidence. This is not a complete global money-flow map, a communications corpus, a universal M5, an additive liquidity total, a causal or deposit-flow model, or an investable commodity return history: all 20 report candidates still need named human review; every communication representation remains rights-gated; allocator history has only one H1 2026 release per fund; QPSD and IMF position coverage are voluntary and uneven; and debt cash-flow schedules, broader banking/funding channels and horizon risk scenarios remain to be built. See `project_context.md`, ADRs 0004–0016 and `data/README.md` for current boundaries.

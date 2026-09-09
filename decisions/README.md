@@ -20,3 +20,4 @@ always-loaded state lives in `project_context.md` (Decision Log has one line per
 | [0013](0013-fed-ecb-communications-metadata-pilot.md) | Closed 2025 Fed–ECB 8+8 press-conference metadata pilot with one exact first-party text candidate per event and human-gated acquisition | 2026-09-09 |
 | [0014](0014-communication-section-scope-sets.md) | One artifact version and byte-capture lineage with ordered, provenance-specific logical sections and scope-bound extraction segments | 2026-09-09 |
 | [0015](0015-boe-2025-communication-metadata-inventory.md) | Closed 2025 Bank of England MPR press-conference cohort with separate transcript, video-locator and exact-caption coverage | 2026-09-09 |
+| [0016](0016-communication-catalogue-snapshots.md) | Immutable hash-addressed communication source-policy snapshots preserve historical manifest interpretation as the catalogue grows | 2026-09-09 |

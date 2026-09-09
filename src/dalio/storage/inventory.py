@@ -545,9 +545,7 @@ _COMMUNICATION_SCOPE_FIELDS = (
 )
 _COMMUNICATION_SCOPE_SEGMENT_KINDS = {
     "prepared_remarks": frozenset({"prepared_remarks", "heading", "other"}),
-    "q_and_a": frozenset(
-        {"q_and_a_question", "q_and_a_answer", "heading", "other"}
-    ),
+    "q_and_a": frozenset({"q_and_a_question", "q_and_a_answer", "heading", "other"}),
     "ceo_letter": frozenset({"letter", "heading", "other"}),
     "chair_letter": frozenset({"letter", "heading", "other"}),
     "annual_report": frozenset({"letter", "narrative", "heading", "other"}),
@@ -2373,9 +2371,7 @@ def _communication_corpus_sha256(
         raise ValueError("unsupported communication-segment canonicalization")
     payload = {
         "canonicalization": canonicalization_version,
-        "segments": [
-            {field: segment[field] for field in fields} for segment in segments
-        ],
+        "segments": [{field: segment[field] for field in fields} for segment in segments],
     }
     encoded = json.dumps(
         payload,
@@ -2903,6 +2899,8 @@ def _communication_integrity_inventory(
         "policy_snapshot_json_malformed_count": None,
         "policy_snapshot_semantic_mismatch_count": None,
         "policy_snapshot_sha256_mismatch_count": None,
+        "registered_catalogue_snapshot_check_status": "not_checked",
+        "registered_catalogue_snapshot_mismatch_count": None,
         "current_catalogue_snapshot_check_status": "not_checked",
         "current_catalogue_snapshot_mismatch_count": None,
         "untrusted_catalogue_hash_count": None,
@@ -3088,30 +3086,55 @@ def _communication_integrity_inventory(
         ):
             policy_semantic_mismatch_count += 1
 
+    registered_snapshot_check_status = "not_checked"
+    registered_snapshot_mismatch_count: int | None = None
     current_snapshot_check_status = "not_checked"
     current_snapshot_mismatch_count: int | None = None
+    trusted_catalogue_hashes: set[str] = set()
     if catalogue["validation_status"] == "valid":
         try:
-            from dalio.communications.catalogue import COMMUNICATION_SOURCES
+            from dalio.communications.catalogue import (
+                COMMUNICATION_CATALOGUE_SNAPSHOTS,
+                resolve_communication_catalogue_snapshot,
+            )
             from dalio.storage.communications import _source_policy_values
 
-            expected_current = {
-                (catalogue["sha256"], source.source_id): _source_policy_values(source)
-                for source in COMMUNICATION_SOURCES
-            }
+            expected_registered: dict[tuple[str, str], dict[str, object]] = {}
+            for registered_hash in COMMUNICATION_CATALOGUE_SNAPSHOTS:
+                snapshot = resolve_communication_catalogue_snapshot(registered_hash)
+                trusted_catalogue_hashes.add(snapshot.catalogue_sha256)
+                expected_registered.update(
+                    {
+                        (snapshot.catalogue_sha256, source.source_id): _source_policy_values(
+                            source,
+                            snapshot,
+                        )
+                        for source in snapshot.sources
+                    }
+                )
+            current_hash = str(catalogue["sha256"])
+            resolve_communication_catalogue_snapshot(current_hash)
+            registered_snapshot_mismatch_count = 0
             current_snapshot_mismatch_count = 0
             for key, policy in policy_by_key.items():
-                if key[0] != catalogue["sha256"]:
+                if key[0] not in trusted_catalogue_hashes:
                     continue
-                expected = expected_current.get(key)
-                if expected is None or any(
+                expected = expected_registered.get(key)
+                mismatched = expected is None or any(
                     policy[field] != expected_value for field, expected_value in expected.items()
-                ):
-                    current_snapshot_mismatch_count += 1
-            current_snapshot_check_status = (
-                "valid" if current_snapshot_mismatch_count == 0 else "invalid"
+                )
+                registered_snapshot_mismatch_count += mismatched
+                if key[0] == current_hash:
+                    current_snapshot_mismatch_count += mismatched
+            registered_snapshot_check_status = (
+                "valid" if registered_snapshot_mismatch_count == 0 else "invalid"
             )
+            if current_snapshot_mismatch_count:
+                current_snapshot_check_status = "invalid"
+            else:
+                current_snapshot_check_status = "valid"
         except Exception as exc:  # pragma: no cover - optional catalogue defence
+            registered_snapshot_check_status = f"error: {type(exc).__name__}: {exc}"
             current_snapshot_check_status = f"error: {type(exc).__name__}: {exc}"
     event_rows = [
         dict(row)
@@ -3217,17 +3240,13 @@ def _communication_integrity_inventory(
                 *(
                     scope_sets.c[field]
                     for field in sorted(
-                        _COMMUNICATION_REQUIRED_COLUMNS[
-                            "communication_artifact_section_scope_sets"
-                        ]
+                        _COMMUNICATION_REQUIRED_COLUMNS["communication_artifact_section_scope_sets"]
                     )
                 )
             )
         ).mappings()
     ]
-    scope_set_by_artifact = {
-        int(row["artifact_id"]): row for row in scope_set_rows
-    }
+    scope_set_by_artifact = {int(row["artifact_id"]): row for row in scope_set_rows}
     parsed_scopes_by_artifact: dict[int, list[dict[str, Any]]] = {}
     invalid_scope_artifact_ids: set[int] = set()
     orphan_scope_set_count = 0
@@ -3246,8 +3265,7 @@ def _communication_integrity_inventory(
         else:
             try:
                 binding_valid = (
-                    scope_set["artifact_version_sha256"]
-                    == artifact["artifact_version_sha256"]
+                    scope_set["artifact_version_sha256"] == artifact["artifact_version_sha256"]
                     and scope_set["metadata_known_at"] >= artifact["metadata_known_at"]
                 )
             except TypeError:
@@ -3283,9 +3301,13 @@ def _communication_integrity_inventory(
             invalid_scope_artifact_ids.add(artifact_id)
 
         policy_key = (
-            str(artifact["catalogue_sha256"]),
-            str(artifact["source_id"]),
-        ) if artifact is not None else ("", "")
+            (
+                str(artifact["catalogue_sha256"]),
+                str(artifact["source_id"]),
+            )
+            if artifact is not None
+            else ("", "")
+        )
         ordinals = [scope.get("section_ordinal") for scope in scopes]
         scope_keys = [scope.get("scope_key") for scope in scopes]
         try:
@@ -3293,13 +3315,17 @@ def _communication_integrity_inventory(
         except TypeError:
             scope_keys_unique = False
         artifact_semantics = (
-            artifact["artifact_role"],
-            artifact["material_type"],
-            artifact["origin_type"],
-            artifact["provenance_tier"],
-            artifact["transcriber"],
-            artifact["transcriber_attribution"],
-        ) if artifact is not None else None
+            (
+                artifact["artifact_role"],
+                artifact["material_type"],
+                artifact["origin_type"],
+                artifact["provenance_tier"],
+                artifact["transcriber"],
+                artifact["transcriber_attribution"],
+            )
+            if artifact is not None
+            else None
+        )
         primary_scope_matches = sum(
             (
                 scope.get("artifact_role"),
@@ -3314,8 +3340,7 @@ def _communication_integrity_inventory(
         )
         semantic_valid = (
             artifact is not None
-            and scope_set["canonicalization_version"]
-            == _COMMUNICATION_SCOPE_CANONICALIZATION
+            and scope_set["canonicalization_version"] == _COMMUNICATION_SCOPE_CANONICALIZATION
             and isinstance(scope_set["scope_count"], int)
             and not isinstance(scope_set["scope_count"], bool)
             and 1 <= scope_set["scope_count"] <= 32
@@ -3560,18 +3585,12 @@ def _communication_integrity_inventory(
         ):
             bad_content_bindings.add(content_id)
         if (
-            (
-                retrieval is not None
-                and (
-                    content["captured_at"] < retrieval["retrieved_at"]
-                    or content["captured_at"] < retrieval["metadata_known_at"]
-                )
+            retrieval is not None
+            and (
+                content["captured_at"] < retrieval["retrieved_at"]
+                or content["captured_at"] < retrieval["metadata_known_at"]
             )
-            or (
-                scope_set is not None
-                and content["captured_at"] < scope_set["metadata_known_at"]
-            )
-        ):
+        ) or (scope_set is not None and content["captured_at"] < scope_set["metadata_known_at"]):
             clock_mismatch_count += 1
 
         digest = str(content["content_sha256"])
@@ -3725,7 +3744,7 @@ def _communication_integrity_inventory(
     stored_catalogue_hashes = {
         str(row["catalogue_sha256"]) for row in (*policy_rows, *artifact_rows, *coverage_rows)
     }
-    untrusted_catalogue_hashes = sorted(stored_catalogue_hashes - {str(catalogue["sha256"])})
+    untrusted_catalogue_hashes = sorted(stored_catalogue_hashes - trusted_catalogue_hashes)
 
     extraction_rows = [
         dict(row)
@@ -3787,8 +3806,7 @@ def _communication_integrity_inventory(
         segments_by_extraction[extraction_id].append(segment)
         artifact_id = artifact_id_by_extraction.get(extraction_id)
         declared_ordinals = [
-            scope.get("section_ordinal")
-            for scope in parsed_scopes_by_artifact.get(artifact_id, [])
+            scope.get("section_ordinal") for scope in parsed_scopes_by_artifact.get(artifact_id, [])
         ]
         section_ordinal = segment["section_ordinal"]
         declared_scope = next(
@@ -3834,14 +3852,8 @@ def _communication_integrity_inventory(
         if (
             speaker_side not in {"publisher", "external", "moderator", "unknown"}
             or (segment_kind == "q_and_a_question" and speaker_side == "publisher")
-            or (
-                segment_kind == "q_and_a_answer"
-                and speaker_side not in {"publisher", "unknown"}
-            )
-            or (
-                segment_kind in {"prepared_remarks", "letter"}
-                and speaker_side != "publisher"
-            )
+            or (segment_kind == "q_and_a_answer" and speaker_side not in {"publisher", "unknown"})
+            or (segment_kind in {"prepared_remarks", "letter"} and speaker_side != "publisher")
         ):
             segment_semantic_mismatch_count += 1
             segment_semantic_mismatch_ids.add(extraction_id)
@@ -3908,8 +3920,7 @@ def _communication_integrity_inventory(
             bad_structure_ids.add(extraction_id)
         artifact_id = artifact_id_by_extraction.get(extraction_id)
         declared_section_ordinals = [
-            scope.get("section_ordinal")
-            for scope in parsed_scopes_by_artifact.get(artifact_id, [])
+            scope.get("section_ordinal") for scope in parsed_scopes_by_artifact.get(artifact_id, [])
         ]
         represented_section_ordinals = sorted(
             {
@@ -3945,10 +3956,7 @@ def _communication_integrity_inventory(
                 "q_and_a_answer",
             }.issubset(kinds):
                 bad_section_semantic_ids.add(extraction_id)
-        if (
-            finalization["canonicalization_version"]
-            != _COMMUNICATION_CANONICALIZATION_V2
-        ):
+        if finalization["canonicalization_version"] != _COMMUNICATION_CANONICALIZATION_V2:
             unsupported_canonicalization_ids.add(extraction_id)
             continue
         try:
@@ -3981,6 +3989,8 @@ def _communication_integrity_inventory(
             "policy_snapshot_json_malformed_count": malformed_policy_json_count,
             "policy_snapshot_semantic_mismatch_count": policy_semantic_mismatch_count,
             "policy_snapshot_sha256_mismatch_count": policy_hash_mismatch_count,
+            "registered_catalogue_snapshot_check_status": registered_snapshot_check_status,
+            "registered_catalogue_snapshot_mismatch_count": (registered_snapshot_mismatch_count),
             "current_catalogue_snapshot_check_status": current_snapshot_check_status,
             "current_catalogue_snapshot_mismatch_count": current_snapshot_mismatch_count,
             "untrusted_catalogue_hash_count": len(untrusted_catalogue_hashes),
@@ -4046,6 +4056,10 @@ def _communication_integrity_inventory(
         ("policy_snapshot_json", result["policy_snapshot_json_malformed_count"]),
         ("policy_snapshot_semantics", result["policy_snapshot_semantic_mismatch_count"]),
         ("policy_snapshot_sha256", result["policy_snapshot_sha256_mismatch_count"]),
+        (
+            "registered_catalogue_snapshot",
+            result["registered_catalogue_snapshot_mismatch_count"],
+        ),
         ("current_catalogue_snapshot", result["current_catalogue_snapshot_mismatch_count"]),
         ("untrusted_catalogue_hash", result["untrusted_catalogue_hash_count"]),
         ("event_version_sha256", result["event_version_sha256_mismatch_count"]),
@@ -4102,6 +4116,8 @@ def _communication_integrity_inventory(
         failures.append("schema_contract")
     if catalogue["validation_status"] == "valid" and current_snapshot_check_status != "valid":
         failures.append("current_catalogue_snapshot_check")
+    if catalogue["validation_status"] == "valid" and registered_snapshot_check_status != "valid":
+        failures.append("registered_catalogue_snapshot_check")
     result["integrity_failures"] = failures
     result["integrity_status"] = "invalid" if failures else "valid"
     return result
@@ -4161,9 +4177,7 @@ def _communications_inventory(
         )
         multi_section_artifact_count = int(
             connection.scalar(
-                select(func.count())
-                .select_from(scope_sets)
-                .where(scope_sets.c.scope_count > 1)
+                select(func.count()).select_from(scope_sets).where(scope_sets.c.scope_count > 1)
             )
             or 0
         )
