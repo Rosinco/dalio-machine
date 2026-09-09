@@ -26,6 +26,8 @@ The IMF PIP/DIP bilateral-position ledger preserves portfolio assets and direct-
 
 Institutional prose has its own evidence ledger. Ten official PDFs—the latest and immediately previous eligible issue in each of five allowlisted families—are archived and completely extracted into 852 physical pages: Riksbank Monetary Policy Reports, ECB/Eurosystem staff projections, Federal Reserve Monetary Policy Reports, IMF World Economic Outlooks and BIS Annual Economic Reports. There are currently **zero human-verified report claims**. The PDFs and pages are source material, not yet reviewed conclusions; automated summaries and report-driven risk scoring are not active.
 
+A separate read-only review packet now places 20 tightly bounded, page-cited model drafts—four from each latest report—in front of a human reviewer. Every item is labelled `UNVERIFIED MODEL DRAFT`; this queue does not create database claims, scores, probabilities or portfolio guidance.
+
 ## Why
 
 Reading Dalio's framework as a *lens* (not an oracle): the dashboard surfaces where each economy sits in the long-term debt cycle, four-stage short-term debt cycle, and big-cycle power framework. Use it to understand constraints and diversified-portfolio fragilities, not to time entry or exit.
@@ -78,6 +80,9 @@ dalio-audit-observatory --db data/dalio.db
 # Read-only liquidity diagnostics → JSON + Markdown in data/snapshots/
 dalio-liquidity-brief --db data/dalio.db
 
+# Read-only official-report review queue → JSON + Markdown in data/review/
+dalio-report-review-packet --db data/dalio.db
+
 # Local official PDFs are deliberately acquired separately. The input folders
 # must contain the deterministic filenames recorded in data/reference/*.json.
 python -m dalio.pipelines.ingest_ap_funds --artifact-dir /path/to/verified-ap-pdfs
@@ -88,9 +93,12 @@ dalio-app
 # open http://localhost:8501
 ```
 
-The report command requires Poppler's `pdftotext`. Both PDF ingestion commands verify every expected SHA-256 before opening a database transaction. They do not download documents.
+The report-ingestion command requires Poppler's `pdftotext`. Both PDF ingestion
+commands verify every expected SHA-256 before opening a database transaction.
+They do not download documents; the review-packet command only reads
+already-ingested evidence.
 
-From Windows Explorer, this checkout is available at `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine`; the local SQLite file is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\dalio.db`, and durable source evidence is under `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\artifacts`. The latest generated brief is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\snapshots\liquidity_latest.md`; its machine-readable companion is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\snapshots\liquidity_latest.json`. See `data/README.md` before copying, deleting or rebuilding anything under `data/`.
+From Windows Explorer, this checkout is available at `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine`; the local SQLite file is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\dalio.db`, and durable source evidence is under `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\artifacts`. The latest generated liquidity brief is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\snapshots\liquidity_latest.md`; the latest unverified report review is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\report_claims_latest.md`. See `data/README.md` before copying, deleting or rebuilding anything under `data/`.
 
 Riksbank SWEA contributes eight daily Swedish series: policy rate; 2-, 5- and 10-year government yields; and SEK per USD, EUR, NOK and GBP. No key is required. Keyless runs use a safe 13-second request interval for the official 5-calls/minute limit; when `RIKSBANK_API_KEY` is set, the adapter sends it in `Ocp-Apim-Subscription-Key` automatically. The NOK feed starts on 2023-11-27 because older observations were quoted per 100 NOK and are not mixed into the current per-1-NOK series.
 
@@ -146,6 +154,31 @@ Publisher statements can be reconstructed on the date the source document became
 
 The same point-in-time rule applies to numeric and typed data: first choose the newest complete release that was available at the requested UTC instant, then filter its rows. Filtering first could silently resurrect a holder, counterpart or series cell omitted in a newer vintage. Where an official source exposes no trustworthy publication timestamp, `available_at` is conservatively the retrieval time—not the observation date.
 
+### Report-claim review packet
+
+The read-only `dalio-report-review-packet` command combines the checked, versioned
+`data/reference/report_claim_candidates.json` catalogue with the latest eligible
+issue in each of the five report families, then requires its declared extraction
+to be complete: Riksbank MPR, ECB/Eurosystem projections, Federal Reserve MPR,
+IMF WEO and BIS Annual Economic Report. The initial packet includes four
+candidates per selected issue
+(twenty total), and the contract admits no more. Catalogue checks prove identity,
+hashes, page locators and exact excerpts—not semantic correctness.
+
+Every candidate in both output formats is labelled exactly
+`UNVERIFIED MODEL DRAFT`. Generated files are fixed
+`data/review/report_claims_latest.{json,md}` aliases plus content-addressed
+`report_claims_YYYY-MM-DD_<first-16-packet-sha256>.{json,md}` copies. Neither a
+catalogue entry nor a review packet is a verified conclusion or may feed scores,
+scenarios or portfolio guidance.
+
+The packet builder does not write to the database. Approval remains a separate,
+human-only gate: a named human may `approve`, `revise` or `reject`; revision
+preserves the original draft, rejection creates no verified claim, and no model
+may choose a decision or supply a reviewer identity. See
+[ADR 0010](decisions/0010-report-claim-review-queue.md) for the implemented
+review-queue contract and its deliberately separate approval boundary.
+
 ## Tests
 
 ```bash
@@ -173,4 +206,4 @@ Tier drives dashboard confidence labels — Tier 2 readings are flagged as such.
 
 ## Status
 
-Pre-alpha. The cycle and fundamentals product is working, and the raw-history foundation now includes sovereign-debt anatomy, Swedish debt holders, IMF financial-account transactions, 127,970 bilateral investment-position rows, three Swedish AP-fund disclosures, a ten-document official-report corpus, 63,179 monthly commodity observations, ten official-money histories and 22 separate shadow-liquidity histories. A first read-only, unscored liquidity brief is now available, but this is not a complete global money-flow map, a universal M5, an additive liquidity total, a causal or deposit-flow model, or an investable commodity return history: report conclusions still need named human review; allocator history has only one H1 2026 release per fund; QPSD and IMF position coverage are voluntary and uneven; and debt cash-flow schedules, broader banking/funding channels and horizon risk scenarios remain to be built. See `project_context.md`, ADRs 0004–0009 and `data/README.md` for current boundaries.
+Pre-alpha. The cycle and fundamentals product is working, and the raw-history foundation now includes sovereign-debt anatomy, Swedish debt holders, IMF financial-account transactions, 127,970 bilateral investment-position rows, three Swedish AP-fund disclosures, a ten-document official-report corpus, 63,179 monthly commodity observations, ten official-money histories and 22 separate shadow-liquidity histories. Read-only liquidity diagnostics and a 20-item report review queue are available, but this is not a complete global money-flow map, a universal M5, an additive liquidity total, a causal or deposit-flow model, or an investable commodity return history: all 20 report candidates still need named human review; allocator history has only one H1 2026 release per fund; QPSD and IMF position coverage are voluntary and uneven; and debt cash-flow schedules, broader banking/funding channels and horizon risk scenarios remain to be built. See `project_context.md`, ADRs 0004–0010 and `data/README.md` for current boundaries.

@@ -29,6 +29,19 @@ The prefix is the first 16 lowercase hexadecimal characters of the full
 `snapshot_sha256`. These are regenerable, content-addressed exports rather than
 source-release artifacts; the two `liquidity_latest` files remain fixed aliases.
 
+The generated report-review packet has these fixed Windows paths:
+
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\report_claims_latest.md`
+
+and
+
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\report_claims_latest.json`.
+
+The content-addressed copies follow
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\report_claims_YYYY-MM-DD_<packet-hash-prefix>.{json,md}`,
+where the prefix is the first 16 characters of the full packet SHA-256. The
+current packet is `report_claims_2026-09-09_20c687f1cb907c71.{json,md}`.
+
 The durable liquidity-frontier artifact root is:
 
 `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\artifacts\liquidity_frontier`
@@ -61,6 +74,7 @@ Run the read-only inventory commands below to reproduce the inventory.
 | SCB Swedish government-debt holders | 8,349 current rows |
 | AP2/AP3/AP4 allocator disclosures | 48 current facts |
 | Official institutional reports | 10 documents; 852 extracted pages; 0 verified claims |
+| Report review queue | 5 latest documents; 20 unverified model drafts; 0 promoted claims |
 | World Bank monthly commodity history | 63,179 rows; 70 prices + 17 indices; 1960-01–2026-08 |
 | Official-money history | 5,794 rows; 10/10 pinned native series |
 | Separate liquidity frontier | 20,676 rows; 22/22 series (3 BIS + 19 OFR) |
@@ -82,6 +96,7 @@ dalio-audit-observatory --db data/dalio.db --json
 | `dalio.db.before-release-clock-migration.sqlite3` | One-time exact backup created beside a legacy database before the release-event uniqueness migration | Recovery evidence; preserve until the migrated database has passed inventory, integrity and foreign-key checks |
 | `reference/ap_funds_h1_2026.json` | Versioned metadata and model-checked transcription of 48 AP2/AP3/AP4 facts | Reproducible source input; not a replacement for the PDFs |
 | `reference/report_issues.json` | Exact metadata, hashes, filenames and page counts for ten official report issues | Versioned source input; not a replacement for the PDFs |
+| `reference/report_claim_candidates.json` | Checked, versioned candidate propositions and exact page locators for the report-review queue | Review input only; structural/excerpt checks do not make a candidate verified |
 | `artifacts/allocators/sha256/` | Content-addressed copies of official allocator PDFs | Durable evidence; do not treat as a disposable cache |
 | `artifacts/reports/sha256/` | Content-addressed copies of official central-bank/IMF/BIS PDFs | Durable evidence; do not treat as a disposable cache |
 | `artifacts/worldbank_commodities/<hash-prefix>/` | Exact World Bank Pink Sheet XLSX vintages and deterministic native-series catalogues, addressed by workbook SHA-256 | Durable evidence; do not treat as a disposable cache |
@@ -89,6 +104,7 @@ dalio-audit-observatory --db data/dalio.db --json
 | `artifacts/liquidity_frontier/` | Content-addressed BIS/OFR responses, provider semantic catalogues and OFR per-series payload/missingness ledgers | Durable release evidence; paths and full hashes are bound in `data_release_artifacts` and rechecked by inventory |
 | `cache/` | HTTP response cache used to reduce repeated source calls | Disposable, but a fresh rebuild then depends on the upstream source still serving the data |
 | `snapshots/` | Generated exports consumed by the dashboard or downstream tools, including fixed `liquidity_latest.{json,md}` aliases and hash-addressed `liquidity_YYYY-MM-DD_<snapshot-hash-prefix>.{json,md}` copies | Regenerable from the database and versioned calculation code; not source evidence |
+| `review/` | Generated `report_claims_latest.{json,md}` review aliases and hash-addressed packet copies | Regenerable, unverified review material; never source evidence or database truth |
 | `backups/` | Deliberate local database safety copies | Preserve until their replacement has been verified |
 
 ## Evidence shapes
@@ -184,6 +200,39 @@ Different questions require different storage shapes:
   text for all 852 physical pages. It currently contains no human-verified
   claims; raw pages are not approved conclusions.
 
+## Report-claim review packet
+
+ADR 0010 defines the read-only `dalio-report-review-packet` command. It selects
+the latest eligible issue from each of the five pinned families—Riksbank MPR,
+ECB/Eurosystem projections, Federal Reserve MPR, IMF WEO and BIS Annual Economic
+Report—at an explicit known-at cutoff, then requires that issue's declared
+extraction to be complete. It does not silently choose an older issue merely
+because that issue already has candidate text.
+
+The checked-in `reference/report_claim_candidates.json` catalogue holds four
+model-draft candidates per selected issue—twenty in the initial packet—and the
+contract permits no more. “Checked” means schema, identity,
+artifact/extraction/page hash, physical-page and exact-excerpt validation. It
+does not mean human
+semantic approval. A catalogue that targets a stale issue, exceeds the limit or
+does not match the stored extraction must fail visibly.
+
+Every JSON candidate and every Markdown candidate carries the exact label
+`UNVERIFIED MODEL DRAFT`. The builder writes only generated
+`review/report_claims_latest.{json,md}` aliases and
+`review/report_claims_YYYY-MM-DD_<packet-hash-prefix>.{json,md}` copies, where
+the prefix is the first 16 lowercase hexadecimal characters of the full packet
+SHA-256. The `review/` directory is ignored as generated output. Packets are
+derivatives for human inspection, not preserved source artifacts, verified
+claims, scores or scenario inputs.
+
+The packet builder itself is database-read-only. A separate write path
+must require a real, named human to choose `approve`, `revise` or `reject`.
+Approval creates a verified record only after semantic review; revision retains
+the original model draft and creates review lineage; rejection retains the
+decision and creates no verified claim. Models cannot choose an outcome, supply
+a human identity or approve their own drafts.
+
 ## Derived liquidity diagnostics
 
 `dalio-liquidity-brief` is a read-only database consumer. It selects complete
@@ -266,10 +315,11 @@ python -m dalio.pipelines.fetch_money_liquidity
 python -m dalio.pipelines.fetch_shadow_liquidity
 python scripts/audit_observatory.py --db data/dalio.db
 dalio-liquidity-brief --db data/dalio.db
+dalio-report-review-packet --db data/dalio.db
 ```
 
-The final command reads the database in SQLite read-only mode and refreshes the
-fixed `data/snapshots/liquidity_latest.{json,md}` aliases plus
+The liquidity-brief command reads the database in SQLite read-only mode and
+refreshes the fixed `data/snapshots/liquidity_latest.{json,md}` aliases plus
 content-addressed
 `liquidity_YYYY-MM-DD_<snapshot-hash-prefix>.{json,md}` files. For an explicit
 reproducible cutoff, supply both clocks, for example:
@@ -284,6 +334,12 @@ snapshot hash, so different contents for the same economic date do not overwrite
 one another. The fixed `latest` aliases do move on each successful run. The
 immutable input releases and source artifacts remain the source-evidence audit
 record.
+
+The report-review command is also read-only. It validates the checked candidate
+catalogue against the latest eligible documents, archived PDF bytes, complete
+extractions and exact page excerpts before refreshing the fixed and hash-addressed
+files under `data/review/`. Its public-information cutoff is versioned in the
+catalogue rather than inferred from the run time.
 
 `fetch_commodities --allow-contraction`,
 `fetch_money_liquidity --allow-contraction` and
@@ -313,7 +369,9 @@ deterministic input layout.
 ## Known gaps
 
 - None of the 852 report pages has yet become a named, human-verified atomic
-  claim, so central-bank/IMF/BIS conclusions do not yet feed risk analysis.
+  claim, so central-bank/IMF/BIS conclusions do not yet feed risk analysis. The
+  bounded 20-item review packet has shipped, but every item remains an
+  `UNVERIFIED MODEL DRAFT` and the human decision path has not shipped.
 - AP2/AP3/AP4 currently provide one H1 2026 disclosure release each, not a
   comparable long-run allocator history; other pension and sovereign funds are
   absent.

@@ -1,0 +1,737 @@
+{
+  "schema_version": 1,
+  "methodology_version": "report-review-candidates-v1",
+  "created_by": "model:openai-codex-report-selection-v1",
+  "created_at": "2026-09-09T02:31:00Z",
+  "as_known_at": "2026-09-09T02:27:00Z",
+  "candidates": [
+    {
+      "source_id": "riksbank_mpr_en",
+      "issue_key": "2026-06-17",
+      "document_sha256": "3e8ace2c2ebb9720ce5327436a928980e56b1a2ff627225736293b3fca579a94",
+      "extraction_name": "poppler-pdftotext",
+      "extraction_version": "24.02.0-layout-utf8-eol-unix-v1",
+      "extraction_corpus_sha256": "2ebc5fb973b806b5b87b7e7bc905b014b4b194bf9682b5d61be045a23cabc0c9",
+      "claim_type": "fact",
+      "statement": "The Riksbank held the policy rate unchanged at 1.75% at its June 2026 monetary policy decision.",
+      "topic_key": "monetary_policy",
+      "geographies": [
+        "SE"
+      ],
+      "claim_series_key": "riksbank.policy_stance",
+      "reference_start": "2026-06-17",
+      "reference_end": "2026-06-17",
+      "target_start": null,
+      "target_end": null,
+      "numeric_value": null,
+      "lower_bound": null,
+      "upper_bound": null,
+      "unit": null,
+      "condition_text": "Policy decision reported in the June 2026 Monetary Policy Report.",
+      "horizon": "0-1y",
+      "importance_rationale": "Model-selected because the current policy stance and direction are central to Swedish discount rates, mortgages and the SEK outlook.",
+      "citations": [
+        {
+          "pdf_page_start": 55,
+          "pdf_page_end": 55,
+          "printed_locator": null,
+          "section_title": "The monetary policy decision",
+          "evidence_excerpt": "The Riksbank has decided to hold the policy rate unchanged at 1.75 per\n       cent.",
+          "support_role": "direct"
+        }
+      ]
+    },
+    {
+      "source_id": "riksbank_mpr_en",
+      "issue_key": "2026-06-17",
+      "document_sha256": "3e8ace2c2ebb9720ce5327436a928980e56b1a2ff627225736293b3fca579a94",
+      "extraction_name": "poppler-pdftotext",
+      "extraction_version": "24.02.0-layout-utf8-eol-unix-v1",
+      "extraction_corpus_sha256": "2ebc5fb973b806b5b87b7e7bc905b014b4b194bf9682b5d61be045a23cabc0c9",
+      "claim_type": "forecast",
+      "statement": "The Riksbank expected Swedish GDP growth to rise from 1.5% in 2025 to around 2% in both 2026 and 2027.",
+      "topic_key": "growth",
+      "geographies": [
+        "SE"
+      ],
+      "claim_series_key": "riksbank.real_gdp_growth_outlook",
+      "reference_start": "2025-01-01",
+      "reference_end": "2025-12-31",
+      "target_start": "2026-01-01",
+      "target_end": "2027-12-31",
+      "numeric_value": null,
+      "lower_bound": null,
+      "upper_bound": null,
+      "unit": null,
+      "condition_text": "June 2026 baseline forecast for calendar-year GDP growth.",
+      "horizon": "1-3y",
+      "importance_rationale": "Model-selected as the report's compact domestic activity baseline against which downside or overheating risks can be tested.",
+      "citations": [
+        {
+          "pdf_page_start": 9,
+          "pdf_page_end": 9,
+          "printed_locator": null,
+          "section_title": "The current monetary policy",
+          "evidence_excerpt": "Overall, GDP growth is expected\nto increase from 1.5 per cent last year to around 2 per cent this year and next year.",
+          "support_role": "direct"
+        }
+      ]
+    },
+    {
+      "source_id": "riksbank_mpr_en",
+      "issue_key": "2026-06-17",
+      "document_sha256": "3e8ace2c2ebb9720ce5327436a928980e56b1a2ff627225736293b3fca579a94",
+      "extraction_name": "poppler-pdftotext",
+      "extraction_version": "24.02.0-layout-utf8-eol-unix-v1",
+      "extraction_corpus_sha256": "2ebc5fb973b806b5b87b7e7bc905b014b4b194bf9682b5d61be045a23cabc0c9",
+      "claim_type": "forecast",
+      "statement": "The Riksbank estimated that temporary fiscal measures would lower CPIF inflation by at most about 1.5 percentage points in the third quarter of 2026; as the measures gradually expired from mid-2027 through end-2028, inflation would be around 0.8 percentage points higher than otherwise.",
+      "topic_key": "inflation",
+      "geographies": [
+        "SE"
+      ],
+      "claim_series_key": "riksbank.temporary_fiscal_cpif_effect",
+      "reference_start": null,
+      "reference_end": null,
+      "target_start": "2026-07-01",
+      "target_end": "2028-12-31",
+      "numeric_value": null,
+      "lower_bound": null,
+      "upper_bound": null,
+      "unit": null,
+      "condition_text": "Conditional on the temporary fiscal measures taking effect and expiring on the schedule assumed by the report.",
+      "horizon": "1-3y",
+      "importance_rationale": "Model-selected because a large temporary measured-inflation swing can be mistaken for a change in underlying inflation or policy regime.",
+      "citations": [
+        {
+          "pdf_page_start": 10,
+          "pdf_page_end": 10,
+          "printed_locator": null,
+          "section_title": "Inflation and temporary fiscal measures",
+          "evidence_excerpt": "During the\nthird quarter this year, these temporary measures will push down CPIF inflation by at\nmost around 1.5 percentage points. With effect from the middle of 2027 and until the\nend of 2028, the measures will then gradually come to an end. This means that infla-\ntion will be around 0.8 percentage points higher than it would otherwise have been.",
+          "support_role": "direct"
+        }
+      ]
+    },
+    {
+      "source_id": "riksbank_mpr_en",
+      "issue_key": "2026-06-17",
+      "document_sha256": "3e8ace2c2ebb9720ce5327436a928980e56b1a2ff627225736293b3fca579a94",
+      "extraction_name": "poppler-pdftotext",
+      "extraction_version": "24.02.0-layout-utf8-eol-unix-v1",
+      "extraction_corpus_sha256": "2ebc5fb973b806b5b87b7e7bc905b014b4b194bf9682b5d61be045a23cabc0c9",
+      "claim_type": "judgment",
+      "statement": "The Riksbank judged that rising public debt in major economies could create an adverse sovereign-yield feedback and reduce their ability to counter a downturn with fiscal policy.",
+      "topic_key": "risks",
+      "geographies": [
+        "WLD"
+      ],
+      "claim_series_key": "riksbank.global_sovereign_fiscal_space_risk",
+      "reference_start": null,
+      "reference_end": null,
+      "target_start": null,
+      "target_end": null,
+      "numeric_value": null,
+      "lower_bound": null,
+      "upper_bound": null,
+      "unit": null,
+      "condition_text": "Conditional on government bond yields rising materially and investors questioning fiscal sustainability; 3-5y is an Observatory review horizon because the source gives no precise dates.",
+      "horizon": "3-5y",
+      "importance_rationale": "Model-selected because sovereign repricing and reduced fiscal space are a direct medium-term transmission path from debt to household portfolios.",
+      "citations": [
+        {
+          "pdf_page_start": 65,
+          "pdf_page_end": 65,
+          "printed_locator": null,
+          "section_title": "Risks to the outlook",
+          "evidence_excerpt": "Several major economies have high levels of public debt, which are expected to rise\n    further in the coming period. If government bond yields were to begin rising more\n    significantly, investors might start to question the sustainability of these countries’\n    public finances, which could push yields up even further. It limits the countries’ possi-\n    bilities to use fiscal policy to counterbalance an economic downturn.",
+          "support_role": "direct"
+        }
+      ]
+    },
+    {
+      "source_id": "ecb_staff_projections_en",
+      "issue_key": "2026-06-11",
+      "document_sha256": "e0d6b72f865045d63c7b595eca7e81af5ca5da6aa524436d6bd7e6d4eb3eb4e6",
+      "extraction_name": "poppler-pdftotext",
+      "extraction_version": "24.02.0-layout-utf8-eol-unix-v1",
+      "extraction_corpus_sha256": "8f9980fb45d62dfde71be0115e6254fa17c915a17a18f2b20b694482319e0956",
+      "claim_type": "forecast",
+      "statement": "The June 2026 Eurosystem staff baseline projected euro-area real GDP growth of 0.8% in 2026, 1.2% in 2027 and 1.5% in 2028.",
+      "topic_key": "growth",
+      "geographies": [
+        "EU"
+      ],
+      "claim_series_key": "ecb.real_gdp_growth_outlook",
+      "reference_start": null,
+      "reference_end": null,
+      "target_start": "2026-01-01",
+      "target_end": "2028-12-31",
+      "numeric_value": null,
+      "lower_bound": null,
+      "upper_bound": null,
+      "unit": null,
+      "condition_text": "June 2026 baseline, conditional on the report's conflict, energy-price and technical assumptions.",
+      "horizon": "1-3y",
+      "importance_rationale": "Model-selected as the central euro-area activity baseline for comparing adverse scenarios and fiscal or energy shocks.",
+      "citations": [
+        {
+          "pdf_page_start": 3,
+          "pdf_page_end": 3,
+          "printed_locator": null,
+          "section_title": "Overview",
+          "evidence_excerpt": "baseline projections foresee annual real GDP growth of 0.8% in 2026, 1.2% in 2027\n    and 1.5% in 2028.",
+          "support_role": "direct"
+        }
+      ]
+    },
+    {
+      "source_id": "ecb_staff_projections_en",
+      "issue_key": "2026-06-11",
+      "document_sha256": "e0d6b72f865045d63c7b595eca7e81af5ca5da6aa524436d6bd7e6d4eb3eb4e6",
+      "extraction_name": "poppler-pdftotext",
+      "extraction_version": "24.02.0-layout-utf8-eol-unix-v1",
+      "extraction_corpus_sha256": "8f9980fb45d62dfde71be0115e6254fa17c915a17a18f2b20b694482319e0956",
+      "claim_type": "forecast",
+      "statement": "The June 2026 Eurosystem staff baseline projected euro-area HICP inflation of 3.0% in 2026, 2.3% in 2027 and 2.0% in 2028.",
+      "topic_key": "inflation",
+      "geographies": [
+        "EU"
+      ],
+      "claim_series_key": "ecb.hicp_inflation_outlook",
+      "reference_start": "2025-01-01",
+      "reference_end": "2025-12-31",
+      "target_start": "2026-01-01",
+      "target_end": "2028-12-31",
+      "numeric_value": null,
+      "lower_bound": null,
+      "upper_bound": null,
+      "unit": null,
+      "condition_text": "June 2026 baseline, including its assumed energy-price path and pass-through.",
+      "horizon": "1-3y",
+      "importance_rationale": "Model-selected because the projected inflation hump and return toward target shape rates, real incomes and valuation risk.",
+      "citations": [
+        {
+          "pdf_page_start": 4,
+          "pdf_page_end": 4,
+          "printed_locator": null,
+          "section_title": "Overview",
+          "evidence_excerpt": "baseline projections foresee HICP inflation picking up from 2.1% in 2025 to 3.0% in\n2026, before declining to 2.3% in 2027 and then returning to target, at 2.0% in 2028.",
+          "support_role": "direct"
+        }
+      ]
+    },
+    {
+      "source_id": "ecb_staff_projections_en",
+      "issue_key": "2026-06-11",
+      "document_sha256": "e0d6b72f865045d63c7b595eca7e81af5ca5da6aa524436d6bd7e6d4eb3eb4e6",
+      "extraction_name": "poppler-pdftotext",
+      "extraction_version": "24.02.0-layout-utf8-eol-unix-v1",
+      "extraction_corpus_sha256": "8f9980fb45d62dfde71be0115e6254fa17c915a17a18f2b20b694482319e0956",
+      "claim_type": "forecast",
+      "statement": "Eurosystem staff projected euro-area public debt to reach 90% of GDP in 2028.",
+      "topic_key": "sovereign_debt",
+      "geographies": [
+        "EU"
+      ],
+      "claim_series_key": "ecb.euro_area_fiscal_outlook",
+      "reference_start": null,
+      "reference_end": null,
+      "target_start": "2028-01-01",
+      "target_end": "2028-12-31",
+      "numeric_value": null,
+      "lower_bound": null,
+      "upper_bound": null,
+      "unit": null,
+      "condition_text": "June 2026 baseline fiscal projection for the aggregate euro area.",
+      "horizon": "1-3y",
+      "importance_rationale": "Model-selected because the projected aggregate debt ratio is a compact measure of diminishing fiscal space and sovereign-rate exposure.",
+      "citations": [
+        {
+          "pdf_page_start": 24,
+          "pdf_page_end": 24,
+          "printed_locator": null,
+          "section_title": "Fiscal outlook",
+          "evidence_excerpt": "The euro area budget deficit and debt ratios are projected to increase, with the deficit\npeaking in 2027 at well above the 3% threshold and debt reaching 90% of GDP in 2028.",
+          "support_role": "direct"
+        }
+      ]
+    },
+    {
+      "source_id": "ecb_staff_projections_en",
+      "issue_key": "2026-06-11",
+      "document_sha256": "e0d6b72f865045d63c7b595eca7e81af5ca5da6aa524436d6bd7e6d4eb3eb4e6",
+      "extraction_name": "poppler-pdftotext",
+      "extraction_version": "24.02.0-layout-utf8-eol-unix-v1",
+      "extraction_corpus_sha256": "8f9980fb45d62dfde71be0115e6254fa17c915a17a18f2b20b694482319e0956",
+      "claim_type": "judgment",
+      "statement": "Eurosystem staff judged that its alternative Middle East scenarios implied material downside risks to euro-area growth and upside risks to inflation.",
+      "topic_key": "risks",
+      "geographies": [
+        "EU"
+      ],
+      "claim_series_key": "ecb.middle_east_scenario_balance",
+      "reference_start": null,
+      "reference_end": null,
+      "target_start": "2026-01-01",
+      "target_end": "2028-12-31",
+      "numeric_value": null,
+      "lower_bound": null,
+      "upper_bound": null,
+      "unit": null,
+      "condition_text": "The alternative scenarios are illustrative, are not forecasts and have no probabilities assigned by Eurosystem staff.",
+      "horizon": "1-3y",
+      "importance_rationale": "Model-selected because it identifies the report's dominant asymmetric macro risk without treating an illustrative scenario as a probability forecast.",
+      "citations": [
+        {
+          "pdf_page_start": 36,
+          "pdf_page_end": 36,
+          "printed_locator": null,
+          "section_title": "Alternative scenarios",
+          "evidence_excerpt": "The range of scenarios entails significant downside risks for euro area growth\n        and upside risks for inflation (Table 6 and Chart 15).",
+          "support_role": "direct"
+        }
+      ]
+    },
+    {
+      "source_id": "fed_mpr_en",
+      "issue_key": "2026-07-10",
+      "document_sha256": "d8109da697abd4c58a5f1fb074d4b5cbcd197df1baf9e1f6e7620e5812e14a37",
+      "extraction_name": "poppler-pdftotext",
+      "extraction_version": "24.02.0-layout-utf8-eol-unix-v1",
+      "extraction_corpus_sha256": "63dd8a47115a56654fbdf8906d76c8d36407ffc5c458436a6a4c98d4cb1cb8e5",
+      "claim_type": "fact",
+      "statement": "The FOMC maintained the federal-funds target range at 3.5–3.75% from the beginning of 2026 through its June meeting.",
+      "topic_key": "monetary_policy",
+      "geographies": [
+        "US"
+      ],
+      "claim_series_key": "fed.policy_stance",
+      "reference_start": "2026-01-01",
+      "reference_end": "2026-06-17",
+      "target_start": null,
+      "target_end": null,
+      "numeric_value": null,
+      "lower_bound": null,
+      "upper_bound": null,
+      "unit": null,
+      "condition_text": "Policy record summarized in the July 2026 Monetary Policy Report.",
+      "horizon": "0-1y",
+      "importance_rationale": "Model-selected because the federal-funds stance anchors global financing conditions and dollar-sensitive assets.",
+      "citations": [
+        {
+          "pdf_page_start": 9,
+          "pdf_page_end": 9,
+          "printed_locator": null,
+          "section_title": "Summary",
+          "evidence_excerpt": "Against this backdrop and in support of the Federal Reserve’s dual mandate, the FOMC has main-\ntained the target range for the federal funds rate at 3½ to 3¾ percent since the beginning of the\nyear.",
+          "support_role": "direct"
+        }
+      ]
+    },
+    {
+      "source_id": "fed_mpr_en",
+      "issue_key": "2026-07-10",
+      "document_sha256": "d8109da697abd4c58a5f1fb074d4b5cbcd197df1baf9e1f6e7620e5812e14a37",
+      "extraction_name": "poppler-pdftotext",
+      "extraction_version": "24.02.0-layout-utf8-eol-unix-v1",
+      "extraction_corpus_sha256": "63dd8a47115a56654fbdf8906d76c8d36407ffc5c458436a6a4c98d4cb1cb8e5",
+      "claim_type": "fact",
+      "statement": "Over the 12 months ending in May 2026, core PCE prices rose 3.4%, above their year-earlier reading.",
+      "topic_key": "inflation",
+      "geographies": [
+        "US"
+      ],
+      "claim_series_key": "fed.pce_inflation_reading",
+      "reference_start": "2026-05-01",
+      "reference_end": "2026-05-31",
+      "target_start": null,
+      "target_end": null,
+      "numeric_value": 3.4,
+      "lower_bound": null,
+      "upper_bound": null,
+      "unit": "percent year on year",
+      "condition_text": "Core PCE twelve-month reading reported for May 2026.",
+      "horizon": "0-1y",
+      "importance_rationale": "Model-selected because current core inflation is a central near-term input to the policy-rate and real-income outlook.",
+      "citations": [
+        {
+          "pdf_page_start": 9,
+          "pdf_page_end": 9,
+          "printed_locator": null,
+          "section_title": "Summary",
+          "evidence_excerpt": "Over the 12 months ending in May, the price index for total personal consump-\ntion expenditures (PCE) rose 4.1 percent. Core PCE prices—which exclude often-volatile food and\nenergy prices and are generally considered a better guide to future inflation developments—rose\n3.4 percent. Both measures were notably above their year-earlier readings.",
+          "support_role": "direct"
+        }
+      ]
+    },
+    {
+      "source_id": "fed_mpr_en",
+      "issue_key": "2026-07-10",
+      "document_sha256": "d8109da697abd4c58a5f1fb074d4b5cbcd197df1baf9e1f6e7620e5812e14a37",
+      "extraction_name": "poppler-pdftotext",
+      "extraction_version": "24.02.0-layout-utf8-eol-unix-v1",
+      "extraction_corpus_sha256": "63dd8a47115a56654fbdf8906d76c8d36407ffc5c458436a6a4c98d4cb1cb8e5",
+      "claim_type": "forecast",
+      "statement": "The median June 2026 projection of FOMC participants put US real GDP growth at 2.2% in 2026, 2.3% in 2027 and 2.2% in 2028.",
+      "topic_key": "growth",
+      "geographies": [
+        "US"
+      ],
+      "claim_series_key": "fed.real_gdp_growth_outlook",
+      "reference_start": null,
+      "reference_end": null,
+      "target_start": "2026-01-01",
+      "target_end": "2028-12-31",
+      "numeric_value": null,
+      "lower_bound": null,
+      "upper_bound": null,
+      "unit": null,
+      "condition_text": "Median FOMC-participant projections under each participant's assessment of appropriate monetary policy; GDP growth is fourth quarter to fourth quarter.",
+      "horizon": "1-3y",
+      "importance_rationale": "Model-selected as the Federal Reserve report's forward US activity baseline through 2028.",
+      "citations": [
+        {
+          "pdf_page_start": 53,
+          "pdf_page_end": 53,
+          "printed_locator": null,
+          "section_title": "Summary of Economic Projections",
+          "evidence_excerpt": "Change in real GDP       2.2 2.3 2.2          2.0",
+          "support_role": "direct"
+        }
+      ]
+    },
+    {
+      "source_id": "fed_mpr_en",
+      "issue_key": "2026-07-10",
+      "document_sha256": "d8109da697abd4c58a5f1fb074d4b5cbcd197df1baf9e1f6e7620e5812e14a37",
+      "extraction_name": "poppler-pdftotext",
+      "extraction_version": "24.02.0-layout-utf8-eol-unix-v1",
+      "extraction_corpus_sha256": "63dd8a47115a56654fbdf8906d76c8d36407ffc5c458436a6a4c98d4cb1cb8e5",
+      "claim_type": "judgment",
+      "statement": "The Federal Reserve assessed asset valuations as above historical norms across US equity, corporate debt and residential real-estate markets.",
+      "topic_key": "financial_stability",
+      "geographies": [
+        "US"
+      ],
+      "claim_series_key": "fed.financial_stability_assessment",
+      "reference_start": "2026-01-01",
+      "reference_end": "2026-06-30",
+      "target_start": null,
+      "target_end": null,
+      "numeric_value": null,
+      "lower_bound": null,
+      "upper_bound": null,
+      "unit": null,
+      "condition_text": "Federal Reserve financial-stability assessment in the July 2026 report.",
+      "horizon": "0-1y",
+      "importance_rationale": "Model-selected because broadly elevated valuations are a direct near-term vulnerability across several household-investable asset classes.",
+      "citations": [
+        {
+          "pdf_page_start": 11,
+          "pdf_page_end": 11,
+          "printed_locator": null,
+          "section_title": "Financial stability",
+          "evidence_excerpt": "Asset valuations remain above\nhistorical norms across equity, corporate debt, and residential real estate markets.",
+          "support_role": "direct"
+        }
+      ]
+    },
+    {
+      "source_id": "imf_weo_en",
+      "issue_key": "2026-07-08",
+      "document_sha256": "cb0c2459c63b5d7d3d310fb6f0d6c32ee6624b79050dcf644e55a109a07bf360",
+      "extraction_name": "poppler-pdftotext",
+      "extraction_version": "24.02.0-layout-utf8-eol-unix-v1",
+      "extraction_corpus_sha256": "34e2c15c560ed21dd3a10667afd19cf3ef35c2fb07eb28b9b9010a4c13183c00",
+      "claim_type": "forecast",
+      "statement": "The IMF projected global growth of 3.0% in 2026 and 3.4% in 2027, below the 3.5% average recorded in 2024–25.",
+      "topic_key": "growth",
+      "geographies": [
+        "WLD"
+      ],
+      "claim_series_key": "imf.global_growth_outlook",
+      "reference_start": "2024-01-01",
+      "reference_end": "2025-12-31",
+      "target_start": "2026-01-01",
+      "target_end": "2027-12-31",
+      "numeric_value": null,
+      "lower_bound": null,
+      "upper_bound": null,
+      "unit": null,
+      "condition_text": "July 2026 WEO Update baseline assumptions, including the assumed conflict and technology-cycle paths.",
+      "horizon": "1-3y",
+      "importance_rationale": "Model-selected as the global activity baseline needed to separate broad slowdown from country-specific energy and technology exposure.",
+      "citations": [
+        {
+          "pdf_page_start": 2,
+          "pdf_page_end": 2,
+          "printed_locator": null,
+          "section_title": "Executive summary",
+          "evidence_excerpt": "Global growth is projected to be 3.0 percent in 2026 and 3.4 percent in 2027, down from the average of 3.5\n       percent observed in 2024–25 and broadly unchanged on a cumulative basis compared with the forecasts in the\n       April 2026 World Economic Outlook (WEO).",
+          "support_role": "direct"
+        }
+      ]
+    },
+    {
+      "source_id": "imf_weo_en",
+      "issue_key": "2026-07-08",
+      "document_sha256": "cb0c2459c63b5d7d3d310fb6f0d6c32ee6624b79050dcf644e55a109a07bf360",
+      "extraction_name": "poppler-pdftotext",
+      "extraction_version": "24.02.0-layout-utf8-eol-unix-v1",
+      "extraction_corpus_sha256": "34e2c15c560ed21dd3a10667afd19cf3ef35c2fb07eb28b9b9010a4c13183c00",
+      "claim_type": "forecast",
+      "statement": "The IMF projected global headline inflation to rise from 4.1% in 2025 to 4.7% in 2026 before easing to 3.9% in 2027, with energy and food driving the 2026 increase.",
+      "topic_key": "inflation",
+      "geographies": [
+        "WLD"
+      ],
+      "claim_series_key": "imf.global_inflation_outlook",
+      "reference_start": "2025-01-01",
+      "reference_end": "2025-12-31",
+      "target_start": "2026-01-01",
+      "target_end": "2027-12-31",
+      "numeric_value": null,
+      "lower_bound": null,
+      "upper_bound": null,
+      "unit": null,
+      "condition_text": "July 2026 WEO Update global headline-inflation baseline.",
+      "horizon": "1-3y",
+      "importance_rationale": "Model-selected because renewed commodity-led inflation alters real income, policy-rate and bond-duration risks across economies.",
+      "citations": [
+        {
+          "pdf_page_start": 8,
+          "pdf_page_end": 8,
+          "printed_locator": null,
+          "section_title": "Outlook",
+          "evidence_excerpt": "Global inflation is expected to pause its steady decline. Headline inflation is projected to rise from\n4.1 percent in 2025 to 4.7 percent in 2026 before easing to 3.9 percent in 2027, with the increase\nfor 2026 driven mainly by higher energy and food prices.",
+          "support_role": "direct"
+        }
+      ]
+    },
+    {
+      "source_id": "imf_weo_en",
+      "issue_key": "2026-07-08",
+      "document_sha256": "cb0c2459c63b5d7d3d310fb6f0d6c32ee6624b79050dcf644e55a109a07bf360",
+      "extraction_name": "poppler-pdftotext",
+      "extraction_version": "24.02.0-layout-utf8-eol-unix-v1",
+      "extraction_corpus_sha256": "34e2c15c560ed21dd3a10667afd19cf3ef35c2fb07eb28b9b9010a4c13183c00",
+      "claim_type": "judgment",
+      "statement": "The IMF judged that elevated public debt leaves sovereign markets exposed to fiscal-sustainability repricing that could raise yields, tighten global financial conditions and intensify refinancing pressure, especially in highly indebted developing economies.",
+      "topic_key": "sovereign_debt",
+      "geographies": [
+        "WLD"
+      ],
+      "claim_series_key": "imf.sovereign_repricing_risk",
+      "reference_start": null,
+      "reference_end": null,
+      "target_start": null,
+      "target_end": null,
+      "numeric_value": null,
+      "lower_bound": null,
+      "upper_bound": null,
+      "unit": null,
+      "condition_text": "Conditional on markets reassessing fiscal sustainability, particularly alongside other adverse shocks.",
+      "horizon": "1-3y",
+      "importance_rationale": "Model-selected because it states a concrete debt-to-yields-to-global-financial-conditions transmission pathway and identifies vulnerable borrowers.",
+      "citations": [
+        {
+          "pdf_page_start": 9,
+          "pdf_page_end": 9,
+          "printed_locator": null,
+          "section_title": "Risks are more balanced than in April, but still tilted to the downside",
+          "evidence_excerpt": "As calls intensify to use\nfiscal resources to mitigate the direct impact of the current adverse shocks and to tackle\nstructural challenges, elevated public debt in several major economies leaves sovereign markets\nexposed to a reassessment of fiscal sustainability, especially if other adverse shocks materialize in\ntandem. Any resulting repricing could lift sovereign yields, tighten global financial conditions,\nand intensify refinancing pressures, particularly in highly indebted developing economies.",
+          "support_role": "direct"
+        }
+      ]
+    },
+    {
+      "source_id": "imf_weo_en",
+      "issue_key": "2026-07-08",
+      "document_sha256": "cb0c2459c63b5d7d3d310fb6f0d6c32ee6624b79050dcf644e55a109a07bf360",
+      "extraction_name": "poppler-pdftotext",
+      "extraction_version": "24.02.0-layout-utf8-eol-unix-v1",
+      "extraction_corpus_sha256": "34e2c15c560ed21dd3a10667afd19cf3ef35c2fb07eb28b9b9010a4c13183c00",
+      "claim_type": "judgment",
+      "statement": "The IMF judged that a downward reassessment of expected AI profitability and productivity could abruptly reduce technology investment and sharply correct concentrated AI-related equity valuations.",
+      "topic_key": "risks",
+      "geographies": [
+        "WLD"
+      ],
+      "claim_series_key": "imf.ai_expectations_repricing_risk",
+      "reference_start": null,
+      "reference_end": null,
+      "target_start": null,
+      "target_end": null,
+      "numeric_value": null,
+      "lower_bound": null,
+      "upper_bound": null,
+      "unit": null,
+      "condition_text": "Conditional on downward revisions to expected AI-related profitability and productivity gains.",
+      "horizon": "1-3y",
+      "importance_rationale": "Model-selected because the report links a concentrated valuation risk to investment, wealth effects, cross-border exposures and financial conditions.",
+      "citations": [
+        {
+          "pdf_page_start": 10,
+          "pdf_page_end": 10,
+          "printed_locator": null,
+          "section_title": "Risks are more balanced than in April, but still tilted to the downside",
+          "evidence_excerpt": "expectations regarding AI-related profitability and productivity gains could be revised\ndownward. In such a scenario, investment in technology-intensive sectors could retrench\nabruptly, and frothy equity valuations—particularly in AI-exporting economies and markets with\nhigh concentration in technology firms—could correct sharply.",
+          "support_role": "direct"
+        }
+      ]
+    },
+    {
+      "source_id": "bis_aer_en",
+      "issue_key": "2026-06-28",
+      "document_sha256": "c930831fbf7804dceb46e5311ebaefe24b6e8f709b09f1c739a1a9e1c4438966",
+      "extraction_name": "poppler-pdftotext",
+      "extraction_version": "24.02.0-layout-utf8-eol-unix-v1",
+      "extraction_corpus_sha256": "b7035c924aacef96a3075dbde88c61a27426cf479be52d8c0018df42c780bc37",
+      "claim_type": "judgment",
+      "statement": "The BIS judged that the risk of persistent inflation had become a growing pressure point.",
+      "topic_key": "risks",
+      "geographies": [
+        "WLD"
+      ],
+      "claim_series_key": "bis.persistent_inflation_risk",
+      "reference_start": null,
+      "reference_end": null,
+      "target_start": null,
+      "target_end": null,
+      "numeric_value": null,
+      "lower_bound": null,
+      "upper_bound": null,
+      "unit": null,
+      "condition_text": "High-level BIS assessment in the 2026 Annual Economic Report; 1-3y is an Observatory review horizon because the source gives no precise dates.",
+      "horizon": "1-3y",
+      "importance_rationale": "Model-selected because persistent inflation is a distinct cross-cutting risk for policy rates, real incomes and longer-duration assets.",
+      "citations": [
+        {
+          "pdf_page_start": 17,
+          "pdf_page_end": 17,
+          "printed_locator": null,
+          "section_title": "Key takeaways",
+          "evidence_excerpt": "But the perils have grown with pressure points around risks of persistent inflation, the\n       sustainability of AI-related investments, growing financial vulnerabilities and weakening fiscal\n       positions.",
+          "support_role": "direct"
+        }
+      ]
+    },
+    {
+      "source_id": "bis_aer_en",
+      "issue_key": "2026-06-28",
+      "document_sha256": "c930831fbf7804dceb46e5311ebaefe24b6e8f709b09f1c739a1a9e1c4438966",
+      "extraction_name": "poppler-pdftotext",
+      "extraction_version": "24.02.0-layout-utf8-eol-unix-v1",
+      "extraction_corpus_sha256": "b7035c924aacef96a3075dbde88c61a27426cf479be52d8c0018df42c780bc37",
+      "claim_type": "judgment",
+      "statement": "The BIS judged that rebuilding strategic oil reserves across major consuming economies could keep physical crude markets tight for several months, possibly well into 2027.",
+      "topic_key": "risks",
+      "geographies": [
+        "WLD"
+      ],
+      "claim_series_key": "bis.strategic_oil_reserve_rebuilding_risk",
+      "reference_start": null,
+      "reference_end": null,
+      "target_start": null,
+      "target_end": null,
+      "numeric_value": null,
+      "lower_bound": null,
+      "upper_bound": null,
+      "unit": null,
+      "condition_text": "Conditional on simultaneous reserve drawdowns being followed by rebuilding across the United States, China, Japan and the European Union.",
+      "horizon": "1-3y",
+      "importance_rationale": "Model-selected because reserve rebuilding is a specific quantity-side reason an energy shock could persist after the immediate disruption.",
+      "citations": [
+        {
+          "pdf_page_start": 25,
+          "pdf_page_end": 25,
+          "printed_locator": null,
+          "section_title": "Oil-market adjustment",
+          "evidence_excerpt": "As strategic reserves are being drawn down simultaneously across large consumers (United States, China,\nJapan and the European Union), the rebuilding of those reserves could keep the physical markets tight for\nseveral months, possibly well into 2027 (Graph B1.B).",
+          "support_role": "direct"
+        }
+      ]
+    },
+    {
+      "source_id": "bis_aer_en",
+      "issue_key": "2026-06-28",
+      "document_sha256": "c930831fbf7804dceb46e5311ebaefe24b6e8f709b09f1c739a1a9e1c4438966",
+      "extraction_name": "poppler-pdftotext",
+      "extraction_version": "24.02.0-layout-utf8-eol-unix-v1",
+      "extraction_corpus_sha256": "b7035c924aacef96a3075dbde88c61a27426cf479be52d8c0018df42c780bc37",
+      "claim_type": "judgment",
+      "statement": "The BIS judged that high public debt makes monetary transmission more uncertain because rate hikes can support bondholder income while also worsening fiscal outlooks, lifting risk premia and tightening financial conditions.",
+      "topic_key": "sovereign_debt",
+      "geographies": [
+        "WLD"
+      ],
+      "claim_series_key": "bis.public_debt_monetary_transmission",
+      "reference_start": null,
+      "reference_end": null,
+      "target_start": null,
+      "target_end": null,
+      "numeric_value": null,
+      "lower_bound": null,
+      "upper_bound": null,
+      "unit": null,
+      "condition_text": "Mechanisms described for economies with high public debt when policy rates rise.",
+      "horizon": "1-3y",
+      "importance_rationale": "Model-selected because it describes two opposing transmission channels rather than assuming that higher rates have one simple effect in high-debt economies.",
+      "citations": [
+        {
+          "pdf_page_start": 52,
+          "pdf_page_end": 52,
+          "printed_locator": null,
+          "section_title": "Public debt and monetary transmission",
+          "evidence_excerpt": "Second, high public debt can make monetary transmission more complex and\nuncertain. When this debt is high, rate hikes raise government interest payments and\ntransfer income to bondholders, supporting demand and attenuating the\ncontractionary effect. But higher interest payments can also worsen the fiscal outlook,\nlift risk premia and tighten financial conditions.",
+          "support_role": "direct"
+        }
+      ]
+    },
+    {
+      "source_id": "bis_aer_en",
+      "issue_key": "2026-06-28",
+      "document_sha256": "c930831fbf7804dceb46e5311ebaefe24b6e8f709b09f1c739a1a9e1c4438966",
+      "extraction_name": "poppler-pdftotext",
+      "extraction_version": "24.02.0-layout-utf8-eol-unix-v1",
+      "extraction_corpus_sha256": "b7035c924aacef96a3075dbde88c61a27426cf479be52d8c0018df42c780bc37",
+      "claim_type": "judgment",
+      "statement": "Under the BIS's stylized bank-deposit reserve scenario, stablecoin purchases replace granular retail deposits with concentrated, potentially more rate-sensitive wholesale issuer deposits while leaving bank assets initially unchanged, weakening average regulatory liquidity metrics.",
+      "topic_key": "banking",
+      "geographies": [
+        "WLD"
+      ],
+      "claim_series_key": "bis.stablecoin_bank_funding_composition",
+      "reference_start": null,
+      "reference_end": null,
+      "target_start": null,
+      "target_end": null,
+      "numeric_value": null,
+      "lower_bound": null,
+      "upper_bound": null,
+      "unit": null,
+      "condition_text": "Stylized first-round bank-deposit reserve scenario in which households use existing deposits to buy stablecoins and the issuer holds wholesale bank deposits; other reserve scenarios differ, and 1-3y is an Observatory review horizon because the source gives no precise dates.",
+      "horizon": "1-3y",
+      "importance_rationale": "Model-selected because it traces a concrete money-like instrument into bank funding composition without falsely treating a liability shift as an immediate asset outflow.",
+      "citations": [
+        {
+          "pdf_page_start": 104,
+          "pdf_page_end": 104,
+          "printed_locator": null,
+          "section_title": "Stablecoin reserve-asset scenarios",
+          "evidence_excerpt": "In the bank deposit reserve scenario, households’ purchases of stablecoins\ndisplace retail deposits (–$100).",
+          "support_role": "direct"
+        },
+        {
+          "pdf_page_start": 105,
+          "pdf_page_end": 105,
+          "printed_locator": null,
+          "section_title": "Stablecoins and bank funding",
+          "evidence_excerpt": "The first-\nround effect is a compositional shift in banks’ liabilities even as the total size of\ndeposits remains unchanged: granular, often unremunerated, retail deposits decline\nand are replaced by concentrated, potentially more rate-sensitive wholesale deposits\nfrom the issuer. Banks’ asset levels are initially unchanged at the sector level, but\nliquidity metrics deteriorate on average. This is because regulatory run-off rates for\nwholesale deposits are higher than for retail deposits (reducing the Liquidity\nCoverage Ratio (LCR)) and wholesale deposits are considered a less stable source of\nmedium-term funding (reducing the Net Stable Funding Ratio (NSFR)).",
+          "support_role": "direct"
+        }
+      ]
+    }
+  ]
+}

@@ -74,6 +74,8 @@ REPORT_SOURCES: tuple[ReportSourceSpec, ...] = (
             "inflation",
             "labour_market",
             "monetary_policy",
+            "fiscal_policy",
+            "sovereign_debt",
             "trade",
             "financial_conditions",
             "risks",
