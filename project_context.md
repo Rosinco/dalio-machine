@@ -391,10 +391,26 @@ All thresholds in `src/dalio/scoring/short_term.py`. Vote weights and reasons ar
 | **35A** ✓ done | Read-only derived liquidity diagnostics — five independent formula families, release/artifact-traceable JSON + Markdown, fixed latest aliases plus hash-addressed dated exports, explicit earliest/full availability cutoffs, common-period breadth and no composite/causal/deposit-flow claim — ADR 0009 |
 | **35B** | Horizon risk cases + SEK investor brief — evidence, pathways, signposts, invalidators, household exposure and decision journal |
 
+### Version 1 completion gate
+
+ADR 0017 caps further foundation collection at five packages: 2025 Riksbank and
+RBA communication metadata (about 16 events); core-economy debt maturity and
+refinancing structure (about 25–50 series/partitions); comparable historical
+pension- and sovereign-fund allocations (about 40–80 annual snapshots);
+cross-border banking, collateral, FX-swap and funding-stress evidence (about
+20–40 series); and selected historical bank/commodity-company communication
+metadata (about 100–250 records). These are planning bounds, not quotas or a
+completeness score. Unavailable or incomparable first-party evidence remains an
+explicit gap. When these packages are completed or deliberately closed, the
+project pivots to Slice 35B rather than expanding the warehouse. Communication
+content remains outside Version 1 unless separately rights-cleared and
+semantically reviewed.
+
 ## Decision Log
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
+| 2026-09-09 | **ADR 0017** — bound Version 1 collection to five named evidence packages and then pivot to the risk layer | An informal 80-percent readiness estimate is useful for planning but is not a coverage statistic. Explicit package bounds prevent endless collection while preserving honest missingness; communications remain metadata-only without human rights clearance. See `decisions/0017-bounded-version-one-completion-gate.md`. |
 | 2026-09-09 | **ADR 0016** — bind communication manifests, metadata writes and audits to complete immutable source-policy catalogue snapshots | Catalogue growth must not invalidate prior records or reinterpret old host, publisher, transcriber and rights metadata through current policy. Every registered vintage is exact-checked; unknown, mixed and future-dated bindings fail closed. This grants no acquisition authority. See `decisions/0016-communication-catalogue-snapshots.md`. |
 | 2026-09-09 | **ADR 0015** — add a separate closed 2025 BoE MPR cohort and measure transcript, official-page video and exact-caption representations independently | A video locator does not prove a caption track, and an official embedded platform ID is not an exact URL. The strict offline manifest and hash-bound inventory preserve those distinctions without changing the fixed Fed/ECB pilot or authorizing content capture. See `decisions/0015-boe-2025-communication-metadata-inventory.md`. |
 | 2026-09-09 | **ADR 0013** — freeze a closed 2025 Fed/ECB 8+8 event denominator and one exact first-party English text candidate per event before any acquisition | Link coverage and corpus completeness are different. Conservative clocks, explicit pending rights, one ECB mixed-section candidate and a no-capture offline packet make the next human decision reproducible without fabricating permission, duplicating bytes or starting text analysis. See `decisions/0013-fed-ecb-communications-metadata-pilot.md`. |
