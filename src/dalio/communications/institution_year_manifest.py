@@ -27,6 +27,8 @@ INSTITUTION_YEAR_MANIFEST_SCHEMA_VERSION = 1
 INSTITUTION_YEAR_METHODOLOGY_VERSION = "communication-institution-year-metadata-v1"
 BOE_2025_MANIFEST_ID = "boe_2025_mpr_press_conferences"
 BOE_2025_MANIFEST_SHA256 = "4bba6c8415de46718a5ae6906d0d09e9041f7be1903dbeef7be4f40223717eb2"
+RIKSBANK_2025_MANIFEST_ID = "riksbank_2025_monetary_policy_press_conferences"
+RIKSBANK_2025_MANIFEST_SHA256 = "34f610043e933f74ca71ae56a9d29129fc92e2dd1ea83cc932293581ac4a2468"
 
 _ID = re.compile(r"^[a-z][a-z0-9_]*$")
 _ACTOR = re.compile(r"^(?:agent|model):[a-z0-9][a-z0-9_.-]*$")
@@ -122,11 +124,13 @@ _LOCATOR_FIELDS = frozenset(
 _ROLE_MATERIALS = {
     "full_transcript": "press_conference_transcript",
     "webcast_video": "press_conference_video",
+    "presentation_slides": "press_conference_slides",
     "subtitles": "subtitles",
 }
 _ROLE_SCOPES = {
     "full_transcript": ("full_transcript",),
     "webcast_video": ("webcast_video",),
+    "presentation_slides": ("presentation_slides",),
     "subtitles": ("subtitles",),
 }
 _COMPLETENESS_BASES = frozenset(
@@ -135,6 +139,7 @@ _COMPLETENESS_BASES = frozenset(
 _ROLE_COMPLETENESS_BASIS = {
     "full_transcript": "exact_direct_artifact_url",
     "webcast_video": "official_page_media_locator",
+    "presentation_slides": "exact_direct_artifact_url",
     "subtitles": "exact_caption_track_url",
 }
 _AVAILABILITY_STATUSES = frozenset(
@@ -142,6 +147,7 @@ _AVAILABILITY_STATUSES = frozenset(
         "direct_artifact_link",
         "external_platform_link",
         "embedded_platform_id_only",
+        "official_replay_page_link",
         "not_verified",
     }
 )
@@ -150,6 +156,7 @@ _LOCATOR_KINDS = frozenset(
         "official_direct_artifact",
         "external_platform_page",
         "external_platform_id",
+        "official_replay_page",
         "exact_caption_track",
     }
 )
@@ -495,15 +502,44 @@ def _parse_locator(
         if locator_url is None or platform_media_id is not None or mime_type != "application/pdf":
             raise ValueError(f"{field} has an invalid official direct-artifact locator")
         _official_url(locator_url, source, f"{field}.locator_url")
-        if spec.artifact_role != "full_transcript":
-            raise ValueError(f"{field} direct PDF locator must be the transcript representation")
+        if spec.artifact_role == "full_transcript":
+            expected = (
+                source.host_organization,
+                source.publisher,
+                None,
+                "not_disclosed",
+                "official_published_transcript",
+                "official_published_transcript",
+            )
+        elif spec.artifact_role == "presentation_slides":
+            expected = (
+                source.host_organization,
+                source.publisher,
+                None,
+                "not_applicable",
+                "official_published_slides",
+                "official_authored_text",
+            )
+        else:
+            raise ValueError(
+                f"{field} direct PDF locator must be a transcript or slides representation"
+            )
+    elif locator_kind == "official_replay_page":
+        if (
+            spec.artifact_role != "webcast_video"
+            or locator_url is None
+            or platform_media_id is not None
+            or mime_type != "text/html"
+        ):
+            raise ValueError(f"{field} has an invalid official replay-page locator")
+        _official_url(locator_url, source, f"{field}.locator_url")
         expected = (
             source.host_organization,
             source.publisher,
             None,
-            "not_disclosed",
-            "official_published_transcript",
-            "official_published_transcript",
+            "not_applicable",
+            "official_replay_page",
+            "official_archive_mixed",
         )
     elif locator_kind in {"external_platform_page", "external_platform_id"}:
         if spec.artifact_role != "webcast_video" or platform_media_id is None:
@@ -649,6 +685,7 @@ def _parse_observation(
             "official_direct_artifact": "direct_artifact_link",
             "external_platform_page": "external_platform_link",
             "external_platform_id": "embedded_platform_id_only",
+            "official_replay_page": "official_replay_page_link",
             "exact_caption_track": "external_platform_link",
         }[locator.locator_kind]
         if availability_status != expected_status:
@@ -931,11 +968,23 @@ def load_checked_boe_2025_manifest(path: Path) -> InstitutionYearManifest:
     return manifest
 
 
+def load_checked_riksbank_2025_manifest(path: Path) -> InstitutionYearManifest:
+    """Load the checked Riksbank cohort and require its pinned semantic identity."""
+    manifest = load_institution_year_manifest(path)
+    if manifest.manifest_id != RIKSBANK_2025_MANIFEST_ID:
+        raise ValueError("checked Riksbank manifest has the wrong manifest_id")
+    if institution_year_manifest_sha256(manifest) != RIKSBANK_2025_MANIFEST_SHA256:
+        raise ValueError("checked Riksbank manifest does not match its pinned semantic SHA-256")
+    return manifest
+
+
 __all__ = [
     "INSTITUTION_YEAR_MANIFEST_SCHEMA_VERSION",
     "INSTITUTION_YEAR_METHODOLOGY_VERSION",
     "BOE_2025_MANIFEST_ID",
     "BOE_2025_MANIFEST_SHA256",
+    "RIKSBANK_2025_MANIFEST_ID",
+    "RIKSBANK_2025_MANIFEST_SHA256",
     "InstitutionYearEvent",
     "InstitutionYearLocator",
     "InstitutionYearManifest",
@@ -944,5 +993,6 @@ __all__ = [
     "InstitutionYearScope",
     "institution_year_manifest_sha256",
     "load_checked_boe_2025_manifest",
+    "load_checked_riksbank_2025_manifest",
     "load_institution_year_manifest",
 ]

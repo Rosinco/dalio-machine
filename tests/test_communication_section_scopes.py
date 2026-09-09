@@ -131,7 +131,7 @@ def test_mixed_scope_set_is_atomic_and_content_free(session_factory):
             _mixed_scopes()
         )
         assert stored.scope_set_sha256 == (
-            "0c2dd181e81d33d53b785610543dbd1cf8ba42760324278f0d7b620e49eed500"
+            "85608fe71129dc45f6905b091e05aaf47035495dbf898421f763b844f84a4fa9"
         )
         assert session.scalar(select(func.count()).select_from(CommunicationArtifact)) == 1
         assert session.scalar(select(func.count()).select_from(CommunicationArtifactContent)) == 0

@@ -6,7 +6,10 @@ from pathlib import Path
 
 import pytest
 
-from dalio.communications.institution_year_manifest import load_checked_boe_2025_manifest
+from dalio.communications.institution_year_manifest import (
+    load_checked_boe_2025_manifest,
+    load_checked_riksbank_2025_manifest,
+)
 from dalio.communications.metadata_inventory import (
     build_representation_inventory,
     render_representation_inventory_markdown,
@@ -15,10 +18,15 @@ from dalio.communications.metadata_inventory import (
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "data" / "reference" / "communication_boe_2025_events.json"
+RIKSBANK_MANIFEST = ROOT / "data" / "reference" / "communication_riksbank_2025_events.json"
 
 
 def _inventory() -> dict[str, object]:
     return build_representation_inventory(load_checked_boe_2025_manifest(MANIFEST))
+
+
+def _riksbank_inventory() -> dict[str, object]:
+    return build_representation_inventory(load_checked_riksbank_2025_manifest(RIKSBANK_MANIFEST))
 
 
 def _coverage(inventory: dict[str, object]) -> dict[str, dict[str, object]]:
@@ -124,4 +132,80 @@ def test_markdown_keeps_counts_and_boundaries_explicit():
     assert "4/4 | 0/4 | 0/4 | 4 | `not_verified`" in markdown
     assert "platform ID `DAEab7yDUmE`; no exact URL" in markdown
     assert "video locator is not a caption locator" in markdown.lower()
+    assert "NO CONTENT CAPTURE IS AUTHORIZED" in markdown
+
+
+def test_riksbank_inventory_reports_replay_and_slide_links_without_content():
+    inventory = _riksbank_inventory()
+
+    assert inventory["event_count"] == inventory["expected_event_count"] == 8
+    assert inventory["event_denominator_status"] == "complete"
+    assert inventory["content_capture_authorized"] is False
+    assert inventory["verified_rights_decisions"] == 0
+    assert inventory["manifest_sha256"] == (
+        "34f610043e933f74ca71ae56a9d29129fc92e2dd1ea83cc932293581ac4a2468"
+    )
+    assert validate_communication_metadata_inventory_sha256(inventory) == (
+        "43fd289a37e28f6f8345b43d52c056cb562f87412f5f2294fcf930dda2705f3a"
+    )
+
+    coverage = _coverage(inventory)
+    for representation_key in ("official_replay_page_sv", "official_slides_sv"):
+        row = coverage[representation_key]
+        assert row["observation_count"] == 8
+        assert row["located_count"] == 8
+        assert row["exact_url_count"] == 8
+        assert row["not_verified_count"] == 0
+        assert row["coverage_status"] == "complete"
+    assert coverage["official_replay_page_sv"]["official_replay_page_link_count"] == 8
+    assert coverage["official_slides_sv"]["direct_artifact_link_count"] == 8
+
+    for representation_key in ("official_transcript_sv", "exact_caption_track_sv"):
+        row = coverage[representation_key]
+        assert row["observation_count"] == 8
+        assert row["located_count"] == 0
+        assert row["exact_url_count"] == 0
+        assert row["not_verified_count"] == 8
+        assert row["coverage_status"] == "not_verified"
+
+    for row in coverage.values():
+        assert (
+            sum(
+                row[key]
+                for key in (
+                    "direct_artifact_link_count",
+                    "external_platform_link_count",
+                    "embedded_platform_id_only_count",
+                    "not_verified_count",
+                )
+            )
+            + row.get("official_replay_page_link_count", 0)
+            == row["observation_count"]
+        )
+
+    forbidden = {
+        "content",
+        "content_sha256",
+        "blob_path",
+        "extraction",
+        "segments",
+        "claims",
+        "reviewed_by",
+        "decision",
+    }
+    assert not forbidden.intersection(_keys(inventory))
+
+
+def test_riksbank_markdown_uses_the_generic_replay_page_boundary():
+    markdown = render_representation_inventory_markdown(_riksbank_inventory())
+
+    assert "Closed event denominator: `8/8`" in markdown
+    assert "`official_replay_page_sv`" in markdown
+    assert "`official_slides_sv`" in markdown
+    assert "8/8 | 8/8 | 8/8 | 0 | `complete`" in markdown
+    assert "`official_transcript_sv`" in markdown
+    assert "`exact_caption_track_sv`" in markdown
+    assert "8/8 | 0/8 | 0/8 | 8 | `not_verified`" in markdown
+    assert "first-party replay-page locator" in markdown
+    assert "Bank of England publication" not in markdown
     assert "NO CONTENT CAPTURE IS AUTHORIZED" in markdown

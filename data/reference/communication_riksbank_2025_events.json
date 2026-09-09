@@ -1,0 +1,701 @@
+{
+  "schema_version": 1,
+  "methodology_version": "communication-institution-year-metadata-v1",
+  "catalogue_sha256": "ad499a7129238d70be8c7243c62252b3a1f11628a69d2df4ecf14c41d33ef1b0",
+  "manifest_id": "riksbank_2025_monetary_policy_press_conferences",
+  "created_by": "model:codex-primary-source-metadata-v3",
+  "created_at": "2026-09-09T13:37:45Z",
+  "as_known_at": "2026-09-09T13:37:45Z",
+  "content_capture_authorized": false,
+  "scope": {
+    "organization_id": "sveriges_riksbank",
+    "year": 2025,
+    "start_date": "2025-01-01",
+    "end_date": "2025-12-31",
+    "event_type": "monetary_policy_press_conference",
+    "denominator_source_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/?category=28&year=2025&page=1",
+    "inclusion_rule": "The two official category-28 Riksbanken Play listing pages for 2025 (pages 1 and 2) enumerate the year's press conferences; include the eight entries titled as monetary-policy-decision press conferences. Page 2 is https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/?category=28&year=2025&page=2.",
+    "exclusions": [
+      "the Payments Report press conference dated 10 March 2025",
+      "the Financial Stability Report press conferences dated 28 May and 13 November 2025",
+      "speeches and seminars",
+      "reports, updates, minutes, votes and releases as representations distinct from the selected press-conference replay pages and slides"
+    ],
+    "checked_by": "model:codex-primary-source-metadata-v3",
+    "checked_at": "2026-09-09T13:37:45Z",
+    "event_keys": [
+      "riksbank_mpr_2025_01_29",
+      "riksbank_mpr_2025_03_20",
+      "riksbank_mpr_2025_05_08",
+      "riksbank_mpr_2025_06_18",
+      "riksbank_mpr_2025_08_20",
+      "riksbank_mpr_2025_09_23",
+      "riksbank_mpr_2025_11_05",
+      "riksbank_mpr_2025_12_18"
+    ],
+    "representation_specs": [
+      {
+        "representation_key": "official_transcript_sv",
+        "source_id": "riksbank_monetary_policy_press_conferences_sv",
+        "artifact_role": "full_transcript",
+        "material_type": "press_conference_transcript",
+        "section_coverage": [
+          "full_transcript"
+        ],
+        "completeness_basis": "exact_direct_artifact_url",
+        "rights_status": "rights_review_required",
+        "acquisition_status": "manual_review_required",
+        "automated_collection_allowed": false
+      },
+      {
+        "representation_key": "official_replay_page_sv",
+        "source_id": "riksbank_monetary_policy_press_conferences_sv",
+        "artifact_role": "webcast_video",
+        "material_type": "press_conference_video",
+        "section_coverage": [
+          "webcast_video"
+        ],
+        "completeness_basis": "official_page_media_locator",
+        "rights_status": "rights_review_required",
+        "acquisition_status": "manual_review_required",
+        "automated_collection_allowed": false
+      },
+      {
+        "representation_key": "official_slides_sv",
+        "source_id": "riksbank_monetary_policy_press_conferences_sv",
+        "artifact_role": "presentation_slides",
+        "material_type": "press_conference_slides",
+        "section_coverage": [
+          "presentation_slides"
+        ],
+        "completeness_basis": "exact_direct_artifact_url",
+        "rights_status": "rights_review_required",
+        "acquisition_status": "manual_review_required",
+        "automated_collection_allowed": false
+      },
+      {
+        "representation_key": "exact_caption_track_sv",
+        "source_id": "riksbank_monetary_policy_press_conference_subtitles_sv",
+        "artifact_role": "subtitles",
+        "material_type": "subtitles",
+        "section_coverage": [
+          "subtitles"
+        ],
+        "completeness_basis": "exact_caption_track_url",
+        "rights_status": "rights_review_required",
+        "acquisition_status": "manual_review_required",
+        "automated_collection_allowed": false
+      }
+    ]
+  },
+  "events": [
+    {
+      "event_key": "riksbank_mpr_2025_01_29",
+      "organization_id": "sveriges_riksbank",
+      "event_type": "monetary_policy_press_conference",
+      "title": "Pressträff om det penningpolitiska beslutet i januari 2025",
+      "event_date": "2025-01-29",
+      "metadata_known_at": "2026-09-09T13:37:45Z",
+      "representations": [
+        {
+          "representation_key": "official_transcript_sv",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-januari-2025/",
+          "status_note": "No exact first-party Swedish transcript locator was verified; replay availability is not transcript availability.",
+          "locator": null
+        },
+        {
+          "representation_key": "official_replay_page_sv",
+          "availability_status": "official_replay_page_link",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-januari-2025/",
+          "status_note": "The exact first-party Riksbanken Play page presents the press-conference replay; no embedded-player or vendor locator is recorded.",
+          "locator": {
+            "locator_key": "riksbank_mpr_2025_01_29_replay_page_sv",
+            "source_id": "riksbank_monetary_policy_press_conferences_sv",
+            "locator_kind": "official_replay_page",
+            "locator_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-januari-2025/",
+            "platform_media_id": null,
+            "mime_type": "text/html",
+            "language": "sv",
+            "translation_status": "original",
+            "host_organization": "Sveriges Riksbank",
+            "publisher": "Sveriges Riksbank",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_replay_page",
+            "provenance_tier": "official_archive_mixed",
+            "published_at": null,
+            "observed_at": "2026-09-09T13:37:45Z"
+          }
+        },
+        {
+          "representation_key": "official_slides_sv",
+          "availability_status": "direct_artifact_link",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/penningpolitik/penningpolitisk-rapport/2025/penningpolitiskt-beslut-januari-2025/",
+          "status_note": "The official monetary-policy decision page links the exact Swedish press-conference slide PDF; no source bytes are captured by this manifest.",
+          "locator": {
+            "locator_key": "riksbank_mpr_2025_01_29_slides_sv",
+            "source_id": "riksbank_monetary_policy_press_conferences_sv",
+            "locator_kind": "official_direct_artifact",
+            "locator_url": "https://www.riksbank.se/globalassets/media/rapporter/ppr/bilder-fran-presstraffen/2025/250129/bilder-fran-presstraffen-den-29-januari-2025.pdf",
+            "platform_media_id": null,
+            "mime_type": "application/pdf",
+            "language": "sv",
+            "translation_status": "original",
+            "host_organization": "Sveriges Riksbank",
+            "publisher": "Sveriges Riksbank",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_published_slides",
+            "provenance_tier": "official_authored_text",
+            "published_at": null,
+            "observed_at": "2026-09-09T13:37:45Z"
+          }
+        },
+        {
+          "representation_key": "exact_caption_track_sv",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-januari-2025/",
+          "status_note": "No exact Swedish caption-track URL, caption origin, producer or time coverage was verified; replay availability is not caption availability.",
+          "locator": null
+        }
+      ]
+    },
+    {
+      "event_key": "riksbank_mpr_2025_03_20",
+      "organization_id": "sveriges_riksbank",
+      "event_type": "monetary_policy_press_conference",
+      "title": "Pressträff om det penningpolitiska beslutet i mars 2025 kl. 11:00",
+      "event_date": "2025-03-20",
+      "metadata_known_at": "2026-09-09T13:37:45Z",
+      "representations": [
+        {
+          "representation_key": "official_transcript_sv",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-mars-2025/",
+          "status_note": "No exact first-party Swedish transcript locator was verified; replay availability is not transcript availability.",
+          "locator": null
+        },
+        {
+          "representation_key": "official_replay_page_sv",
+          "availability_status": "official_replay_page_link",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-mars-2025/",
+          "status_note": "The exact first-party Riksbanken Play page presents the press-conference replay; no embedded-player or vendor locator is recorded.",
+          "locator": {
+            "locator_key": "riksbank_mpr_2025_03_20_replay_page_sv",
+            "source_id": "riksbank_monetary_policy_press_conferences_sv",
+            "locator_kind": "official_replay_page",
+            "locator_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-mars-2025/",
+            "platform_media_id": null,
+            "mime_type": "text/html",
+            "language": "sv",
+            "translation_status": "original",
+            "host_organization": "Sveriges Riksbank",
+            "publisher": "Sveriges Riksbank",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_replay_page",
+            "provenance_tier": "official_archive_mixed",
+            "published_at": null,
+            "observed_at": "2026-09-09T13:37:45Z"
+          }
+        },
+        {
+          "representation_key": "official_slides_sv",
+          "availability_status": "direct_artifact_link",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/penningpolitik/penningpolitisk-rapport/2025/penningpolitiskt-beslut-mars-2025/",
+          "status_note": "The official monetary-policy decision page links the exact Swedish press-conference slide PDF; no source bytes are captured by this manifest.",
+          "locator": {
+            "locator_key": "riksbank_mpr_2025_03_20_slides_sv",
+            "source_id": "riksbank_monetary_policy_press_conferences_sv",
+            "locator_kind": "official_direct_artifact",
+            "locator_url": "https://www.riksbank.se/globalassets/media/rapporter/ppr/bilder-fran-presstraffen/2025/250320/bilder-fran-presstraffen-den-20-mars-2025.pdf",
+            "platform_media_id": null,
+            "mime_type": "application/pdf",
+            "language": "sv",
+            "translation_status": "original",
+            "host_organization": "Sveriges Riksbank",
+            "publisher": "Sveriges Riksbank",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_published_slides",
+            "provenance_tier": "official_authored_text",
+            "published_at": null,
+            "observed_at": "2026-09-09T13:37:45Z"
+          }
+        },
+        {
+          "representation_key": "exact_caption_track_sv",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-mars-2025/",
+          "status_note": "No exact Swedish caption-track URL, caption origin, producer or time coverage was verified; replay availability is not caption availability.",
+          "locator": null
+        }
+      ]
+    },
+    {
+      "event_key": "riksbank_mpr_2025_05_08",
+      "organization_id": "sveriges_riksbank",
+      "event_type": "monetary_policy_press_conference",
+      "title": "Pressträff om det penningpolitiska beslutet i maj 2025",
+      "event_date": "2025-05-08",
+      "metadata_known_at": "2026-09-09T13:37:45Z",
+      "representations": [
+        {
+          "representation_key": "official_transcript_sv",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-maj/",
+          "status_note": "No exact first-party Swedish transcript locator was verified; replay availability is not transcript availability.",
+          "locator": null
+        },
+        {
+          "representation_key": "official_replay_page_sv",
+          "availability_status": "official_replay_page_link",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-maj/",
+          "status_note": "The exact first-party Riksbanken Play page presents the press-conference replay; no embedded-player or vendor locator is recorded.",
+          "locator": {
+            "locator_key": "riksbank_mpr_2025_05_08_replay_page_sv",
+            "source_id": "riksbank_monetary_policy_press_conferences_sv",
+            "locator_kind": "official_replay_page",
+            "locator_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-maj/",
+            "platform_media_id": null,
+            "mime_type": "text/html",
+            "language": "sv",
+            "translation_status": "original",
+            "host_organization": "Sveriges Riksbank",
+            "publisher": "Sveriges Riksbank",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_replay_page",
+            "provenance_tier": "official_archive_mixed",
+            "published_at": null,
+            "observed_at": "2026-09-09T13:37:45Z"
+          }
+        },
+        {
+          "representation_key": "official_slides_sv",
+          "availability_status": "direct_artifact_link",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/penningpolitik/penningpolitisk-rapport/2025/penningpolitiskt-beslut-maj-2025/",
+          "status_note": "The official monetary-policy decision page links the exact Swedish press-conference slide PDF; no source bytes are captured by this manifest.",
+          "locator": {
+            "locator_key": "riksbank_mpr_2025_05_08_slides_sv",
+            "source_id": "riksbank_monetary_policy_press_conferences_sv",
+            "locator_kind": "official_direct_artifact",
+            "locator_url": "https://www.riksbank.se/globalassets/media/rapporter/ppr/bilder-fran-presstraffen/2025/250508/bilder-fran-presstraffen-den-8-maj-2025.pdf",
+            "platform_media_id": null,
+            "mime_type": "application/pdf",
+            "language": "sv",
+            "translation_status": "original",
+            "host_organization": "Sveriges Riksbank",
+            "publisher": "Sveriges Riksbank",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_published_slides",
+            "provenance_tier": "official_authored_text",
+            "published_at": null,
+            "observed_at": "2026-09-09T13:37:45Z"
+          }
+        },
+        {
+          "representation_key": "exact_caption_track_sv",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-maj/",
+          "status_note": "No exact Swedish caption-track URL, caption origin, producer or time coverage was verified; replay availability is not caption availability.",
+          "locator": null
+        }
+      ]
+    },
+    {
+      "event_key": "riksbank_mpr_2025_06_18",
+      "organization_id": "sveriges_riksbank",
+      "event_type": "monetary_policy_press_conference",
+      "title": "Pressträff om det penningpolitiska beslutet i juni 2025",
+      "event_date": "2025-06-18",
+      "metadata_known_at": "2026-09-09T13:37:45Z",
+      "representations": [
+        {
+          "representation_key": "official_transcript_sv",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-juni-2025/",
+          "status_note": "No exact first-party Swedish transcript locator was verified; replay availability is not transcript availability.",
+          "locator": null
+        },
+        {
+          "representation_key": "official_replay_page_sv",
+          "availability_status": "official_replay_page_link",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-juni-2025/",
+          "status_note": "The exact first-party Riksbanken Play page presents the press-conference replay; no embedded-player or vendor locator is recorded.",
+          "locator": {
+            "locator_key": "riksbank_mpr_2025_06_18_replay_page_sv",
+            "source_id": "riksbank_monetary_policy_press_conferences_sv",
+            "locator_kind": "official_replay_page",
+            "locator_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-juni-2025/",
+            "platform_media_id": null,
+            "mime_type": "text/html",
+            "language": "sv",
+            "translation_status": "original",
+            "host_organization": "Sveriges Riksbank",
+            "publisher": "Sveriges Riksbank",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_replay_page",
+            "provenance_tier": "official_archive_mixed",
+            "published_at": null,
+            "observed_at": "2026-09-09T13:37:45Z"
+          }
+        },
+        {
+          "representation_key": "official_slides_sv",
+          "availability_status": "direct_artifact_link",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/penningpolitik/penningpolitisk-rapport/2025/penningpolitiskt-beslut-juni-2025/",
+          "status_note": "The official monetary-policy decision page links the exact Swedish press-conference slide PDF; no source bytes are captured by this manifest.",
+          "locator": {
+            "locator_key": "riksbank_mpr_2025_06_18_slides_sv",
+            "source_id": "riksbank_monetary_policy_press_conferences_sv",
+            "locator_kind": "official_direct_artifact",
+            "locator_url": "https://www.riksbank.se/globalassets/media/rapporter/ppr/bilder-fran-presstraffen/2025/250618/bilder-fran-presstraffen-den-18-juni-2025.pdf",
+            "platform_media_id": null,
+            "mime_type": "application/pdf",
+            "language": "sv",
+            "translation_status": "original",
+            "host_organization": "Sveriges Riksbank",
+            "publisher": "Sveriges Riksbank",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_published_slides",
+            "provenance_tier": "official_authored_text",
+            "published_at": null,
+            "observed_at": "2026-09-09T13:37:45Z"
+          }
+        },
+        {
+          "representation_key": "exact_caption_track_sv",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-juni-2025/",
+          "status_note": "No exact Swedish caption-track URL, caption origin, producer or time coverage was verified; replay availability is not caption availability.",
+          "locator": null
+        }
+      ]
+    },
+    {
+      "event_key": "riksbank_mpr_2025_08_20",
+      "organization_id": "sveriges_riksbank",
+      "event_type": "monetary_policy_press_conference",
+      "title": "Pressträff om det penningpolitiska beslutet i augusti 2025",
+      "event_date": "2025-08-20",
+      "metadata_known_at": "2026-09-09T13:37:45Z",
+      "representations": [
+        {
+          "representation_key": "official_transcript_sv",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-augusti-2025/",
+          "status_note": "No exact first-party Swedish transcript locator was verified; replay availability is not transcript availability.",
+          "locator": null
+        },
+        {
+          "representation_key": "official_replay_page_sv",
+          "availability_status": "official_replay_page_link",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-augusti-2025/",
+          "status_note": "The exact first-party Riksbanken Play page presents the press-conference replay; no embedded-player or vendor locator is recorded.",
+          "locator": {
+            "locator_key": "riksbank_mpr_2025_08_20_replay_page_sv",
+            "source_id": "riksbank_monetary_policy_press_conferences_sv",
+            "locator_kind": "official_replay_page",
+            "locator_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-augusti-2025/",
+            "platform_media_id": null,
+            "mime_type": "text/html",
+            "language": "sv",
+            "translation_status": "original",
+            "host_organization": "Sveriges Riksbank",
+            "publisher": "Sveriges Riksbank",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_replay_page",
+            "provenance_tier": "official_archive_mixed",
+            "published_at": null,
+            "observed_at": "2026-09-09T13:37:45Z"
+          }
+        },
+        {
+          "representation_key": "official_slides_sv",
+          "availability_status": "direct_artifact_link",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/penningpolitik/penningpolitisk-rapport/2025/penningpolitiskt-beslut-augusti-2025/",
+          "status_note": "The official monetary-policy decision page links the exact Swedish press-conference slide PDF; no source bytes are captured by this manifest.",
+          "locator": {
+            "locator_key": "riksbank_mpr_2025_08_20_slides_sv",
+            "source_id": "riksbank_monetary_policy_press_conferences_sv",
+            "locator_kind": "official_direct_artifact",
+            "locator_url": "https://www.riksbank.se/globalassets/media/rapporter/ppr/bilder-fran-presstraffen/2025/250820/bilder-fran-presstraffen-den-20-augusti-2025.pdf",
+            "platform_media_id": null,
+            "mime_type": "application/pdf",
+            "language": "sv",
+            "translation_status": "original",
+            "host_organization": "Sveriges Riksbank",
+            "publisher": "Sveriges Riksbank",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_published_slides",
+            "provenance_tier": "official_authored_text",
+            "published_at": null,
+            "observed_at": "2026-09-09T13:37:45Z"
+          }
+        },
+        {
+          "representation_key": "exact_caption_track_sv",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-augusti-2025/",
+          "status_note": "No exact Swedish caption-track URL, caption origin, producer or time coverage was verified; replay availability is not caption availability.",
+          "locator": null
+        }
+      ]
+    },
+    {
+      "event_key": "riksbank_mpr_2025_09_23",
+      "organization_id": "sveriges_riksbank",
+      "event_type": "monetary_policy_press_conference",
+      "title": "Pressträff om det penningpolitiska beslutet i september 2025",
+      "event_date": "2025-09-23",
+      "metadata_known_at": "2026-09-09T13:37:45Z",
+      "representations": [
+        {
+          "representation_key": "official_transcript_sv",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-september-2025/",
+          "status_note": "No exact first-party Swedish transcript locator was verified; replay availability is not transcript availability.",
+          "locator": null
+        },
+        {
+          "representation_key": "official_replay_page_sv",
+          "availability_status": "official_replay_page_link",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-september-2025/",
+          "status_note": "The exact first-party Riksbanken Play page presents the press-conference replay; no embedded-player or vendor locator is recorded.",
+          "locator": {
+            "locator_key": "riksbank_mpr_2025_09_23_replay_page_sv",
+            "source_id": "riksbank_monetary_policy_press_conferences_sv",
+            "locator_kind": "official_replay_page",
+            "locator_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-september-2025/",
+            "platform_media_id": null,
+            "mime_type": "text/html",
+            "language": "sv",
+            "translation_status": "original",
+            "host_organization": "Sveriges Riksbank",
+            "publisher": "Sveriges Riksbank",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_replay_page",
+            "provenance_tier": "official_archive_mixed",
+            "published_at": null,
+            "observed_at": "2026-09-09T13:37:45Z"
+          }
+        },
+        {
+          "representation_key": "official_slides_sv",
+          "availability_status": "direct_artifact_link",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/penningpolitik/penningpolitisk-rapport/2025/penningpolitiskt-beslut-september-2025/",
+          "status_note": "The official monetary-policy decision page links the exact Swedish press-conference slide PDF; no source bytes are captured by this manifest.",
+          "locator": {
+            "locator_key": "riksbank_mpr_2025_09_23_slides_sv",
+            "source_id": "riksbank_monetary_policy_press_conferences_sv",
+            "locator_kind": "official_direct_artifact",
+            "locator_url": "https://www.riksbank.se/globalassets/media/rapporter/ppr/bilder-fran-presstraffen/2025/250923/bilder-fran-presstraffen-den-23-september-2025.pdf",
+            "platform_media_id": null,
+            "mime_type": "application/pdf",
+            "language": "sv",
+            "translation_status": "original",
+            "host_organization": "Sveriges Riksbank",
+            "publisher": "Sveriges Riksbank",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_published_slides",
+            "provenance_tier": "official_authored_text",
+            "published_at": null,
+            "observed_at": "2026-09-09T13:37:45Z"
+          }
+        },
+        {
+          "representation_key": "exact_caption_track_sv",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-september-2025/",
+          "status_note": "No exact Swedish caption-track URL, caption origin, producer or time coverage was verified; replay availability is not caption availability.",
+          "locator": null
+        }
+      ]
+    },
+    {
+      "event_key": "riksbank_mpr_2025_11_05",
+      "organization_id": "sveriges_riksbank",
+      "event_type": "monetary_policy_press_conference",
+      "title": "Pressträff om det penningpolitiska beslutet i november 2025",
+      "event_date": "2025-11-05",
+      "metadata_known_at": "2026-09-09T13:37:45Z",
+      "representations": [
+        {
+          "representation_key": "official_transcript_sv",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-november-2025/",
+          "status_note": "No exact first-party Swedish transcript locator was verified; replay availability is not transcript availability.",
+          "locator": null
+        },
+        {
+          "representation_key": "official_replay_page_sv",
+          "availability_status": "official_replay_page_link",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-november-2025/",
+          "status_note": "The exact first-party Riksbanken Play page presents the press-conference replay; no embedded-player or vendor locator is recorded.",
+          "locator": {
+            "locator_key": "riksbank_mpr_2025_11_05_replay_page_sv",
+            "source_id": "riksbank_monetary_policy_press_conferences_sv",
+            "locator_kind": "official_replay_page",
+            "locator_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-november-2025/",
+            "platform_media_id": null,
+            "mime_type": "text/html",
+            "language": "sv",
+            "translation_status": "original",
+            "host_organization": "Sveriges Riksbank",
+            "publisher": "Sveriges Riksbank",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_replay_page",
+            "provenance_tier": "official_archive_mixed",
+            "published_at": null,
+            "observed_at": "2026-09-09T13:37:45Z"
+          }
+        },
+        {
+          "representation_key": "official_slides_sv",
+          "availability_status": "direct_artifact_link",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/penningpolitik/penningpolitisk-rapport/2025/penningpolitiskt-beslut-november-2025/",
+          "status_note": "The official monetary-policy decision page links the exact Swedish press-conference slide PDF; no source bytes are captured by this manifest.",
+          "locator": {
+            "locator_key": "riksbank_mpr_2025_11_05_slides_sv",
+            "source_id": "riksbank_monetary_policy_press_conferences_sv",
+            "locator_kind": "official_direct_artifact",
+            "locator_url": "https://www.riksbank.se/globalassets/media/rapporter/ppr/bilder-fran-presstraffen/2025/251105/bilder-fran-presstraffen-den-5-november-2025.pdf",
+            "platform_media_id": null,
+            "mime_type": "application/pdf",
+            "language": "sv",
+            "translation_status": "original",
+            "host_organization": "Sveriges Riksbank",
+            "publisher": "Sveriges Riksbank",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_published_slides",
+            "provenance_tier": "official_authored_text",
+            "published_at": null,
+            "observed_at": "2026-09-09T13:37:45Z"
+          }
+        },
+        {
+          "representation_key": "exact_caption_track_sv",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-november-2025/",
+          "status_note": "No exact Swedish caption-track URL, caption origin, producer or time coverage was verified; replay availability is not caption availability.",
+          "locator": null
+        }
+      ]
+    },
+    {
+      "event_key": "riksbank_mpr_2025_12_18",
+      "organization_id": "sveriges_riksbank",
+      "event_type": "monetary_policy_press_conference",
+      "title": "Pressträff om det penningpolitiska beslutet i december 2025",
+      "event_date": "2025-12-18",
+      "metadata_known_at": "2026-09-09T13:37:45Z",
+      "representations": [
+        {
+          "representation_key": "official_transcript_sv",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-december-2025/",
+          "status_note": "No exact first-party Swedish transcript locator was verified; replay availability is not transcript availability.",
+          "locator": null
+        },
+        {
+          "representation_key": "official_replay_page_sv",
+          "availability_status": "official_replay_page_link",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-december-2025/",
+          "status_note": "The exact first-party Riksbanken Play page presents the press-conference replay; no embedded-player or vendor locator is recorded.",
+          "locator": {
+            "locator_key": "riksbank_mpr_2025_12_18_replay_page_sv",
+            "source_id": "riksbank_monetary_policy_press_conferences_sv",
+            "locator_kind": "official_replay_page",
+            "locator_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-december-2025/",
+            "platform_media_id": null,
+            "mime_type": "text/html",
+            "language": "sv",
+            "translation_status": "original",
+            "host_organization": "Sveriges Riksbank",
+            "publisher": "Sveriges Riksbank",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_replay_page",
+            "provenance_tier": "official_archive_mixed",
+            "published_at": null,
+            "observed_at": "2026-09-09T13:37:45Z"
+          }
+        },
+        {
+          "representation_key": "official_slides_sv",
+          "availability_status": "direct_artifact_link",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/penningpolitik/penningpolitisk-rapport/2025/penningpolitiskt-beslut-december-2025/",
+          "status_note": "The official monetary-policy decision page links the exact Swedish press-conference slide PDF; no source bytes are captured by this manifest.",
+          "locator": {
+            "locator_key": "riksbank_mpr_2025_12_18_slides_sv",
+            "source_id": "riksbank_monetary_policy_press_conferences_sv",
+            "locator_kind": "official_direct_artifact",
+            "locator_url": "https://www.riksbank.se/globalassets/media/rapporter/ppr/bilder-fran-presstraffen/2025/251218/bilder-fran-presstraffen-den-18-december-2025.pdf",
+            "platform_media_id": null,
+            "mime_type": "application/pdf",
+            "language": "sv",
+            "translation_status": "original",
+            "host_organization": "Sveriges Riksbank",
+            "publisher": "Sveriges Riksbank",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_published_slides",
+            "provenance_tier": "official_authored_text",
+            "published_at": null,
+            "observed_at": "2026-09-09T13:37:45Z"
+          }
+        },
+        {
+          "representation_key": "exact_caption_track_sv",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T13:37:45Z",
+          "status_evidence_url": "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/presstraff-om-det-penningpolitiska-beslutet-i-december-2025/",
+          "status_note": "No exact Swedish caption-track URL, caption origin, producer or time coverage was verified; replay availability is not caption availability.",
+          "locator": null
+        }
+      ]
+    }
+  ]
+}

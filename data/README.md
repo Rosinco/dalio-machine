@@ -76,6 +76,34 @@ authorizes no content capture. The source pages used for link observation are
 not retained, so these hashes protect the recorded metadata rather than a
 historical copy of the changing live pages.
 
+The checked, metadata-only 2025 Sveriges Riksbank cohort is:
+
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\reference\communication_riksbank_2025_events.json`
+
+Its cohort-qualified representation inventory is:
+
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\communication_metadata_riksbank_2025_monetary_policy_press_conferences_latest.md`
+
+with machine-readable companion
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\communication_metadata_riksbank_2025_monetary_policy_press_conferences_latest.json`.
+The immutable pair is
+`communication_metadata_2026-09-09_43fd289a37e28f6f.{json,md}`. The full
+semantic manifest SHA-256 is
+`34f610043e933f74ca71ae56a9d29129fc92e2dd1ea83cc932293581ac4a2468`, and
+the inventory self-hash is
+`43fd289a37e28f6f8345b43d52c056cb562f87412f5f2294fcf930dda2705f3a`.
+The checked manifest file SHA-256 is
+`db4ecb23519f7a70e3e58563bf4b9dc895fd0ff78c1ef4ca1f44e6dc5f601b1d`;
+the generated JSON and Markdown file SHA-256 values are respectively
+`8485f8cd23d740539837921e3699704c8675d1ab908a27a495b7ee966d07f491`
+and `35d38c1d7982f603c24f3c3c11fc57c0e2024d4b3212451d37abb612137f9556`.
+The output measures eight exact first-party Riksbanken Play replay-page
+locators, eight exact official Swedish slide PDFs, zero verified exact
+first-party transcripts and zero verified exact caption tracks against the
+same closed eight-event denominator. No vendor/player locator is stored. This
+metadata authorizes no content capture and causes no database write. Publishing
+it does not move the unqualified BoE `communication_metadata_latest` aliases.
+
 The reserved content-addressed root for future, rights-cleared communication
 artifacts is:
 
@@ -213,7 +241,7 @@ Run the read-only inventory commands below to reproduce the inventory.
 | Official institutional reports | 10 documents; 852 extracted pages; 0 verified claims |
 | Report review queue | 5 latest documents; 20 unverified model drafts; 0 promoted claims |
 | Human report decisions | 0 decisions; 0 verified claims; blank review only |
-| Institutional communications | 20 source policies / 18 organizations; 2025 Fed/ECB pilot 16/16 exact text links; 2025 BoE MPR cohort 4/4 events, 4/4 exact transcript links, 4/4 video locators (3 exact page URLs), 0/4 verified exact caption tracks; ordered one-artifact/one-byte-lineage, multi-section schema v2; 0 database events; 0 artifacts/scopes/content captures/extracted segments; 0 sources cleared and acquisition automation false for all |
+| Institutional communications | 22 source policies / 19 organizations; 2025 Fed/ECB pilot 16/16 exact text links; 2025 BoE MPR cohort 4/4 events, 4/4 exact transcript links, 4/4 video locators (3 exact page URLs), 0/4 verified exact caption tracks; 2025 Riksbank cohort 8/8 events, 8/8 first-party replay pages, 8/8 official Swedish slide PDFs, 0/8 verified exact transcripts, 0/8 verified exact caption tracks; ordered one-artifact/one-byte-lineage, multi-section schema v2; 0 database events; 0 artifacts/scopes/content captures/extracted segments; 0 sources cleared and acquisition automation false for all |
 | World Bank monthly commodity history | 63,179 rows; 70 prices + 17 indices; 1960-01–2026-08 |
 | Official-money history | 5,794 rows; 10/10 pinned native series |
 | Separate liquidity frontier | 20,676 rows; 22/22 series (3 BIS + 19 OFR) |
@@ -238,6 +266,7 @@ dalio-audit-observatory --db data/dalio.db --json
 | `reference/report_claim_candidates.json` | Checked, versioned candidate propositions and exact page locators for the report-review queue | Review input only; structural/excerpt checks do not make a candidate verified |
 | `reference/communication_pilot_events.json` | Closed 2025 Fed/ECB 8+8 event denominator, one exact first-party English text candidate per event, semantic section order, conservative metadata clocks and pending source-rights evidence | Link metadata only; no bytes, human rights decision or collection authority |
 | `reference/communication_boe_2025_events.json` | Closed 2025 BoE four-event MPR press-conference denominator with separate transcript, official-page video and exact-caption observations | Link/platform-ID metadata only; no source-page archive, content bytes, rights decision or collection authority |
+| `reference/communication_riksbank_2025_events.json` | Closed 2025 Riksbank eight-event monetary-policy press-conference denominator with separate Swedish transcript, replay-page, slide and exact-caption observations | First-party link metadata only; no source-page/PDF archive, vendor locator, content bytes, rights decision or collection authority |
 | `artifacts/allocators/sha256/` | Content-addressed copies of official allocator PDFs | Durable evidence; do not treat as a disposable cache |
 | `artifacts/reports/sha256/` | Content-addressed copies of official central-bank/IMF/BIS PDFs | Durable evidence; do not treat as a disposable cache |
 | `artifacts/communications/` | Reserved content-addressed home for exact rights-cleared press-conference, earnings-communication, letter, caption and media artifacts | Empty by design until an exact artifact passes a documented rights review |
@@ -287,11 +316,17 @@ Different questions require different storage shapes:
   remarks and Q&A retain different provenance. Host, historical
   publisher, transcriber/caption origin, rights state, publication/availability/
   retrieval clocks and page/paragraph/timecode locators are explicit. The live
-  tables are empty: the 20-policy catalogue covers 18 organizations and is
+  tables are empty: the 22-policy catalogue covers 19 organizations and is
   source-discovery policy, not a downloaded corpus or evidence that an archive
   is complete. The first closed pilot enumerates all eight 2025 Fed and eight
   2025 ECB regular policy press conferences plus one selected official text URL
   per event. Its 16/16 is link coverage, not corpus completeness or clearance.
+  The checked BoE and Riksbank institution/year manifests add independent
+  representation observations. Riksbank's closed eight-event denominator has
+  eight exact first-party replay pages and eight exact official Swedish slide
+  PDFs, while exact first-party transcripts and exact caption tracks remain
+  unverified for all eight events. Replay pages and slides are not transcript
+  or caption substitutes.
   Immutable link metadata can precede a rights-cleared byte capture;
   changed bytes at the same URL append another capture rather than rewriting the
   artifact. Inventory can rehash archived bytes and deterministic segment
@@ -565,10 +600,15 @@ versioned in the catalogue rather than inferred from the run time.
 
 `dalio-communication-rights-packet` and
 `dalio-communication-metadata-inventory` are offline and database-free. The
-second command validates only the checked BoE manifest and refreshes
-`review/communication_metadata_latest.{json,md}` plus the hash-addressed pair.
-Neither command reads communication source content or grants acquisition
-authority.
+second command dispatches only to a registered checked cohort. It defaults to
+the BoE manifest and preserves
+`review/communication_metadata_latest.{json,md}` as BoE aliases. Selecting
+`--cohort riksbank_2025_monetary_policy_press_conferences` uses the pinned
+Riksbank manifest and refreshes only
+`review/communication_metadata_riksbank_2025_monetary_policy_press_conferences_latest.{json,md}`.
+Both use generic hash-bound immutable filenames. An unknown cohort or a
+manifest/cohort mismatch fails before output. Neither command reads
+communication source content or grants acquisition authority.
 
 After `prepare`, open the printed Windows path and complete all four
 attestations plus one outcome for every candidate. Check and inspect progress
@@ -612,13 +652,16 @@ deterministic input layout.
 
 ## Known gaps
 
-- Institutional communication history has not yet been collected. The 20-policy,
-  18-organization catalogue covers a balanced first-party discovery universe,
+- Institutional communication history has not yet been collected. The 22-policy,
+  19-organization catalogue covers a balanced first-party discovery universe,
   and the first closed denominator now covers the 8+8 regular 2025 Fed/ECB
   policy press conferences with 16 exact official text links. A separate closed
   BoE 2025 cohort adds four MPR events, four exact transcript links, four video
-  locators and zero verified exact caption tracks. These are only metadata
-  inventories: no source authorizes automated content acquisition, no human
+  locators and zero verified exact caption tracks. The closed 2025 Riksbank
+  cohort adds eight first-party replay pages and eight official Swedish slide
+  PDFs, but zero verified exact first-party transcripts and zero verified exact
+  caption tracks. These are only metadata inventories: no source authorizes
+  automated content acquisition, no human
   rights decision exists, no transcript/subtitle/letter bytes or segments exist,
   and no communication text can feed scenarios or investor conclusions. The
   one-artifact/one-byte-lineage, multi-section storage mapping now exists, but no named-human

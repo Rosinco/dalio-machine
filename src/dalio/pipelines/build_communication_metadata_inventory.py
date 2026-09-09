@@ -1,4 +1,4 @@
-"""Publish the offline Bank of England communication-link metadata inventory."""
+"""Publish offline checked-cohort communication-link metadata inventories."""
 
 from __future__ import annotations
 
@@ -10,11 +10,19 @@ import re
 import stat
 import sys
 import tempfile
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
+from types import MappingProxyType
 
-from dalio.communications.institution_year_manifest import load_checked_boe_2025_manifest
+from dalio.communications.institution_year_manifest import (
+    BOE_2025_MANIFEST_ID,
+    RIKSBANK_2025_MANIFEST_ID,
+    InstitutionYearManifest,
+    load_checked_boe_2025_manifest,
+    load_checked_riksbank_2025_manifest,
+)
 from dalio.communications.metadata_inventory import (
     build_representation_inventory,
     inventory_publication_date,
@@ -23,13 +31,67 @@ from dalio.communications.metadata_inventory import (
 )
 
 DEFAULT_MANIFEST_PATH = Path("data/reference/communication_boe_2025_events.json")
+RIKSBANK_2025_MANIFEST_PATH = Path("data/reference/communication_riksbank_2025_events.json")
 DEFAULT_OUTPUT_DIR = Path("data/review")
+DEFAULT_COHORT_ID = BOE_2025_MANIFEST_ID
 LATEST_JSON = "communication_metadata_latest.json"
 LATEST_MARKDOWN = "communication_metadata_latest.md"
 LOCK_FILENAME = ".communication_metadata_inventory.lock"
+_COHORT_ID = re.compile(r"^[a-z][a-z0-9_]{0,127}$")
 _IMMUTABLE_OUTPUT = re.compile(
     r"^communication_metadata_\d{4}-\d{2}-\d{2}_[0-9a-f]{16}\.(?:json|md)$"
 )
+
+
+@dataclass(frozen=True, slots=True)
+class CheckedCohortPublication:
+    """Pinned loader and default input for one publishable checked cohort."""
+
+    cohort_id: str
+    default_manifest_path: Path
+    checked_loader: Callable[[Path], InstitutionYearManifest]
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.cohort_id, str) or _COHORT_ID.fullmatch(self.cohort_id) is None:
+            raise ValueError("checked cohort_id must be lowercase snake_case")
+        if not isinstance(self.default_manifest_path, Path):
+            raise TypeError("checked cohort default_manifest_path must be a Path")
+        if not callable(self.checked_loader):
+            raise TypeError("checked cohort checked_loader must be callable")
+
+
+CHECKED_COHORT_PUBLICATIONS: Mapping[str, CheckedCohortPublication] = MappingProxyType(
+    {
+        DEFAULT_COHORT_ID: CheckedCohortPublication(
+            cohort_id=DEFAULT_COHORT_ID,
+            default_manifest_path=DEFAULT_MANIFEST_PATH,
+            checked_loader=load_checked_boe_2025_manifest,
+        ),
+        RIKSBANK_2025_MANIFEST_ID: CheckedCohortPublication(
+            cohort_id=RIKSBANK_2025_MANIFEST_ID,
+            default_manifest_path=RIKSBANK_2025_MANIFEST_PATH,
+            checked_loader=load_checked_riksbank_2025_manifest,
+        ),
+    }
+)
+
+
+def _checked_cohort_publication(cohort_id: str) -> CheckedCohortPublication:
+    if not isinstance(cohort_id, str):
+        raise ValueError("checked cohort ID must be a string")
+    publication = CHECKED_COHORT_PUBLICATIONS.get(cohort_id)
+    if publication is None:
+        raise ValueError(f"unknown checked communication cohort: {cohort_id}")
+    if publication.cohort_id != cohort_id:
+        raise RuntimeError(f"checked cohort registry key does not match its value: {cohort_id}")
+    return publication
+
+
+def _latest_output_names(cohort_id: str) -> tuple[str, str]:
+    if cohort_id == DEFAULT_COHORT_ID:
+        return LATEST_JSON, LATEST_MARKDOWN
+    stem = f"communication_metadata_{cohort_id}_latest"
+    return f"{stem}.json", f"{stem}.md"
 
 
 def _regular_or_missing(path: Path, *, purpose: str) -> os.stat_result | None:
@@ -88,18 +150,14 @@ def _require_output_directory_unchanged(
             f"inventory output directory changed during publication: {output_dir}"
         ) from exc
     if not stat.S_ISDIR(current.st_mode) or _identity(current) != expected_identity:
-        raise RuntimeError(
-            f"inventory output directory changed during publication: {output_dir}"
-        )
+        raise RuntimeError(f"inventory output directory changed during publication: {output_dir}")
 
 
 def _manifest_snapshot(path: Path) -> tuple[bytes, tuple[int, int]]:
     try:
         metadata = _regular_or_missing(path, purpose="checked metadata manifest")
     except RuntimeError as exc:
-        raise FileNotFoundError(
-            f"checked metadata manifest does not exist safely: {path}"
-        ) from exc
+        raise FileNotFoundError(f"checked metadata manifest does not exist safely: {path}") from exc
     if metadata is None:
         raise FileNotFoundError(f"checked metadata manifest does not exist safely: {path}")
     identity = _identity(metadata)
@@ -122,11 +180,7 @@ def _require_manifest_unchanged(
         raise RuntimeError(f"metadata manifest changed {phase}")
     payload = path.read_bytes()
     after = _regular_or_missing(path, purpose="checked metadata manifest")
-    if (
-        after is None
-        or _identity(after) != expected_identity
-        or payload != expected_bytes
-    ):
+    if after is None or _identity(after) != expected_identity or payload != expected_bytes:
         raise RuntimeError(f"metadata manifest changed {phase}")
 
 
@@ -261,9 +315,7 @@ def _output_lock(output_dir: Path) -> Iterator[Path]:
         try:
             locked_path = _regular_or_missing(lock_path, purpose="inventory-output lock")
             if locked_path is None or _identity(locked_path) != _identity(opened):
-                raise RuntimeError(
-                    f"inventory-output lock changed while acquiring it: {lock_path}"
-                )
+                raise RuntimeError(f"inventory-output lock changed while acquiring it: {lock_path}")
             yield lock_path
         finally:
             fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
@@ -277,14 +329,25 @@ def _validate_namespace(output_dir: Path) -> None:
 
 def run(
     *,
-    manifest_path: Path = DEFAULT_MANIFEST_PATH,
+    manifest_path: Path | None = None,
     output_dir: Path = DEFAULT_OUTPUT_DIR,
+    cohort: str = DEFAULT_COHORT_ID,
 ) -> tuple[dict[str, object], tuple[Path, ...]]:
     """Build and publish fixed and hash-addressed metadata-only inventory pairs."""
+    publication = _checked_cohort_publication(cohort)
+    if manifest_path is None:
+        manifest_path = publication.default_manifest_path
     manifest_path = manifest_path.expanduser()
     output_dir = output_dir.expanduser()
     input_bytes, input_identity = _manifest_snapshot(manifest_path)
-    manifest = load_checked_boe_2025_manifest(manifest_path)
+    manifest = publication.checked_loader(manifest_path)
+    if not isinstance(manifest, InstitutionYearManifest):
+        raise RuntimeError("checked cohort loader returned an invalid manifest")
+    if manifest.manifest_id != publication.cohort_id:
+        raise ValueError(
+            "checked manifest cohort does not match selected cohort: "
+            f"expected {publication.cohort_id}, got {manifest.manifest_id}"
+        )
     _require_manifest_unchanged(
         manifest_path,
         expected_bytes=input_bytes,
@@ -303,7 +366,8 @@ def run(
 
     stem = f"communication_metadata_{inventory_publication_date(inventory)}_{inventory_hash[:16]}"
     immutable = (output_dir / f"{stem}.json", output_dir / f"{stem}.md")
-    latest = (output_dir / LATEST_JSON, output_dir / LATEST_MARKDOWN)
+    latest_names = _latest_output_names(publication.cohort_id)
+    latest = tuple(output_dir / name for name in latest_names)
     targets = (*immutable, *latest)
     resolved_input = manifest_path.resolve()
     if any(path.resolve() == resolved_input for path in targets):
@@ -318,9 +382,7 @@ def run(
         bound_latest = tuple(bound_dir / path.name for path in latest)
         bound_targets = (*bound_immutable, *bound_latest)
         with _output_lock(bound_dir) as lock_path:
-            _require_output_directory_unchanged(
-                output_dir, expected_identity=output_identity
-            )
+            _require_output_directory_unchanged(output_dir, expected_identity=output_identity)
             _validate_namespace(bound_dir)
             for path in bound_latest:
                 _regular_or_missing(path, purpose="latest inventory output")
@@ -339,9 +401,7 @@ def run(
             if validate_communication_metadata_inventory_sha256(inventory) != inventory_hash:
                 raise ValueError("communication metadata inventory hash changed before publication")
             _publish_pair(bound_immutable, payloads, immutable=True)
-            _require_output_directory_unchanged(
-                output_dir, expected_identity=output_identity
-            )
+            _require_output_directory_unchanged(output_dir, expected_identity=output_identity)
             _validate_namespace(bound_dir)
             _require_distinct_existing_files(publication_entries)
             _require_manifest_unchanged(
@@ -352,9 +412,7 @@ def run(
             )
             previous_latest = _publish_pair(bound_latest, payloads, immutable=False)
             try:
-                _require_output_directory_unchanged(
-                    output_dir, expected_identity=output_identity
-                )
+                _require_output_directory_unchanged(output_dir, expected_identity=output_identity)
                 _require_manifest_unchanged(
                     manifest_path,
                     expected_bytes=input_bytes,
@@ -374,13 +432,18 @@ def run(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Build the offline metadata-only BoE communication representation inventory."
+        description="Build an offline metadata-only checked communication-cohort inventory."
     )
-    parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST_PATH)
+    parser.add_argument("--cohort", default=DEFAULT_COHORT_ID)
+    parser.add_argument("--manifest", type=Path)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     args = parser.parse_args(argv)
     try:
-        inventory, paths = run(manifest_path=args.manifest, output_dir=args.output_dir)
+        inventory, paths = run(
+            manifest_path=args.manifest,
+            output_dir=args.output_dir,
+            cohort=args.cohort,
+        )
     except (OSError, RuntimeError, ValueError) as exc:
         print(f"dalio-communication-metadata-inventory: {exc}", file=sys.stderr)
         return 2
@@ -398,11 +461,15 @@ if __name__ == "__main__":  # pragma: no cover
 
 
 __all__ = [
+    "CHECKED_COHORT_PUBLICATIONS",
+    "CheckedCohortPublication",
+    "DEFAULT_COHORT_ID",
     "DEFAULT_MANIFEST_PATH",
     "DEFAULT_OUTPUT_DIR",
     "LATEST_JSON",
     "LATEST_MARKDOWN",
     "LOCK_FILENAME",
+    "RIKSBANK_2025_MANIFEST_PATH",
     "main",
     "run",
 ]

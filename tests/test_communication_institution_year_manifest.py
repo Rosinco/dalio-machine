@@ -7,6 +7,7 @@ from dataclasses import replace
 from datetime import timedelta
 from pathlib import Path
 from types import MappingProxyType
+from urllib.parse import urlsplit
 
 import pytest
 
@@ -17,21 +18,25 @@ from dalio.communications.catalogue import (
     COMMUNICATION_CATALOGUE_SHA256,
     COMMUNICATION_CATALOGUE_SNAPSHOTS,
     COMMUNICATION_SOURCES,
-    communication_catalogue_sha256,
     communication_catalogue_snapshot,
+    resolve_communication_catalogue_snapshot,
 )
 from dalio.communications.institution_year_manifest import (
     BOE_2025_MANIFEST_SHA256,
     INSTITUTION_YEAR_MANIFEST_SCHEMA_VERSION,
     INSTITUTION_YEAR_METHODOLOGY_VERSION,
+    RIKSBANK_2025_MANIFEST_ID,
+    RIKSBANK_2025_MANIFEST_SHA256,
     institution_year_manifest_sha256,
     load_checked_boe_2025_manifest,
+    load_checked_riksbank_2025_manifest,
     load_institution_year_manifest,
 )
 from dalio.communications.metadata_inventory import build_representation_inventory
 
 ROOT = Path(__file__).resolve().parents[1]
 CHECKED_MANIFEST = ROOT / "data" / "reference" / "communication_boe_2025_events.json"
+RIKSBANK_CHECKED_MANIFEST = ROOT / "data" / "reference" / "communication_riksbank_2025_events.json"
 EVENT_KEYS = {
     "boe_mpr_2025_02_06",
     "boe_mpr_2025_05_08",
@@ -43,10 +48,198 @@ REPRESENTATION_KEYS = {
     "official_page_video_locator",
     "exact_caption_track_en",
 }
+RIKSBANK_EVENT_KEYS = {
+    "riksbank_mpr_2025_01_29",
+    "riksbank_mpr_2025_03_20",
+    "riksbank_mpr_2025_05_08",
+    "riksbank_mpr_2025_06_18",
+    "riksbank_mpr_2025_08_20",
+    "riksbank_mpr_2025_09_23",
+    "riksbank_mpr_2025_11_05",
+    "riksbank_mpr_2025_12_18",
+}
+RIKSBANK_REPRESENTATION_KEYS = {
+    "official_transcript_sv",
+    "official_replay_page_sv",
+    "official_slides_sv",
+    "exact_caption_track_sv",
+}
 
 
 def _payload() -> dict[str, object]:
     return json.loads(CHECKED_MANIFEST.read_text(encoding="utf-8"))
+
+
+def _riksbank_payload() -> dict[str, object]:
+    checked_at = "2026-09-09T13:30:00Z"
+    event_url = (
+        "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/"
+        "presstraff-om-det-penningpolitiska-beslutet-i-januari-2025/"
+    )
+    decision_url = (
+        "https://www.riksbank.se/sv/penningpolitik/penningpolitisk-rapport/2025/"
+        "penningpolitiskt-beslut-januari-2025/"
+    )
+    main_source = "riksbank_monetary_policy_press_conferences_sv"
+    subtitle_source = "riksbank_monetary_policy_press_conference_subtitles_sv"
+    return {
+        "schema_version": INSTITUTION_YEAR_MANIFEST_SCHEMA_VERSION,
+        "methodology_version": INSTITUTION_YEAR_METHODOLOGY_VERSION,
+        "catalogue_sha256": COMMUNICATION_CATALOGUE_SHA256,
+        "manifest_id": "riksbank_2025_monetary_policy_press_conferences",
+        "created_by": "agent:test",
+        "created_at": checked_at,
+        "as_known_at": checked_at,
+        "content_capture_authorized": False,
+        "scope": {
+            "organization_id": "sveriges_riksbank",
+            "year": 2025,
+            "start_date": "2025-01-01",
+            "end_date": "2025-12-31",
+            "event_type": "monetary_policy_press_conference",
+            "denominator_source_url": (
+                "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/"
+                "?category=28&year=2025&page=1"
+            ),
+            "inclusion_rule": "Test fixture: one official 2025 monetary-policy replay page.",
+            "exclusions": ["All events outside this one-event schema fixture."],
+            "checked_by": "agent:test",
+            "checked_at": checked_at,
+            "event_keys": ["riksbank_mpr_2025_01_29"],
+            "representation_specs": [
+                {
+                    "representation_key": "official_transcript_sv",
+                    "source_id": main_source,
+                    "artifact_role": "full_transcript",
+                    "material_type": "press_conference_transcript",
+                    "section_coverage": ["full_transcript"],
+                    "completeness_basis": "exact_direct_artifact_url",
+                    "rights_status": "rights_review_required",
+                    "acquisition_status": "manual_review_required",
+                    "automated_collection_allowed": False,
+                },
+                {
+                    "representation_key": "official_replay_page_sv",
+                    "source_id": main_source,
+                    "artifact_role": "webcast_video",
+                    "material_type": "press_conference_video",
+                    "section_coverage": ["webcast_video"],
+                    "completeness_basis": "official_page_media_locator",
+                    "rights_status": "rights_review_required",
+                    "acquisition_status": "manual_review_required",
+                    "automated_collection_allowed": False,
+                },
+                {
+                    "representation_key": "official_slides_sv",
+                    "source_id": main_source,
+                    "artifact_role": "presentation_slides",
+                    "material_type": "press_conference_slides",
+                    "section_coverage": ["presentation_slides"],
+                    "completeness_basis": "exact_direct_artifact_url",
+                    "rights_status": "rights_review_required",
+                    "acquisition_status": "manual_review_required",
+                    "automated_collection_allowed": False,
+                },
+                {
+                    "representation_key": "exact_caption_track_sv",
+                    "source_id": subtitle_source,
+                    "artifact_role": "subtitles",
+                    "material_type": "subtitles",
+                    "section_coverage": ["subtitles"],
+                    "completeness_basis": "exact_caption_track_url",
+                    "rights_status": "rights_review_required",
+                    "acquisition_status": "manual_review_required",
+                    "automated_collection_allowed": False,
+                },
+            ],
+        },
+        "events": [
+            {
+                "event_key": "riksbank_mpr_2025_01_29",
+                "organization_id": "sveriges_riksbank",
+                "event_type": "monetary_policy_press_conference",
+                "title": "Pressträff om det penningpolitiska beslutet i januari 2025",
+                "event_date": "2025-01-29",
+                "metadata_known_at": checked_at,
+                "representations": [
+                    {
+                        "representation_key": "official_transcript_sv",
+                        "availability_status": "not_verified",
+                        "checked_at": checked_at,
+                        "status_evidence_url": event_url,
+                        "status_note": "No first-party transcript locator is verified.",
+                        "locator": None,
+                    },
+                    {
+                        "representation_key": "official_replay_page_sv",
+                        "availability_status": "official_replay_page_link",
+                        "checked_at": checked_at,
+                        "status_evidence_url": event_url,
+                        "status_note": "The official page presents the event replay.",
+                        "locator": {
+                            "locator_key": "riksbank_mpr_2025_01_29_replay_page_sv",
+                            "source_id": main_source,
+                            "locator_kind": "official_replay_page",
+                            "locator_url": event_url,
+                            "platform_media_id": None,
+                            "mime_type": "text/html",
+                            "language": "sv",
+                            "translation_status": "original",
+                            "host_organization": "Sveriges Riksbank",
+                            "publisher": "Sveriges Riksbank",
+                            "transcriber": None,
+                            "transcriber_attribution": "not_applicable",
+                            "origin_type": "official_replay_page",
+                            "provenance_tier": "official_archive_mixed",
+                            "published_at": None,
+                            "observed_at": checked_at,
+                        },
+                    },
+                    {
+                        "representation_key": "official_slides_sv",
+                        "availability_status": "direct_artifact_link",
+                        "checked_at": checked_at,
+                        "status_evidence_url": decision_url,
+                        "status_note": "The official decision page links the Swedish slide PDF.",
+                        "locator": {
+                            "locator_key": "riksbank_mpr_2025_01_29_slides_sv",
+                            "source_id": main_source,
+                            "locator_kind": "official_direct_artifact",
+                            "locator_url": (
+                                "https://www.riksbank.se/globalassets/media/rapporter/ppr/"
+                                "bilder-fran-presstraffen/2025/250129/"
+                                "bilder-fran-presstraffen-den-29-januari-2025.pdf"
+                            ),
+                            "platform_media_id": None,
+                            "mime_type": "application/pdf",
+                            "language": "sv",
+                            "translation_status": "original",
+                            "host_organization": "Sveriges Riksbank",
+                            "publisher": "Sveriges Riksbank",
+                            "transcriber": None,
+                            "transcriber_attribution": "not_applicable",
+                            "origin_type": "official_published_slides",
+                            "provenance_tier": "official_authored_text",
+                            "published_at": None,
+                            "observed_at": checked_at,
+                        },
+                    },
+                    {
+                        "representation_key": "exact_caption_track_sv",
+                        "availability_status": "not_verified",
+                        "checked_at": checked_at,
+                        "status_evidence_url": event_url,
+                        "status_note": "No exact Swedish caption track is verified.",
+                        "locator": None,
+                    },
+                ],
+            }
+        ],
+    }
+
+
+def _checked_riksbank_payload() -> dict[str, object]:
+    return json.loads(RIKSBANK_CHECKED_MANIFEST.read_text(encoding="utf-8"))
 
 
 def _write(tmp_path: Path, payload: dict[str, object]) -> Path:
@@ -89,6 +282,10 @@ def test_checked_boe_manifest_is_closed_metadata_only_and_hash_pinned():
     assert {event.event_key for event in manifest.events} == EVENT_KEYS
     assert len(manifest.events) == 4
     assert manifest.content_capture_authorized is False
+    assert manifest.catalogue_sha256 == (
+        "67d7049f1c63648c7b2d99dfee9eab290e2aca6469e9b872d0c605daaf716dc6"
+    )
+    assert manifest.catalogue_sha256 != COMMUNICATION_CATALOGUE_SHA256
     assert institution_year_manifest_sha256(manifest) == BOE_2025_MANIFEST_SHA256
     assert CHECKED_MANIFEST.read_bytes() == before
 
@@ -120,6 +317,316 @@ def test_checked_boe_manifest_is_closed_metadata_only_and_hash_pinned():
     )
     assert all(item.locator is None for item in statuses["exact_caption_track_en"])
     assert not hasattr(manifest, "content")
+
+
+def test_checked_riksbank_manifest_is_closed_metadata_only_and_hash_pinned():
+    before = RIKSBANK_CHECKED_MANIFEST.read_bytes()
+    boe_before = CHECKED_MANIFEST.read_bytes()
+    manifest = load_checked_riksbank_2025_manifest(RIKSBANK_CHECKED_MANIFEST)
+
+    assert manifest.manifest_id == RIKSBANK_2025_MANIFEST_ID
+    assert manifest.scope.organization_id == "sveriges_riksbank"
+    assert manifest.scope.year == 2025
+    assert manifest.scope.start_date.isoformat() == "2025-01-01"
+    assert manifest.scope.end_date.isoformat() == "2025-12-31"
+    assert manifest.scope.denominator_source_url == (
+        "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/"
+        "?category=28&year=2025&page=1"
+    )
+    assert (
+        "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/"
+        "?category=28&year=2025&page=2"
+    ) in manifest.scope.inclusion_rule
+    assert "include the eight entries titled as monetary-policy-decision press conferences" in (
+        manifest.scope.inclusion_rule
+    )
+    assert set(manifest.scope.exclusions) == {
+        "the Payments Report press conference dated 10 March 2025",
+        "the Financial Stability Report press conferences dated 28 May and 13 November 2025",
+        "speeches and seminars",
+        (
+            "reports, updates, minutes, votes and releases as representations distinct from "
+            "the selected press-conference replay pages and slides"
+        ),
+    }
+    assert manifest.created_at.isoformat() == "2026-09-09T13:37:45+00:00"
+    assert manifest.as_known_at == manifest.created_at
+    assert manifest.scope.checked_at == manifest.created_at
+    assert manifest.content_capture_authorized is False
+    assert manifest.catalogue_sha256 == (
+        "ad499a7129238d70be8c7243c62252b3a1f11628a69d2df4ecf14c41d33ef1b0"
+    )
+    assert set(manifest.scope.event_keys) == RIKSBANK_EVENT_KEYS
+    assert {event.event_key for event in manifest.events} == RIKSBANK_EVENT_KEYS
+    assert len(manifest.events) == 8
+    assert all(
+        {item.representation_key for item in event.representations} == RIKSBANK_REPRESENTATION_KEYS
+        for event in manifest.events
+    )
+    assert institution_year_manifest_sha256(manifest) == RIKSBANK_2025_MANIFEST_SHA256
+    assert RIKSBANK_2025_MANIFEST_SHA256 == (
+        "34f610043e933f74ca71ae56a9d29129fc92e2dd1ea83cc932293581ac4a2468"
+    )
+    assert RIKSBANK_CHECKED_MANIFEST.read_bytes() == before
+
+    boe = load_checked_boe_2025_manifest(CHECKED_MANIFEST)
+    assert institution_year_manifest_sha256(boe) == BOE_2025_MANIFEST_SHA256
+    assert BOE_2025_MANIFEST_SHA256 == (
+        "4bba6c8415de46718a5ae6906d0d09e9041f7be1903dbeef7be4f40223717eb2"
+    )
+    assert CHECKED_MANIFEST.read_bytes() == boe_before
+
+
+def test_checked_riksbank_exact_event_replay_and_slide_mappings():
+    manifest = load_checked_riksbank_2025_manifest(RIKSBANK_CHECKED_MANIFEST)
+    expected = {
+        "riksbank_mpr_2025_01_29": (
+            "2025-01-29",
+            "januari-2025",
+            "januari",
+            "250129",
+            "29-januari",
+        ),
+        "riksbank_mpr_2025_03_20": (
+            "2025-03-20",
+            "mars-2025",
+            "mars",
+            "250320",
+            "20-mars",
+        ),
+        "riksbank_mpr_2025_05_08": ("2025-05-08", "maj", "maj", "250508", "8-maj"),
+        "riksbank_mpr_2025_06_18": (
+            "2025-06-18",
+            "juni-2025",
+            "juni",
+            "250618",
+            "18-juni",
+        ),
+        "riksbank_mpr_2025_08_20": (
+            "2025-08-20",
+            "augusti-2025",
+            "augusti",
+            "250820",
+            "20-augusti",
+        ),
+        "riksbank_mpr_2025_09_23": (
+            "2025-09-23",
+            "september-2025",
+            "september",
+            "250923",
+            "23-september",
+        ),
+        "riksbank_mpr_2025_11_05": (
+            "2025-11-05",
+            "november-2025",
+            "november",
+            "251105",
+            "5-november",
+        ),
+        "riksbank_mpr_2025_12_18": (
+            "2025-12-18",
+            "december-2025",
+            "december",
+            "251218",
+            "18-december",
+        ),
+    }
+
+    for event in manifest.events:
+        event_date, replay_slug, decision_month, asset_date, slide_date = expected[event.event_key]
+        replay_url = (
+            "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/"
+            f"presstraff-om-det-penningpolitiska-beslutet-i-{replay_slug}/"
+        )
+        slide_evidence_url = (
+            "https://www.riksbank.se/sv/penningpolitik/penningpolitisk-rapport/2025/"
+            f"penningpolitiskt-beslut-{decision_month}-2025/"
+        )
+        slide_url = (
+            "https://www.riksbank.se/globalassets/media/rapporter/ppr/"
+            f"bilder-fran-presstraffen/2025/{asset_date}/"
+            f"bilder-fran-presstraffen-den-{slide_date}-2025.pdf"
+        )
+        observations = {item.representation_key: item for item in event.representations}
+        transcript = observations["official_transcript_sv"]
+        replay = observations["official_replay_page_sv"]
+        slides = observations["official_slides_sv"]
+        captions = observations["exact_caption_track_sv"]
+
+        assert event.event_date.isoformat() == event_date
+        assert transcript.availability_status == "not_verified"
+        assert transcript.status_evidence_url == replay_url
+        assert transcript.locator is None
+        assert replay.availability_status == "official_replay_page_link"
+        assert replay.status_evidence_url == replay_url
+        assert replay.locator is not None
+        assert replay.locator.locator_kind == "official_replay_page"
+        assert replay.locator.locator_url == replay_url
+        assert replay.locator.platform_media_id is None
+        assert replay.locator.mime_type == "text/html"
+        assert replay.locator.transcriber is None
+        assert replay.locator.transcriber_attribution == "not_applicable"
+        assert replay.locator.origin_type == "official_replay_page"
+        assert replay.locator.provenance_tier == "official_archive_mixed"
+        assert slides.availability_status == "direct_artifact_link"
+        assert slides.status_evidence_url == slide_evidence_url
+        assert "decision page links the exact Swedish" in slides.status_note
+        assert slides.locator is not None
+        assert slides.locator.locator_kind == "official_direct_artifact"
+        assert slides.locator.locator_url == slide_url
+        assert slides.locator.platform_media_id is None
+        assert slides.locator.mime_type == "application/pdf"
+        assert slides.locator.language == "sv"
+        assert slides.locator.translation_status == "original"
+        assert slides.locator.transcriber is None
+        assert slides.locator.transcriber_attribution == "not_applicable"
+        assert slides.locator.origin_type == "official_published_slides"
+        assert slides.locator.provenance_tier == "official_authored_text"
+        assert captions.availability_status == "not_verified"
+        assert captions.status_evidence_url == replay_url
+        assert captions.locator is None
+
+
+def test_checked_riksbank_manifest_has_only_first_party_urls_and_no_content_fields():
+    payload = _checked_riksbank_payload()
+    serialized = json.dumps(payload, ensure_ascii=False).lower()
+    assert "qcnl.tv" not in serialized
+    assert "youtube.com" not in serialized
+    assert "youtu.be" not in serialized
+    assert payload["content_capture_authorized"] is False
+
+    forbidden_fields = {
+        "content",
+        "content_sha256",
+        "captured_at",
+        "capture_status",
+        "source_bytes",
+        "transcript_text",
+        "caption_text",
+    }
+    observed_keys: set[str] = set()
+    observed_urls: list[str] = []
+
+    def visit(value: object) -> None:
+        if isinstance(value, dict):
+            observed_keys.update(value)
+            for key, item in value.items():
+                if key.endswith("_url") and isinstance(item, str):
+                    observed_urls.append(item)
+                visit(item)
+        elif isinstance(value, list):
+            for item in value:
+                visit(item)
+
+    visit(payload)
+    assert observed_keys.isdisjoint(forbidden_fields)
+    assert observed_urls
+    assert {urlsplit(url).hostname for url in observed_urls} == {"www.riksbank.se"}
+
+
+@pytest.mark.parametrize(
+    ("representation_key", "replacement_url"),
+    [
+        (
+            "official_replay_page_sv",
+            "https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/2025/"
+            "presstraff-om-det-penningpolitiska-beslutet-i-mars-2025/",
+        ),
+        (
+            "official_slides_sv",
+            "https://www.riksbank.se/globalassets/media/rapporter/ppr/"
+            "bilder-fran-presstraffen/2025/250320/"
+            "bilder-fran-presstraffen-den-20-mars-2025.pdf",
+        ),
+    ],
+)
+def test_checked_riksbank_loader_rejects_same_domain_locator_tampering(
+    tmp_path, representation_key, replacement_url
+):
+    payload = _checked_riksbank_payload()
+    observation = _representation(_events(payload)[0], representation_key)
+    locator = observation["locator"]
+    assert isinstance(locator, dict)
+    locator["locator_url"] = replacement_url
+    path = _write(tmp_path, payload)
+
+    assert load_institution_year_manifest(path).manifest_id == RIKSBANK_2025_MANIFEST_ID
+    with pytest.raises(ValueError, match="pinned semantic SHA-256"):
+        load_checked_riksbank_2025_manifest(path)
+
+
+def test_checked_riksbank_loader_rejects_wrong_cohort_and_added_content(tmp_path):
+    with pytest.raises(ValueError, match="wrong manifest_id"):
+        load_checked_riksbank_2025_manifest(CHECKED_MANIFEST)
+
+    payload = _checked_riksbank_payload()
+    _representation(_events(payload)[0], "official_transcript_sv")["content"] = "forbidden"
+    with pytest.raises(ValueError, match="unknown fields"):
+        load_checked_riksbank_2025_manifest(_write(tmp_path, payload))
+
+
+def test_riksbank_roles_accept_first_party_replay_page_and_slide_pdf(tmp_path):
+    manifest = load_institution_year_manifest(_write(tmp_path, _riksbank_payload()))
+
+    assert manifest.scope.organization_id == "sveriges_riksbank"
+    specs = {spec.representation_key: spec for spec in manifest.scope.representation_specs}
+    assert specs["official_slides_sv"].artifact_role == "presentation_slides"
+    assert specs["official_slides_sv"].material_type == "press_conference_slides"
+    observations = {item.representation_key: item for item in manifest.events[0].representations}
+    replay = observations["official_replay_page_sv"]
+    assert replay.availability_status == "official_replay_page_link"
+    assert replay.locator is not None
+    assert replay.locator.locator_kind == "official_replay_page"
+    assert replay.locator.platform_media_id is None
+    assert replay.locator.locator_url is not None
+    assert "riksbank.se" in replay.locator.locator_url
+    slides = observations["official_slides_sv"]
+    assert slides.locator is not None
+    assert slides.locator.origin_type == "official_published_slides"
+    assert observations["official_transcript_sv"].locator is None
+    assert observations["exact_caption_track_sv"].locator is None
+
+
+def test_riksbank_replay_locator_rejects_external_player_metadata(tmp_path):
+    payload = _riksbank_payload()
+    replay = _representation(_events(payload)[0], "official_replay_page_sv")
+    locator = replay["locator"]
+    assert isinstance(locator, dict)
+    locator["locator_url"] = "https://qcnl.tv/e/vendor-player-id"
+    with pytest.raises(ValueError, match="official domain"):
+        load_institution_year_manifest(_write(tmp_path, payload))
+
+    payload = _riksbank_payload()
+    replay = _representation(_events(payload)[0], "official_replay_page_sv")
+    locator = replay["locator"]
+    assert isinstance(locator, dict)
+    locator["platform_media_id"] = "vendor_player_id"
+    with pytest.raises(ValueError, match="invalid official replay-page locator"):
+        load_institution_year_manifest(_write(tmp_path, payload))
+
+
+def test_riksbank_replay_status_and_role_are_bound(tmp_path):
+    payload = _riksbank_payload()
+    replay = _representation(_events(payload)[0], "official_replay_page_sv")
+    replay["availability_status"] = "external_platform_link"
+    with pytest.raises(ValueError, match="availability_status conflicts"):
+        load_institution_year_manifest(_write(tmp_path, payload))
+
+    payload = _riksbank_payload()
+    slides = _representation(_events(payload)[0], "official_slides_sv")
+    locator = slides["locator"]
+    assert isinstance(locator, dict)
+    locator["locator_kind"] = "official_replay_page"
+    locator["mime_type"] = "text/html"
+    with pytest.raises(ValueError, match="invalid official replay-page locator"):
+        load_institution_year_manifest(_write(tmp_path, payload))
+
+
+def test_riksbank_sources_are_unavailable_in_the_frozen_catalogue_snapshot(tmp_path):
+    payload = _riksbank_payload()
+    payload["catalogue_sha256"] = "67d7049f1c63648c7b2d99dfee9eab290e2aca6469e9b872d0c605daaf716dc6"
+    with pytest.raises(ValueError, match="not in the communication source catalogue"):
+        load_institution_year_manifest(_write(tmp_path, payload))
 
 
 def test_semantic_hash_ignores_record_order_but_preserves_section_order(tmp_path):
@@ -376,20 +883,21 @@ def test_catalogue_binding_source_semantics_and_clocks_are_fail_closed(tmp_path)
 
 
 def test_loader_uses_only_sources_from_the_bound_catalogue_snapshot(tmp_path, monkeypatch):
+    frozen_hash = "67d7049f1c63648c7b2d99dfee9eab290e2aca6469e9b872d0c605daaf716dc6"
+    frozen = resolve_communication_catalogue_snapshot(frozen_hash)
     base = next(
         source
-        for source in COMMUNICATION_SOURCES
+        for source in frozen.sources
         if source.source_id == "boe_monetary_policy_press_conferences_en"
     )
     added = replace(base, source_id="boe_future_press_conferences_en")
-    expanded_sources = (*COMMUNICATION_SOURCES, added)
-    expanded_hash = communication_catalogue_sha256(expanded_sources)
+    expanded_sources = (*frozen.sources, added)
     expanded_snapshot = communication_catalogue_snapshot(
         expanded_sources,
-        schema_version=CATALOGUE_SCHEMA_VERSION,
-        evaluated_at=CATALOGUE_EVALUATED_AT,
+        schema_version=frozen.schema_version,
+        evaluated_at=frozen.evaluated_at,
     )
-    assert expanded_snapshot.catalogue_sha256 == expanded_hash
+    expanded_hash = expanded_snapshot.catalogue_sha256
     monkeypatch.setattr(
         catalogue_module,
         "COMMUNICATION_CATALOGUE_SNAPSHOTS",
@@ -410,7 +918,7 @@ def test_loader_uses_only_sources_from_the_bound_catalogue_snapshot(tmp_path, mo
     assert (
         load_institution_year_manifest(_write(tmp_path, payload)).catalogue_sha256 == expanded_hash
     )
-    payload["catalogue_sha256"] = COMMUNICATION_CATALOGUE_SHA256
+    payload["catalogue_sha256"] = frozen_hash
     with pytest.raises(ValueError, match="not in the communication source catalogue"):
         load_institution_year_manifest(_write(tmp_path, payload))
 

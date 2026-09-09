@@ -122,6 +122,7 @@ def build_representation_inventory(
                 "direct_artifact_link",
                 "external_platform_link",
                 "embedded_platform_id_only",
+                "official_replay_page_link",
                 "not_verified",
             )
         }
@@ -130,33 +131,36 @@ def build_representation_inventory(
             item.locator is not None and item.locator.locator_url is not None
             for item in observations
         )
-        coverage.append(
-            {
-                "representation_key": representation_key,
-                "source_id": spec.source_id,
-                "artifact_role": spec.artifact_role,
-                "material_type": spec.material_type,
-                "section_coverage": list(spec.section_coverage),
-                "completeness_basis": spec.completeness_basis,
-                "denominator_count": denominator_count,
-                "observation_count": len(observations),
-                "located_count": located_count,
-                "exact_url_count": exact_url_count,
-                "direct_artifact_link_count": status_counts["direct_artifact_link"],
-                "external_platform_link_count": status_counts["external_platform_link"],
-                "embedded_platform_id_only_count": status_counts["embedded_platform_id_only"],
-                "not_verified_count": status_counts["not_verified"],
-                "coverage_status": _coverage_status(
-                    completeness_basis=spec.completeness_basis,
-                    denominator_count=denominator_count,
-                    located_count=located_count,
-                    exact_url_count=exact_url_count,
-                ),
-                "rights_status": spec.rights_status,
-                "acquisition_status": spec.acquisition_status,
-                "automated_collection_allowed": spec.automated_collection_allowed,
-            }
-        )
+        row: dict[str, object] = {
+            "representation_key": representation_key,
+            "source_id": spec.source_id,
+            "artifact_role": spec.artifact_role,
+            "material_type": spec.material_type,
+            "section_coverage": list(spec.section_coverage),
+            "completeness_basis": spec.completeness_basis,
+            "denominator_count": denominator_count,
+            "observation_count": len(observations),
+            "located_count": located_count,
+            "exact_url_count": exact_url_count,
+            "direct_artifact_link_count": status_counts["direct_artifact_link"],
+            "external_platform_link_count": status_counts["external_platform_link"],
+            "embedded_platform_id_only_count": status_counts["embedded_platform_id_only"],
+            "not_verified_count": status_counts["not_verified"],
+            "coverage_status": _coverage_status(
+                completeness_basis=spec.completeness_basis,
+                denominator_count=denominator_count,
+                located_count=located_count,
+                exact_url_count=exact_url_count,
+            ),
+            "rights_status": spec.rights_status,
+            "acquisition_status": spec.acquisition_status,
+            "automated_collection_allowed": spec.automated_collection_allowed,
+        }
+        if status_counts["official_replay_page_link"]:
+            # Add the new counter only where the status is present. Historical
+            # BoE inventories predate this vocabulary and remain byte-identical.
+            row["official_replay_page_link_count"] = status_counts["official_replay_page_link"]
+        coverage.append(row)
 
     event_rows = []
     for event in events:
@@ -247,6 +251,16 @@ def render_representation_inventory_markdown(inventory: dict[str, object]) -> st
         raise ValueError("metadata inventory cannot contain rights decisions")
 
     scope = inventory["scope"]
+    if inventory.get("organization_id") == "bank_of_england":
+        hosting_boundary = (
+            "- External platform hosting is distinct from Bank of England publication and "
+            "does not establish caption origin, producer, language or time coverage."
+        )
+    else:
+        hosting_boundary = (
+            "- A first-party replay-page locator identifies an event page, not captured media, "
+            "and does not establish caption origin, producer, language or time coverage."
+        )
     lines = [
         "# Institutional-communications metadata inventory",
         "",
@@ -312,8 +326,7 @@ def render_representation_inventory_markdown(inventory: dict[str, object]) -> st
             "- All representation rights remain source-gated; automation is disabled.",
             "- No source bytes, transcript text, captions, extraction, claims, scores, "
             "forecasts or portfolio conclusions are present.",
-            "- External platform hosting is distinct from Bank of England publication and "
-            "does not establish caption origin, producer, language or time coverage.",
+            hosting_boundary,
             "- `not_verified` is an unresolved metadata state, not evidence that a caption "
             "track is absent.",
             "",

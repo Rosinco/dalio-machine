@@ -31,8 +31,8 @@ A separate read-only review packet now places 20 tightly bounded, page-cited mod
 The separate `dalio-report-review` gate can prepare and validate a blank decision document, report progress, and—only from a TTY after showing every candidate/outcome, confirming the canonical full-decision hash and making a verified database backup—atomically record an operator-attributed approve/revise/reject batch. Human-only use is operating policy; the local identity is not cryptographically authenticated. Nobody has used the gate on the live packet: there are still zero human decisions and zero verified report claims.
 
 Institutional press conferences, earnings communications and executive letters
-now have a separate rights-gated foundation. The checked catalogue covers 20
-first-party source policies for 18 organizations: four central banks, seven
+now have a separate rights-gated foundation. The checked catalogue covers 22
+first-party source policies for 19 organizations: five central banks, seven
 major banks and seven commodity companies spanning six commodity families. The event, artifact,
 byte-capture, extraction and speaker-segment schemas preserve publication clocks,
 authorship, transcriber/caption provenance, rights state, changed source bytes,
@@ -56,6 +56,13 @@ exact Bank-hosted transcript links, 4/4 official-page video locators (3/4 exact
 external-platform page URLs) and 0/4 verified exact caption-track links. This is
 a metadata inventory only; an observed video never counts as a caption, and it
 adds no content or database rows.
+A separate closed 2025 Sveriges Riksbank cohort covers all eight
+monetary-policy-decision press conferences. It records 8/8 exact first-party
+Riksbanken Play replay-page locators and 8/8 exact official Swedish slide PDFs,
+but 0/8 verified exact first-party transcripts and 0/8 verified exact caption
+tracks. Replay pages, slides, transcripts and captions remain four different
+representations; this cohort also adds metadata only and writes no database
+rows.
 Future byte and segment hashes will prove reproducibility, not transcription
 fidelity; extracted text still needs trusted execution or named human review.
 
@@ -122,8 +129,12 @@ dalio-report-review status --db data/dalio.db --decisions data/review/report_dec
 # Offline metadata/rights review; no database, network, or source-content reads
 dalio-communication-rights-packet
 
-# Offline representation coverage for the checked 2025 BoE cohort; metadata only
+# Offline representation coverage; defaults to the checked 2025 BoE cohort
 dalio-communication-metadata-inventory
+
+# Checked 2025 Riksbank cohort; qualified latest aliases, metadata only
+dalio-communication-metadata-inventory \
+  --cohort riksbank_2025_monetary_policy_press_conferences
 
 # Local official PDFs are deliberately acquired separately. The input folders
 # must contain the deterministic filenames recorded in data/reference/*.json.
@@ -148,6 +159,13 @@ Its generated metadata-only views are
 `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\communication_metadata_latest.md`
 and
 `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\communication_metadata_latest.json`.
+
+The checked Riksbank cohort has the full Windows path
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\reference\communication_riksbank_2025_events.json`.
+Its cohort-qualified metadata-only views are
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\communication_metadata_riksbank_2025_monetary_policy_press_conferences_latest.md`
+and
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\communication_metadata_riksbank_2025_monetary_policy_press_conferences_latest.json`.
 
 Riksbank SWEA contributes eight daily Swedish series: policy rate; 2-, 5- and 10-year government yields; and SEK per USD, EUR, NOK and GBP. No key is required. Keyless runs use a safe 13-second request interval for the official 5-calls/minute limit; when `RIKSBANK_API_KEY` is set, the adapter sends it in `Ocp-Apim-Subscription-Key` automatically. The NOK feed starts on 2023-11-27 because older observations were quoted per 100 NOK and are not mixed into the current per-1-NOK series.
 
@@ -257,16 +275,26 @@ be archived. See [ADR 0012](decisions/0012-institutional-communications-ledger.m
 [ADR 0013](decisions/0013-fed-ecb-communications-metadata-pilot.md) and
 [ADR 0014](decisions/0014-communication-section-scope-sets.md).
 
-`dalio-communication-metadata-inventory` is the separate offline view of
-`data/reference/communication_boe_2025_events.json`. It validates a closed
-four-event 2025 MPR denominator, then reports transcript, official-page video
-and exact-caption-track coverage against that same denominator. Its 4/4 video
-result means four official-page locators, including one ID-only observation; it
-does not mean four exact URLs or any verified captions. Fixed and hash-addressed
-JSON/Markdown outputs are written under `data/review/` with
-`content_capture_authorized=false`. See
-[ADR 0015](decisions/0015-boe-2025-communication-metadata-inventory.md). The
-immutable source-policy snapshot contract is documented in
+`dalio-communication-metadata-inventory` is the separate checked-cohort,
+offline representation view. With no `--cohort`, it retains the existing BoE
+behavior and validates `data/reference/communication_boe_2025_events.json`:
+four MPR events, 4/4 exact transcript links, 4/4 official-page video locators
+(one ID-only observation) and 0/4 verified exact caption tracks. See
+[ADR 0015](decisions/0015-boe-2025-communication-metadata-inventory.md).
+
+Selecting
+`--cohort riksbank_2025_monetary_policy_press_conferences` dispatches through
+the pinned Riksbank loader and validates
+`data/reference/communication_riksbank_2025_events.json`. Against its closed
+eight-event first-party denominator, it reports 8/8 exact Riksbanken Play
+replay-page locators, 8/8 exact official Swedish slide PDFs, 0/8 verified exact
+first-party transcripts and 0/8 verified exact caption tracks. Nondefault
+cohorts refresh only cohort-qualified `latest` aliases; generic immutable
+filenames remain hash-bound, and the legacy BoE aliases do not move. The
+publisher performs no network, database or source-content reads and writes all
+views with `content_capture_authorized=false`. See
+[ADR 0018](decisions/0018-riksbank-2025-communication-metadata-inventory.md).
+The immutable source-policy snapshot contract is documented in
 [ADR 0016](decisions/0016-communication-catalogue-snapshots.md).
 
 ## Tests
@@ -296,4 +324,4 @@ Tier drives dashboard confidence labels — Tier 2 readings are flagged as such.
 
 ## Status
 
-Pre-alpha. The cycle and fundamentals product is working, and the raw-history foundation now includes sovereign-debt anatomy, Swedish debt holders, IMF financial-account transactions, 127,970 bilateral investment-position rows, three Swedish AP-fund disclosures, a ten-document official-report corpus, 63,179 monthly commodity observations, ten official-money histories and 22 separate shadow-liquidity histories. Read-only liquidity diagnostics, a 20-item report review queue, an append-only human decision gate and a 20-policy/18-organization institutional-communications schema foundation are available. A closed 2025 Fed/ECB pilot adds 16/16 exact first-party text links and an offline rights-review packet; a separate closed 2025 BoE cohort adds representation-specific metadata for four MPR press conferences. Checked manifests bind immutable source-policy snapshots, and the ordered one-artifact/one-byte-lineage, multi-section storage contract is ready, but there is no source content or database communication evidence. ADR 0017 caps the remaining Version 1 foundation at five bounded packages, after which work pivots to horizon scenarios, transmission paths, warning indicators and the SEK-investor brief. This is not a complete global money-flow map, a communications corpus, a universal M5, an additive liquidity total, a causal or deposit-flow model, or an investable commodity return history: all 20 report candidates still need named human review; every communication representation remains rights-gated; allocator history has only one H1 2026 release per fund; QPSD and IMF position coverage are voluntary and uneven; and debt cash-flow schedules, broader banking/funding channels and horizon risk scenarios remain to be built. See `project_context.md`, ADRs 0004–0017 and `data/README.md` for current boundaries.
+Pre-alpha. The cycle and fundamentals product is working, and the raw-history foundation now includes sovereign-debt anatomy, Swedish debt holders, IMF financial-account transactions, 127,970 bilateral investment-position rows, three Swedish AP-fund disclosures, a ten-document official-report corpus, 63,179 monthly commodity observations, ten official-money histories and 22 separate shadow-liquidity histories. Read-only liquidity diagnostics, a 20-item report review queue, an append-only human decision gate and a 22-policy/19-organization institutional-communications schema foundation are available. A closed 2025 Fed/ECB pilot adds 16/16 exact first-party text links and an offline rights-review packet; separate closed 2025 BoE and Riksbank cohorts add representation-specific metadata for four and eight monetary-policy press conferences respectively. Checked manifests bind immutable source-policy snapshots, and the ordered one-artifact/one-byte-lineage, multi-section storage contract is ready, but there is no source content or database communication evidence. ADR 0017 caps the remaining Version 1 foundation at five bounded packages, after which work pivots to horizon scenarios, transmission paths, warning indicators and the SEK-investor brief. This is not a complete global money-flow map, a communications corpus, a universal M5, an additive liquidity total, a causal or deposit-flow model, or an investable commodity return history: all 20 report candidates still need named human review; every communication representation remains rights-gated; allocator history has only one H1 2026 release per fund; QPSD and IMF position coverage are voluntary and uneven; and debt cash-flow schedules, broader banking/funding channels and horizon risk scenarios remain to be built. See `project_context.md`, ADRs 0004–0018 and `data/README.md` for current boundaries.

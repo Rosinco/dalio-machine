@@ -25,7 +25,7 @@ from urllib.parse import urlsplit
 
 ORGANIZATION_TYPES = frozenset({"central_bank", "bank", "commodity_company"})
 CATALOGUE_SCHEMA_VERSION = 2
-CATALOGUE_EVALUATED_AT = datetime(2026, 9, 9, 7, 0, 0, tzinfo=UTC)
+CATALOGUE_EVALUATED_AT = datetime(2026, 9, 9, 13, 26, 26, tzinfo=UTC)
 
 MATERIAL_TYPES = frozenset(
     {
@@ -34,6 +34,7 @@ MATERIAL_TYPES = frozenset(
         "financial_results",
         "management_review",
         "monetary_policy_statement",
+        "press_conference_slides",
         "press_conference_transcript",
         "press_conference_video",
         "questions_and_answers",
@@ -132,6 +133,7 @@ _APPROVED_OFFICIAL_DOMAINS = frozenset(
         "mufg.jp",
         "nutrien.com",
         "rba.gov.au",
+        "riksbank.se",
         "shell.com",
         "ubs.com",
         "westfraser.com",
@@ -809,9 +811,80 @@ _COMMUNICATION_SOURCES_2026_09_09: tuple[CommunicationSourceSpec, ...] = (
     ),
 )
 
-# Public current-vintage alias.  Historical tuples remain separately named so a
-# future additive catalogue release can retain this exact source-policy snapshot.
-COMMUNICATION_SOURCES = _COMMUNICATION_SOURCES_2026_09_09
+_RIKSBANK_COMMUNICATION_SOURCES_2026_09_09: tuple[CommunicationSourceSpec, ...] = (
+    CommunicationSourceSpec(
+        source_id="riksbank_monetary_policy_press_conferences_sv",
+        organization_id="sveriges_riksbank",
+        organization_name="Sveriges Riksbank",
+        organization_type="central_bank",
+        jurisdiction="SE",
+        language="sv",
+        landing_url="https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/",
+        official_domains=("riksbank.se",),
+        host_organization="Sveriges Riksbank",
+        publisher="Sveriges Riksbank",
+        transcriber=None,
+        transcriber_attribution="not_disclosed",
+        material_types=(
+            "press_conference_transcript",
+            "press_conference_video",
+            "press_conference_slides",
+        ),
+        commodity_families=(),
+        verified_archive_start_year=2025,
+        coverage_note=(
+            "The verified 2025 Riksbanken Play pages provide first-party replay pages and "
+            "links to presentation slides. Transcript availability is not established and "
+            "must be observed independently; embedded-player locators are outside this policy."
+        ),
+        provenance_tier="official_archive_mixed",
+        rights_status="rights_review_required",
+        rights_basis_url=None,
+        rights_note=(
+            "Riksbanken Play page, slide-document and embedded-media rights can differ; review "
+            "each exact representation before capture."
+        ),
+        acquisition_status="manual_review_required",
+        acquisition_note=_MANUAL_REVIEW_NOTE,
+    ),
+    CommunicationSourceSpec(
+        source_id="riksbank_monetary_policy_press_conference_subtitles_sv",
+        organization_id="sveriges_riksbank",
+        organization_name="Sveriges Riksbank",
+        organization_type="central_bank",
+        jurisdiction="SE",
+        language="sv",
+        landing_url="https://www.riksbank.se/sv/press-och-publicerat/riksbanken-play/",
+        official_domains=("riksbank.se",),
+        host_organization="Sveriges Riksbank",
+        publisher="Sveriges Riksbank",
+        transcriber=None,
+        transcriber_attribution="artifact_specific",
+        material_types=("subtitles",),
+        commodity_families=(),
+        verified_archive_start_year=2025,
+        coverage_note=(
+            "The 2025 replay pages are a subtitle-discovery pathway only. No caption-track "
+            "continuity, producer, origin, language or time coverage is asserted."
+        ),
+        provenance_tier="official_archive_mixed",
+        rights_status="rights_review_required",
+        rights_basis_url=None,
+        rights_note=(
+            "Replay-platform caption rights can differ from Riksbank page and document rights; "
+            "review every exact subtitle track before capture."
+        ),
+        acquisition_status="manual_review_required",
+        acquisition_note=_MANUAL_REVIEW_NOTE,
+    ),
+)
+
+# Public current-vintage alias.  The original tuple remains separately named and
+# hash-pinned so manifests bound to that policy vintage retain their semantics.
+COMMUNICATION_SOURCES = (
+    *_COMMUNICATION_SOURCES_2026_09_09,
+    *_RIKSBANK_COMMUNICATION_SOURCES_2026_09_09,
+)
 
 
 def _required_string(value: object, field: str, source_id: str) -> str:

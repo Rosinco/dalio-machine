@@ -34,6 +34,8 @@ EXPECTED_SOURCE_IDS = {
     "boe_monetary_policy_press_conferences_en",
     "boe_monetary_policy_press_conference_subtitles_en",
     "rba_speeches_en",
+    "riksbank_monetary_policy_press_conferences_sv",
+    "riksbank_monetary_policy_press_conference_subtitles_sv",
     # A geographically balanced bank-letter baseline.
     "jpmorgan_chase_annual_reports_en",
     "hsbc_group_reporting_en",
@@ -89,7 +91,7 @@ def test_catalogue_contains_the_verified_balanced_source_set():
     for source in COMMUNICATION_SOURCES:
         by_type.setdefault(source.organization_type, []).append(source)
 
-    assert len(by_type["central_bank"]) == 6
+    assert len(by_type["central_bank"]) == 8
     assert len(by_type["bank"]) == 7
     assert len(by_type["commodity_company"]) == 7
     assert {
@@ -103,6 +105,8 @@ def test_catalogue_contains_the_verified_balanced_source_set():
         "boe_monetary_policy_press_conferences_en": 2015,
         "boe_monetary_policy_press_conference_subtitles_en": 2015,
         "rba_speeches_en": 2024,
+        "riksbank_monetary_policy_press_conferences_sv": 2025,
+        "riksbank_monetary_policy_press_conference_subtitles_sv": 2025,
         "jpmorgan_chase_annual_reports_en": 2003,
         "hsbc_group_reporting_en": 2004,
         "deutsche_bank_annual_reports_en": 2007,
@@ -140,6 +144,7 @@ def test_subtitles_are_an_explicit_lower_fidelity_source_pathway():
     assert {source.source_id for source in subtitle_sources} == {
         "fed_fomc_press_conference_subtitles_en",
         "boe_monetary_policy_press_conference_subtitles_en",
+        "riksbank_monetary_policy_press_conference_subtitles_sv",
     }
     assert all(source.has_transcript_material for source in subtitle_sources)
     assert all(source.transcriber_attribution == "artifact_specific" for source in subtitle_sources)
@@ -150,7 +155,7 @@ def test_subtitles_are_an_explicit_lower_fidelity_source_pathway():
 def test_catalogue_fingerprint_is_canonical_and_change_sensitive():
     assert CATALOGUE_SCHEMA_VERSION == 2
     assert COMMUNICATION_CATALOGUE_SHA256 == (
-        "67d7049f1c63648c7b2d99dfee9eab290e2aca6469e9b872d0c605daaf716dc6"
+        "ad499a7129238d70be8c7243c62252b3a1f11628a69d2df4ecf14c41d33ef1b0"
     )
     assert communication_catalogue_sha256(tuple(reversed(COMMUNICATION_SOURCES))) == (
         COMMUNICATION_CATALOGUE_SHA256
@@ -159,6 +164,35 @@ def test_catalogue_fingerprint_is_canonical_and_change_sensitive():
         COMMUNICATION_SOURCES[1:]
     )
     assert communication_catalogue_sha256(changed) != COMMUNICATION_CATALOGUE_SHA256
+
+
+def test_riksbank_policies_are_swedish_source_gated_and_representation_specific():
+    by_id = {source.source_id: source for source in COMMUNICATION_SOURCES}
+    main = by_id["riksbank_monetary_policy_press_conferences_sv"]
+    subtitles = by_id["riksbank_monetary_policy_press_conference_subtitles_sv"]
+
+    assert main.organization_id == subtitles.organization_id == "sveriges_riksbank"
+    assert main.organization_name == subtitles.organization_name == "Sveriges Riksbank"
+    assert main.organization_type == subtitles.organization_type == "central_bank"
+    assert main.jurisdiction == subtitles.jurisdiction == "SE"
+    assert main.language == subtitles.language == "sv"
+    assert main.official_domains == subtitles.official_domains == ("riksbank.se",)
+    assert set(main.material_types) == {
+        "press_conference_transcript",
+        "press_conference_video",
+        "press_conference_slides",
+    }
+    assert subtitles.material_types == ("subtitles",)
+    assert main.transcriber_attribution == "not_disclosed"
+    assert subtitles.transcriber_attribution == "artifact_specific"
+    assert main.rights_status == subtitles.rights_status == "rights_review_required"
+    assert main.acquisition_status == subtitles.acquisition_status == "manual_review_required"
+    assert main.automated_collection_allowed is subtitles.automated_collection_allowed is False
+
+    frozen_hash = "67d7049f1c63648c7b2d99dfee9eab290e2aca6469e9b872d0c605daaf716dc6"
+    frozen = resolve_communication_catalogue_snapshot(frozen_hash)
+    assert len(COMMUNICATION_CATALOGUE_SNAPSHOTS) == 2
+    assert all("riksbank_monetary_policy" not in source.source_id for source in frozen.sources)
 
 
 def test_catalogue_snapshot_registry_is_immutable_and_resolves_exact_hashes(monkeypatch):

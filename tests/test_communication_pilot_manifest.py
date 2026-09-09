@@ -17,8 +17,8 @@ from dalio.communications.catalogue import (
     COMMUNICATION_CATALOGUE_SHA256,
     COMMUNICATION_CATALOGUE_SNAPSHOTS,
     COMMUNICATION_SOURCES,
-    communication_catalogue_sha256,
     communication_catalogue_snapshot,
+    resolve_communication_catalogue_snapshot,
 )
 from dalio.communications.pilot_manifest import (
     PILOT_MANIFEST_SCHEMA_VERSION,
@@ -94,7 +94,10 @@ def test_checked_manifest_has_exact_closed_denominators_and_only_metadata():
 
     assert manifest.schema_version == PILOT_MANIFEST_SCHEMA_VERSION == 1
     assert manifest.methodology_version == PILOT_METHODOLOGY_VERSION
-    assert manifest.catalogue_sha256 == COMMUNICATION_CATALOGUE_SHA256
+    assert manifest.catalogue_sha256 == (
+        "67d7049f1c63648c7b2d99dfee9eab290e2aca6469e9b872d0c605daaf716dc6"
+    )
+    assert manifest.catalogue_sha256 != COMMUNICATION_CATALOGUE_SHA256
     assert manifest.scope.start_date.isoformat() == "2025-01-01"
     assert manifest.scope.end_date.isoformat() == "2025-12-31"
     assert len(manifest.events) == 16
@@ -238,24 +241,23 @@ def test_loader_binds_known_source_catalogue_snapshot_and_selected_representatio
 
 
 def test_pilot_loader_uses_source_semantics_from_the_bound_snapshot(tmp_path, monkeypatch):
+    frozen_hash = "67d7049f1c63648c7b2d99dfee9eab290e2aca6469e9b872d0c605daaf716dc6"
+    frozen = resolve_communication_catalogue_snapshot(frozen_hash)
     current_fed = next(
-        source
-        for source in COMMUNICATION_SOURCES
-        if source.source_id == "fed_fomc_press_conferences_en"
+        source for source in frozen.sources if source.source_id == "fed_fomc_press_conferences_en"
     )
     historic_publisher = "Historical Board of Governors"
     historic_fed = replace(current_fed, publisher=historic_publisher)
     historic_sources = tuple(
         historic_fed if source.source_id == current_fed.source_id else source
-        for source in COMMUNICATION_SOURCES
+        for source in frozen.sources
     )
-    historic_hash = communication_catalogue_sha256(historic_sources)
     historic_snapshot = communication_catalogue_snapshot(
         historic_sources,
-        schema_version=CATALOGUE_SCHEMA_VERSION,
-        evaluated_at=CATALOGUE_EVALUATED_AT,
+        schema_version=frozen.schema_version,
+        evaluated_at=frozen.evaluated_at,
     )
-    assert historic_snapshot.catalogue_sha256 == historic_hash
+    historic_hash = historic_snapshot.catalogue_sha256
     monkeypatch.setattr(
         catalogue_module,
         "COMMUNICATION_CATALOGUE_SNAPSHOTS",
@@ -269,7 +271,7 @@ def test_pilot_loader_uses_source_semantics_from_the_bound_snapshot(tmp_path, mo
             _candidate(event)["publisher"] = historic_publisher
     assert load_pilot_manifest(_write(tmp_path, payload)).catalogue_sha256 == historic_hash
 
-    payload["catalogue_sha256"] = COMMUNICATION_CATALOGUE_SHA256
+    payload["catalogue_sha256"] = frozen_hash
     with pytest.raises(ValueError, match="bound catalogue snapshot"):
         load_pilot_manifest(_write(tmp_path, payload))
 
