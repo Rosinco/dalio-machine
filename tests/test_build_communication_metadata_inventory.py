@@ -17,9 +17,16 @@ from dalio.pipelines import build_communication_metadata_inventory as pipeline
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "data" / "reference" / "communication_boe_2025_events.json"
+RBA_MANIFEST = ROOT / "data" / "reference" / "communication_rba_2025_events.json"
 RIKSBANK_MANIFEST = ROOT / "data" / "reference" / "communication_riksbank_2025_events.json"
 CHECKED_JSON_SHA256 = "e17cd292bfba8c509716e158964d5e021bb12d21f654bf84e0788dff42dc6073"
 CHECKED_MARKDOWN_SHA256 = "644b2fdac5932293fe5ac1fdf75281002d2289360de7b3aa1eb5176733430214"
+CHECKED_RIKSBANK_JSON_SHA256 = "8485f8cd23d740539837921e3699704c8675d1ab908a27a495b7ee966d07f491"
+CHECKED_RIKSBANK_MARKDOWN_SHA256 = (
+    "35d38c1d7982f603c24f3c3c11fc57c0e2024d4b3212451d37abb612137f9556"
+)
+CHECKED_RBA_JSON_SHA256 = "9028b5c26f720139869360aa1ab158035ab64786f6b4c2fce9f621d841bab4c9"
+CHECKED_RBA_MARKDOWN_SHA256 = "913233696151c9b26e6dfd173aa6a74ed52d6d850111152c220943dab18b0490"
 TEST_COHORT_ID = "test_boe_2025_mpr_press_conferences"
 
 
@@ -43,12 +50,15 @@ def _register_test_cohort(monkeypatch, *, loader, cohort_id=TEST_COHORT_ID):
 
 def test_checked_cohort_registry_is_immutable_and_defaults_to_boe():
     publication = pipeline.CHECKED_COHORT_PUBLICATIONS[pipeline.DEFAULT_COHORT_ID]
+    rba = pipeline.CHECKED_COHORT_PUBLICATIONS[pipeline.RBA_2025_MANIFEST_ID]
     riksbank = pipeline.CHECKED_COHORT_PUBLICATIONS[pipeline.RIKSBANK_2025_MANIFEST_ID]
 
     assert pipeline.DEFAULT_COHORT_ID == "boe_2025_mpr_press_conferences"
     assert publication.cohort_id == pipeline.DEFAULT_COHORT_ID
     assert publication.default_manifest_path == pipeline.DEFAULT_MANIFEST_PATH
     assert publication.checked_loader is pipeline.load_checked_boe_2025_manifest
+    assert rba.default_manifest_path == pipeline.RBA_2025_MANIFEST_PATH
+    assert rba.checked_loader is pipeline.load_checked_rba_2025_manifest
     assert riksbank.default_manifest_path == pipeline.RIKSBANK_2025_MANIFEST_PATH
     assert riksbank.checked_loader is pipeline.load_checked_riksbank_2025_manifest
     with pytest.raises(TypeError):
@@ -192,8 +202,50 @@ def test_riksbank_cohort_uses_registered_default_and_does_not_move_boe_latest(
     assert paths[1].read_bytes() == paths[3].read_bytes()
     assert {path: path.read_bytes() for path in boe_paths[2:]} == boe_aliases
     assert json.loads(boe_paths[0].read_text(encoding="utf-8")) == boe_inventory
+    assert _sha256(paths[0]) == CHECKED_RIKSBANK_JSON_SHA256
+    assert _sha256(paths[1]) == CHECKED_RIKSBANK_MARKDOWN_SHA256
     markdown = paths[1].read_text(encoding="utf-8")
     assert "first-party replay-page locator" in markdown
+    assert "Bank of England publication" not in markdown
+
+
+def test_rba_cohort_uses_registered_default_and_does_not_move_existing_latest_aliases(
+    tmp_path, monkeypatch
+):
+    monkeypatch.chdir(ROOT)
+    _, boe_paths = pipeline.run(output_dir=tmp_path)
+    _, riksbank_paths = pipeline.run(
+        output_dir=tmp_path,
+        cohort=pipeline.RIKSBANK_2025_MANIFEST_ID,
+    )
+    existing_aliases = {path: path.read_bytes() for path in (*boe_paths[2:], *riksbank_paths[2:])}
+
+    inventory, paths = pipeline.run(
+        output_dir=tmp_path,
+        cohort=pipeline.RBA_2025_MANIFEST_ID,
+    )
+
+    stem = f"communication_metadata_2026-09-09_{inventory['inventory_sha256'][:16]}"
+    assert inventory["manifest_id"] == pipeline.RBA_2025_MANIFEST_ID
+    assert inventory["event_count"] == inventory["expected_event_count"] == 8
+    assert paths == (
+        tmp_path / f"{stem}.json",
+        tmp_path / f"{stem}.md",
+        tmp_path / "communication_metadata_rba_2025_monetary_policy_media_conferences_latest.json",
+        tmp_path / "communication_metadata_rba_2025_monetary_policy_media_conferences_latest.md",
+    )
+    assert paths[0].read_bytes() == paths[2].read_bytes()
+    assert paths[1].read_bytes() == paths[3].read_bytes()
+    assert {path: path.read_bytes() for path in existing_aliases} == existing_aliases
+    assert _sha256(boe_paths[0]) == CHECKED_JSON_SHA256
+    assert _sha256(boe_paths[1]) == CHECKED_MARKDOWN_SHA256
+    assert _sha256(riksbank_paths[0]) == CHECKED_RIKSBANK_JSON_SHA256
+    assert _sha256(riksbank_paths[1]) == CHECKED_RIKSBANK_MARKDOWN_SHA256
+    assert _sha256(paths[0]) == CHECKED_RBA_JSON_SHA256
+    assert _sha256(paths[1]) == CHECKED_RBA_MARKDOWN_SHA256
+    markdown = paths[1].read_text(encoding="utf-8")
+    assert "first-party institutional publication" in markdown
+    assert "first-party replay-page locator" not in markdown
     assert "Bank of England publication" not in markdown
 
 
@@ -432,6 +484,29 @@ def test_main_dispatches_riksbank_registered_default_path(tmp_path, capsys, monk
         str(
             tmp_path
             / "communication_metadata_riksbank_2025_monetary_policy_press_conferences_latest.md"
+        )
+        in output
+    )
+
+
+def test_main_dispatches_rba_registered_default_path(tmp_path, capsys, monkeypatch):
+    monkeypatch.chdir(ROOT)
+    assert (
+        pipeline.main(
+            [
+                "--cohort",
+                pipeline.RBA_2025_MANIFEST_ID,
+                "--output-dir",
+                str(tmp_path),
+            ]
+        )
+        == 0
+    )
+    output = capsys.readouterr().out
+    assert "(8/8 events)" in output
+    assert (
+        str(
+            tmp_path / "communication_metadata_rba_2025_monetary_policy_media_conferences_latest.md"
         )
         in output
     )

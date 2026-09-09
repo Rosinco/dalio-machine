@@ -29,6 +29,8 @@ BOE_2025_MANIFEST_ID = "boe_2025_mpr_press_conferences"
 BOE_2025_MANIFEST_SHA256 = "4bba6c8415de46718a5ae6906d0d09e9041f7be1903dbeef7be4f40223717eb2"
 RIKSBANK_2025_MANIFEST_ID = "riksbank_2025_monetary_policy_press_conferences"
 RIKSBANK_2025_MANIFEST_SHA256 = "34f610043e933f74ca71ae56a9d29129fc92e2dd1ea83cc932293581ac4a2468"
+RBA_2025_MANIFEST_ID = "rba_2025_monetary_policy_media_conferences"
+RBA_2025_MANIFEST_SHA256 = "00d6016fdf83288ceb28483760f1adac6415a9d18eea3e45bc5a21278f85aeab"
 
 _ID = re.compile(r"^[a-z][a-z0-9_]*$")
 _ACTOR = re.compile(r"^(?:agent|model):[a-z0-9][a-z0-9_.-]*$")
@@ -142,6 +144,7 @@ _ROLE_COMPLETENESS_BASIS = {
     "presentation_slides": "exact_direct_artifact_url",
     "subtitles": "exact_caption_track_url",
 }
+_RBA_MEDIA_CONFERENCE_SOURCE_ID = "rba_monetary_policy_media_conferences_en"
 _AVAILABILITY_STATUSES = frozenset(
     {
         "direct_artifact_link",
@@ -499,10 +502,23 @@ def _parse_locator(
         raise ValueError(f"{field}.observed_at must equal its representation check clock")
 
     if locator_kind == "official_direct_artifact":
-        if locator_url is None or platform_media_id is not None or mime_type != "application/pdf":
+        rba_html_transcript = (
+            spec.source_id == _RBA_MEDIA_CONFERENCE_SOURCE_ID
+            and spec.artifact_role == "full_transcript"
+            and mime_type == "text/html"
+        )
+        if (
+            locator_url is None
+            or platform_media_id is not None
+            or (mime_type != "application/pdf" and not rba_html_transcript)
+        ):
             raise ValueError(f"{field} has an invalid official direct-artifact locator")
         _official_url(locator_url, source, f"{field}.locator_url")
         if spec.artifact_role == "full_transcript":
+            if mime_type == "text/html" and not rba_html_transcript:
+                raise ValueError(
+                    f"{field} HTML transcript locator is reserved for the RBA media-conference page"
+                )
             expected = (
                 source.host_organization,
                 source.publisher,
@@ -548,13 +564,19 @@ def _parse_locator(
             if locator_url is None or mime_type != "text/html":
                 raise ValueError(f"{field} external platform page needs an HTML URL")
             host = _host(locator_url, f"{field}.locator_url")
-            if host not in {"youtube.com", "www.youtube.com"}:
-                raise ValueError(f"{field}.locator_url must use the observed YouTube platform")
             parts = urlsplit(locator_url)
-            if parts.path != f"/live/{platform_media_id}" or parse_qs(parts.query) != {
-                "feature": ["share"]
-            }:
-                raise ValueError(f"{field}.locator_url does not match its platform media id")
+            if source.source_id == _RBA_MEDIA_CONFERENCE_SOURCE_ID:
+                if locator_url != f"https://youtu.be/{platform_media_id}":
+                    raise ValueError(
+                        f"{field}.locator_url must be the exact observed RBA youtu.be URL"
+                    )
+            else:
+                if host not in {"youtube.com", "www.youtube.com"}:
+                    raise ValueError(f"{field}.locator_url must use the observed YouTube platform")
+                if parts.path != f"/live/{platform_media_id}" or parse_qs(parts.query) != {
+                    "feature": ["share"]
+                }:
+                    raise ValueError(f"{field}.locator_url does not match its platform media id")
         elif locator_url is not None or mime_type is not None:
             raise ValueError(f"{field} ID-only locator cannot invent a URL or MIME type")
         expected = (
@@ -978,6 +1000,16 @@ def load_checked_riksbank_2025_manifest(path: Path) -> InstitutionYearManifest:
     return manifest
 
 
+def load_checked_rba_2025_manifest(path: Path) -> InstitutionYearManifest:
+    """Load the checked RBA cohort and require its pinned semantic identity."""
+    manifest = load_institution_year_manifest(path)
+    if manifest.manifest_id != RBA_2025_MANIFEST_ID:
+        raise ValueError("checked RBA manifest has the wrong manifest_id")
+    if institution_year_manifest_sha256(manifest) != RBA_2025_MANIFEST_SHA256:
+        raise ValueError("checked RBA manifest does not match its pinned semantic SHA-256")
+    return manifest
+
+
 __all__ = [
     "INSTITUTION_YEAR_MANIFEST_SCHEMA_VERSION",
     "INSTITUTION_YEAR_METHODOLOGY_VERSION",
@@ -985,6 +1017,8 @@ __all__ = [
     "BOE_2025_MANIFEST_SHA256",
     "RIKSBANK_2025_MANIFEST_ID",
     "RIKSBANK_2025_MANIFEST_SHA256",
+    "RBA_2025_MANIFEST_ID",
+    "RBA_2025_MANIFEST_SHA256",
     "InstitutionYearEvent",
     "InstitutionYearLocator",
     "InstitutionYearManifest",
@@ -994,5 +1028,6 @@ __all__ = [
     "institution_year_manifest_sha256",
     "load_checked_boe_2025_manifest",
     "load_checked_riksbank_2025_manifest",
+    "load_checked_rba_2025_manifest",
     "load_institution_year_manifest",
 ]

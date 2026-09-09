@@ -8,6 +8,7 @@ import pytest
 
 from dalio.communications.institution_year_manifest import (
     load_checked_boe_2025_manifest,
+    load_checked_rba_2025_manifest,
     load_checked_riksbank_2025_manifest,
 )
 from dalio.communications.metadata_inventory import (
@@ -18,6 +19,7 @@ from dalio.communications.metadata_inventory import (
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "data" / "reference" / "communication_boe_2025_events.json"
+RBA_MANIFEST = ROOT / "data" / "reference" / "communication_rba_2025_events.json"
 RIKSBANK_MANIFEST = ROOT / "data" / "reference" / "communication_riksbank_2025_events.json"
 
 
@@ -27,6 +29,10 @@ def _inventory() -> dict[str, object]:
 
 def _riksbank_inventory() -> dict[str, object]:
     return build_representation_inventory(load_checked_riksbank_2025_manifest(RIKSBANK_MANIFEST))
+
+
+def _rba_inventory() -> dict[str, object]:
+    return build_representation_inventory(load_checked_rba_2025_manifest(RBA_MANIFEST))
 
 
 def _coverage(inventory: dict[str, object]) -> dict[str, dict[str, object]]:
@@ -207,5 +213,85 @@ def test_riksbank_markdown_uses_the_generic_replay_page_boundary():
     assert "`exact_caption_track_sv`" in markdown
     assert "8/8 | 0/8 | 0/8 | 8 | `not_verified`" in markdown
     assert "first-party replay-page locator" in markdown
+    assert "Bank of England publication" not in markdown
+    assert "NO CONTENT CAPTURE IS AUTHORIZED" in markdown
+
+
+def test_rba_inventory_reports_transcript_and_external_video_links_without_content():
+    inventory = _rba_inventory()
+
+    assert inventory["event_count"] == inventory["expected_event_count"] == 8
+    assert inventory["event_denominator_status"] == "complete"
+    assert inventory["content_capture_authorized"] is False
+    assert inventory["verified_rights_decisions"] == 0
+    assert inventory["manifest_sha256"] == (
+        "00d6016fdf83288ceb28483760f1adac6415a9d18eea3e45bc5a21278f85aeab"
+    )
+    assert validate_communication_metadata_inventory_sha256(inventory) == (
+        "82d5024c65e927e8007e970d9eaede1e25a194b31caa314a9927b77a01ab1309"
+    )
+
+    coverage = _coverage(inventory)
+    transcript = coverage["official_transcript_en"]
+    assert transcript["observation_count"] == 8
+    assert transcript["located_count"] == 8
+    assert transcript["exact_url_count"] == 8
+    assert transcript["direct_artifact_link_count"] == 8
+    assert transcript["coverage_status"] == "complete"
+
+    video = coverage["official_page_video_locator"]
+    assert video["observation_count"] == 8
+    assert video["located_count"] == 8
+    assert video["exact_url_count"] == 8
+    assert video["external_platform_link_count"] == 8
+    assert video["coverage_status"] == "complete"
+
+    captions = coverage["exact_caption_track_en"]
+    assert captions["observation_count"] == 8
+    assert captions["located_count"] == 0
+    assert captions["exact_url_count"] == 0
+    assert captions["not_verified_count"] == 8
+    assert captions["coverage_status"] == "not_verified"
+
+    for event in inventory["events"]:
+        observations = {row["representation_key"]: row for row in event["representations"]}
+        transcript_locator = observations["official_transcript_en"]["locator"]
+        assert transcript_locator["locator_kind"] == "official_direct_artifact"
+        assert transcript_locator["mime_type"] == "text/html"
+        assert transcript_locator["locator_url"].startswith("https://www.rba.gov.au/")
+        video_locator = observations["official_page_video_locator"]["locator"]
+        assert video_locator["locator_kind"] == "external_platform_page"
+        assert video_locator["mime_type"] == "text/html"
+        assert video_locator["locator_url"] == (
+            f"https://youtu.be/{video_locator['platform_media_id']}"
+        )
+        assert observations["exact_caption_track_en"]["locator"] is None
+
+    forbidden = {
+        "content",
+        "content_sha256",
+        "blob_path",
+        "extraction",
+        "segments",
+        "claims",
+        "reviewed_by",
+        "decision",
+    }
+    assert not forbidden.intersection(_keys(inventory))
+
+
+def test_rba_markdown_uses_the_external_platform_hosting_boundary():
+    markdown = render_representation_inventory_markdown(_rba_inventory())
+
+    assert "Closed event denominator: `8/8`" in markdown
+    assert "`official_transcript_en`" in markdown
+    assert "`official_page_video_locator`" in markdown
+    assert "8/8 | 8/8 | 8/8 | 0 | `complete`" in markdown
+    assert "`exact_caption_track_en`" in markdown
+    assert "8/8 | 0/8 | 0/8 | 8 | `not_verified`" in markdown
+    assert "External platform hosting is distinct from first-party institutional publication" in (
+        markdown
+    )
+    assert "first-party replay-page locator" not in markdown
     assert "Bank of England publication" not in markdown
     assert "NO CONTENT CAPTURE IS AUTHORIZED" in markdown

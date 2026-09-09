@@ -238,6 +238,40 @@ def _markdown_value(value: object) -> str:
     return str(value)
 
 
+def _hosting_boundary(inventory: dict[str, object]) -> str:
+    """Describe the hosting boundary represented by the cohort's actual locators."""
+    # Preserve the original checked BoE report verbatim. Its wording is part of
+    # the already published, hash-pinned Markdown artifact.
+    if inventory.get("organization_id") == "bank_of_england":
+        return (
+            "- External platform hosting is distinct from Bank of England publication and "
+            "does not establish caption origin, producer, language or time coverage."
+        )
+
+    locator_kinds = {
+        locator["locator_kind"]
+        for event in inventory["events"]
+        for observation in event["representations"]
+        if (locator := observation["locator"]) is not None
+    }
+    if "official_replay_page" in locator_kinds:
+        # Preserve the checked Riksbank report verbatim while making the branch
+        # depend on the representation actually present rather than institution.
+        return (
+            "- A first-party replay-page locator identifies an event page, not captured media, "
+            "and does not establish caption origin, producer, language or time coverage."
+        )
+    if locator_kinds.intersection({"external_platform_page", "external_platform_id"}):
+        return (
+            "- External platform hosting is distinct from first-party institutional publication "
+            "and does not establish caption origin, producer, language or time coverage."
+        )
+    return (
+        "- A metadata locator identifies a publication location, not captured content, and does "
+        "not establish caption origin, producer, language or time coverage."
+    )
+
+
 def render_representation_inventory_markdown(inventory: dict[str, object]) -> str:
     """Render the deterministic metadata coverage sheet."""
     validate_communication_metadata_inventory_sha256(inventory)
@@ -251,16 +285,7 @@ def render_representation_inventory_markdown(inventory: dict[str, object]) -> st
         raise ValueError("metadata inventory cannot contain rights decisions")
 
     scope = inventory["scope"]
-    if inventory.get("organization_id") == "bank_of_england":
-        hosting_boundary = (
-            "- External platform hosting is distinct from Bank of England publication and "
-            "does not establish caption origin, producer, language or time coverage."
-        )
-    else:
-        hosting_boundary = (
-            "- A first-party replay-page locator identifies an event page, not captured media, "
-            "and does not establish caption origin, producer, language or time coverage."
-        )
+    hosting_boundary = _hosting_boundary(inventory)
     lines = [
         "# Institutional-communications metadata inventory",
         "",

@@ -1,0 +1,626 @@
+{
+  "schema_version": 1,
+  "methodology_version": "communication-institution-year-metadata-v1",
+  "catalogue_sha256": "4553747ae280a669d2652c413341f0b55740419dd6ebfefd5af11bf1a55ce0b7",
+  "manifest_id": "rba_2025_monetary_policy_media_conferences",
+  "created_by": "model:codex-primary-source-metadata-v3",
+  "created_at": "2026-09-09T14:25:00Z",
+  "as_known_at": "2026-09-09T14:25:00Z",
+  "content_capture_authorized": false,
+  "scope": {
+    "organization_id": "reserve_bank_of_australia",
+    "year": 2025,
+    "start_date": "2025-01-01",
+    "end_date": "2025-12-31",
+    "event_type": "monetary_policy_media_conference",
+    "denominator_source_url": "https://www.rba.gov.au/monetary-policy/media-conferences/2025/",
+    "inclusion_rule": "Every media conference listed on the official Reserve Bank of Australia 2025 media-conferences index following a monetary policy meeting; the index enumerates eight dated events.",
+    "exclusions": [
+      "monetary policy decision releases",
+      "Monetary Policy Board and former Reserve Bank Board meeting minutes",
+      "Statements on Monetary Policy",
+      "unrelated speeches, parliamentary testimony and podcasts",
+      "RBA MP3 audio files while audio is outside this manifest schema",
+      "all external YouTube video, caption and media content acquisition"
+    ],
+    "checked_by": "model:codex-primary-source-metadata-v3",
+    "checked_at": "2026-09-09T14:25:00Z",
+    "event_keys": [
+      "rba_mp_2025_02_18",
+      "rba_mp_2025_04_01",
+      "rba_mp_2025_05_20",
+      "rba_mp_2025_07_08",
+      "rba_mp_2025_08_12",
+      "rba_mp_2025_09_30",
+      "rba_mp_2025_11_04",
+      "rba_mp_2025_12_09"
+    ],
+    "representation_specs": [
+      {
+        "representation_key": "official_transcript_en",
+        "source_id": "rba_monetary_policy_media_conferences_en",
+        "artifact_role": "full_transcript",
+        "material_type": "press_conference_transcript",
+        "section_coverage": [
+          "full_transcript"
+        ],
+        "completeness_basis": "exact_direct_artifact_url",
+        "rights_status": "rights_review_required",
+        "acquisition_status": "manual_review_required",
+        "automated_collection_allowed": false
+      },
+      {
+        "representation_key": "official_page_video_locator",
+        "source_id": "rba_monetary_policy_media_conferences_en",
+        "artifact_role": "webcast_video",
+        "material_type": "press_conference_video",
+        "section_coverage": [
+          "webcast_video"
+        ],
+        "completeness_basis": "official_page_media_locator",
+        "rights_status": "rights_review_required",
+        "acquisition_status": "manual_review_required",
+        "automated_collection_allowed": false
+      },
+      {
+        "representation_key": "exact_caption_track_en",
+        "source_id": "rba_monetary_policy_media_conference_subtitles_en",
+        "artifact_role": "subtitles",
+        "material_type": "subtitles",
+        "section_coverage": [
+          "subtitles"
+        ],
+        "completeness_basis": "exact_caption_track_url",
+        "rights_status": "rights_review_required",
+        "acquisition_status": "manual_review_required",
+        "automated_collection_allowed": false
+      }
+    ]
+  },
+  "events": [
+    {
+      "event_key": "rba_mp_2025_02_18",
+      "organization_id": "reserve_bank_of_australia",
+      "event_type": "monetary_policy_media_conference",
+      "title": "Media Conference Monetary Policy Decision",
+      "event_date": "2025-02-18",
+      "metadata_known_at": "2026-09-09T14:25:00Z",
+      "representations": [
+        {
+          "representation_key": "official_transcript_en",
+          "availability_status": "direct_artifact_link",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-02-18.html",
+          "status_note": "The exact first-party event page publishes the English media-conference transcript inline; no page or transcript content is captured by this manifest.",
+          "locator": {
+            "locator_key": "rba_mp_2025_02_18_transcript_page_en",
+            "source_id": "rba_monetary_policy_media_conferences_en",
+            "locator_kind": "official_direct_artifact",
+            "locator_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-02-18.html",
+            "platform_media_id": null,
+            "mime_type": "text/html",
+            "language": "en",
+            "translation_status": "original",
+            "host_organization": "Reserve Bank of Australia",
+            "publisher": "Reserve Bank of Australia",
+            "transcriber": null,
+            "transcriber_attribution": "not_disclosed",
+            "origin_type": "official_published_transcript",
+            "provenance_tier": "official_published_transcript",
+            "published_at": null,
+            "observed_at": "2026-09-09T14:25:00Z"
+          }
+        },
+        {
+          "representation_key": "official_page_video_locator",
+          "availability_status": "external_platform_link",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-02-18.html",
+          "status_note": "The official transcript page links the observed YouTube landing page; this records a locator only and does not establish captions or media rights.",
+          "locator": {
+            "locator_key": "rba_mp_2025_02_18_video",
+            "source_id": "rba_monetary_policy_media_conferences_en",
+            "locator_kind": "external_platform_page",
+            "locator_url": "https://youtu.be/MqnVhcEHPjQ",
+            "platform_media_id": "MqnVhcEHPjQ",
+            "mime_type": "text/html",
+            "language": "en",
+            "translation_status": "original",
+            "host_organization": "YouTube",
+            "publisher": "Reserve Bank of Australia",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_linked_platform_media",
+            "provenance_tier": "official_linked_external_platform",
+            "published_at": null,
+            "observed_at": "2026-09-09T14:25:00Z"
+          }
+        },
+        {
+          "representation_key": "exact_caption_track_en",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-02-18.html",
+          "status_note": "No exact caption-track URL, caption origin, producer, language declaration or time coverage was verified; video availability is not caption availability.",
+          "locator": null
+        }
+      ]
+    },
+    {
+      "event_key": "rba_mp_2025_04_01",
+      "organization_id": "reserve_bank_of_australia",
+      "event_type": "monetary_policy_media_conference",
+      "title": "Media Conference Monetary Policy Decision",
+      "event_date": "2025-04-01",
+      "metadata_known_at": "2026-09-09T14:25:00Z",
+      "representations": [
+        {
+          "representation_key": "official_transcript_en",
+          "availability_status": "direct_artifact_link",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-04-01.html",
+          "status_note": "The exact first-party event page publishes the English media-conference transcript inline; no page or transcript content is captured by this manifest.",
+          "locator": {
+            "locator_key": "rba_mp_2025_04_01_transcript_page_en",
+            "source_id": "rba_monetary_policy_media_conferences_en",
+            "locator_kind": "official_direct_artifact",
+            "locator_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-04-01.html",
+            "platform_media_id": null,
+            "mime_type": "text/html",
+            "language": "en",
+            "translation_status": "original",
+            "host_organization": "Reserve Bank of Australia",
+            "publisher": "Reserve Bank of Australia",
+            "transcriber": null,
+            "transcriber_attribution": "not_disclosed",
+            "origin_type": "official_published_transcript",
+            "provenance_tier": "official_published_transcript",
+            "published_at": null,
+            "observed_at": "2026-09-09T14:25:00Z"
+          }
+        },
+        {
+          "representation_key": "official_page_video_locator",
+          "availability_status": "external_platform_link",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-04-01.html",
+          "status_note": "The official transcript page links the observed YouTube landing page; this records a locator only and does not establish captions or media rights.",
+          "locator": {
+            "locator_key": "rba_mp_2025_04_01_video",
+            "source_id": "rba_monetary_policy_media_conferences_en",
+            "locator_kind": "external_platform_page",
+            "locator_url": "https://youtu.be/cmbPhFtwuoI",
+            "platform_media_id": "cmbPhFtwuoI",
+            "mime_type": "text/html",
+            "language": "en",
+            "translation_status": "original",
+            "host_organization": "YouTube",
+            "publisher": "Reserve Bank of Australia",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_linked_platform_media",
+            "provenance_tier": "official_linked_external_platform",
+            "published_at": null,
+            "observed_at": "2026-09-09T14:25:00Z"
+          }
+        },
+        {
+          "representation_key": "exact_caption_track_en",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-04-01.html",
+          "status_note": "No exact caption-track URL, caption origin, producer, language declaration or time coverage was verified; video availability is not caption availability.",
+          "locator": null
+        }
+      ]
+    },
+    {
+      "event_key": "rba_mp_2025_05_20",
+      "organization_id": "reserve_bank_of_australia",
+      "event_type": "monetary_policy_media_conference",
+      "title": "Media Conference Monetary Policy Decision",
+      "event_date": "2025-05-20",
+      "metadata_known_at": "2026-09-09T14:25:00Z",
+      "representations": [
+        {
+          "representation_key": "official_transcript_en",
+          "availability_status": "direct_artifact_link",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-05-20.html",
+          "status_note": "The exact first-party event page publishes the English media-conference transcript inline; no page or transcript content is captured by this manifest.",
+          "locator": {
+            "locator_key": "rba_mp_2025_05_20_transcript_page_en",
+            "source_id": "rba_monetary_policy_media_conferences_en",
+            "locator_kind": "official_direct_artifact",
+            "locator_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-05-20.html",
+            "platform_media_id": null,
+            "mime_type": "text/html",
+            "language": "en",
+            "translation_status": "original",
+            "host_organization": "Reserve Bank of Australia",
+            "publisher": "Reserve Bank of Australia",
+            "transcriber": null,
+            "transcriber_attribution": "not_disclosed",
+            "origin_type": "official_published_transcript",
+            "provenance_tier": "official_published_transcript",
+            "published_at": null,
+            "observed_at": "2026-09-09T14:25:00Z"
+          }
+        },
+        {
+          "representation_key": "official_page_video_locator",
+          "availability_status": "external_platform_link",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-05-20.html",
+          "status_note": "The official transcript page links the observed YouTube landing page; this records a locator only and does not establish captions or media rights.",
+          "locator": {
+            "locator_key": "rba_mp_2025_05_20_video",
+            "source_id": "rba_monetary_policy_media_conferences_en",
+            "locator_kind": "external_platform_page",
+            "locator_url": "https://youtu.be/FQF8pvsdXZ0",
+            "platform_media_id": "FQF8pvsdXZ0",
+            "mime_type": "text/html",
+            "language": "en",
+            "translation_status": "original",
+            "host_organization": "YouTube",
+            "publisher": "Reserve Bank of Australia",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_linked_platform_media",
+            "provenance_tier": "official_linked_external_platform",
+            "published_at": null,
+            "observed_at": "2026-09-09T14:25:00Z"
+          }
+        },
+        {
+          "representation_key": "exact_caption_track_en",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-05-20.html",
+          "status_note": "No exact caption-track URL, caption origin, producer, language declaration or time coverage was verified; video availability is not caption availability.",
+          "locator": null
+        }
+      ]
+    },
+    {
+      "event_key": "rba_mp_2025_07_08",
+      "organization_id": "reserve_bank_of_australia",
+      "event_type": "monetary_policy_media_conference",
+      "title": "Media Conference Monetary Policy Decision",
+      "event_date": "2025-07-08",
+      "metadata_known_at": "2026-09-09T14:25:00Z",
+      "representations": [
+        {
+          "representation_key": "official_transcript_en",
+          "availability_status": "direct_artifact_link",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-07-08.html",
+          "status_note": "The exact first-party event page publishes the English media-conference transcript inline; no page or transcript content is captured by this manifest.",
+          "locator": {
+            "locator_key": "rba_mp_2025_07_08_transcript_page_en",
+            "source_id": "rba_monetary_policy_media_conferences_en",
+            "locator_kind": "official_direct_artifact",
+            "locator_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-07-08.html",
+            "platform_media_id": null,
+            "mime_type": "text/html",
+            "language": "en",
+            "translation_status": "original",
+            "host_organization": "Reserve Bank of Australia",
+            "publisher": "Reserve Bank of Australia",
+            "transcriber": null,
+            "transcriber_attribution": "not_disclosed",
+            "origin_type": "official_published_transcript",
+            "provenance_tier": "official_published_transcript",
+            "published_at": null,
+            "observed_at": "2026-09-09T14:25:00Z"
+          }
+        },
+        {
+          "representation_key": "official_page_video_locator",
+          "availability_status": "external_platform_link",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-07-08.html",
+          "status_note": "The official transcript page links the observed YouTube landing page; this records a locator only and does not establish captions or media rights.",
+          "locator": {
+            "locator_key": "rba_mp_2025_07_08_video",
+            "source_id": "rba_monetary_policy_media_conferences_en",
+            "locator_kind": "external_platform_page",
+            "locator_url": "https://youtu.be/L8pWXqDU-us",
+            "platform_media_id": "L8pWXqDU-us",
+            "mime_type": "text/html",
+            "language": "en",
+            "translation_status": "original",
+            "host_organization": "YouTube",
+            "publisher": "Reserve Bank of Australia",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_linked_platform_media",
+            "provenance_tier": "official_linked_external_platform",
+            "published_at": null,
+            "observed_at": "2026-09-09T14:25:00Z"
+          }
+        },
+        {
+          "representation_key": "exact_caption_track_en",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-07-08.html",
+          "status_note": "No exact caption-track URL, caption origin, producer, language declaration or time coverage was verified; video availability is not caption availability.",
+          "locator": null
+        }
+      ]
+    },
+    {
+      "event_key": "rba_mp_2025_08_12",
+      "organization_id": "reserve_bank_of_australia",
+      "event_type": "monetary_policy_media_conference",
+      "title": "Media Conference Monetary Policy Decision",
+      "event_date": "2025-08-12",
+      "metadata_known_at": "2026-09-09T14:25:00Z",
+      "representations": [
+        {
+          "representation_key": "official_transcript_en",
+          "availability_status": "direct_artifact_link",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-08-12.html",
+          "status_note": "The exact first-party event page publishes the English media-conference transcript inline; no page or transcript content is captured by this manifest.",
+          "locator": {
+            "locator_key": "rba_mp_2025_08_12_transcript_page_en",
+            "source_id": "rba_monetary_policy_media_conferences_en",
+            "locator_kind": "official_direct_artifact",
+            "locator_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-08-12.html",
+            "platform_media_id": null,
+            "mime_type": "text/html",
+            "language": "en",
+            "translation_status": "original",
+            "host_organization": "Reserve Bank of Australia",
+            "publisher": "Reserve Bank of Australia",
+            "transcriber": null,
+            "transcriber_attribution": "not_disclosed",
+            "origin_type": "official_published_transcript",
+            "provenance_tier": "official_published_transcript",
+            "published_at": null,
+            "observed_at": "2026-09-09T14:25:00Z"
+          }
+        },
+        {
+          "representation_key": "official_page_video_locator",
+          "availability_status": "external_platform_link",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-08-12.html",
+          "status_note": "The official transcript page links the observed YouTube landing page; this records a locator only and does not establish captions or media rights.",
+          "locator": {
+            "locator_key": "rba_mp_2025_08_12_video",
+            "source_id": "rba_monetary_policy_media_conferences_en",
+            "locator_kind": "external_platform_page",
+            "locator_url": "https://youtu.be/tNMHd6ljvh8",
+            "platform_media_id": "tNMHd6ljvh8",
+            "mime_type": "text/html",
+            "language": "en",
+            "translation_status": "original",
+            "host_organization": "YouTube",
+            "publisher": "Reserve Bank of Australia",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_linked_platform_media",
+            "provenance_tier": "official_linked_external_platform",
+            "published_at": null,
+            "observed_at": "2026-09-09T14:25:00Z"
+          }
+        },
+        {
+          "representation_key": "exact_caption_track_en",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-08-12.html",
+          "status_note": "No exact caption-track URL, caption origin, producer, language declaration or time coverage was verified; video availability is not caption availability.",
+          "locator": null
+        }
+      ]
+    },
+    {
+      "event_key": "rba_mp_2025_09_30",
+      "organization_id": "reserve_bank_of_australia",
+      "event_type": "monetary_policy_media_conference",
+      "title": "Media Conference Monetary Policy Decision",
+      "event_date": "2025-09-30",
+      "metadata_known_at": "2026-09-09T14:25:00Z",
+      "representations": [
+        {
+          "representation_key": "official_transcript_en",
+          "availability_status": "direct_artifact_link",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-09-30.html",
+          "status_note": "The exact first-party event page publishes the English media-conference transcript inline; no page or transcript content is captured by this manifest.",
+          "locator": {
+            "locator_key": "rba_mp_2025_09_30_transcript_page_en",
+            "source_id": "rba_monetary_policy_media_conferences_en",
+            "locator_kind": "official_direct_artifact",
+            "locator_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-09-30.html",
+            "platform_media_id": null,
+            "mime_type": "text/html",
+            "language": "en",
+            "translation_status": "original",
+            "host_organization": "Reserve Bank of Australia",
+            "publisher": "Reserve Bank of Australia",
+            "transcriber": null,
+            "transcriber_attribution": "not_disclosed",
+            "origin_type": "official_published_transcript",
+            "provenance_tier": "official_published_transcript",
+            "published_at": null,
+            "observed_at": "2026-09-09T14:25:00Z"
+          }
+        },
+        {
+          "representation_key": "official_page_video_locator",
+          "availability_status": "external_platform_link",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-09-30.html",
+          "status_note": "The official transcript page links the observed YouTube landing page; this records a locator only and does not establish captions or media rights.",
+          "locator": {
+            "locator_key": "rba_mp_2025_09_30_video",
+            "source_id": "rba_monetary_policy_media_conferences_en",
+            "locator_kind": "external_platform_page",
+            "locator_url": "https://youtu.be/iNh2j9k_8u0",
+            "platform_media_id": "iNh2j9k_8u0",
+            "mime_type": "text/html",
+            "language": "en",
+            "translation_status": "original",
+            "host_organization": "YouTube",
+            "publisher": "Reserve Bank of Australia",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_linked_platform_media",
+            "provenance_tier": "official_linked_external_platform",
+            "published_at": null,
+            "observed_at": "2026-09-09T14:25:00Z"
+          }
+        },
+        {
+          "representation_key": "exact_caption_track_en",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-09-30.html",
+          "status_note": "No exact caption-track URL, caption origin, producer, language declaration or time coverage was verified; video availability is not caption availability.",
+          "locator": null
+        }
+      ]
+    },
+    {
+      "event_key": "rba_mp_2025_11_04",
+      "organization_id": "reserve_bank_of_australia",
+      "event_type": "monetary_policy_media_conference",
+      "title": "Media Conference Monetary Policy Decision",
+      "event_date": "2025-11-04",
+      "metadata_known_at": "2026-09-09T14:25:00Z",
+      "representations": [
+        {
+          "representation_key": "official_transcript_en",
+          "availability_status": "direct_artifact_link",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-11-04.html",
+          "status_note": "The exact first-party event page publishes the English media-conference transcript inline; no page or transcript content is captured by this manifest.",
+          "locator": {
+            "locator_key": "rba_mp_2025_11_04_transcript_page_en",
+            "source_id": "rba_monetary_policy_media_conferences_en",
+            "locator_kind": "official_direct_artifact",
+            "locator_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-11-04.html",
+            "platform_media_id": null,
+            "mime_type": "text/html",
+            "language": "en",
+            "translation_status": "original",
+            "host_organization": "Reserve Bank of Australia",
+            "publisher": "Reserve Bank of Australia",
+            "transcriber": null,
+            "transcriber_attribution": "not_disclosed",
+            "origin_type": "official_published_transcript",
+            "provenance_tier": "official_published_transcript",
+            "published_at": null,
+            "observed_at": "2026-09-09T14:25:00Z"
+          }
+        },
+        {
+          "representation_key": "official_page_video_locator",
+          "availability_status": "external_platform_link",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-11-04.html",
+          "status_note": "The official transcript page links the observed YouTube landing page; this records a locator only and does not establish captions or media rights.",
+          "locator": {
+            "locator_key": "rba_mp_2025_11_04_video",
+            "source_id": "rba_monetary_policy_media_conferences_en",
+            "locator_kind": "external_platform_page",
+            "locator_url": "https://youtu.be/Ztjtb2DkGaM",
+            "platform_media_id": "Ztjtb2DkGaM",
+            "mime_type": "text/html",
+            "language": "en",
+            "translation_status": "original",
+            "host_organization": "YouTube",
+            "publisher": "Reserve Bank of Australia",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_linked_platform_media",
+            "provenance_tier": "official_linked_external_platform",
+            "published_at": null,
+            "observed_at": "2026-09-09T14:25:00Z"
+          }
+        },
+        {
+          "representation_key": "exact_caption_track_en",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-11-04.html",
+          "status_note": "No exact caption-track URL, caption origin, producer, language declaration or time coverage was verified; video availability is not caption availability.",
+          "locator": null
+        }
+      ]
+    },
+    {
+      "event_key": "rba_mp_2025_12_09",
+      "organization_id": "reserve_bank_of_australia",
+      "event_type": "monetary_policy_media_conference",
+      "title": "Media Conference Monetary Policy Decision",
+      "event_date": "2025-12-09",
+      "metadata_known_at": "2026-09-09T14:25:00Z",
+      "representations": [
+        {
+          "representation_key": "official_transcript_en",
+          "availability_status": "direct_artifact_link",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-12-09.html",
+          "status_note": "The exact first-party event page publishes the English media-conference transcript inline; no page or transcript content is captured by this manifest.",
+          "locator": {
+            "locator_key": "rba_mp_2025_12_09_transcript_page_en",
+            "source_id": "rba_monetary_policy_media_conferences_en",
+            "locator_kind": "official_direct_artifact",
+            "locator_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-12-09.html",
+            "platform_media_id": null,
+            "mime_type": "text/html",
+            "language": "en",
+            "translation_status": "original",
+            "host_organization": "Reserve Bank of Australia",
+            "publisher": "Reserve Bank of Australia",
+            "transcriber": null,
+            "transcriber_attribution": "not_disclosed",
+            "origin_type": "official_published_transcript",
+            "provenance_tier": "official_published_transcript",
+            "published_at": null,
+            "observed_at": "2026-09-09T14:25:00Z"
+          }
+        },
+        {
+          "representation_key": "official_page_video_locator",
+          "availability_status": "external_platform_link",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-12-09.html",
+          "status_note": "The official transcript page links the observed YouTube landing page; this records a locator only and does not establish captions or media rights.",
+          "locator": {
+            "locator_key": "rba_mp_2025_12_09_video",
+            "source_id": "rba_monetary_policy_media_conferences_en",
+            "locator_kind": "external_platform_page",
+            "locator_url": "https://youtu.be/Vyl7vdMAAJc",
+            "platform_media_id": "Vyl7vdMAAJc",
+            "mime_type": "text/html",
+            "language": "en",
+            "translation_status": "original",
+            "host_organization": "YouTube",
+            "publisher": "Reserve Bank of Australia",
+            "transcriber": null,
+            "transcriber_attribution": "not_applicable",
+            "origin_type": "official_linked_platform_media",
+            "provenance_tier": "official_linked_external_platform",
+            "published_at": null,
+            "observed_at": "2026-09-09T14:25:00Z"
+          }
+        },
+        {
+          "representation_key": "exact_caption_track_en",
+          "availability_status": "not_verified",
+          "checked_at": "2026-09-09T14:25:00Z",
+          "status_evidence_url": "https://www.rba.gov.au/speeches/2025/mc-gov-2025-12-09.html",
+          "status_note": "No exact caption-track URL, caption origin, producer, language declaration or time coverage was verified; video availability is not caption availability.",
+          "locator": null
+        }
+      ]
+    }
+  ]
+}

@@ -18,9 +18,11 @@ from types import MappingProxyType
 
 from dalio.communications.institution_year_manifest import (
     BOE_2025_MANIFEST_ID,
+    RBA_2025_MANIFEST_ID,
     RIKSBANK_2025_MANIFEST_ID,
     InstitutionYearManifest,
     load_checked_boe_2025_manifest,
+    load_checked_rba_2025_manifest,
     load_checked_riksbank_2025_manifest,
 )
 from dalio.communications.metadata_inventory import (
@@ -31,6 +33,7 @@ from dalio.communications.metadata_inventory import (
 )
 
 DEFAULT_MANIFEST_PATH = Path("data/reference/communication_boe_2025_events.json")
+RBA_2025_MANIFEST_PATH = Path("data/reference/communication_rba_2025_events.json")
 RIKSBANK_2025_MANIFEST_PATH = Path("data/reference/communication_riksbank_2025_events.json")
 DEFAULT_OUTPUT_DIR = Path("data/review")
 DEFAULT_COHORT_ID = BOE_2025_MANIFEST_ID
@@ -71,6 +74,11 @@ CHECKED_COHORT_PUBLICATIONS: Mapping[str, CheckedCohortPublication] = MappingPro
             cohort_id=RIKSBANK_2025_MANIFEST_ID,
             default_manifest_path=RIKSBANK_2025_MANIFEST_PATH,
             checked_loader=load_checked_riksbank_2025_manifest,
+        ),
+        RBA_2025_MANIFEST_ID: CheckedCohortPublication(
+            cohort_id=RBA_2025_MANIFEST_ID,
+            default_manifest_path=RBA_2025_MANIFEST_PATH,
+            checked_loader=load_checked_rba_2025_manifest,
         ),
     }
 )
@@ -469,6 +477,7 @@ __all__ = [
     "LATEST_JSON",
     "LATEST_MARKDOWN",
     "LOCK_FILENAME",
+    "RBA_2025_MANIFEST_PATH",
     "RIKSBANK_2025_MANIFEST_PATH",
     "main",
     "run",

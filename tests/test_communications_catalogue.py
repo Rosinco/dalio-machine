@@ -34,6 +34,8 @@ EXPECTED_SOURCE_IDS = {
     "boe_monetary_policy_press_conferences_en",
     "boe_monetary_policy_press_conference_subtitles_en",
     "rba_speeches_en",
+    "rba_monetary_policy_media_conferences_en",
+    "rba_monetary_policy_media_conference_subtitles_en",
     "riksbank_monetary_policy_press_conferences_sv",
     "riksbank_monetary_policy_press_conference_subtitles_sv",
     # A geographically balanced bank-letter baseline.
@@ -91,9 +93,10 @@ def test_catalogue_contains_the_verified_balanced_source_set():
     for source in COMMUNICATION_SOURCES:
         by_type.setdefault(source.organization_type, []).append(source)
 
-    assert len(by_type["central_bank"]) == 8
+    assert len(by_type["central_bank"]) == 10
     assert len(by_type["bank"]) == 7
     assert len(by_type["commodity_company"]) == 7
+    assert len({source.organization_id for source in COMMUNICATION_SOURCES}) == 19
     assert {
         family for source in by_type["commodity_company"] for family in source.commodity_families
     } == REQUIRED_COMMODITY_FAMILIES
@@ -105,6 +108,8 @@ def test_catalogue_contains_the_verified_balanced_source_set():
         "boe_monetary_policy_press_conferences_en": 2015,
         "boe_monetary_policy_press_conference_subtitles_en": 2015,
         "rba_speeches_en": 2024,
+        "rba_monetary_policy_media_conferences_en": 2024,
+        "rba_monetary_policy_media_conference_subtitles_en": 2024,
         "riksbank_monetary_policy_press_conferences_sv": 2025,
         "riksbank_monetary_policy_press_conference_subtitles_sv": 2025,
         "jpmorgan_chase_annual_reports_en": 2003,
@@ -144,6 +149,7 @@ def test_subtitles_are_an_explicit_lower_fidelity_source_pathway():
     assert {source.source_id for source in subtitle_sources} == {
         "fed_fomc_press_conference_subtitles_en",
         "boe_monetary_policy_press_conference_subtitles_en",
+        "rba_monetary_policy_media_conference_subtitles_en",
         "riksbank_monetary_policy_press_conference_subtitles_sv",
     }
     assert all(source.has_transcript_material for source in subtitle_sources)
@@ -155,7 +161,7 @@ def test_subtitles_are_an_explicit_lower_fidelity_source_pathway():
 def test_catalogue_fingerprint_is_canonical_and_change_sensitive():
     assert CATALOGUE_SCHEMA_VERSION == 2
     assert COMMUNICATION_CATALOGUE_SHA256 == (
-        "ad499a7129238d70be8c7243c62252b3a1f11628a69d2df4ecf14c41d33ef1b0"
+        "4553747ae280a669d2652c413341f0b55740419dd6ebfefd5af11bf1a55ce0b7"
     )
     assert communication_catalogue_sha256(tuple(reversed(COMMUNICATION_SOURCES))) == (
         COMMUNICATION_CATALOGUE_SHA256
@@ -189,14 +195,80 @@ def test_riksbank_policies_are_swedish_source_gated_and_representation_specific(
     assert main.acquisition_status == subtitles.acquisition_status == "manual_review_required"
     assert main.automated_collection_allowed is subtitles.automated_collection_allowed is False
 
-    frozen_hash = "67d7049f1c63648c7b2d99dfee9eab290e2aca6469e9b872d0c605daaf716dc6"
-    frozen = resolve_communication_catalogue_snapshot(frozen_hash)
-    assert len(COMMUNICATION_CATALOGUE_SNAPSHOTS) == 2
-    assert all("riksbank_monetary_policy" not in source.source_id for source in frozen.sources)
+    original_hash = "67d7049f1c63648c7b2d99dfee9eab290e2aca6469e9b872d0c605daaf716dc6"
+    original = resolve_communication_catalogue_snapshot(original_hash)
+    assert all("riksbank_monetary_policy" not in source.source_id for source in original.sources)
+
+
+def test_rba_media_conference_policies_are_source_gated_and_representation_specific():
+    by_id = {source.source_id: source for source in COMMUNICATION_SOURCES}
+    main = by_id["rba_monetary_policy_media_conferences_en"]
+    subtitles = by_id["rba_monetary_policy_media_conference_subtitles_en"]
+
+    assert main.organization_id == subtitles.organization_id == "reserve_bank_of_australia"
+    assert main.organization_name == subtitles.organization_name == "Reserve Bank of Australia"
+    assert main.organization_type == subtitles.organization_type == "central_bank"
+    assert main.jurisdiction == subtitles.jurisdiction == "AU"
+    assert main.language == subtitles.language == "en"
+    assert (
+        main.landing_url
+        == subtitles.landing_url
+        == ("https://www.rba.gov.au/monetary-policy/media-conferences/")
+    )
+    assert main.official_domains == subtitles.official_domains == ("rba.gov.au",)
+    assert main.host_organization == subtitles.host_organization == "Reserve Bank of Australia"
+    assert main.publisher == subtitles.publisher == "Reserve Bank of Australia"
+    assert set(main.material_types) == {
+        "press_conference_transcript",
+        "press_conference_video",
+    }
+    assert subtitles.material_types == ("subtitles",)
+    assert main.transcriber is subtitles.transcriber is None
+    assert main.transcriber_attribution == "not_disclosed"
+    assert subtitles.transcriber_attribution == "artifact_specific"
+    assert main.provenance_tier == subtitles.provenance_tier == "official_archive_mixed"
+    assert main.rights_status == subtitles.rights_status == "rights_review_required"
+    assert main.acquisition_status == subtitles.acquisition_status == "manual_review_required"
+    assert main.automated_collection_allowed is subtitles.automated_collection_allowed is False
 
 
 def test_catalogue_snapshot_registry_is_immutable_and_resolves_exact_hashes(monkeypatch):
     snapshot = resolve_communication_catalogue_snapshot(COMMUNICATION_CATALOGUE_SHA256)
+
+    original_hash = "67d7049f1c63648c7b2d99dfee9eab290e2aca6469e9b872d0c605daaf716dc6"
+    riksbank_hash = "ad499a7129238d70be8c7243c62252b3a1f11628a69d2df4ecf14c41d33ef1b0"
+    original = resolve_communication_catalogue_snapshot(original_hash)
+    riksbank = resolve_communication_catalogue_snapshot(riksbank_hash)
+    riksbank_ids = {
+        "riksbank_monetary_policy_press_conferences_sv",
+        "riksbank_monetary_policy_press_conference_subtitles_sv",
+    }
+    rba_media_ids = {
+        "rba_monetary_policy_media_conferences_en",
+        "rba_monetary_policy_media_conference_subtitles_en",
+    }
+
+    assert set(COMMUNICATION_CATALOGUE_SNAPSHOTS) == {
+        original_hash,
+        riksbank_hash,
+        COMMUNICATION_CATALOGUE_SHA256,
+    }
+    assert {source.source_id for source in original.sources} == (
+        EXPECTED_SOURCE_IDS - riksbank_ids - rba_media_ids
+    )
+    assert {source.source_id for source in riksbank.sources} == (
+        EXPECTED_SOURCE_IDS - rba_media_ids
+    )
+    assert {source.source_id for source in snapshot.sources} == EXPECTED_SOURCE_IDS
+    assert (len(original.sources), len(riksbank.sources), len(snapshot.sources)) == (20, 22, 24)
+    assert original.evaluated_at == datetime(2026, 9, 9, 7, 0, tzinfo=UTC)
+    assert riksbank.evaluated_at == datetime(2026, 9, 9, 13, 26, 26, tzinfo=UTC)
+    assert snapshot.evaluated_at == datetime(2026, 9, 9, 14, 24, 40, tzinfo=UTC)
+    assert all(candidate.schema_version == 2 for candidate in (original, riksbank, snapshot))
+    assert all(isinstance(candidate.sources, tuple) for candidate in (original, riksbank, snapshot))
+    for candidate in (original, riksbank, snapshot):
+        with pytest.raises(FrozenInstanceError):
+            candidate.sources[0].publisher = "Changed publisher"  # type: ignore[misc]
 
     assert snapshot.catalogue_sha256 == COMMUNICATION_CATALOGUE_SHA256
     assert snapshot.schema_version == CATALOGUE_SCHEMA_VERSION

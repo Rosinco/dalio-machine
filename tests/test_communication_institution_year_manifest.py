@@ -25,10 +25,13 @@ from dalio.communications.institution_year_manifest import (
     BOE_2025_MANIFEST_SHA256,
     INSTITUTION_YEAR_MANIFEST_SCHEMA_VERSION,
     INSTITUTION_YEAR_METHODOLOGY_VERSION,
+    RBA_2025_MANIFEST_ID,
+    RBA_2025_MANIFEST_SHA256,
     RIKSBANK_2025_MANIFEST_ID,
     RIKSBANK_2025_MANIFEST_SHA256,
     institution_year_manifest_sha256,
     load_checked_boe_2025_manifest,
+    load_checked_rba_2025_manifest,
     load_checked_riksbank_2025_manifest,
     load_institution_year_manifest,
 )
@@ -37,6 +40,7 @@ from dalio.communications.metadata_inventory import build_representation_invento
 ROOT = Path(__file__).resolve().parents[1]
 CHECKED_MANIFEST = ROOT / "data" / "reference" / "communication_boe_2025_events.json"
 RIKSBANK_CHECKED_MANIFEST = ROOT / "data" / "reference" / "communication_riksbank_2025_events.json"
+RBA_CHECKED_MANIFEST = ROOT / "data" / "reference" / "communication_rba_2025_events.json"
 EVENT_KEYS = {
     "boe_mpr_2025_02_06",
     "boe_mpr_2025_05_08",
@@ -64,6 +68,21 @@ RIKSBANK_REPRESENTATION_KEYS = {
     "official_slides_sv",
     "exact_caption_track_sv",
 }
+RBA_EVENT_KEYS = {
+    "rba_mp_2025_02_18",
+    "rba_mp_2025_04_01",
+    "rba_mp_2025_05_20",
+    "rba_mp_2025_07_08",
+    "rba_mp_2025_08_12",
+    "rba_mp_2025_09_30",
+    "rba_mp_2025_11_04",
+    "rba_mp_2025_12_09",
+}
+RBA_REPRESENTATION_KEYS = {
+    "official_transcript_en",
+    "official_page_video_locator",
+    "exact_caption_track_en",
+}
 
 
 def _payload() -> dict[str, object]:
@@ -85,7 +104,7 @@ def _riksbank_payload() -> dict[str, object]:
     return {
         "schema_version": INSTITUTION_YEAR_MANIFEST_SCHEMA_VERSION,
         "methodology_version": INSTITUTION_YEAR_METHODOLOGY_VERSION,
-        "catalogue_sha256": COMMUNICATION_CATALOGUE_SHA256,
+        "catalogue_sha256": "ad499a7129238d70be8c7243c62252b3a1f11628a69d2df4ecf14c41d33ef1b0",
         "manifest_id": "riksbank_2025_monetary_policy_press_conferences",
         "created_by": "agent:test",
         "created_at": checked_at,
@@ -240,6 +259,10 @@ def _riksbank_payload() -> dict[str, object]:
 
 def _checked_riksbank_payload() -> dict[str, object]:
     return json.loads(RIKSBANK_CHECKED_MANIFEST.read_text(encoding="utf-8"))
+
+
+def _checked_rba_payload() -> dict[str, object]:
+    return json.loads(RBA_CHECKED_MANIFEST.read_text(encoding="utf-8"))
 
 
 def _write(tmp_path: Path, payload: dict[str, object]) -> Path:
@@ -625,6 +648,259 @@ def test_riksbank_replay_status_and_role_are_bound(tmp_path):
 def test_riksbank_sources_are_unavailable_in_the_frozen_catalogue_snapshot(tmp_path):
     payload = _riksbank_payload()
     payload["catalogue_sha256"] = "67d7049f1c63648c7b2d99dfee9eab290e2aca6469e9b872d0c605daaf716dc6"
+    with pytest.raises(ValueError, match="not in the communication source catalogue"):
+        load_institution_year_manifest(_write(tmp_path, payload))
+
+
+def test_checked_rba_manifest_is_closed_metadata_only_and_hash_pinned():
+    before = RBA_CHECKED_MANIFEST.read_bytes()
+    boe_before = CHECKED_MANIFEST.read_bytes()
+    riksbank_before = RIKSBANK_CHECKED_MANIFEST.read_bytes()
+    manifest = load_checked_rba_2025_manifest(RBA_CHECKED_MANIFEST)
+
+    assert manifest.manifest_id == RBA_2025_MANIFEST_ID
+    assert manifest.scope.organization_id == "reserve_bank_of_australia"
+    assert manifest.scope.year == 2025
+    assert manifest.scope.start_date.isoformat() == "2025-01-01"
+    assert manifest.scope.end_date.isoformat() == "2025-12-31"
+    assert manifest.scope.denominator_source_url == (
+        "https://www.rba.gov.au/monetary-policy/media-conferences/2025/"
+    )
+    assert "enumerates eight dated events" in manifest.scope.inclusion_rule
+    assert set(manifest.scope.exclusions) == {
+        "monetary policy decision releases",
+        "Monetary Policy Board and former Reserve Bank Board meeting minutes",
+        "Statements on Monetary Policy",
+        "unrelated speeches, parliamentary testimony and podcasts",
+        "RBA MP3 audio files while audio is outside this manifest schema",
+        "all external YouTube video, caption and media content acquisition",
+    }
+    assert manifest.created_at.isoformat() == "2026-09-09T14:25:00+00:00"
+    assert manifest.as_known_at == manifest.created_at
+    assert manifest.scope.checked_at == manifest.created_at
+    assert manifest.content_capture_authorized is False
+    assert manifest.catalogue_sha256 == (
+        "4553747ae280a669d2652c413341f0b55740419dd6ebfefd5af11bf1a55ce0b7"
+    )
+    assert set(manifest.scope.event_keys) == RBA_EVENT_KEYS
+    assert {event.event_key for event in manifest.events} == RBA_EVENT_KEYS
+    assert len(manifest.events) == 8
+    assert all(
+        event.title == "Media Conference Monetary Policy Decision" for event in manifest.events
+    )
+    assert all(
+        {item.representation_key for item in event.representations} == RBA_REPRESENTATION_KEYS
+        for event in manifest.events
+    )
+    assert institution_year_manifest_sha256(manifest) == RBA_2025_MANIFEST_SHA256
+    assert RBA_2025_MANIFEST_SHA256 == (
+        "00d6016fdf83288ceb28483760f1adac6415a9d18eea3e45bc5a21278f85aeab"
+    )
+    assert RBA_CHECKED_MANIFEST.read_bytes() == before
+
+    boe = load_checked_boe_2025_manifest(CHECKED_MANIFEST)
+    riksbank = load_checked_riksbank_2025_manifest(RIKSBANK_CHECKED_MANIFEST)
+    assert institution_year_manifest_sha256(boe) == BOE_2025_MANIFEST_SHA256
+    assert institution_year_manifest_sha256(riksbank) == RIKSBANK_2025_MANIFEST_SHA256
+    assert BOE_2025_MANIFEST_SHA256 == (
+        "4bba6c8415de46718a5ae6906d0d09e9041f7be1903dbeef7be4f40223717eb2"
+    )
+    assert RIKSBANK_2025_MANIFEST_SHA256 == (
+        "34f610043e933f74ca71ae56a9d29129fc92e2dd1ea83cc932293581ac4a2468"
+    )
+    assert CHECKED_MANIFEST.read_bytes() == boe_before
+    assert RIKSBANK_CHECKED_MANIFEST.read_bytes() == riksbank_before
+
+
+def test_checked_rba_exact_transcript_page_video_and_caption_mappings():
+    manifest = load_checked_rba_2025_manifest(RBA_CHECKED_MANIFEST)
+    expected = {
+        "rba_mp_2025_02_18": ("2025-02-18", "MqnVhcEHPjQ"),
+        "rba_mp_2025_04_01": ("2025-04-01", "cmbPhFtwuoI"),
+        "rba_mp_2025_05_20": ("2025-05-20", "FQF8pvsdXZ0"),
+        "rba_mp_2025_07_08": ("2025-07-08", "L8pWXqDU-us"),
+        "rba_mp_2025_08_12": ("2025-08-12", "tNMHd6ljvh8"),
+        "rba_mp_2025_09_30": ("2025-09-30", "iNh2j9k_8u0"),
+        "rba_mp_2025_11_04": ("2025-11-04", "Ztjtb2DkGaM"),
+        "rba_mp_2025_12_09": ("2025-12-09", "Vyl7vdMAAJc"),
+    }
+
+    specs = {spec.representation_key: spec for spec in manifest.scope.representation_specs}
+    assert specs["official_transcript_en"].completeness_basis == "exact_direct_artifact_url"
+    assert specs["official_page_video_locator"].completeness_basis == (
+        "official_page_media_locator"
+    )
+    assert specs["exact_caption_track_en"].completeness_basis == "exact_caption_track_url"
+
+    for event in manifest.events:
+        event_date, video_id = expected[event.event_key]
+        event_url = f"https://www.rba.gov.au/speeches/2025/mc-gov-2025-{event_date[5:]}.html"
+        observations = {item.representation_key: item for item in event.representations}
+        transcript = observations["official_transcript_en"]
+        video = observations["official_page_video_locator"]
+        caption = observations["exact_caption_track_en"]
+
+        assert event.event_date.isoformat() == event_date
+        assert transcript.availability_status == "direct_artifact_link"
+        assert transcript.status_evidence_url == event_url
+        assert transcript.locator is not None
+        assert transcript.locator.locator_kind == "official_direct_artifact"
+        assert transcript.locator.locator_url == event_url
+        assert transcript.locator.platform_media_id is None
+        assert transcript.locator.mime_type == "text/html"
+        assert transcript.locator.host_organization == "Reserve Bank of Australia"
+        assert transcript.locator.publisher == "Reserve Bank of Australia"
+        assert transcript.locator.transcriber is None
+        assert transcript.locator.transcriber_attribution == "not_disclosed"
+        assert transcript.locator.origin_type == "official_published_transcript"
+        assert transcript.locator.provenance_tier == "official_published_transcript"
+        assert transcript.locator.published_at is None
+
+        assert video.availability_status == "external_platform_link"
+        assert video.status_evidence_url == event_url
+        assert video.locator is not None
+        assert video.locator.locator_kind == "external_platform_page"
+        assert video.locator.locator_url == f"https://youtu.be/{video_id}"
+        assert video.locator.platform_media_id == video_id
+        assert video.locator.mime_type == "text/html"
+        assert video.locator.host_organization == "YouTube"
+        assert video.locator.publisher == "Reserve Bank of Australia"
+        assert video.locator.origin_type == "official_linked_platform_media"
+        assert video.locator.provenance_tier == "official_linked_external_platform"
+        assert video.locator.published_at is None
+
+        assert caption.availability_status == "not_verified"
+        assert caption.status_evidence_url == event_url
+        assert caption.locator is None
+
+
+def test_checked_rba_manifest_has_no_audio_slides_or_content_fields():
+    payload = _checked_rba_payload()
+    assert payload["content_capture_authorized"] is False
+
+    forbidden_fields = {
+        "content",
+        "content_sha256",
+        "captured_at",
+        "capture_status",
+        "source_bytes",
+        "transcript_text",
+        "caption_text",
+    }
+    observed_keys: set[str] = set()
+    locator_urls: list[str] = []
+
+    def visit(value: object) -> None:
+        if isinstance(value, dict):
+            observed_keys.update(value)
+            for key, item in value.items():
+                if key == "locator_url" and isinstance(item, str):
+                    locator_urls.append(item)
+                visit(item)
+        elif isinstance(value, list):
+            for item in value:
+                visit(item)
+
+    visit(payload)
+    assert observed_keys.isdisjoint(forbidden_fields)
+    assert all(not url.endswith(".mp3") for url in locator_urls)
+    specs = _scope(payload)["representation_specs"]
+    assert isinstance(specs, list)
+    assert {item["artifact_role"] for item in specs} == {
+        "full_transcript",
+        "webcast_video",
+        "subtitles",
+    }
+    assert {item["material_type"] for item in specs} == {
+        "press_conference_transcript",
+        "press_conference_video",
+        "subtitles",
+    }
+
+
+def test_checked_rba_loader_rejects_same_domain_and_video_locator_tampering(tmp_path):
+    payload = _checked_rba_payload()
+    first = _events(payload)[0]
+    transcript = _representation(first, "official_transcript_en")
+    locator = transcript["locator"]
+    assert isinstance(locator, dict)
+    locator["locator_url"] = "https://www.rba.gov.au/speeches/2025/mc-gov-2025-04-01.html"
+    path = _write(tmp_path, payload)
+    assert load_institution_year_manifest(path).manifest_id == RBA_2025_MANIFEST_ID
+    with pytest.raises(ValueError, match="pinned semantic SHA-256"):
+        load_checked_rba_2025_manifest(path)
+
+    payload = _checked_rba_payload()
+    video = _representation(_events(payload)[0], "official_page_video_locator")
+    locator = video["locator"]
+    assert isinstance(locator, dict)
+    locator["locator_url"] += "?si=unobserved"
+    with pytest.raises(ValueError, match="exact observed RBA youtu.be URL"):
+        load_institution_year_manifest(_write(tmp_path, payload))
+
+
+def test_rba_html_transcript_exception_is_source_and_role_gated(tmp_path):
+    payload = _payload()
+    transcript = _representation(_events(payload)[0], "official_transcript_en")
+    locator = transcript["locator"]
+    assert isinstance(locator, dict)
+    locator["locator_url"] = transcript["status_evidence_url"]
+    locator["mime_type"] = "text/html"
+    with pytest.raises(ValueError, match="invalid official direct-artifact locator"):
+        load_institution_year_manifest(_write(tmp_path, payload))
+
+    payload = _checked_rba_payload()
+    video = _representation(_events(payload)[0], "official_page_video_locator")
+    locator = video["locator"]
+    assert isinstance(locator, dict)
+    locator.update(
+        {
+            "locator_kind": "official_direct_artifact",
+            "locator_url": video["status_evidence_url"],
+            "platform_media_id": None,
+            "host_organization": "Reserve Bank of Australia",
+            "transcriber_attribution": "not_disclosed",
+            "origin_type": "official_published_transcript",
+            "provenance_tier": "official_published_transcript",
+        }
+    )
+    with pytest.raises(ValueError, match="invalid official direct-artifact locator"):
+        load_institution_year_manifest(_write(tmp_path, payload))
+
+
+def test_rba_youtu_be_exception_is_exact_and_source_gated(tmp_path):
+    payload = _checked_rba_payload()
+    video = _representation(_events(payload)[0], "official_page_video_locator")
+    locator = video["locator"]
+    assert isinstance(locator, dict)
+    locator["locator_url"] = (
+        f"https://www.youtube.com/live/{locator['platform_media_id']}?feature=share"
+    )
+    with pytest.raises(ValueError, match="exact observed RBA youtu.be URL"):
+        load_institution_year_manifest(_write(tmp_path, payload))
+
+    payload = _payload()
+    video = _representation(_events(payload)[0], "official_page_video_locator")
+    locator = video["locator"]
+    assert isinstance(locator, dict)
+    locator["locator_url"] = f"https://youtu.be/{locator['platform_media_id']}"
+    with pytest.raises(ValueError, match="observed YouTube platform"):
+        load_institution_year_manifest(_write(tmp_path, payload))
+
+
+def test_checked_rba_loader_rejects_wrong_cohort_and_added_content(tmp_path):
+    with pytest.raises(ValueError, match="wrong manifest_id"):
+        load_checked_rba_2025_manifest(CHECKED_MANIFEST)
+
+    payload = _checked_rba_payload()
+    _representation(_events(payload)[0], "official_transcript_en")["content"] = "forbidden"
+    with pytest.raises(ValueError, match="unknown fields"):
+        load_checked_rba_2025_manifest(_write(tmp_path, payload))
+
+
+def test_rba_sources_are_unavailable_in_pre_rba_catalogue_snapshot(tmp_path):
+    payload = _checked_rba_payload()
+    payload["catalogue_sha256"] = "ad499a7129238d70be8c7243c62252b3a1f11628a69d2df4ecf14c41d33ef1b0"
     with pytest.raises(ValueError, match="not in the communication source catalogue"):
         load_institution_year_manifest(_write(tmp_path, payload))
 

@@ -8,8 +8,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 
 from dalio.communications.catalogue import (
-    COMMUNICATION_CATALOGUE_SHA256,
-    COMMUNICATION_SOURCES,
+    resolve_communication_catalogue_snapshot,
 )
 from dalio.storage import db as db_module
 from dalio.storage.communications import (
@@ -39,7 +38,13 @@ from dalio.storage.db import (
     make_session_factory,
 )
 
-SOURCES = {source.source_id: source for source in COMMUNICATION_SOURCES}
+# Keep this storage-contract fixture on the original snapshot so unrelated
+# additive catalogue releases cannot churn its canonical scope-set identity.
+FIXTURE_CATALOGUE_SHA256 = "67d7049f1c63648c7b2d99dfee9eab290e2aca6469e9b872d0c605daaf716dc6"
+SOURCES = {
+    source.source_id: source
+    for source in resolve_communication_catalogue_snapshot(FIXTURE_CATALOGUE_SHA256).sources
+}
 OBSERVED_AT = datetime(2026, 9, 9, 8, tzinfo=UTC)
 
 
@@ -58,7 +63,7 @@ def _artifact(**changes) -> CommunicationArtifactMeta:
     source = SOURCES["ecb_monetary_policy_press_conferences_en"]
     values = {
         "source_id": source.source_id,
-        "catalogue_sha256": COMMUNICATION_CATALOGUE_SHA256,
+        "catalogue_sha256": FIXTURE_CATALOGUE_SHA256,
         "artifact_key": "official_statement_with_q_and_a_en",
         "artifact_role": "q_and_a_transcript",
         "material_type": "questions_and_answers",
@@ -131,7 +136,7 @@ def test_mixed_scope_set_is_atomic_and_content_free(session_factory):
             _mixed_scopes()
         )
         assert stored.scope_set_sha256 == (
-            "85608fe71129dc45f6905b091e05aaf47035495dbf898421f763b844f84a4fa9"
+            "0c2dd181e81d33d53b785610543dbd1cf8ba42760324278f0d7b620e49eed500"
         )
         assert session.scalar(select(func.count()).select_from(CommunicationArtifact)) == 1
         assert session.scalar(select(func.count()).select_from(CommunicationArtifactContent)) == 0

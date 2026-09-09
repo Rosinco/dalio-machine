@@ -31,7 +31,7 @@ A separate read-only review packet now places 20 tightly bounded, page-cited mod
 The separate `dalio-report-review` gate can prepare and validate a blank decision document, report progress, and—only from a TTY after showing every candidate/outcome, confirming the canonical full-decision hash and making a verified database backup—atomically record an operator-attributed approve/revise/reject batch. Human-only use is operating policy; the local identity is not cryptographically authenticated. Nobody has used the gate on the live packet: there are still zero human decisions and zero verified report claims.
 
 Institutional press conferences, earnings communications and executive letters
-now have a separate rights-gated foundation. The checked catalogue covers 22
+now have a separate rights-gated foundation. The checked catalogue covers 24
 first-party source policies for 19 organizations: five central banks, seven
 major banks and seven commodity companies spanning six commodity families. The event, artifact,
 byte-capture, extraction and speaker-segment schemas preserve publication clocks,
@@ -63,6 +63,12 @@ but 0/8 verified exact first-party transcripts and 0/8 verified exact caption
 tracks. Replay pages, slides, transcripts and captions remain four different
 representations; this cohort also adds metadata only and writes no database
 rows.
+The closed 2025 Reserve Bank of Australia cohort covers all eight official
+monetary-policy media conferences: 8/8 exact first-party inline-HTML transcript
+pages, 8/8 exact external video URLs linked from those official pages, and 0/8
+verified exact caption tracks. No slide representation is claimed, and RBA MP3
+audio is outside Version 1. These remain locator observations only; no page,
+transcript, media or caption content is stored.
 Future byte and segment hashes will prove reproducibility, not transcription
 fidelity; extracted text still needs trusted execution or named human review.
 
@@ -136,6 +142,10 @@ dalio-communication-metadata-inventory
 dalio-communication-metadata-inventory \
   --cohort riksbank_2025_monetary_policy_press_conferences
 
+# Checked 2025 RBA cohort; qualified latest aliases, metadata only
+dalio-communication-metadata-inventory \
+  --cohort rba_2025_monetary_policy_media_conferences
+
 # Local official PDFs are deliberately acquired separately. The input folders
 # must contain the deterministic filenames recorded in data/reference/*.json.
 python -m dalio.pipelines.ingest_ap_funds --artifact-dir /path/to/verified-ap-pdfs
@@ -166,6 +176,13 @@ Its cohort-qualified metadata-only views are
 `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\communication_metadata_riksbank_2025_monetary_policy_press_conferences_latest.md`
 and
 `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\communication_metadata_riksbank_2025_monetary_policy_press_conferences_latest.json`.
+
+The checked RBA cohort has the full Windows path
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\reference\communication_rba_2025_events.json`.
+Its cohort-qualified metadata-only views are
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\communication_metadata_rba_2025_monetary_policy_media_conferences_latest.md`
+and
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\communication_metadata_rba_2025_monetary_policy_media_conferences_latest.json`.
 
 Riksbank SWEA contributes eight daily Swedish series: policy rate; 2-, 5- and 10-year government yields; and SEK per USD, EUR, NOK and GBP. No key is required. Keyless runs use a safe 13-second request interval for the official 5-calls/minute limit; when `RIKSBANK_API_KEY` is set, the adapter sends it in `Ocp-Apim-Subscription-Key` automatically. The NOK feed starts on 2023-11-27 because older observations were quoted per 100 NOK and are not mixed into the current per-1-NOK series.
 
@@ -294,6 +311,16 @@ filenames remain hash-bound, and the legacy BoE aliases do not move. The
 publisher performs no network, database or source-content reads and writes all
 views with `content_capture_authorized=false`. See
 [ADR 0018](decisions/0018-riksbank-2025-communication-metadata-inventory.md).
+
+Selecting `--cohort rba_2025_monetary_policy_media_conferences` validates the
+closed eight-event first-party RBA index and reports 8/8 exact RBA inline-HTML
+transcript-page locators, 8/8 exact officially linked external video URLs and
+0/8 verified exact caption tracks. No slide representation is claimed, and RBA
+MP3 audio remains outside Version 1. It refreshes only the cohort-qualified RBA
+aliases; the BoE and Riksbank latest bytes remain unchanged. Like the other
+cohorts, this is metadata only: the publisher reads no source content and writes
+no database rows. See
+[ADR 0019](decisions/0019-rba-2025-communication-metadata-inventory.md).
 The immutable source-policy snapshot contract is documented in
 [ADR 0016](decisions/0016-communication-catalogue-snapshots.md).
 
@@ -324,4 +351,4 @@ Tier drives dashboard confidence labels — Tier 2 readings are flagged as such.
 
 ## Status
 
-Pre-alpha. The cycle and fundamentals product is working, and the raw-history foundation now includes sovereign-debt anatomy, Swedish debt holders, IMF financial-account transactions, 127,970 bilateral investment-position rows, three Swedish AP-fund disclosures, a ten-document official-report corpus, 63,179 monthly commodity observations, ten official-money histories and 22 separate shadow-liquidity histories. Read-only liquidity diagnostics, a 20-item report review queue, an append-only human decision gate and a 22-policy/19-organization institutional-communications schema foundation are available. A closed 2025 Fed/ECB pilot adds 16/16 exact first-party text links and an offline rights-review packet; separate closed 2025 BoE and Riksbank cohorts add representation-specific metadata for four and eight monetary-policy press conferences respectively. Checked manifests bind immutable source-policy snapshots, and the ordered one-artifact/one-byte-lineage, multi-section storage contract is ready, but there is no source content or database communication evidence. ADR 0017 caps the remaining Version 1 foundation at five bounded packages, after which work pivots to horizon scenarios, transmission paths, warning indicators and the SEK-investor brief. This is not a complete global money-flow map, a communications corpus, a universal M5, an additive liquidity total, a causal or deposit-flow model, or an investable commodity return history: all 20 report candidates still need named human review; every communication representation remains rights-gated; allocator history has only one H1 2026 release per fund; QPSD and IMF position coverage are voluntary and uneven; and debt cash-flow schedules, broader banking/funding channels and horizon risk scenarios remain to be built. See `project_context.md`, ADRs 0004–0018 and `data/README.md` for current boundaries.
+Pre-alpha. The cycle and fundamentals product is working, and the raw-history foundation now includes sovereign-debt anatomy, Swedish debt holders, IMF financial-account transactions, 127,970 bilateral investment-position rows, three Swedish AP-fund disclosures, a ten-document official-report corpus, 63,179 monthly commodity observations, ten official-money histories and 22 separate shadow-liquidity histories. Read-only liquidity diagnostics, a 20-item report review queue, an append-only human decision gate and a 24-policy/19-organization institutional-communications schema foundation are available. A closed 2025 Fed/ECB pilot adds 16/16 exact first-party text links and an offline rights-review packet; separate BoE, Riksbank and RBA cohorts add representation-specific metadata. The bounded 2025 Riksbank-plus-RBA central-bank package now closes 16/16 denominator events, while all communication content and database evidence remain absent. Checked manifests bind immutable source-policy snapshots, and the ordered one-artifact/one-byte-lineage, multi-section storage contract is ready. ADR 0017 caps the remaining Version 1 foundation at five bounded packages; the next collection package is core-economy debt maturity and refinancing structure. This is not a complete global money-flow map, a communications corpus, a universal M5, an additive liquidity total, a causal or deposit-flow model, or an investable commodity return history: all 20 report candidates still need named human review; every communication representation remains rights-gated; allocator history has only one H1 2026 release per fund; QPSD and IMF position coverage are voluntary and uneven; and debt cash-flow schedules, broader banking/funding channels and horizon risk scenarios remain to be built. See `project_context.md`, ADRs 0004–0019 and `data/README.md` for current boundaries.

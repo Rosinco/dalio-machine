@@ -23,3 +23,4 @@ always-loaded state lives in `project_context.md` (Decision Log has one line per
 | [0016](0016-communication-catalogue-snapshots.md) | Immutable hash-addressed communication source-policy snapshots preserve historical manifest interpretation as the catalogue grows | 2026-09-09 |
 | [0017](0017-bounded-version-one-completion-gate.md) | Cap Version 1 collection at five evidence packages, then pivot to horizon risks, transmission paths, warning indicators and a SEK-investor brief | 2026-09-09 |
 | [0018](0018-riksbank-2025-communication-metadata-inventory.md) | Closed 2025 Riksbank monetary-policy press-conference cohort with separate replay-page, slide, transcript and exact-caption coverage | 2026-09-09 |
+| [0019](0019-rba-2025-communication-metadata-inventory.md) | Closed 2025 RBA monetary-policy media-conference cohort with separate inline-transcript, external-video and exact-caption coverage | 2026-09-09 |

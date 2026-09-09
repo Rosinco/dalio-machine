@@ -25,7 +25,7 @@ from urllib.parse import urlsplit
 
 ORGANIZATION_TYPES = frozenset({"central_bank", "bank", "commodity_company"})
 CATALOGUE_SCHEMA_VERSION = 2
-CATALOGUE_EVALUATED_AT = datetime(2026, 9, 9, 13, 26, 26, tzinfo=UTC)
+CATALOGUE_EVALUATED_AT = datetime(2026, 9, 9, 14, 24, 40, tzinfo=UTC)
 
 MATERIAL_TYPES = frozenset(
     {
@@ -879,11 +879,77 @@ _RIKSBANK_COMMUNICATION_SOURCES_2026_09_09: tuple[CommunicationSourceSpec, ...] 
     ),
 )
 
+_RBA_MEDIA_CONFERENCE_SOURCES_2026_09_09: tuple[CommunicationSourceSpec, ...] = (
+    CommunicationSourceSpec(
+        source_id="rba_monetary_policy_media_conferences_en",
+        organization_id="reserve_bank_of_australia",
+        organization_name="Reserve Bank of Australia",
+        organization_type="central_bank",
+        jurisdiction="AU",
+        language="en",
+        landing_url="https://www.rba.gov.au/monetary-policy/media-conferences/",
+        official_domains=("rba.gov.au",),
+        host_organization="Reserve Bank of Australia",
+        publisher="Reserve Bank of Australia",
+        transcriber=None,
+        transcriber_attribution="not_disclosed",
+        material_types=("press_conference_transcript", "press_conference_video"),
+        commodity_families=(),
+        verified_archive_start_year=2024,
+        coverage_note=(
+            "The verified media-conference archive begins in 2024. Official event pages may "
+            "publish an inline transcript and link externally hosted video, but availability "
+            "and representation provenance must be observed independently for each event."
+        ),
+        provenance_tier="official_archive_mixed",
+        rights_status="rights_review_required",
+        rights_basis_url=None,
+        rights_note=(
+            "RBA page, transcript and externally hosted media rights can differ; review each "
+            "exact representation before capture."
+        ),
+        acquisition_status="manual_review_required",
+        acquisition_note=_MANUAL_REVIEW_NOTE,
+    ),
+    CommunicationSourceSpec(
+        source_id="rba_monetary_policy_media_conference_subtitles_en",
+        organization_id="reserve_bank_of_australia",
+        organization_name="Reserve Bank of Australia",
+        organization_type="central_bank",
+        jurisdiction="AU",
+        language="en",
+        landing_url="https://www.rba.gov.au/monetary-policy/media-conferences/",
+        official_domains=("rba.gov.au",),
+        host_organization="Reserve Bank of Australia",
+        publisher="Reserve Bank of Australia",
+        transcriber=None,
+        transcriber_attribution="artifact_specific",
+        material_types=("subtitles",),
+        commodity_families=(),
+        verified_archive_start_year=2024,
+        coverage_note=(
+            "The media-conference archive is a subtitle-discovery pathway only. No caption-"
+            "track continuity, producer, origin, language or time coverage is asserted."
+        ),
+        provenance_tier="official_archive_mixed",
+        rights_status="rights_review_required",
+        rights_basis_url=None,
+        rights_note=(
+            "External-platform caption rights can differ from RBA page and transcript rights; "
+            "review every exact subtitle track before capture."
+        ),
+        acquisition_status="manual_review_required",
+        acquisition_note=_MANUAL_REVIEW_NOTE,
+    ),
+)
+
 # Public current-vintage alias.  The original tuple remains separately named and
-# hash-pinned so manifests bound to that policy vintage retain their semantics.
+# hash-pinned, as does the Riksbank-era tuple, so manifests bound to either policy
+# vintage retain their semantics.
 COMMUNICATION_SOURCES = (
     *_COMMUNICATION_SOURCES_2026_09_09,
     *_RIKSBANK_COMMUNICATION_SOURCES_2026_09_09,
+    *_RBA_MEDIA_CONFERENCE_SOURCES_2026_09_09,
 )
 
 
@@ -1296,6 +1362,23 @@ _FROZEN_2026_09_09_CATALOGUE = communication_catalogue_snapshot(
 if _FROZEN_2026_09_09_CATALOGUE.catalogue_sha256 != _FROZEN_2026_09_09_CATALOGUE_SHA256:
     raise RuntimeError("the frozen 2026-09-09 communication catalogue snapshot changed")
 
+_FROZEN_RIKSBANK_2026_09_09_CATALOGUE_SHA256 = (
+    "ad499a7129238d70be8c7243c62252b3a1f11628a69d2df4ecf14c41d33ef1b0"
+)
+_FROZEN_RIKSBANK_2026_09_09_CATALOGUE = communication_catalogue_snapshot(
+    (
+        *_COMMUNICATION_SOURCES_2026_09_09,
+        *_RIKSBANK_COMMUNICATION_SOURCES_2026_09_09,
+    ),
+    schema_version=2,
+    evaluated_at=datetime(2026, 9, 9, 13, 26, 26, tzinfo=UTC),
+)
+if (
+    _FROZEN_RIKSBANK_2026_09_09_CATALOGUE.catalogue_sha256
+    != _FROZEN_RIKSBANK_2026_09_09_CATALOGUE_SHA256
+):
+    raise RuntimeError("the frozen Riksbank-era communication catalogue snapshot changed")
+
 _CURRENT_COMMUNICATION_CATALOGUE = communication_catalogue_snapshot(
     COMMUNICATION_SOURCES,
     schema_version=CATALOGUE_SCHEMA_VERSION,
@@ -1305,6 +1388,9 @@ COMMUNICATION_CATALOGUE_SHA256 = _CURRENT_COMMUNICATION_CATALOGUE.catalogue_sha2
 COMMUNICATION_CATALOGUE_SNAPSHOTS: Mapping[str, CommunicationCatalogueSnapshot] = MappingProxyType(
     {
         _FROZEN_2026_09_09_CATALOGUE.catalogue_sha256: _FROZEN_2026_09_09_CATALOGUE,
+        _FROZEN_RIKSBANK_2026_09_09_CATALOGUE.catalogue_sha256: (
+            _FROZEN_RIKSBANK_2026_09_09_CATALOGUE
+        ),
         _CURRENT_COMMUNICATION_CATALOGUE.catalogue_sha256: _CURRENT_COMMUNICATION_CATALOGUE,
     }
 )
