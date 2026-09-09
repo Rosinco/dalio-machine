@@ -28,6 +28,8 @@ Institutional prose has its own evidence ledger. Ten official PDFs—the latest 
 
 A separate read-only review packet now places 20 tightly bounded, page-cited model drafts—four from each latest report—in front of a human reviewer. Every item is labelled `UNVERIFIED MODEL DRAFT`; this queue does not create database claims, scores, probabilities or portfolio guidance.
 
+The separate `dalio-report-review` gate can prepare and validate a blank decision document, report progress, and—only from a TTY after showing every candidate/outcome, confirming the canonical full-decision hash and making a verified database backup—atomically record an operator-attributed approve/revise/reject batch. Human-only use is operating policy; the local identity is not cryptographically authenticated. Nobody has used the gate on the live packet: there are still zero human decisions and zero verified report claims.
+
 ## Why
 
 Reading Dalio's framework as a *lens* (not an oracle): the dashboard surfaces where each economy sits in the long-term debt cycle, four-stage short-term debt cycle, and big-cycle power framework. Use it to understand constraints and diversified-portfolio fragilities, not to time entry or exit.
@@ -83,6 +85,11 @@ dalio-liquidity-brief --db data/dalio.db
 # Read-only official-report review queue → JSON + Markdown in data/review/
 dalio-report-review-packet --db data/dalio.db
 
+# Blank human decision sheet; preparation/check/status are database-read-only
+dalio-report-review prepare --db data/dalio.db
+dalio-report-review check --db data/dalio.db --decisions data/review/report_decisions_YYYY-MM-DD_PACKETHASH.json
+dalio-report-review status --db data/dalio.db --decisions data/review/report_decisions_YYYY-MM-DD_PACKETHASH.json
+
 # Local official PDFs are deliberately acquired separately. The input folders
 # must contain the deterministic filenames recorded in data/reference/*.json.
 python -m dalio.pipelines.ingest_ap_funds --artifact-dir /path/to/verified-ap-pdfs
@@ -98,7 +105,7 @@ commands verify every expected SHA-256 before opening a database transaction.
 They do not download documents; the review-packet command only reads
 already-ingested evidence.
 
-From Windows Explorer, this checkout is available at `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine`; the local SQLite file is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\dalio.db`, and durable source evidence is under `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\artifacts`. The latest generated liquidity brief is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\snapshots\liquidity_latest.md`; the latest unverified report review is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\report_claims_latest.md`. See `data/README.md` before copying, deleting or rebuilding anything under `data/`.
+From Windows Explorer, this checkout is available at `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine`; the local SQLite file is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\dalio.db`, and durable source evidence is under `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\artifacts`. The latest generated liquidity brief is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\snapshots\liquidity_latest.md`; the latest unverified report review is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\report_claims_latest.md`; and the untouched human decision sheet is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\report_decisions_2026-09-09_20c687f1cb907c71.json`. See `data/README.md` before copying, deleting or rebuilding anything under `data/`.
 
 Riksbank SWEA contributes eight daily Swedish series: policy rate; 2-, 5- and 10-year government yields; and SEK per USD, EUR, NOK and GBP. No key is required. Keyless runs use a safe 13-second request interval for the official 5-calls/minute limit; when `RIKSBANK_API_KEY` is set, the adapter sends it in `Ocp-Apim-Subscription-Key` automatically. The NOK feed starts on 2023-11-27 because older observations were quoted per 100 NOK and are not mixed into the current per-1-NOK series.
 
@@ -172,12 +179,19 @@ Every candidate in both output formats is labelled exactly
 catalogue entry nor a review packet is a verified conclusion or may feed scores,
 scenarios or portfolio guidance.
 
-The packet builder does not write to the database. Approval remains a separate,
-human-only gate: a named human may `approve`, `revise` or `reject`; revision
-preserves the original draft, rejection creates no verified claim, and no model
-may choose a decision or supply a reviewer identity. See
-[ADR 0010](decisions/0010-report-claim-review-queue.md) for the implemented
-review-queue contract and its deliberately separate approval boundary.
+The packet builder does not write to the database. The separate
+`dalio-report-review` command prepares the unsigned decision sheet, revalidates
+the packet and evidence, and reports file/ledger progress without writing. Its
+`apply` subcommand refuses non-TTY input, shows the exact candidate/outcome map,
+requires the operator to supply a `human:<id>` attribution and type the canonical
+full-decision hash, creates a verified SQLite
+backup, and records the complete batch in one append-only transaction. Approval
+creates a verified successor; revision preserves the model draft and adds a
+human replacement plus verified successor; rejection preserves the decision and
+creates no verified claim. A local identity is explicit attribution, not
+cryptographic authentication. No model may fill decisions, supply the identity,
+confirm the hash or invoke `apply`. See [ADR 0010](decisions/0010-report-claim-review-queue.md)
+and [ADR 0011](decisions/0011-human-report-claim-decisions.md).
 
 ## Tests
 
@@ -206,4 +220,4 @@ Tier drives dashboard confidence labels — Tier 2 readings are flagged as such.
 
 ## Status
 
-Pre-alpha. The cycle and fundamentals product is working, and the raw-history foundation now includes sovereign-debt anatomy, Swedish debt holders, IMF financial-account transactions, 127,970 bilateral investment-position rows, three Swedish AP-fund disclosures, a ten-document official-report corpus, 63,179 monthly commodity observations, ten official-money histories and 22 separate shadow-liquidity histories. Read-only liquidity diagnostics and a 20-item report review queue are available, but this is not a complete global money-flow map, a universal M5, an additive liquidity total, a causal or deposit-flow model, or an investable commodity return history: all 20 report candidates still need named human review; allocator history has only one H1 2026 release per fund; QPSD and IMF position coverage are voluntary and uneven; and debt cash-flow schedules, broader banking/funding channels and horizon risk scenarios remain to be built. See `project_context.md`, ADRs 0004–0010 and `data/README.md` for current boundaries.
+Pre-alpha. The cycle and fundamentals product is working, and the raw-history foundation now includes sovereign-debt anatomy, Swedish debt holders, IMF financial-account transactions, 127,970 bilateral investment-position rows, three Swedish AP-fund disclosures, a ten-document official-report corpus, 63,179 monthly commodity observations, ten official-money histories and 22 separate shadow-liquidity histories. Read-only liquidity diagnostics, a 20-item report review queue and an append-only human decision gate are available, but this is not a complete global money-flow map, a universal M5, an additive liquidity total, a causal or deposit-flow model, or an investable commodity return history: all 20 report candidates still need named human review; allocator history has only one H1 2026 release per fund; QPSD and IMF position coverage are voluntary and uneven; and debt cash-flow schedules, broader banking/funding channels and horizon risk scenarios remain to be built. See `project_context.md`, ADRs 0004–0011 and `data/README.md` for current boundaries.

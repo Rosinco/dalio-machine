@@ -145,6 +145,11 @@ class CandidateCatalogue:
 
 @dataclass(frozen=True)
 class ResolvedDocument:
+    # Internal ledger identifiers are intentionally omitted from published
+    # packets.  The separate human decision writer uses them only after it has
+    # rebuilt and revalidated the packet against the same database.
+    document_id: int
+    extraction_id: int
     source_id: str
     issue_key: str
     publisher: str
@@ -672,6 +677,8 @@ def resolve_candidate_evidence(
     return ResolvedCandidate(
         candidate=candidate,
         document=ResolvedDocument(
+            document_id=latest.id,
+            extraction_id=extraction.id,
             source_id=latest.source_id,
             issue_key=latest.issue_key,
             publisher=latest.publisher,

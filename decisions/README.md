@@ -15,3 +15,4 @@ always-loaded state lives in `project_context.md` (Decision Log has one line per
 | [0008](0008-liquidity-frontier.md) | Publisher-defined UK/Japan broad money plus a non-additive shadow-funding and offshore-credit frontier | 2026-09-08 |
 | [0009](0009-derived-liquidity-diagnostics.md) | Read-only, point-in-time liquidity diagnostics with fixed latest aliases, content-addressed JSON/Markdown exports and no composite or causal claims | 2026-09-08 |
 | [0010](0010-report-claim-review-queue.md) | Read-only, five-family model-draft review packet with exact evidence binding and a separate human-only approval gate | 2026-09-09 |
+| [0011](0011-human-report-claim-decisions.md) | Append-only, atomic human approve/revise/reject gate for hash-bound report candidates | 2026-09-09 |

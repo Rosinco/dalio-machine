@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from datetime import UTC, date, datetime
 
 import pytest
@@ -16,7 +17,9 @@ from dalio.storage.db import (
     ClaimCitation,
     DocumentExtraction,
     DocumentPage,
+    ReportCandidateReview,
     ReportDocument,
+    create_verified_sqlite_backup,
     init_db,
     make_engine,
 )
@@ -25,6 +28,8 @@ from dalio.storage.reports import (
     ClaimDraft,
     PageText,
     ReportMeta,
+    _append_claims,
+    _append_verified_claim,
     ingest_report,
     load_claims,
     propose_claims,
@@ -103,6 +108,71 @@ def _ingest(session: Session, tmp_path, **meta_kwargs):
         extractor=FakeExtractor(),
         blob_root=tmp_path / "blobs",
     )
+
+
+def _fact_draft(report, statement: str = "Inflation was 2.0 percent in 2025.") -> ClaimDraft:
+    return ClaimDraft(
+        claim_type="fact",
+        statement=statement,
+        attribution_document_id=report.document_id,
+        topic_key="inflation",
+        geographies=("SE",),
+        reference_end=date(2025, 12, 31),
+        numeric_value=2.0,
+        unit="percent",
+        citations=(
+            CitationDraft(
+                report.extraction_id,
+                1,
+                1,
+                "Inflation was 2.0 percent in 2025.",
+                "direct",
+            ),
+        ),
+    )
+
+
+def _candidate_review(
+    ordinal: int,
+    *,
+    outcome: str,
+    original_draft_claim_id: int,
+    revised_draft_claim_id: int | None = None,
+    verified_claim_id: int | None = None,
+    changes: dict | None = None,
+) -> ReportCandidateReview:
+    candidate_id = f"{ordinal:064x}"
+    values = {
+        "candidate_id": candidate_id,
+        "packet_sha256": "a" * 64,
+        "candidate_catalogue_sha256": "b" * 64,
+        "candidate_json": json.dumps(
+            {"candidate_id": candidate_id}, sort_keys=True, separators=(",", ":")
+        ),
+        "outcome": outcome,
+        "reviewer": "human:adam",
+        "reviewed_at": _at(2026, 6, 22),
+        "reason_code": None if outcome == "approve" else "other",
+        "review_note": "The cited page and proposed scope were reviewed.",
+        "checklist_json": json.dumps(
+            {
+                "attribution_fair": True,
+                "important_for_macro_risk_analysis": True,
+                "scope_periods_units_conditions_correct": True,
+                "type_correct": True,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
+        "request_sha256": "c" * 64,
+        "recorded_at": _at(2026, 6, 23),
+        "original_draft_claim_id": original_draft_claim_id,
+        "revised_draft_claim_id": revised_draft_claim_id,
+        "verified_claim_id": verified_claim_id,
+    }
+    if changes:
+        values.update(changes)
+    return ReportCandidateReview(**values)
 
 
 def test_ingest_report_archives_hash_pages_and_provenance(session_factory, tmp_path):
@@ -1009,3 +1079,249 @@ def test_evidence_rows_are_immutable_through_the_orm(session_factory, tmp_path):
         )
         with pytest.raises(IntegrityError, match="FOREIGN KEY"):
             session.commit()
+
+
+def test_internal_claim_append_helpers_leave_commit_and_rollback_to_caller(
+    session_factory, tmp_path
+):
+    with session_factory() as session:
+        report = _ingest(session, tmp_path)
+        draft_id = _append_claims(
+            session,
+            [_fact_draft(report)],
+            created_by="model:review-packet-v1",
+            created_at=_at(2026, 6, 20),
+        )[0]
+        verified_id, created = _append_verified_claim(
+            session,
+            draft_id,
+            reviewer="human:adam",
+            reviewed_at=_at(2026, 6, 21),
+        )
+        repeated_id, repeated_created = _append_verified_claim(
+            session,
+            draft_id,
+            reviewer="human:adam",
+            reviewed_at=_at(2026, 6, 21),
+        )
+
+        assert created is True
+        assert (repeated_id, repeated_created) == (verified_id, False)
+        assert session.scalar(select(func.count()).select_from(Claim)) == 2
+        assert session.scalar(select(func.count()).select_from(ClaimCitation)) == 2
+        session.rollback()
+        assert session.scalar(select(func.count()).select_from(Claim)) == 0
+        assert session.scalar(select(func.count()).select_from(ClaimCitation)) == 0
+
+
+def test_report_candidate_reviews_preserve_all_three_outcomes_and_are_immutable(
+    session_factory, tmp_path
+):
+    with session_factory() as session:
+        report = _ingest(session, tmp_path)
+        original_ids = _append_claims(
+            session,
+            [
+                _fact_draft(report, "Approved model wording."),
+                _fact_draft(report, "Original wording needing revision."),
+                _fact_draft(report, "Rejected model wording."),
+            ],
+            created_by="model:review-packet-v1",
+            created_at=_at(2026, 6, 20),
+        )
+        revised_id = _append_claims(
+            session,
+            [_fact_draft(report, "Human-revised wording.")],
+            created_by="human:adam",
+            created_at=_at(2026, 6, 21),
+        )[0]
+        approved_id, _created = _append_verified_claim(
+            session,
+            original_ids[0],
+            reviewer="human:adam",
+            reviewed_at=_at(2026, 6, 22),
+        )
+        revised_verified_id, _created = _append_verified_claim(
+            session,
+            revised_id,
+            reviewer="human:adam",
+            reviewed_at=_at(2026, 6, 22),
+        )
+        session.add_all(
+            [
+                _candidate_review(
+                    1,
+                    outcome="approve",
+                    original_draft_claim_id=original_ids[0],
+                    verified_claim_id=approved_id,
+                ),
+                _candidate_review(
+                    2,
+                    outcome="revise",
+                    original_draft_claim_id=original_ids[1],
+                    revised_draft_claim_id=revised_id,
+                    verified_claim_id=revised_verified_id,
+                ),
+                _candidate_review(
+                    3,
+                    outcome="reject",
+                    original_draft_claim_id=original_ids[2],
+                ),
+            ]
+        )
+        session.commit()
+
+        reviews = (
+            session.execute(
+                select(ReportCandidateReview).order_by(ReportCandidateReview.candidate_id)
+            )
+            .scalars()
+            .all()
+        )
+        revised_verified = session.get(Claim, revised_verified_id)
+        rejected_original = session.get(Claim, original_ids[2])
+
+        assert [review.outcome for review in reviews] == ["approve", "revise", "reject"]
+        assert reviews[0].verified_claim_id == approved_id
+        assert reviews[1].revised_draft_claim_id == revised_id
+        assert reviews[2].verified_claim_id is None
+        assert revised_verified.review_of_claim_id == revised_id
+        assert rejected_original.status == "draft"
+        assert (
+            verify_claim(
+                session,
+                original_ids[0],
+                reviewer="human:adam",
+                reviewed_at=_at(2026, 6, 23),
+            )
+            == approved_id
+        )
+        assert (
+            verify_claim(
+                session,
+                revised_id,
+                reviewer="human:adam",
+                reviewed_at=_at(2026, 6, 23),
+            )
+            == revised_verified_id
+        )
+        for terminal_original_id in (original_ids[1], original_ids[2]):
+            with pytest.raises(
+                ValueError,
+                match="terminal report review does not permit verifying this original draft",
+            ):
+                verify_claim(
+                    session,
+                    terminal_original_id,
+                    reviewer="human:adam",
+                    reviewed_at=_at(2026, 6, 23),
+                )
+
+        reviews[0].review_note = "Attempted rewrite."
+        with pytest.raises(ValueError, match="immutable"):
+            session.commit()
+        session.rollback()
+
+        with pytest.raises(IntegrityError, match="immutable"):
+            session.execute(
+                ReportCandidateReview.__table__.delete().where(
+                    ReportCandidateReview.id == reviews[0].id
+                )
+            )
+        session.rollback()
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"candidate_id": "A" * 64},
+        {"packet_sha256": "not-a-sha256"},
+        {"candidate_json": "[]"},
+        {"outcome": "pending"},
+        {"reason_code": "not_material"},
+        {"reviewer": "model:reviewer"},
+        {"review_note": " "},
+        {"checklist_json": "[]"},
+        {"recorded_at": _at(2026, 6, 21)},
+        {"outcome": "approve", "verified_claim_id": None},
+        {"outcome": "reject", "reason_code": "other", "verified_claim_id": -1},
+        {"outcome": "revise", "reason_code": "other", "revised_draft_claim_id": None},
+    ],
+)
+def test_report_candidate_review_sql_shape_checks_fail_closed(session_factory, tmp_path, changes):
+    with session_factory() as session:
+        report = _ingest(session, tmp_path)
+        original_id = propose_claims(
+            session,
+            [_fact_draft(report)],
+            created_by="model:review-packet-v1",
+            created_at=_at(2026, 6, 20),
+        )[0]
+        verified_id = verify_claim(
+            session,
+            original_id,
+            reviewer="human:adam",
+            reviewed_at=_at(2026, 6, 21),
+        )
+        review = _candidate_review(
+            10,
+            outcome="approve",
+            original_draft_claim_id=original_id,
+            verified_claim_id=verified_id,
+            changes=changes,
+        )
+        session.add(review)
+        with pytest.raises(IntegrityError):
+            session.commit()
+
+
+def test_report_candidate_id_can_have_only_one_terminal_review(session_factory, tmp_path):
+    with session_factory() as session:
+        report = _ingest(session, tmp_path)
+        original_ids = _append_claims(
+            session,
+            [_fact_draft(report, "First candidate."), _fact_draft(report, "Second candidate.")],
+            created_by="model:review-packet-v1",
+            created_at=_at(2026, 6, 20),
+        )
+        session.add(
+            _candidate_review(
+                1,
+                outcome="reject",
+                original_draft_claim_id=original_ids[0],
+            )
+        )
+        session.commit()
+        session.add(
+            _candidate_review(
+                1,
+                outcome="reject",
+                original_draft_claim_id=original_ids[1],
+            )
+        )
+        with pytest.raises(IntegrityError, match="UNIQUE"):
+            session.commit()
+
+
+def test_public_verified_sqlite_backup_is_exact_non_overwriting_and_reusable(tmp_path):
+    source_path = tmp_path / "reports.db"
+    backup_path = tmp_path / "backups" / "reports-before-review.db"
+    engine = make_engine(source_path)
+    init_db(engine)
+    from sqlalchemy.orm import sessionmaker
+
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
+    with factory() as session:
+        _ingest(session, tmp_path)
+    engine.dispose()
+
+    assert create_verified_sqlite_backup(source_path, backup_path) == backup_path
+    assert backup_path.is_file()
+    assert create_verified_sqlite_backup(source_path, backup_path) == backup_path
+    backup_engine = make_engine(backup_path)
+    with backup_engine.connect() as connection:
+        assert connection.scalar(select(func.count()).select_from(ReportDocument)) == 1
+    backup_engine.dispose()
+
+    with pytest.raises(ValueError, match="must differ"):
+        create_verified_sqlite_backup(source_path, source_path)

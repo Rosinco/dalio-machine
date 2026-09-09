@@ -556,6 +556,131 @@ class ClaimCitation(Base):
     )
 
 
+class ReportCandidateReview(Base):
+    """Immutable human disposition of one hash-bound report candidate."""
+
+    __tablename__ = "report_candidate_reviews"
+
+    id = Column(Integer, primary_key=True)
+    candidate_id = Column(String(64), nullable=False)
+    packet_sha256 = Column(String(64), nullable=False, index=True)
+    candidate_catalogue_sha256 = Column(String(64), nullable=False)
+    candidate_json = Column(Text, nullable=False)
+    outcome = Column(String(16), nullable=False, index=True)
+    reviewer = Column(String(192), nullable=False, index=True)
+    reviewed_at = Column(DateTime, nullable=False, index=True)
+    reason_code = Column(String(32), nullable=True, index=True)
+    review_note = Column(Text, nullable=False)
+    checklist_json = Column(Text, nullable=False)
+    request_sha256 = Column(String(64), nullable=False)
+    recorded_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
+    original_draft_claim_id = Column(
+        Integer,
+        ForeignKey("claims.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    revised_draft_claim_id = Column(
+        Integer,
+        ForeignKey("claims.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+    verified_claim_id = Column(
+        Integer,
+        ForeignKey("claims.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+
+    __table_args__ = (
+        UniqueConstraint("candidate_id", name="uq_report_candidate_review_candidate"),
+        UniqueConstraint(
+            "original_draft_claim_id",
+            name="uq_report_candidate_review_original_draft",
+        ),
+        UniqueConstraint(
+            "revised_draft_claim_id",
+            name="uq_report_candidate_review_revised_draft",
+        ),
+        UniqueConstraint(
+            "verified_claim_id",
+            name="uq_report_candidate_review_verified_claim",
+        ),
+        CheckConstraint(
+            "length(candidate_id) = 64 AND candidate_id NOT GLOB '*[^0-9a-f]*'",
+            name="ck_report_candidate_review_candidate_sha256",
+        ),
+        CheckConstraint(
+            "length(packet_sha256) = 64 AND packet_sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_report_candidate_review_packet_sha256",
+        ),
+        CheckConstraint(
+            "length(candidate_catalogue_sha256) = 64 "
+            "AND candidate_catalogue_sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_report_candidate_review_catalogue_sha256",
+        ),
+        CheckConstraint(
+            "length(request_sha256) = 64 AND request_sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_report_candidate_review_request_sha256",
+        ),
+        CheckConstraint(
+            "json_valid(candidate_json) AND json_type(candidate_json) = 'object' "
+            "AND candidate_json = trim(candidate_json)",
+            name="ck_report_candidate_review_candidate_json",
+        ),
+        CheckConstraint(
+            "json_valid(checklist_json) AND json_type(checklist_json) = 'object' "
+            "AND checklist_json = trim(checklist_json)",
+            name="ck_report_candidate_review_checklist_json",
+        ),
+        CheckConstraint(
+            "outcome IN ('approve', 'revise', 'reject')",
+            name="ck_report_candidate_review_outcome",
+        ),
+        CheckConstraint(
+            "(outcome = 'approve' AND reason_code IS NULL) OR "
+            "(outcome IN ('revise', 'reject') AND reason_code IN "
+            "('unsupported', 'misattributed', 'wrong_type', 'wrong_scope', "
+            "'wrong_period_or_unit', 'missing_condition', 'not_material', "
+            "'duplicate', 'other'))",
+            name="ck_report_candidate_review_reason_code",
+        ),
+        CheckConstraint(
+            "reviewer = trim(reviewer) AND length(reviewer) > 6 "
+            "AND substr(reviewer, 1, 6) = 'human:'",
+            name="ck_report_candidate_review_human_reviewer",
+        ),
+        CheckConstraint(
+            "review_note = trim(review_note) AND length(review_note) > 0",
+            name="ck_report_candidate_review_note_shape",
+        ),
+        CheckConstraint(
+            "(outcome = 'approve' AND revised_draft_claim_id IS NULL "
+            "AND verified_claim_id IS NOT NULL) OR "
+            "(outcome = 'revise' AND revised_draft_claim_id IS NOT NULL "
+            "AND verified_claim_id IS NOT NULL) OR "
+            "(outcome = 'reject' AND revised_draft_claim_id IS NULL "
+            "AND verified_claim_id IS NULL)",
+            name="ck_report_candidate_review_outcome_links",
+        ),
+        CheckConstraint(
+            "revised_draft_claim_id IS NULL OR revised_draft_claim_id <> original_draft_claim_id",
+            name="ck_report_candidate_review_distinct_revised_draft",
+        ),
+        CheckConstraint(
+            "verified_claim_id IS NULL OR verified_claim_id <> original_draft_claim_id",
+            name="ck_report_candidate_review_distinct_verified",
+        ),
+        CheckConstraint(
+            "revised_draft_claim_id IS NULL OR verified_claim_id IS NULL "
+            "OR revised_draft_claim_id <> verified_claim_id",
+            name="ck_report_candidate_review_distinct_revision_verification",
+        ),
+        CheckConstraint(
+            "recorded_at >= reviewed_at",
+            name="ck_report_candidate_review_recorded_after_review",
+        ),
+    )
+
+
 def _prevent_evidence_mutation(_mapper, _connection, target) -> None:
     raise ValueError(f"{type(target).__name__} rows are immutable; append a new version")
 
@@ -572,6 +697,7 @@ for _immutable_model in (
     DocumentPage,
     Claim,
     ClaimCitation,
+    ReportCandidateReview,
 ):
     event.listen(_immutable_model, "before_update", _prevent_evidence_mutation)
     event.listen(_immutable_model, "before_delete", _prevent_evidence_mutation)
@@ -722,6 +848,19 @@ def _create_or_verify_release_migration_backup(
     finally:
         if temporary_path is not None:
             temporary_path.unlink(missing_ok=True)
+
+
+def create_verified_sqlite_backup(source_path: Path, backup_path: Path) -> Path:
+    """Create or verify one exact, non-overwriting SQLite backup."""
+
+    source = Path(source_path).expanduser().resolve()
+    destination = Path(backup_path).expanduser().resolve()
+    if source == destination:
+        raise ValueError("SQLite backup destination must differ from its source")
+    if not source.is_file():
+        raise FileNotFoundError(f"SQLite backup source does not exist: {source}")
+    _create_or_verify_release_migration_backup(source, destination)
+    return destination
 
 
 def _release_unique_layout(cursor: sqlite3.Cursor) -> tuple[tuple[str, ...], ...]:
@@ -957,6 +1096,7 @@ def init_db(engine: Engine) -> None:
         "document_pages",
         "claims",
         "claim_citations",
+        "report_candidate_reviews",
     )
     with engine.begin() as connection:
         for table_name in immutable_tables:

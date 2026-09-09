@@ -231,6 +231,8 @@ def test_empty_inventory_is_json_safe_and_distinguishes_absent_tables(tmp_path):
         MONEY_LIQUIDITY_SERIES
     )
     assert inventory["market_history"]["money_liquidity"]["stored_series"] == 0
+    assert inventory["reports"]["review_count"] == 0
+    assert inventory["reports"]["review_outcomes"] == []
     assert (
         inventory["market_history"]["money_liquidity"]["catalogue_semantic_sha256"]
         == money_liquidity_catalogue_sha256()
@@ -572,6 +574,8 @@ def test_inventory_reports_structured_coverage_and_evidence_without_mutating(tmp
     assert inventory["reports"]["page_count"] == 1
     assert inventory["reports"]["claim_count"] == 1
     assert inventory["reports"]["citation_count"] == 1
+    assert inventory["reports"]["review_count"] == 0
+    assert inventory["reports"]["review_outcomes"] == []
     assert inventory["reports"]["documents"] == [
         {
             "publisher": "Sveriges Riksbank",

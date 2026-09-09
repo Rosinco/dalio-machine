@@ -42,6 +42,21 @@ The content-addressed copies follow
 where the prefix is the first 16 characters of the full packet SHA-256. The
 current packet is `report_claims_2026-09-09_20c687f1cb907c71.{json,md}`.
 
+Blank human decision sheets use the separate Windows path pattern
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\report_decisions_YYYY-MM-DD_<packet-hash-prefix>.json`.
+They are editable local work sheets, not evidence. Reviewer identity and review
+time are deliberately absent from the file and are supplied only at the later
+interactive write boundary.
+
+The current untouched sheet is
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\report_decisions_2026-09-09_20c687f1cb907c71.json`
+(file SHA-256 `cb88e5f1676386fe99edf261b5d0522197efd6664ee7206664df2e7be7ce9780`):
+all twenty outcomes and attestations are still null. Its canonical semantic
+decision SHA-256 is
+`5c15b3d6afa58b3055f4b868a754ba8688e9a867ad1d02c6a49d56f145e7f2b8`;
+that fingerprint changes when verdict content changes and is what `apply` asks
+the operator to confirm.
+
 The durable liquidity-frontier artifact root is:
 
 `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\artifacts\liquidity_frontier`
@@ -58,9 +73,24 @@ The verified post-frontier database backup is:
 
 `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\backups\dalio-after-liquidity-frontier-2026-09-08.db`
 
-## Validated refresh inventory (2026-09-08)
+The SQLite-native backup made immediately before installing the empty human
+review ledger is:
 
-The counts below are from the fully validated live `dalio.db` after promotion.
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\backups\dalio-before-report-decision-schema-2026-09-09.db`
+
+It preserves the pre-schema source state whose database-file SHA-256 was
+`4f9b2110d51a140d98695bd25692a4c7f3240e902496791ad3d67c745df080fb`.
+SQLite's native backup can repack pages, so its own bytes differ; it passed
+row-by-row schema/content, integrity and foreign-key verification and has
+backup-file SHA-256
+`04ee92e5b8eae30401e7a9466b28e5c9f82c8fe13434cad0629ace0006c7b0b4`.
+The live database after adding only the empty immutable table and its guards is
+SHA-256 `e483fe67b35a07d2d3ad031c3c6ad2fe8462a1baf64a48731f61126c255bcc74`.
+
+## Validated refresh inventory (2026-09-09)
+
+The counts below are from the fully validated live `dalio.db` after installing
+the empty report-decision ledger. No review or claim rows were added.
 Run the read-only inventory commands below to reproduce the inventory.
 
 | Evidence | Stored coverage |
@@ -75,6 +105,7 @@ Run the read-only inventory commands below to reproduce the inventory.
 | AP2/AP3/AP4 allocator disclosures | 48 current facts |
 | Official institutional reports | 10 documents; 852 extracted pages; 0 verified claims |
 | Report review queue | 5 latest documents; 20 unverified model drafts; 0 promoted claims |
+| Human report decisions | 0 decisions; 0 verified claims; blank review only |
 | World Bank monthly commodity history | 63,179 rows; 70 prices + 17 indices; 1960-01–2026-08 |
 | Official-money history | 5,794 rows; 10/10 pinned native series |
 | Separate liquidity frontier | 20,676 rows; 22/22 series (3 BIS + 19 OFR) |
@@ -104,7 +135,7 @@ dalio-audit-observatory --db data/dalio.db --json
 | `artifacts/liquidity_frontier/` | Content-addressed BIS/OFR responses, provider semantic catalogues and OFR per-series payload/missingness ledgers | Durable release evidence; paths and full hashes are bound in `data_release_artifacts` and rechecked by inventory |
 | `cache/` | HTTP response cache used to reduce repeated source calls | Disposable, but a fresh rebuild then depends on the upstream source still serving the data |
 | `snapshots/` | Generated exports consumed by the dashboard or downstream tools, including fixed `liquidity_latest.{json,md}` aliases and hash-addressed `liquidity_YYYY-MM-DD_<snapshot-hash-prefix>.{json,md}` copies | Regenerable from the database and versioned calculation code; not source evidence |
-| `review/` | Generated `report_claims_latest.{json,md}` review aliases and hash-addressed packet copies | Regenerable, unverified review material; never source evidence or database truth |
+| `review/` | Generated report packets plus blank/editable packet-hash-bound human decision sheets | Regenerable or local review material; never source evidence or database truth before interactive application |
 | `backups/` | Deliberate local database safety copies | Preserve until their replacement has been verified |
 
 ## Evidence shapes
@@ -226,12 +257,69 @@ SHA-256. The `review/` directory is ignored as generated output. Packets are
 derivatives for human inspection, not preserved source artifacts, verified
 claims, scores or scenario inputs.
 
-The packet builder itself is database-read-only. A separate write path
-must require a real, named human to choose `approve`, `revise` or `reject`.
-Approval creates a verified record only after semantic review; revision retains
-the original model draft and creates review lineage; rejection retains the
-decision and creates no verified claim. Models cannot choose an outcome, supply
-a human identity or approve their own drafts.
+The packet builder itself remains database-read-only. ADR 0011 adds the separate
+`dalio-report-review` workflow. `prepare` writes a blank packet-bound decision
+sheet; `check` rebuilds and re-hashes every source input; and `status` compares
+file progress with the append-only review ledger. Those three operations do not
+write the database.
+
+The CLI `apply` path accepts only a complete twenty-item sheet from a TTY. It
+displays the outcome counts and every candidate-to-outcome assignment, then
+prompts the operator for a `human:<id>` identity and requires the canonical
+full-decision SHA-256 to be typed. It then makes an
+exact verified SQLite backup under `backups/`, repeats validation and commits
+the whole batch atomically. Approval creates a verified successor; revision
+retains the original model draft, adds a human-authored replacement and verifies
+that replacement; rejection retains the review and creates no verified claim.
+The local identity is explicit attribution, not cryptographic authentication.
+Models may create the blank template but may not fill decisions, provide the
+identity, confirm the hash or run `apply`.
+
+Before making that backup, a database-read-only preflight checks the immutable
+review ledger. An exact replay returns the existing receipt without another
+backup or database write; a partial or conflicting review also fails before a
+backup. The write transaction repeats the same check for race safety.
+
+For each completed entry, replace all four null attestations with explicit
+booleans and add a short `review_note`. Use these exact shapes:
+
+- `approve`: all four attestations `true`; `reason_code` and `revision` stay
+  null.
+- `revise`: all four attestations describe the final wording and are `true`;
+  supply a complete non-identical semantic `revision` and one of
+  `unsupported`, `misattributed`, `wrong_type`, `wrong_scope`,
+  `wrong_period_or_unit`, `missing_condition`, `not_material`, `duplicate` or
+  `other` as `reason_code`. Document, extraction and citations cannot change.
+- `reject`: at least one attestation is `false`, the same bounded reason-code
+  set and a note are required, and `revision` stays null.
+
+If the evidence page or excerpt itself must change, reject the item and create a
+new checked candidate instead of editing provenance in the decision sheet.
+
+For `revise`, replace the entry's null value with an object containing exactly
+these fields. Copy the unchanged semantics from the paired
+`report_claims_...json` packet and edit only what the human reviewer means to
+correct; dates are ISO `YYYY-MM-DD` strings or null, and numeric fields are
+finite JSON numbers or null:
+
+```json
+"revision": {
+  "claim_type": "forecast",
+  "statement": "Complete corrected statement.",
+  "topic_key": "monetary_policy",
+  "geographies": ["SE"],
+  "claim_series_key": null,
+  "reference_start": null,
+  "reference_end": null,
+  "target_start": "2027-01-01",
+  "target_end": "2027-12-31",
+  "numeric_value": null,
+  "lower_bound": null,
+  "upper_bound": null,
+  "unit": null,
+  "condition_text": "Publisher-stated condition, or null"
+}
+```
 
 ## Derived liquidity diagnostics
 
@@ -316,6 +404,7 @@ python -m dalio.pipelines.fetch_shadow_liquidity
 python scripts/audit_observatory.py --db data/dalio.db
 dalio-liquidity-brief --db data/dalio.db
 dalio-report-review-packet --db data/dalio.db
+dalio-report-review prepare --db data/dalio.db
 ```
 
 The liquidity-brief command reads the database in SQLite read-only mode and
@@ -335,11 +424,26 @@ one another. The fixed `latest` aliases do move on each successful run. The
 immutable input releases and source artifacts remain the source-evidence audit
 record.
 
-The report-review command is also read-only. It validates the checked candidate
-catalogue against the latest eligible documents, archived PDF bytes, complete
-extractions and exact page excerpts before refreshing the fixed and hash-addressed
-files under `data/review/`. Its public-information cutoff is versioned in the
-catalogue rather than inferred from the run time.
+The `dalio-report-review-packet` command is database-read-only. It validates the
+checked candidate catalogue against the latest eligible documents, archived PDF
+bytes, complete extractions and exact page excerpts before refreshing the fixed
+and hash-addressed files under `data/review/`. Its public-information cutoff is
+versioned in the catalogue rather than inferred from the run time.
+
+After `prepare`, open the printed Windows path and complete all four
+attestations plus one outcome for every candidate. Check and inspect progress
+without writes:
+
+```bash
+dalio-report-review check --db data/dalio.db --decisions data/review/report_decisions_YYYY-MM-DD_PACKETHASH.json
+dalio-report-review status --db data/dalio.db --decisions data/review/report_decisions_YYYY-MM-DD_PACKETHASH.json
+```
+
+Only the actual human reviewer should then run `dalio-report-review apply` with
+the same `--decisions` path. The CLI refuses non-TTY invocation and absent
+candidates. The TTY check is operator confirmation, not identity authentication;
+the prohibition against model or automated review is an explicit operating
+policy. Do not ask a model to complete or apply the sheet.
 
 `fetch_commodities --allow-contraction`,
 `fetch_money_liquidity --allow-contraction` and
@@ -371,7 +475,8 @@ deterministic input layout.
 - None of the 852 report pages has yet become a named, human-verified atomic
   claim, so central-bank/IMF/BIS conclusions do not yet feed risk analysis. The
   bounded 20-item review packet has shipped, but every item remains an
-  `UNVERIFIED MODEL DRAFT` and the human decision path has not shipped.
+  `UNVERIFIED MODEL DRAFT`. The guarded decision path has shipped, but no human
+  has completed or applied the sheet.
 - AP2/AP3/AP4 currently provide one H1 2026 disclosure release each, not a
   comparable long-run allocator history; other pension and sovereign funds are
   absent.

@@ -32,6 +32,7 @@ from dalio.storage.db import (
     ClaimCitation,
     DocumentExtraction,
     DocumentPage,
+    ReportCandidateReview,
     ReportDocument,
 )
 
@@ -725,6 +726,79 @@ def _validate_claim_draft(
     return attribution, evidence, available_at
 
 
+def _append_claims(
+    session: Session,
+    drafts: Sequence[ClaimDraft],
+    *,
+    created_by: str,
+    created_at: datetime | None = None,
+) -> list[int]:
+    """Flush valid claim drafts and citations without owning the transaction."""
+    creator = _actor(created_by, "created_by")
+    proposed_at = _utc_naive(created_at or datetime.now(UTC))
+    ids: list[int] = []
+    for draft in drafts:
+        _attribution, evidence, available_at = _validate_claim_draft(
+            session, draft, created_at=proposed_at
+        )
+        claim = Claim(
+            claim_type=draft.claim_type,
+            statement=draft.statement.strip(),
+            attribution_document_id=draft.attribution_document_id,
+            claim_series_key=(draft.claim_series_key.strip() if draft.claim_series_key else None),
+            topic_key=draft.topic_key.strip(),
+            geographies_json=json.dumps(
+                list(dict.fromkeys(geography.strip() for geography in draft.geographies)),
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ),
+            reference_start=draft.reference_start,
+            reference_end=draft.reference_end,
+            target_start=draft.target_start,
+            target_end=draft.target_end,
+            numeric_value=draft.numeric_value,
+            lower_bound=draft.lower_bound,
+            upper_bound=draft.upper_bound,
+            unit=draft.unit.strip() if draft.unit else None,
+            condition_text=draft.condition_text.strip() if draft.condition_text else None,
+            reasoning=draft.reasoning.strip() if draft.reasoning else None,
+            status="draft",
+            available_at=available_at,
+            created_by=creator,
+            created_at=proposed_at,
+            reviewed_by=None,
+            reviewed_at=None,
+            review_of_claim_id=None,
+            supersedes_claim_id=draft.supersedes_claim_id,
+        )
+        session.add(claim)
+        session.flush()
+        for item in evidence:
+            session.add(
+                ClaimCitation(
+                    claim_id=claim.id,
+                    extraction_id=item.extraction.id,
+                    pdf_page_start=item.draft.pdf_page_start,
+                    pdf_page_end=item.draft.pdf_page_end,
+                    printed_locator=(
+                        item.draft.printed_locator.strip() if item.draft.printed_locator else None
+                    ),
+                    section_title=(
+                        item.draft.section_title.strip() if item.draft.section_title else None
+                    ),
+                    evidence_excerpt=item.excerpt,
+                    excerpt_sha256=item.excerpt_sha256,
+                    support_role=item.draft.support_role,
+                    locator_verified_at=proposed_at,
+                    semantic_verified_by=None,
+                    semantic_verified_at=None,
+                )
+            )
+        session.flush()
+        ids.append(claim.id)
+    return ids
+
+
 def propose_claims(
     session: Session,
     drafts: Sequence[ClaimDraft],
@@ -735,71 +809,13 @@ def propose_claims(
     """Append structurally valid claim drafts and mechanically located citations."""
     creator = _actor(created_by, "created_by")
     proposed_at = _utc_naive(created_at or datetime.now(UTC))
-    ids: list[int] = []
     try:
-        for draft in drafts:
-            _attribution, evidence, available_at = _validate_claim_draft(
-                session, draft, created_at=proposed_at
-            )
-            claim = Claim(
-                claim_type=draft.claim_type,
-                statement=draft.statement.strip(),
-                attribution_document_id=draft.attribution_document_id,
-                claim_series_key=(
-                    draft.claim_series_key.strip() if draft.claim_series_key else None
-                ),
-                topic_key=draft.topic_key.strip(),
-                geographies_json=json.dumps(
-                    list(dict.fromkeys(geography.strip() for geography in draft.geographies)),
-                    ensure_ascii=False,
-                    separators=(",", ":"),
-                ),
-                reference_start=draft.reference_start,
-                reference_end=draft.reference_end,
-                target_start=draft.target_start,
-                target_end=draft.target_end,
-                numeric_value=draft.numeric_value,
-                lower_bound=draft.lower_bound,
-                upper_bound=draft.upper_bound,
-                unit=draft.unit.strip() if draft.unit else None,
-                condition_text=draft.condition_text.strip() if draft.condition_text else None,
-                reasoning=draft.reasoning.strip() if draft.reasoning else None,
-                status="draft",
-                available_at=available_at,
-                created_by=creator,
-                created_at=proposed_at,
-                reviewed_by=None,
-                reviewed_at=None,
-                review_of_claim_id=None,
-                supersedes_claim_id=draft.supersedes_claim_id,
-            )
-            session.add(claim)
-            session.flush()
-            for item in evidence:
-                session.add(
-                    ClaimCitation(
-                        claim_id=claim.id,
-                        extraction_id=item.extraction.id,
-                        pdf_page_start=item.draft.pdf_page_start,
-                        pdf_page_end=item.draft.pdf_page_end,
-                        printed_locator=(
-                            item.draft.printed_locator.strip()
-                            if item.draft.printed_locator
-                            else None
-                        ),
-                        section_title=(
-                            item.draft.section_title.strip() if item.draft.section_title else None
-                        ),
-                        evidence_excerpt=item.excerpt,
-                        excerpt_sha256=item.excerpt_sha256,
-                        support_role=item.draft.support_role,
-                        locator_verified_at=proposed_at,
-                        semantic_verified_by=None,
-                        semantic_verified_at=None,
-                    )
-                )
-            session.flush()
-            ids.append(claim.id)
+        ids = _append_claims(
+            session,
+            drafts,
+            created_by=creator,
+            created_at=proposed_at,
+        )
         session.commit()
     except Exception:
         session.rollback()
@@ -834,14 +850,18 @@ def _citation_document(session: Session, citation: ClaimCitation) -> ReportDocum
     return _citation_resolution(session, citation)[1]
 
 
-def verify_claim(
+def _append_verified_claim(
     session: Session,
     claim_id: int,
     *,
     reviewer: str,
     reviewed_at: datetime | None = None,
-) -> int:
-    """Append a human-reviewed successor to a draft; never mutate the draft."""
+) -> tuple[int, bool]:
+    """Flush a reviewed successor without owning the transaction.
+
+    The boolean is false when a prior verified successor makes the operation
+    idempotent. This lets the public wrapper retain its no-commit fast path.
+    """
     reviewer_name = _actor(reviewer, "reviewer", human_only=True)
     checked_at = _utc_naive(reviewed_at or datetime.now(UTC))
     draft = session.get(Claim, claim_id)
@@ -858,8 +878,34 @@ def verify_claim(
             Claim.status == "verified",
         )
     ).scalar_one_or_none()
+    original_review = session.execute(
+        select(ReportCandidateReview).where(
+            ReportCandidateReview.original_draft_claim_id == draft.id
+        )
+    ).scalar_one_or_none()
+    revision_review = session.execute(
+        select(ReportCandidateReview).where(
+            ReportCandidateReview.revised_draft_claim_id == draft.id
+        )
+    ).scalar_one_or_none()
+    if original_review is not None and revision_review is not None:
+        raise ValueError("claim has conflicting terminal report-review roles")
+    if original_review is not None:
+        if original_review.outcome != "approve":
+            raise ValueError("terminal report review does not permit verifying this original draft")
+        if existing is None or original_review.verified_claim_id != existing.id:
+            raise ValueError("approved report review has inconsistent verified-claim lineage")
+        return existing.id, False
+    if revision_review is not None:
+        if (
+            revision_review.outcome != "revise"
+            or existing is None
+            or revision_review.verified_claim_id != existing.id
+        ):
+            raise ValueError("revised report review has inconsistent verified-claim lineage")
+        return existing.id, False
     if existing is not None:
-        return existing.id
+        return existing.id, False
     if draft.supersedes_claim_id is not None:
         competing = session.execute(
             select(Claim).where(
@@ -902,58 +948,78 @@ def verify_claim(
             )
         available_at = draft.available_at
 
-    try:
-        verified = Claim(
-            claim_type=draft.claim_type,
-            statement=draft.statement,
-            attribution_document_id=draft.attribution_document_id,
-            claim_series_key=draft.claim_series_key,
-            topic_key=draft.topic_key,
-            geographies_json=draft.geographies_json,
-            reference_start=draft.reference_start,
-            reference_end=draft.reference_end,
-            target_start=draft.target_start,
-            target_end=draft.target_end,
-            numeric_value=draft.numeric_value,
-            lower_bound=draft.lower_bound,
-            upper_bound=draft.upper_bound,
-            unit=draft.unit,
-            condition_text=draft.condition_text,
-            reasoning=draft.reasoning,
-            status="verified",
-            available_at=available_at,
-            created_by=draft.created_by,
-            created_at=checked_at,
-            reviewed_by=reviewer_name,
-            reviewed_at=checked_at,
-            review_of_claim_id=draft.id,
-            supersedes_claim_id=draft.supersedes_claim_id,
-        )
-        session.add(verified)
-        session.flush()
-        for citation in citations:
-            session.add(
-                ClaimCitation(
-                    claim_id=verified.id,
-                    extraction_id=citation.extraction_id,
-                    pdf_page_start=citation.pdf_page_start,
-                    pdf_page_end=citation.pdf_page_end,
-                    printed_locator=citation.printed_locator,
-                    section_title=citation.section_title,
-                    evidence_excerpt=citation.evidence_excerpt,
-                    excerpt_sha256=citation.excerpt_sha256,
-                    support_role=citation.support_role,
-                    locator_verified_at=citation.locator_verified_at,
-                    semantic_verified_by=reviewer_name,
-                    semantic_verified_at=checked_at,
-                )
+    verified = Claim(
+        claim_type=draft.claim_type,
+        statement=draft.statement,
+        attribution_document_id=draft.attribution_document_id,
+        claim_series_key=draft.claim_series_key,
+        topic_key=draft.topic_key,
+        geographies_json=draft.geographies_json,
+        reference_start=draft.reference_start,
+        reference_end=draft.reference_end,
+        target_start=draft.target_start,
+        target_end=draft.target_end,
+        numeric_value=draft.numeric_value,
+        lower_bound=draft.lower_bound,
+        upper_bound=draft.upper_bound,
+        unit=draft.unit,
+        condition_text=draft.condition_text,
+        reasoning=draft.reasoning,
+        status="verified",
+        available_at=available_at,
+        created_by=draft.created_by,
+        created_at=checked_at,
+        reviewed_by=reviewer_name,
+        reviewed_at=checked_at,
+        review_of_claim_id=draft.id,
+        supersedes_claim_id=draft.supersedes_claim_id,
+    )
+    session.add(verified)
+    session.flush()
+    for citation in citations:
+        session.add(
+            ClaimCitation(
+                claim_id=verified.id,
+                extraction_id=citation.extraction_id,
+                pdf_page_start=citation.pdf_page_start,
+                pdf_page_end=citation.pdf_page_end,
+                printed_locator=citation.printed_locator,
+                section_title=citation.section_title,
+                evidence_excerpt=citation.evidence_excerpt,
+                excerpt_sha256=citation.excerpt_sha256,
+                support_role=citation.support_role,
+                locator_verified_at=citation.locator_verified_at,
+                semantic_verified_by=reviewer_name,
+                semantic_verified_at=checked_at,
             )
-        session.flush()
-        session.commit()
+        )
+    session.flush()
+    return verified.id, True
+
+
+def verify_claim(
+    session: Session,
+    claim_id: int,
+    *,
+    reviewer: str,
+    reviewed_at: datetime | None = None,
+) -> int:
+    """Append a human-reviewed successor to a draft; never mutate the draft."""
+    reviewer_name = _actor(reviewer, "reviewer", human_only=True)
+    checked_at = _utc_naive(reviewed_at or datetime.now(UTC))
+    try:
+        verified_id, created = _append_verified_claim(
+            session,
+            claim_id,
+            reviewer=reviewer_name,
+            reviewed_at=checked_at,
+        )
+        if created:
+            session.commit()
     except Exception:
         session.rollback()
         raise
-    return verified.id
+    return verified_id
 
 
 def load_claims(

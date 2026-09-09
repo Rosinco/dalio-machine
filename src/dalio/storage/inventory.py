@@ -86,6 +86,7 @@ _EXPECTED_TABLES = (
     "document_pages",
     "observations",
     "release_observations",
+    "report_candidate_reviews",
     "report_documents",
 )
 
@@ -1799,6 +1800,7 @@ def _reports_inventory(
     pages = tables.get("document_pages")
     claims = tables.get("claims")
     citations = tables.get("claim_citations")
+    reviews = tables.get("report_candidate_reviews")
     document_groups: list[dict[str, Any]] = []
     if documents is not None:
         document_groups = _execute_rows(
@@ -1831,10 +1833,12 @@ def _reports_inventory(
         "page_count": _count(connection, pages),
         "claim_count": _count(connection, claims),
         "citation_count": _count(connection, citations),
+        "review_count": _count(connection, reviews),
         "documents": document_groups,
         "extraction_statuses": counts_by(extractions, "status"),
         "claim_statuses": counts_by(claims, "status"),
         "claim_types": counts_by(claims, "claim_type"),
+        "review_outcomes": counts_by(reviews, "outcome"),
     }
 
 
@@ -2161,7 +2165,8 @@ def render_inventory_summary(inventory: dict[str, Any]) -> str:
             f"Allocator disclosures: {count_text(allocators['current_row_count'])} current rows",
             f"Report evidence: {count_text(reports['document_count'])} documents; "
             f"{count_text(reports['page_count'])} pages; "
-            f"{count_text(reports['claim_count'])} claims",
+            f"{count_text(reports['claim_count'])} claims; "
+            f"{count_text(reports['review_count'])} human decisions",
             position_line,
             f"Commodity history: {commodities['ready_series']}/"
             f"{commodities['expected_series']} expected series ready; "
