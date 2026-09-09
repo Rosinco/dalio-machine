@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 from sqlalchemy import insert, select
+from sqlalchemy.exc import IntegrityError
 
 from dalio.communications.catalogue import (
     COMMUNICATION_CATALOGUE_SHA256,
@@ -53,6 +54,7 @@ from dalio.storage import inventory as inventory_module
 from dalio.storage.communications import (
     CommunicationArtifactMeta,
     CommunicationEventMeta,
+    CommunicationSectionScopeMeta,
     record_communication_artifact_metadata,
 )
 from dalio.storage.db import (
@@ -62,6 +64,7 @@ from dalio.storage.db import (
     CommunicationArtifact,
     CommunicationArtifactContent,
     CommunicationArtifactRetrieval,
+    CommunicationArtifactSectionScopeSet,
     CommunicationEvent,
     CommunicationExtraction,
     CommunicationExtractionFinalization,
@@ -232,6 +235,8 @@ def _insert_communication_corpus(
     finalize: bool,
     valid_text_hash: bool = True,
     valid_corpus_hash: bool = True,
+    segment_kind: str = "letter",
+    speaker_side: str = "publisher",
 ) -> Path:
     catalogue_sha256 = "a" * 64
     source_id = "test_bank_letters"
@@ -317,6 +322,16 @@ def _insert_communication_corpus(
     artifact_retrieved_at = datetime(2026, 1, 4)
     artifact_known_at = datetime(2026, 1, 4)
     artifact_url = "https://example.test/letters/2025.txt"
+    section_scope = {
+        "section_ordinal": 1,
+        "scope_key": "ceo_letter",
+        "artifact_role": "ceo_letter",
+        "material_type": "ceo_letter",
+        "origin_type": "publisher_authored",
+        "provenance_tier": "official_authored_text",
+        "transcriber": None,
+        "transcriber_attribution": "not_applicable",
+    }
     artifact_semantic = {
         "event_version_sha256": event_sha256,
         "source_id": source_id,
@@ -339,6 +354,7 @@ def _insert_communication_corpus(
         "transcriber_attribution": "not_applicable",
         "published_at": artifact_published_at.isoformat(),
         "available_at": artifact_available_at.isoformat(),
+        "section_scopes": [section_scope],
         "landing_url": landing_url,
         "artifact_url": artifact_url,
     }
@@ -355,10 +371,11 @@ def _insert_communication_corpus(
     segment_text = content_bytes.decode()
     segment = {
         "ordinal": 1,
-        "segment_kind": "letter",
+        "section_ordinal": 1,
+        "segment_kind": segment_kind,
         "speaker_name": "Test CEO",
         "speaker_role": "Chief Executive Officer",
-        "speaker_side": "publisher",
+        "speaker_side": speaker_side,
         "section_title": None,
         "text": segment_text,
         "page_start": 1,
@@ -370,7 +387,7 @@ def _insert_communication_corpus(
     }
     corpus_sha256 = _canonical_sha256(
         {
-            "canonicalization": "communication_segments_json_v1",
+            "canonicalization": "communication_segments_json_v2",
             "segments": [segment],
         }
     )
@@ -425,6 +442,34 @@ def _insert_communication_corpus(
                 artifact_version_sha256=artifact_sha256,
             )
         ).inserted_primary_key[0]
+        scopes_json = json.dumps(
+            [section_scope],
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        scope_set_sha256 = _canonical_sha256(
+            {
+                "artifact_version_sha256": artifact_sha256,
+                "canonicalization_version": (
+                    "communication_artifact_section_scopes_json_v1"
+                ),
+                "section_scopes": [section_scope],
+            }
+        )
+        connection.execute(
+            insert(CommunicationArtifactSectionScopeSet).values(
+                artifact_id=artifact_id,
+                artifact_version_sha256=artifact_sha256,
+                scope_count=1,
+                scopes_json=scopes_json,
+                scope_set_sha256=scope_set_sha256,
+                metadata_known_at=artifact_known_at,
+                canonicalization_version=(
+                    "communication_artifact_section_scopes_json_v1"
+                ),
+            )
+        )
         retrieval_id = connection.execute(
             insert(CommunicationArtifactRetrieval).values(
                 artifact_id=artifact_id,
@@ -475,10 +520,32 @@ def _insert_communication_corpus(
                     segment_count=1,
                     total_char_count=len(segment_text),
                     corpus_sha256=corpus_sha256 if valid_corpus_hash else "0" * 64,
-                    canonicalization_version="communication_segments_json_v1",
+                    canonicalization_version="communication_segments_json_v2",
                 )
             )
     return blob_path
+
+
+def _tamper_immutable_communication_row(
+    engine,
+    *,
+    table_name: str,
+    operation: str,
+    sql: str,
+) -> None:
+    trigger_name = f"{table_name}_reject_{operation}"
+    with engine.begin() as connection:
+        trigger_sql = connection.exec_driver_sql(
+            "SELECT sql FROM sqlite_master WHERE type = 'trigger' AND name = ?",
+            (trigger_name,),
+        ).scalar_one()
+        connection.exec_driver_sql(f"DROP TRIGGER {trigger_name}")
+        connection.exec_driver_sql("PRAGMA ignore_check_constraints=ON")
+        try:
+            connection.exec_driver_sql(sql)
+        finally:
+            connection.exec_driver_sql("PRAGMA ignore_check_constraints=OFF")
+            connection.exec_driver_sql(trigger_sql)
 
 
 def _insert_test_release_artifacts(
@@ -581,6 +648,9 @@ def test_empty_inventory_is_json_safe_and_distinguishes_absent_tables(tmp_path):
     assert communications["event_count"] == 0
     assert communications["event_version_count"] == 0
     assert communications["artifact_version_count"] == 0
+    assert communications["artifact_section_scope_set_count"] == 0
+    assert communications["declared_section_scope_count"] == 0
+    assert communications["multi_section_artifact_count"] == 0
     assert communications["artifact_retrieval_count"] == 0
     assert communications["artifact_content_count"] == 0
     assert communications["stored_content_artifact_count"] == 0
@@ -717,8 +787,98 @@ def test_current_catalogue_metadata_is_verified_but_not_text_ready(tmp_path):
     assert communications["untrusted_catalogue_hash_count"] == 0
     assert communications["event_version_sha256_mismatch_count"] == 0
     assert communications["artifact_version_sha256_mismatch_count"] == 0
+    assert communications["artifact_section_scope_set_count"] == 1
+    assert communications["missing_artifact_scope_set_count"] == 0
     assert communications["missing_base_artifact_retrieval_count"] == 0
     assert communications["artifact_content_count"] == 0
+    assert communications["integrity_status"] == "valid"
+    assert inventory["readiness"]["institutional_communications"] == "metadata_only"
+
+
+def test_communication_inventory_reports_one_capture_multi_section_scope(tmp_path):
+    engine = make_engine(tmp_path / "communications-multi-section.db")
+    init_db(engine)
+    source = next(
+        item
+        for item in COMMUNICATION_SOURCES
+        if item.source_id == "ecb_monetary_policy_press_conferences_en"
+    )
+    known_at = datetime(2026, 9, 9, tzinfo=UTC)
+    artifact_url = (
+        "https://www.ecb.europa.eu/press/press_conference/"
+        "monetary-policy-statement/2025/html/ecb.is250130~1f418aa0f4.en.html"
+    )
+    with make_session_factory(engine)() as session:
+        record_communication_artifact_metadata(
+            session,
+            CommunicationEventMeta(
+                organization_id="ecb",
+                event_key="ecb_2025_01_30",
+                event_type="monetary_policy_press_conference",
+                title="Monetary policy statement (with Q&A)",
+                event_date=date(2025, 1, 30),
+                metadata_known_at=known_at,
+            ),
+            CommunicationArtifactMeta(
+                source_id=source.source_id,
+                catalogue_sha256=COMMUNICATION_CATALOGUE_SHA256,
+                artifact_key="official_statement_with_q_and_a_en",
+                artifact_role="q_and_a_transcript",
+                material_type="questions_and_answers",
+                language="en",
+                translation_status="original",
+                mime_type="text/html",
+                origin_type="official_published_transcript",
+                provenance_tier="official_published_transcript",
+                host_organization=source.host_organization,
+                publisher=source.publisher,
+                transcriber=None,
+                transcriber_attribution="not_disclosed",
+                rights_status=source.rights_status,
+                acquisition_status=source.acquisition_status,
+                rights_checked_by="human:test_reviewer",
+                rights_checked_at=known_at,
+                available_at=known_at,
+                retrieved_at=known_at,
+                metadata_known_at=known_at,
+                landing_url=artifact_url,
+                artifact_url=artifact_url,
+            ),
+            section_scopes=(
+                CommunicationSectionScopeMeta(
+                    section_ordinal=1,
+                    scope_key="prepared_remarks",
+                    artifact_role="prepared_remarks",
+                    material_type="monetary_policy_statement",
+                    origin_type="publisher_authored",
+                    provenance_tier="official_authored_text",
+                    transcriber=None,
+                    transcriber_attribution="not_applicable",
+                ),
+                CommunicationSectionScopeMeta(
+                    section_ordinal=2,
+                    scope_key="q_and_a",
+                    artifact_role="q_and_a_transcript",
+                    material_type="questions_and_answers",
+                    origin_type="official_published_transcript",
+                    provenance_tier="official_published_transcript",
+                    transcriber=None,
+                    transcriber_attribution="not_disclosed",
+                ),
+            ),
+        )
+        session.commit()
+
+    inventory = build_observatory_inventory(engine)
+    communications = inventory["communications"]
+
+    assert communications["artifact_version_count"] == 1
+    assert communications["artifact_section_scope_set_count"] == 1
+    assert communications["declared_section_scope_count"] == 2
+    assert communications["multi_section_artifact_count"] == 1
+    assert communications["scope_set_semantic_mismatch_count"] == 0
+    assert communications["scope_set_sha256_mismatch_count"] == 0
+    assert communications["artifact_version_sha256_mismatch_count"] == 0
     assert communications["integrity_status"] == "valid"
     assert inventory["readiness"]["institutional_communications"] == "metadata_only"
 
@@ -757,6 +917,10 @@ def test_verified_finalized_communication_corpus_is_analysis_ready(tmp_path, mon
     assert communications["source_policy_snapshot_count"] == 1
     assert communications["event_version_sha256_mismatch_count"] == 0
     assert communications["artifact_version_sha256_mismatch_count"] == 0
+    assert communications["artifact_section_scope_set_count"] == 1
+    assert communications["declared_section_scope_count"] == 1
+    assert communications["multi_section_artifact_count"] == 0
+    assert communications["scope_set_sha256_mismatch_count"] == 0
     assert communications["policy_binding_mismatch_count"] == 0
     assert communications["artifact_retrieval_count"] == 1
     assert communications["missing_base_artifact_retrieval_count"] == 0
@@ -768,6 +932,8 @@ def test_verified_finalized_communication_corpus_is_analysis_ready(tmp_path, mon
     assert communications["finalized_segment_count"] == 1
     assert communications["segment_text_sha256_mismatch_count"] == 0
     assert communications["segment_char_count_mismatch_count"] == 0
+    assert communications["segment_section_binding_mismatch_count"] == 0
+    assert communications["finalized_section_coverage_mismatch_count"] == 0
     assert communications["corpus_sha256_mismatch_count"] == 0
     assert communications["integrity_status"] == "valid"
     assert inventory["readiness"]["institutional_communications"] == "available"
@@ -775,6 +941,251 @@ def test_verified_finalized_communication_corpus_is_analysis_ready(tmp_path, mon
     assert communications["transcript_semantic_fidelity_status"] == "not_verified"
     assert communications["extractor_execution_trust_status"] == "not_verified"
     assert "do not prove transcript semantic fidelity" in communications["integrity_assurance_note"]
+
+
+def test_communication_inventory_rejects_scope_clock_after_retrieval_and_capture(
+    tmp_path,
+    monkeypatch,
+):
+    _trust_test_communication_catalogue(monkeypatch)
+    engine = make_engine(tmp_path / "communications-scope-clock.db")
+    init_db(engine)
+    _insert_communication_corpus(engine, finalize=True)
+    _tamper_immutable_communication_row(
+        engine,
+        table_name="communication_artifact_section_scope_sets",
+        operation="update",
+        sql=(
+            "UPDATE communication_artifact_section_scope_sets "
+            "SET metadata_known_at = '2030-01-01 00:00:00.000000'"
+        ),
+    )
+
+    inventory = build_observatory_inventory(engine)
+    communications = inventory["communications"]
+
+    assert communications["communication_clock_mismatch_count"] == 2
+    assert communications["artifact_retrieval_mismatch_count"] == 1
+    assert communications["content_retrieval_binding_mismatch_count"] == 1
+    assert communications["valid_finalized_extraction_count"] == 0
+    assert "communication_clocks" in communications["integrity_failures"]
+    assert communications["integrity_status"] == "invalid"
+    assert inventory["readiness"]["institutional_communications"] == "invalid"
+
+
+def test_communication_corpus_v2_hash_binds_section_ordinal():
+    segment = {
+        "ordinal": 1,
+        "section_ordinal": 1,
+        "segment_kind": "narrative",
+        "speaker_name": None,
+        "speaker_role": None,
+        "speaker_side": "unknown",
+        "section_title": None,
+        "text": "same text",
+        "page_start": None,
+        "page_end": None,
+        "paragraph_start": None,
+        "paragraph_end": None,
+        "start_ms": None,
+        "end_ms": None,
+    }
+    moved = {**segment, "section_ordinal": 2}
+
+    assert inventory_module._communication_corpus_sha256(
+        [segment], "communication_segments_json_v2"
+    ) != inventory_module._communication_corpus_sha256(
+        [moved], "communication_segments_json_v2"
+    )
+    assert inventory_module._communication_corpus_sha256(
+        [segment], "communication_segments_json_v1"
+    ) == inventory_module._communication_corpus_sha256(
+        [moved], "communication_segments_json_v1"
+    )
+
+
+def test_communication_inventory_rejects_missing_scope_declaration(tmp_path, monkeypatch):
+    _trust_test_communication_catalogue(monkeypatch)
+    engine = make_engine(tmp_path / "communications-missing-scope.db")
+    init_db(engine)
+    _insert_communication_corpus(engine, finalize=False)
+    _tamper_immutable_communication_row(
+        engine,
+        table_name="communication_artifact_section_scope_sets",
+        operation="delete",
+        sql="DELETE FROM communication_artifact_section_scope_sets",
+    )
+
+    inventory = build_observatory_inventory(engine)
+    communications = inventory["communications"]
+
+    assert communications["artifact_section_scope_set_count"] == 0
+    assert communications["missing_artifact_scope_set_count"] == 1
+    assert "missing_artifact_scope_set" in communications["integrity_failures"]
+    assert communications["integrity_status"] == "invalid"
+    assert inventory["readiness"]["institutional_communications"] == "invalid"
+
+
+def test_communication_inventory_rejects_malformed_scope_json(tmp_path, monkeypatch):
+    _trust_test_communication_catalogue(monkeypatch)
+    engine = make_engine(tmp_path / "communications-malformed-scope.db")
+    init_db(engine)
+    _insert_communication_corpus(engine, finalize=False)
+    _tamper_immutable_communication_row(
+        engine,
+        table_name="communication_artifact_section_scope_sets",
+        operation="update",
+        sql=(
+            "UPDATE communication_artifact_section_scope_sets "
+            "SET scopes_json = 'not-json'"
+        ),
+    )
+
+    inventory = build_observatory_inventory(engine)
+    communications = inventory["communications"]
+
+    assert communications["scope_set_json_malformed_count"] == 1
+    assert "scope_set_json" in communications["integrity_failures"]
+    assert communications["integrity_status"] == "invalid"
+    assert inventory["readiness"]["institutional_communications"] == "invalid"
+
+
+def test_communication_inventory_rejects_invalid_segment_scope_binding(
+    tmp_path,
+    monkeypatch,
+):
+    _trust_test_communication_catalogue(monkeypatch)
+    engine = make_engine(tmp_path / "communications-bad-segment-scope.db")
+    init_db(engine)
+    _insert_communication_corpus(engine, finalize=False)
+    _tamper_immutable_communication_row(
+        engine,
+        table_name="communication_segments",
+        operation="update",
+        sql="UPDATE communication_segments SET section_ordinal = 2",
+    )
+
+    inventory = build_observatory_inventory(engine)
+    communications = inventory["communications"]
+
+    assert communications["segment_section_binding_mismatch_count"] == 1
+    assert "segment_section_binding" in communications["integrity_failures"]
+    assert communications["integrity_status"] == "invalid"
+    assert inventory["readiness"]["institutional_communications"] == "invalid"
+
+
+def test_communication_scope_rejects_incompatible_segment_kind(tmp_path, monkeypatch):
+    _trust_test_communication_catalogue(monkeypatch)
+    engine = make_engine(tmp_path / "communications-scope-kind-trigger.db")
+    init_db(engine)
+
+    with pytest.raises(IntegrityError, match="artifact section scopes"):
+        _insert_communication_corpus(
+            engine,
+            finalize=False,
+            segment_kind="q_and_a_question",
+            speaker_side="external",
+        )
+
+
+def test_communication_inventory_detects_tampered_segment_kind_scope(
+    tmp_path,
+    monkeypatch,
+):
+    _trust_test_communication_catalogue(monkeypatch)
+    engine = make_engine(tmp_path / "communications-scope-kind-inventory.db")
+    init_db(engine)
+    _insert_communication_corpus(engine, finalize=True)
+    _tamper_immutable_communication_row(
+        engine,
+        table_name="communication_segments",
+        operation="update",
+        sql=(
+            "UPDATE communication_segments "
+            "SET segment_kind = 'q_and_a_question', speaker_side = 'external'"
+        ),
+    )
+
+    inventory = build_observatory_inventory(engine)
+    communications = inventory["communications"]
+
+    assert communications["segment_section_binding_mismatch_count"] == 1
+    assert communications["valid_finalized_extraction_count"] == 0
+    assert "segment_section_binding" in communications["integrity_failures"]
+    assert inventory["readiness"]["institutional_communications"] == "invalid"
+
+
+def test_communication_inventory_detects_tampered_segment_speaker_semantics(
+    tmp_path,
+    monkeypatch,
+):
+    _trust_test_communication_catalogue(monkeypatch)
+    engine = make_engine(tmp_path / "communications-segment-speaker.db")
+    init_db(engine)
+    _insert_communication_corpus(engine, finalize=True)
+    _tamper_immutable_communication_row(
+        engine,
+        table_name="communication_segments",
+        operation="update",
+        sql="UPDATE communication_segments SET speaker_side = 'external'",
+    )
+    with engine.connect() as connection:
+        segment = dict(
+            connection.execute(
+                select(
+                    *(
+                        getattr(CommunicationSegment, field)
+                        for field in inventory_module._COMMUNICATION_CANONICAL_SEGMENT_FIELDS_V2
+                    )
+                )
+            ).mappings().one()
+        )
+    corpus_sha256 = inventory_module._communication_corpus_sha256(
+        [segment],
+        "communication_segments_json_v2",
+    )
+    _tamper_immutable_communication_row(
+        engine,
+        table_name="communication_extraction_finalizations",
+        operation="update",
+        sql=(
+            "UPDATE communication_extraction_finalizations "
+            f"SET corpus_sha256 = '{corpus_sha256}'"
+        ),
+    )
+
+    inventory = build_observatory_inventory(engine)
+    communications = inventory["communications"]
+
+    assert communications["segment_semantic_mismatch_count"] == 1
+    assert communications["corpus_sha256_mismatch_count"] == 0
+    assert communications["valid_finalized_extraction_count"] == 0
+    assert "segment_semantics" in communications["integrity_failures"]
+    assert inventory["readiness"]["institutional_communications"] == "invalid"
+
+
+def test_communication_inventory_rejects_finalized_scope_without_substantive_text(
+    tmp_path,
+    monkeypatch,
+):
+    _trust_test_communication_catalogue(monkeypatch)
+    engine = make_engine(tmp_path / "communications-empty-finalized-scope.db")
+    init_db(engine)
+    _insert_communication_corpus(engine, finalize=True)
+    _tamper_immutable_communication_row(
+        engine,
+        table_name="communication_segments",
+        operation="update",
+        sql="UPDATE communication_segments SET segment_kind = 'heading'",
+    )
+
+    inventory = build_observatory_inventory(engine)
+    communications = inventory["communications"]
+
+    assert communications["finalized_section_semantic_mismatch_count"] == 1
+    assert "finalized_section_semantics" in communications["integrity_failures"]
+    assert communications["valid_finalized_extraction_count"] == 0
+    assert inventory["readiness"]["institutional_communications"] == "invalid"
 
 
 @pytest.mark.parametrize(

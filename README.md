@@ -224,12 +224,15 @@ pair under `data/review/`. It performs no network, database or source-content
 reads.
 
 Every output is labelled `UNVERIFIED RIGHTS REVIEW`, reports zero verified
-rights decisions and sets `content_capture_authorized=false`. The ECB page mixes
-prepared remarks and Q&A; its Q&A role is provisional until a one-capture,
-multi-section durable mapping exists. A named human must review each exact
-candidate and then-current terms before a separate acquisition step may archive
-bytes. See [ADR 0012](decisions/0012-institutional-communications-ledger.md) and
-[ADR 0013](decisions/0013-fed-ecb-communications-metadata-pilot.md).
+rights decisions and sets `content_capture_authorized=false`. The storage
+contract now maps one artifact version and one byte-capture lineage to an atomic ordered
+scope set, so the ECB page can retain separately attributed prepared remarks and
+Q&A without duplicate bytes. Extracted segments must resolve back to those
+declared scopes. No scope mapping grants acquisition rights: without a recorded
+clearance, the 16 candidates remain link metadata only and no source content may
+be archived. See [ADR 0012](decisions/0012-institutional-communications-ledger.md),
+[ADR 0013](decisions/0013-fed-ecb-communications-metadata-pilot.md) and
+[ADR 0014](decisions/0014-communication-section-scope-sets.md).
 
 ## Tests
 
@@ -258,4 +261,4 @@ Tier drives dashboard confidence labels — Tier 2 readings are flagged as such.
 
 ## Status
 
-Pre-alpha. The cycle and fundamentals product is working, and the raw-history foundation now includes sovereign-debt anatomy, Swedish debt holders, IMF financial-account transactions, 127,970 bilateral investment-position rows, three Swedish AP-fund disclosures, a ten-document official-report corpus, 63,179 monthly commodity observations, ten official-money histories and 22 separate shadow-liquidity histories. Read-only liquidity diagnostics, a 20-item report review queue, an append-only human decision gate and a 20-policy/18-organization institutional-communications schema foundation are available. A closed 2025 Fed/ECB pilot adds 16/16 exact first-party text links and an offline rights-review packet, but no source content or database communication rows. This is not a complete global money-flow map, a communications corpus, a universal M5, an additive liquidity total, a causal or deposit-flow model, or an investable commodity return history: all 20 report candidates still need named human review; every communication representation remains rights-gated; allocator history has only one H1 2026 release per fund; QPSD and IMF position coverage are voluntary and uneven; and debt cash-flow schedules, broader banking/funding channels and horizon risk scenarios remain to be built. See `project_context.md`, ADRs 0004–0013 and `data/README.md` for current boundaries.
+Pre-alpha. The cycle and fundamentals product is working, and the raw-history foundation now includes sovereign-debt anatomy, Swedish debt holders, IMF financial-account transactions, 127,970 bilateral investment-position rows, three Swedish AP-fund disclosures, a ten-document official-report corpus, 63,179 monthly commodity observations, ten official-money histories and 22 separate shadow-liquidity histories. Read-only liquidity diagnostics, a 20-item report review queue, an append-only human decision gate and a 20-policy/18-organization institutional-communications schema foundation are available. A closed 2025 Fed/ECB pilot adds 16/16 exact first-party text links, an offline rights-review packet and an ordered one-artifact/one-byte-lineage, multi-section storage contract, but no source content or database communication evidence rows. This is not a complete global money-flow map, a communications corpus, a universal M5, an additive liquidity total, a causal or deposit-flow model, or an investable commodity return history: all 20 report candidates still need named human review; every communication representation remains rights-gated; allocator history has only one H1 2026 release per fund; QPSD and IMF position coverage are voluntary and uneven; and debt cash-flow schedules, broader banking/funding channels and horizon risk scenarios remain to be built. See `project_context.md`, ADRs 0004–0014 and `data/README.md` for current boundaries.

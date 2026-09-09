@@ -10,7 +10,7 @@ import pytest
 
 from dalio.communications.pilot_manifest import load_pilot_manifest
 from dalio.communications.rights_review import (
-    ECB_MIXED_SECTION_BLOCKER,
+    ECB_MULTI_SECTION_MAPPING_NOTE,
     EXPECTED_AVAILABLE_CHOSEN_REPRESENTATION_COUNT,
     EXPECTED_EVENT_COUNT,
     UNVERIFIED_RIGHTS_REVIEW_LABEL,
@@ -56,7 +56,7 @@ def test_packet_is_deterministic_hash_bound_and_loudly_fail_closed(pilot_manifes
     )
     assert packet["available_chosen_representation_count"] == 16
     assert packet["packet_sha256"] == (
-        "61d94c907c50b7bb7198479dd00cf6d0b89d083e1cfbf5c2731d20863b8793d1"
+        "f841b5875835f9ef1d469c6484386b88d8f129fee72d1ff62e12cd59768cdd31"
     )
 
     without_self_hash = {key: value for key, value in packet.items() if key != "packet_sha256"}
@@ -83,6 +83,28 @@ def test_markdown_refuses_a_stale_or_malformed_packet_self_hash(pilot_manifest):
 
     packet["packet_sha256"] = "not-a-sha256"
     with pytest.raises(ValueError, match="full lowercase SHA-256"):
+        render_rights_review_markdown(packet)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("durable_metadata_blockers", ["stale"], "blockers must be empty"),
+        ("durable_metadata_notes", [], "notes have an invalid shape"),
+    ],
+)
+def test_markdown_refuses_self_consistent_invalid_durable_metadata_shape(
+    pilot_manifest,
+    field,
+    value,
+    message,
+):
+    packet = build_rights_review_packet(pilot_manifest)
+    packet[field] = value
+    packet.pop("packet_sha256")
+    packet["packet_sha256"] = rights_review_packet_sha256(packet)
+
+    with pytest.raises(ValueError, match=message):
         render_rights_review_markdown(packet)
 
 
@@ -137,28 +159,13 @@ def test_semantically_set_like_manifest_order_does_not_change_packet(pilot_manif
             replace(
                 denominator,
                 event_keys=tuple(reversed(denominator.event_keys)),
-                representation_spec=replace(
-                    denominator.representation_spec,
-                    section_coverage=tuple(
-                        reversed(denominator.representation_spec.section_coverage)
-                    ),
-                ),
                 rights_review=replace(
                     denominator.rights_review,
                     questions=tuple(reversed(denominator.rights_review.questions)),
                 ),
             )
         )
-    reordered_events = tuple(
-        replace(
-            event,
-            representation=replace(
-                event.representation,
-                section_coverage=tuple(reversed(event.representation.section_coverage)),
-            ),
-        )
-        for event in reversed(pilot_manifest.events)
-    )
+    reordered_events = tuple(reversed(pilot_manifest.events))
     reordered = replace(
         pilot_manifest,
         scope=replace(
@@ -171,24 +178,63 @@ def test_semantically_set_like_manifest_order_does_not_change_packet(pilot_manif
     assert build_rights_review_packet(reordered) == build_rights_review_packet(pilot_manifest)
 
 
+def test_section_scope_order_is_semantic(pilot_manifest):
+    ecb = next(
+        item for item in pilot_manifest.scope.organizations if item.organization_id == "ecb"
+    )
+    reordered_denominators = tuple(
+        replace(
+            item,
+            representation_spec=replace(
+                item.representation_spec,
+                section_coverage=tuple(reversed(item.representation_spec.section_coverage)),
+            ),
+        )
+        if item.organization_id == "ecb"
+        else item
+        for item in pilot_manifest.scope.organizations
+    )
+    reordered_events = tuple(
+        replace(
+            event,
+            representation=replace(
+                event.representation,
+                section_coverage=tuple(reversed(event.representation.section_coverage)),
+            ),
+        )
+        if event.organization_id == "ecb"
+        else event
+        for event in pilot_manifest.events
+    )
+    reordered = replace(
+        pilot_manifest,
+        scope=replace(pilot_manifest.scope, organizations=reordered_denominators),
+        events=reordered_events,
+    )
+
+    assert ecb.representation_spec.section_coverage == ("prepared_remarks", "q_and_a")
+    assert build_rights_review_packet(reordered) != build_rights_review_packet(pilot_manifest)
+
+
 def test_markdown_shows_pending_basis_candidates_provenance_and_ecb_mapping(pilot_manifest):
     packet = build_rights_review_packet(pilot_manifest)
     markdown = render_rights_review_markdown(packet)
 
-    assert packet["durable_metadata_blockers"] == [
+    assert packet["durable_metadata_blockers"] == []
+    assert packet["durable_metadata_notes"] == [
         {
             "organization_id": "ecb",
-            "status": "multi_section_mapping_required",
-            "message": ECB_MIXED_SECTION_BLOCKER,
+            "status": "ordered_multi_section_mapping_available",
+            "message": ECB_MULTI_SECTION_MAPPING_NOTE,
         }
     ]
     assert "**UNVERIFIED RIGHTS REVIEW — NO CONTENT CAPTURE IS AUTHORIZED.**" in markdown
     assert "Content capture authorized: `false`" in markdown
     assert "Verified rights decisions: `0`" in markdown
     assert "Closed denominator: `16/16` events" in markdown
-    assert ECB_MIXED_SECTION_BLOCKER in markdown
-    assert "single-capture, multi-section mapping" in markdown
-    assert "do not create duplicate byte captures" in markdown
+    assert ECB_MULTI_SECTION_MAPPING_NOTE in markdown
+    assert "ordered, provenance-specific" in markdown
+    assert "resolves the structural mapping blocker only" in markdown
     assert "Pending source-level questions:" in markdown
     assert "https://www.federalreserve.gov/disclaimer.htm" in markdown
     assert "https://www.ecb.europa.eu/services/using-our-site/disclaimer" in markdown

@@ -105,12 +105,12 @@ speech; inclusion in an ECB-hosted transcript does not turn them into ECB claims
 The companion ECB PDFs stop before the Q&A and therefore do not satisfy this
 pilot's required coverage.
 
-The manifest's `q_and_a_transcript` / `questions_and_answers` pair is only the
-candidate's provisional primary classification under the current one-role
-artifact schema. It does not classify the prepared remarks as Q&A. Before any
-durable artifact metadata is written, the storage contract must define how one
-artifact and one byte capture carry separately addressable prepared-remarks and
-Q&A section scopes without duplication or provenance loss.
+At the Slice 30E checkpoint, the manifest's `q_and_a_transcript` /
+`questions_and_answers` pair was only the candidate's provisional primary
+classification under the then-current one-role artifact schema. It did not
+classify the prepared remarks as Q&A. ADR 0014 subsequently defines how one
+artifact version and one byte-capture lineage carry separately addressable
+prepared-remarks and Q&A section scopes without duplication or provenance loss.
 
 At the metadata checkpoint all 16 representations have
 `availability_status = available`. That status means only that the exact
@@ -225,6 +225,10 @@ The conservative gate deliberately leaves the useful content unavailable to
 analysis. A named human review and a separate authorized acquisition slice are
 still required before bytes, extraction, claims or investment-facing synthesis
 can exist.
+
+ADR 0014 subsequently supplied the one-artifact/one-byte-lineage, ordered multi-section storage
+mapping required here. It removes the structural metadata blocker only; the
+pending rights state and zero-content boundary remain unchanged.
 
 ## Rejected alternatives
 

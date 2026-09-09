@@ -24,7 +24,7 @@ from dalio.communications.catalogue import (
 )
 
 PILOT_MANIFEST_SCHEMA_VERSION = 1
-PILOT_METHODOLOGY_VERSION = "communication-metadata-pilot-v1"
+PILOT_METHODOLOGY_VERSION = "communication-metadata-pilot-v2"
 
 _PILOT_ORGANIZATIONS = frozenset({"federal_reserve", "ecb"})
 _PILOT_START_DATE = date(2025, 1, 1)
@@ -154,7 +154,7 @@ _EXPECTED_REPRESENTATIONS = {
         "source_id": "fed_fomc_press_conferences_en",
         "artifact_role": "full_transcript",
         "material_type": "press_conference_transcript",
-        "section_coverage": frozenset({"full_transcript"}),
+        "section_coverage": ("full_transcript",),
         "mime_type": "application/pdf",
     },
     "ecb": {
@@ -162,7 +162,7 @@ _EXPECTED_REPRESENTATIONS = {
         "source_id": "ecb_monetary_policy_press_conferences_en",
         "artifact_role": "q_and_a_transcript",
         "material_type": "questions_and_answers",
-        "section_coverage": frozenset({"prepared_remarks", "q_and_a"}),
+        "section_coverage": ("prepared_remarks", "q_and_a"),
         "mime_type": "text/html",
     },
 }
@@ -535,7 +535,7 @@ def _parse_representation_spec(
         "source_id": spec.source_id,
         "artifact_role": spec.artifact_role,
         "material_type": spec.material_type,
-        "section_coverage": frozenset(spec.section_coverage),
+        "section_coverage": tuple(spec.section_coverage),
     }
     expected_without_derived = {key: item for key, item in expected.items() if key != "mime_type"}
     if supplied != expected_without_derived:
@@ -776,7 +776,7 @@ def _parse_representation(
     section_coverage = _distinct_strings(
         payload["section_coverage"], f"{field}.section_coverage", identifiers=True
     )
-    if frozenset(section_coverage) != frozenset(spec.section_coverage):
+    if tuple(section_coverage) != tuple(spec.section_coverage):
         raise ValueError(f"{field}.section_coverage conflicts with its denominator")
     source = _source(spec.source_id, organization_id, f"{field}.source_id")
     status_evidence_url = _official_url(
@@ -1012,7 +1012,7 @@ def _manifest_payload(manifest: CommunicationPilotManifest) -> dict[str, object]
                     "source_id": spec.source_id,
                     "artifact_role": spec.artifact_role,
                     "material_type": spec.material_type,
-                    "section_coverage": sorted(spec.section_coverage),
+                    "section_coverage": list(spec.section_coverage),
                 },
                 "rights_review": {
                     "status": denominator.rights_review.status,
@@ -1040,7 +1040,7 @@ def _manifest_payload(manifest: CommunicationPilotManifest) -> dict[str, object]
                     "checked_at": _iso_datetime(representation.checked_at),
                     "status_evidence_url": representation.status_evidence_url,
                     "status_note": representation.status_note,
-                    "section_coverage": sorted(representation.section_coverage),
+                    "section_coverage": list(representation.section_coverage),
                     "candidate": _candidate_payload(representation.candidate),
                 },
             }

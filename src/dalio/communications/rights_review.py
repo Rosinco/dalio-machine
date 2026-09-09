@@ -22,8 +22,8 @@ from dalio.communications.pilot_manifest import (
     pilot_manifest_sha256,
 )
 
-COMMUNICATION_RIGHTS_REVIEW_SCHEMA_VERSION = 1
-COMMUNICATION_RIGHTS_REVIEW_METHODOLOGY_VERSION = "communication-rights-review-v1"
+COMMUNICATION_RIGHTS_REVIEW_SCHEMA_VERSION = 2
+COMMUNICATION_RIGHTS_REVIEW_METHODOLOGY_VERSION = "communication-rights-review-v2"
 UNVERIFIED_RIGHTS_REVIEW_LABEL = "UNVERIFIED RIGHTS REVIEW"
 
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -35,11 +35,11 @@ EXPECTED_ORGANIZATION_EVENT_COUNTS = {
 EXPECTED_EVENT_COUNT = sum(EXPECTED_ORGANIZATION_EVENT_COUNTS.values())
 EXPECTED_AVAILABLE_CHOSEN_REPRESENTATION_COUNT = EXPECTED_EVENT_COUNT
 
-ECB_MIXED_SECTION_BLOCKER = (
+ECB_MULTI_SECTION_MAPPING_NOTE = (
     "ECB selected pages combine the monetary-policy statement and questions-and-answers "
-    "sections. The current one-role artifact schema cannot faithfully classify that mixed "
-    "page. Define a single-capture, multi-section mapping before recording durable database "
-    "metadata; do not create duplicate byte captures. This packet does not authorize the page "
+    "sections. ADR 0014 now maps that one representation to ordered, provenance-specific "
+    "prepared-remarks and Q&A scopes while retaining one artifact version and one byte-capture "
+    "lineage. This resolves the structural mapping blocker only; it does not authorize the page "
     "for content capture."
 )
 
@@ -72,7 +72,7 @@ def _representation_spec_payload(spec: Any) -> dict[str, object]:
         "source_id": spec.source_id,
         "artifact_role": spec.artifact_role,
         "material_type": spec.material_type,
-        "section_coverage": sorted(spec.section_coverage),
+        "section_coverage": list(spec.section_coverage),
     }
 
 
@@ -130,7 +130,7 @@ def _event_payload(event: Any) -> dict[str, object]:
             "checked_at": _iso_datetime(representation.checked_at),
             "status_evidence_url": representation.status_evidence_url,
             "status_note": representation.status_note,
-            "section_coverage": sorted(representation.section_coverage),
+            "section_coverage": list(representation.section_coverage),
             "candidate": _candidate_payload(candidate),
         },
     }
@@ -223,7 +223,7 @@ def _validate_and_reconcile(
                 raise ValueError(
                     f"{event.event_key} representation key does not match its denominator"
                 )
-            if set(representation.section_coverage) != set(spec.section_coverage):
+            if tuple(representation.section_coverage) != tuple(spec.section_coverage):
                 raise ValueError(
                     f"{event.event_key} section coverage does not match its denominator"
                 )
@@ -329,11 +329,12 @@ def build_rights_review_packet(
         ),
         "available_chosen_representation_count": available_count,
         "organization_reconciliation": organizations,
-        "durable_metadata_blockers": [
+        "durable_metadata_blockers": [],
+        "durable_metadata_notes": [
             {
                 "organization_id": "ecb",
-                "status": "multi_section_mapping_required",
-                "message": ECB_MIXED_SECTION_BLOCKER,
+                "status": "ordered_multi_section_mapping_available",
+                "message": ECB_MULTI_SECTION_MAPPING_NOTE,
             }
         ],
         "review_questions": [
@@ -364,12 +365,25 @@ def _markdown_sequence(values: list[object]) -> str:
 def render_rights_review_markdown(packet: dict[str, object]) -> str:
     """Render a deterministic, visibly unverified human review sheet."""
     validate_rights_review_packet_sha256(packet)
+    if packet.get("schema_version") != COMMUNICATION_RIGHTS_REVIEW_SCHEMA_VERSION:
+        raise ValueError("unsupported communication rights-review schema version")
     if packet.get("packet_kind") != "unverified_communication_rights_review":
         raise ValueError("unsupported communication rights-review packet")
     if packet.get("content_capture_authorized") is not False:
         raise ValueError("rights-review packet must not authorize content capture")
     if packet.get("verified_rights_decisions") != 0:
         raise ValueError("unverified rights-review packet cannot contain verified decisions")
+    if packet.get("durable_metadata_blockers") != []:
+        raise ValueError("rights-review packet durable-metadata blockers must be empty")
+    expected_durable_notes = [
+        {
+            "organization_id": "ecb",
+            "status": "ordered_multi_section_mapping_available",
+            "message": ECB_MULTI_SECTION_MAPPING_NOTE,
+        }
+    ]
+    if packet.get("durable_metadata_notes") != expected_durable_notes:
+        raise ValueError("rights-review packet durable-metadata notes have an invalid shape")
 
     lines = [
         "# Institutional-communications rights review",
@@ -427,9 +441,9 @@ def render_rights_review_markdown(packet: dict[str, object]) -> str:
 
     lines.extend(
         [
-            "## Durable-metadata blocker",
+            "## Durable-metadata status",
             "",
-            f"**{ECB_MIXED_SECTION_BLOCKER}**",
+            f"**{packet['durable_metadata_notes'][0]['message']}**",
             "",
             "## Selected artifact candidates",
             "",
@@ -493,7 +507,7 @@ def render_rights_review_markdown(packet: dict[str, object]) -> str:
 __all__ = [
     "COMMUNICATION_RIGHTS_REVIEW_METHODOLOGY_VERSION",
     "COMMUNICATION_RIGHTS_REVIEW_SCHEMA_VERSION",
-    "ECB_MIXED_SECTION_BLOCKER",
+    "ECB_MULTI_SECTION_MAPPING_NOTE",
     "EXPECTED_AVAILABLE_CHOSEN_REPRESENTATION_COUNT",
     "EXPECTED_EVENT_COUNT",
     "EXPECTED_ORGANIZATION_EVENT_COUNTS",

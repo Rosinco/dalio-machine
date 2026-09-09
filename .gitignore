@@ -38,6 +38,7 @@ coverage.xml
 data/*.db
 data/*.db-journal
 data/*.before-release-clock-migration.sqlite3
+data/*.before-communication-schema-v2.sqlite3
 data/cache/
 data/backups/
 data/artifacts/

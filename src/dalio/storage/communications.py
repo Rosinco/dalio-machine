@@ -13,6 +13,7 @@ import hashlib
 import ipaddress
 import json
 import re
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass, replace
 from datetime import UTC, date, datetime
 from urllib.parse import urlsplit
@@ -28,7 +29,9 @@ from dalio.communications.catalogue import (
 )
 from dalio.storage.db import (
     CommunicationArtifact,
+    CommunicationArtifactContent,
     CommunicationArtifactRetrieval,
+    CommunicationArtifactSectionScopeSet,
     CommunicationEvent,
     CommunicationSourcePolicySnapshot,
     Organization,
@@ -106,6 +109,20 @@ _MATERIAL_ORIGINS = {
     "subtitles": frozenset({"official_caption", "automatic_caption", "local_asr"}),
     "press_conference_video": frozenset({"official_published_media"}),
 }
+_ROLE_SCOPE_KEYS = {
+    "prepared_remarks": "prepared_remarks",
+    "q_and_a_transcript": "q_and_a",
+    "full_transcript": "full_transcript",
+    "ceo_letter": "ceo_letter",
+    "chair_letter": "chair_letter",
+    "annual_report": "annual_report",
+    "subtitles": "subtitles",
+    "webcast_video": "webcast_video",
+}
+_SECTION_SCOPE_CANONICALIZATION = "communication_artifact_section_scopes_json_v1"
+_EXPLICIT_SECTION_SCOPE_SOURCE_IDS = frozenset(
+    {"ecb_monetary_policy_press_conferences_en"}
+)
 
 
 @dataclass(frozen=True)
@@ -150,6 +167,18 @@ class CommunicationArtifactMeta:
 
 
 @dataclass(frozen=True)
+class CommunicationSectionScopeMeta:
+    section_ordinal: int
+    scope_key: str
+    artifact_role: str
+    material_type: str
+    origin_type: str
+    provenance_tier: str
+    transcriber: str | None
+    transcriber_attribution: str
+
+
+@dataclass(frozen=True)
 class CommodityCoverageMeta:
     source_id: str
     catalogue_sha256: str
@@ -177,6 +206,14 @@ class CommunicationMetadataResult:
     artifact_version_sha256: str
     supersedes_event_id: int | None
     supersedes_artifact_id: int | None
+
+
+@dataclass(frozen=True)
+class CommunicationSectionScopeSetResult:
+    artifact_id: int
+    scope_count: int
+    scope_set_sha256: str
+    created: bool
 
 
 def _required(value: str, field: str) -> str:
@@ -280,6 +317,179 @@ def _canonical_sha256(value: dict) -> str:
         separators=(",", ":"),
     ).encode()
     return hashlib.sha256(payload).hexdigest()
+
+
+def _section_scope_dict(scope: CommunicationSectionScopeMeta) -> dict[str, object]:
+    return {
+        "section_ordinal": scope.section_ordinal,
+        "scope_key": scope.scope_key,
+        "artifact_role": scope.artifact_role,
+        "material_type": scope.material_type,
+        "origin_type": scope.origin_type,
+        "provenance_tier": scope.provenance_tier,
+        "transcriber": scope.transcriber,
+        "transcriber_attribution": scope.transcriber_attribution,
+    }
+
+
+def _section_scopes_json(scopes: tuple[CommunicationSectionScopeMeta, ...]) -> str:
+    return json.dumps(
+        [_section_scope_dict(scope) for scope in scopes],
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+def _section_scope_set_sha256(
+    artifact_version_sha256: str,
+    scopes: tuple[CommunicationSectionScopeMeta, ...],
+) -> str:
+    return _canonical_sha256(
+        {
+            "artifact_version_sha256": artifact_version_sha256,
+            "canonicalization_version": _SECTION_SCOPE_CANONICALIZATION,
+            "section_scopes": [_section_scope_dict(scope) for scope in scopes],
+        }
+    )
+
+
+def _normalize_scope_transcriber(
+    *,
+    origin_type: str,
+    publisher: str,
+    transcriber: str | None,
+    transcriber_attribution: str,
+) -> tuple[str | None, str]:
+    attribution = _choice(
+        transcriber_attribution,
+        _TRANSCRIBER_ATTRIBUTIONS,
+        "section scope transcriber_attribution",
+    )
+    if attribution == "artifact_specific":
+        raise ValueError("section scope transcriber attribution must be resolved")
+    normalized = _required(transcriber, "section scope transcriber") if transcriber else None
+    if origin_type in {"publisher_authored", "official_published_media"}:
+        if normalized is not None or attribution != "not_applicable":
+            raise ValueError("publisher-authored scope and official media have no transcriber")
+    elif origin_type in {"official_hosted_vendor", "automatic_caption", "local_asr"}:
+        if normalized is None or normalized == publisher or attribution != "named_third_party":
+            raise ValueError("vendor, automatic-caption and ASR scopes need a named third party")
+    elif attribution == "not_disclosed":
+        if normalized is not None:
+            raise ValueError("not_disclosed section scope requires an unset transcriber")
+    elif attribution == "publisher":
+        if normalized != publisher:
+            raise ValueError("publisher section-scope transcriber must equal artifact publisher")
+    elif attribution == "named_third_party":
+        if normalized is None or normalized == publisher:
+            raise ValueError("named third-party scope transcriber must differ from publisher")
+    else:
+        raise ValueError("section scope origin and transcriber attribution are incompatible")
+    return normalized, attribution
+
+
+def _normalize_section_scopes(
+    scopes: Sequence[CommunicationSectionScopeMeta],
+    artifact: CommunicationArtifactMeta | CommunicationArtifact,
+    allowed_material_types: frozenset[str] | set[str],
+) -> tuple[CommunicationSectionScopeMeta, ...]:
+    if isinstance(scopes, (str, bytes)) or not isinstance(scopes, Sequence):
+        raise ValueError("section_scopes must be an ordered sequence")
+    if not scopes or len(scopes) > 32:
+        raise ValueError("section_scopes must contain between 1 and 32 entries")
+    normalized: list[CommunicationSectionScopeMeta] = []
+    seen_keys: set[str] = set()
+    for expected_ordinal, value in enumerate(scopes, start=1):
+        if not isinstance(value, CommunicationSectionScopeMeta):
+            raise ValueError("section_scopes entries must be CommunicationSectionScopeMeta")
+        if (
+            isinstance(value.section_ordinal, bool)
+            or not isinstance(value.section_ordinal, int)
+            or value.section_ordinal != expected_ordinal
+        ):
+            raise ValueError("section scope ordinals must be dense and follow sequence order")
+        role = _choice(value.artifact_role, _ARTIFACT_ROLES, "section scope artifact_role")
+        scope_key = _identifier(value.scope_key, "section scope_key")
+        if scope_key != _ROLE_SCOPE_KEYS[role]:
+            raise ValueError("section scope_key and artifact_role are incompatible")
+        if scope_key in seen_keys:
+            raise ValueError("section scope keys must be unique within an artifact")
+        seen_keys.add(scope_key)
+        material_type = _identifier(
+            value.material_type,
+            "section scope material_type",
+            max_length=48,
+        )
+        if material_type not in _ROLE_MATERIALS[role]:
+            raise ValueError("section scope artifact_role and material_type are incompatible")
+        if material_type not in allowed_material_types:
+            raise ValueError("section scope material_type is not declared by the source policy")
+        origin_type = _choice(value.origin_type, _ORIGIN_TYPES, "section scope origin_type")
+        provenance_tier = _required(value.provenance_tier, "section scope provenance_tier")
+        if provenance_tier != _ORIGIN_PROVENANCE[origin_type]:
+            raise ValueError("section scope origin_type and provenance_tier are incompatible")
+        if origin_type not in _MATERIAL_ORIGINS[material_type]:
+            raise ValueError("section scope material_type and origin_type are incompatible")
+        if origin_type == "local_asr":
+            raise ValueError("local ASR scopes need the later content-acquisition path")
+        transcriber, attribution = _normalize_scope_transcriber(
+            origin_type=origin_type,
+            publisher=artifact.publisher,
+            transcriber=value.transcriber,
+            transcriber_attribution=value.transcriber_attribution,
+        )
+        normalized.append(
+            CommunicationSectionScopeMeta(
+                section_ordinal=expected_ordinal,
+                scope_key=scope_key,
+                artifact_role=role,
+                material_type=material_type,
+                origin_type=origin_type,
+                provenance_tier=provenance_tier,
+                transcriber=transcriber,
+                transcriber_attribution=attribution,
+            )
+        )
+    artifact_semantics = (
+        artifact.artifact_role,
+        artifact.material_type,
+        artifact.origin_type,
+        artifact.provenance_tier,
+        artifact.transcriber,
+        artifact.transcriber_attribution,
+    )
+    if not any(
+        (
+            scope.artifact_role,
+            scope.material_type,
+            scope.origin_type,
+            scope.provenance_tier,
+            scope.transcriber,
+            scope.transcriber_attribution,
+        )
+        == artifact_semantics
+        for scope in normalized
+    ):
+        raise ValueError("one section scope must anchor the artifact's primary semantics")
+    return tuple(normalized)
+
+
+def _default_section_scopes(
+    artifact: CommunicationArtifactMeta | CommunicationArtifact,
+) -> tuple[CommunicationSectionScopeMeta, ...]:
+    return (
+        CommunicationSectionScopeMeta(
+            section_ordinal=1,
+            scope_key=_ROLE_SCOPE_KEYS[artifact.artifact_role],
+            artifact_role=artifact.artifact_role,
+            material_type=artifact.material_type,
+            origin_type=artifact.origin_type,
+            provenance_tier=artifact.provenance_tier,
+            transcriber=artifact.transcriber,
+            transcriber_attribution=artifact.transcriber_attribution,
+        ),
+    )
 
 
 def _exact_date(value: date, field: str) -> date:
@@ -553,7 +763,8 @@ def _human(value: str) -> str:
 
 def _artifact_version(
     event_version_sha256: str,
-    meta: CommunicationArtifactMeta,
+    meta: CommunicationArtifactMeta | CommunicationArtifact,
+    section_scopes: tuple[CommunicationSectionScopeMeta, ...],
 ) -> str:
     return _canonical_sha256(
         {
@@ -578,6 +789,9 @@ def _artifact_version(
             "transcriber_attribution": meta.transcriber_attribution,
             "published_at": meta.published_at.isoformat() if meta.published_at else None,
             "available_at": meta.available_at.isoformat(),
+            "section_scopes": [
+                _section_scope_dict(scope) for scope in section_scopes
+            ],
             # A repeat retrieval does not create another public artifact version.
             "landing_url": meta.landing_url,
             "artifact_url": meta.artifact_url,
@@ -585,10 +799,180 @@ def _artifact_version(
     )
 
 
+def _policy_material_types(
+    session: Session,
+    artifact: CommunicationArtifact,
+) -> frozenset[str]:
+    policy = session.get(
+        CommunicationSourcePolicySnapshot,
+        (artifact.catalogue_sha256, artifact.source_id),
+    )
+    if policy is None:
+        raise ValueError("artifact source policy snapshot is missing")
+    try:
+        values = json.loads(policy.material_types_json)
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise ValueError("artifact source policy material_types_json is invalid") from exc
+    if (
+        not isinstance(values, list)
+        or not values
+        or any(not isinstance(value, str) for value in values)
+        or values != sorted(set(values))
+    ):
+        raise ValueError("artifact source policy material_types_json is not canonical")
+    return frozenset(values)
+
+
+def _validated_stored_scope_set(
+    session: Session,
+    artifact: CommunicationArtifact,
+    stored: CommunicationArtifactSectionScopeSet,
+) -> tuple[CommunicationSectionScopeMeta, ...]:
+    try:
+        payload = json.loads(stored.scopes_json)
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise ValueError("stored communication section scopes are invalid JSON") from exc
+    if not isinstance(payload, list):
+        raise ValueError("stored communication section scopes must be a JSON array")
+    exact_fields = {
+        "section_ordinal",
+        "scope_key",
+        "artifact_role",
+        "material_type",
+        "origin_type",
+        "provenance_tier",
+        "transcriber",
+        "transcriber_attribution",
+    }
+    if any(not isinstance(value, dict) or set(value) != exact_fields for value in payload):
+        raise ValueError("stored communication section scopes have an unknown shape")
+    try:
+        decoded = tuple(CommunicationSectionScopeMeta(**value) for value in payload)
+    except TypeError as exc:
+        raise ValueError("stored communication section scopes have invalid fields") from exc
+    scopes = _normalize_section_scopes(
+        decoded,
+        artifact,
+        _policy_material_types(session, artifact),
+    )
+    canonical_json = _section_scopes_json(scopes)
+    expected_artifact_version = _artifact_version(
+        artifact.event_version_sha256,
+        artifact,
+        scopes,
+    )
+    expected_scope_hash = _section_scope_set_sha256(expected_artifact_version, scopes)
+    if (
+        stored.artifact_id != artifact.id
+        or stored.artifact_version_sha256 != artifact.artifact_version_sha256
+        or expected_artifact_version != artifact.artifact_version_sha256
+        or stored.scope_count != len(scopes)
+        or stored.scopes_json != canonical_json
+        or stored.scope_set_sha256 != expected_scope_hash
+        or stored.canonicalization_version != _SECTION_SCOPE_CANONICALIZATION
+        or stored.metadata_known_at < artifact.metadata_known_at
+    ):
+        raise ValueError("stored communication section-scope set fails semantic validation")
+    return scopes
+
+
+def record_communication_artifact_section_scopes(
+    session: Session,
+    *,
+    artifact_id: int,
+    section_scopes: Sequence[CommunicationSectionScopeMeta],
+    metadata_known_at: datetime,
+) -> CommunicationSectionScopeSetResult:
+    """Flush one complete immutable semantic scope set; never capture content."""
+
+    if isinstance(artifact_id, bool) or not isinstance(artifact_id, int) or artifact_id < 1:
+        raise ValueError("artifact_id must be a positive integer")
+    known = _utc_naive(metadata_known_at)
+    artifact = session.get(CommunicationArtifact, artifact_id)
+    if artifact is None:
+        raise ValueError("artifact_id does not exist")
+    scopes = _normalize_section_scopes(
+        section_scopes,
+        artifact,
+        _policy_material_types(session, artifact),
+    )
+    expected_artifact_version = _artifact_version(
+        artifact.event_version_sha256,
+        artifact,
+        scopes,
+    )
+    if expected_artifact_version != artifact.artifact_version_sha256:
+        raise ValueError("section scopes do not match the immutable artifact version")
+    if known < artifact.metadata_known_at:
+        raise ValueError("section-scope metadata cannot be known before artifact metadata")
+    canonical_json = _section_scopes_json(scopes)
+    scope_hash = _section_scope_set_sha256(artifact.artifact_version_sha256, scopes)
+    existing = session.get(CommunicationArtifactSectionScopeSet, artifact_id)
+    if existing is not None:
+        persisted = _validated_stored_scope_set(session, artifact, existing)
+        if known < existing.metadata_known_at:
+            raise ValueError("section-scope metadata_known_at cannot move backward")
+        if persisted != scopes or existing.scope_set_sha256 != scope_hash:
+            raise ValueError(
+                "artifact already has a different immutable section-scope set; "
+                "append an artifact version"
+            )
+        return CommunicationSectionScopeSetResult(
+            artifact_id=artifact.id,
+            scope_count=len(scopes),
+            scope_set_sha256=scope_hash,
+            created=False,
+        )
+    has_content = session.scalar(
+        select(CommunicationArtifactContent.id)
+        .where(CommunicationArtifactContent.artifact_id == artifact.id)
+        .limit(1)
+    )
+    if has_content is not None:
+        raise ValueError("section scopes must be declared before artifact content")
+    session.add(
+        CommunicationArtifactSectionScopeSet(
+            artifact_id=artifact.id,
+            artifact_version_sha256=artifact.artifact_version_sha256,
+            scope_count=len(scopes),
+            scopes_json=canonical_json,
+            scope_set_sha256=scope_hash,
+            metadata_known_at=known,
+            canonicalization_version=_SECTION_SCOPE_CANONICALIZATION,
+        )
+    )
+    session.flush()
+    return CommunicationSectionScopeSetResult(
+        artifact_id=artifact.id,
+        scope_count=len(scopes),
+        scope_set_sha256=scope_hash,
+        created=True,
+    )
+
+
+def get_communication_artifact_section_scopes(
+    session: Session,
+    artifact_id: int,
+) -> tuple[CommunicationSectionScopeMeta, ...]:
+    """Return a revalidated ordered scope declaration for a v2 artifact."""
+
+    if isinstance(artifact_id, bool) or not isinstance(artifact_id, int) or artifact_id < 1:
+        raise ValueError("artifact_id must be a positive integer")
+    artifact = session.get(CommunicationArtifact, artifact_id)
+    if artifact is None:
+        raise ValueError("artifact_id does not exist")
+    stored = session.get(CommunicationArtifactSectionScopeSet, artifact_id)
+    if stored is None:
+        raise ValueError("artifact section-scope set is missing")
+    return _validated_stored_scope_set(session, artifact, stored)
+
+
 def record_communication_artifact_metadata(
     session: Session,
     event_meta: CommunicationEventMeta,
     artifact_meta: CommunicationArtifactMeta,
+    *,
+    section_scopes: Sequence[CommunicationSectionScopeMeta] | None = None,
 ) -> CommunicationMetadataResult:
     """Flush catalogue-bound link metadata without acquiring source content.
 
@@ -600,12 +984,32 @@ def record_communication_artifact_metadata(
     if event_input.organization_id != source.organization_id:
         raise ValueError("source_id does not belong to the event organization")
     artifact_input = _normalize_artifact(artifact_meta, source)
+    if section_scopes is None and source.source_id in _EXPLICIT_SECTION_SCOPE_SOURCE_IDS:
+        raise ValueError(
+            f"section_scopes must be explicit for mixed-representation source {source.source_id}"
+        )
+    normalized_scopes = _normalize_section_scopes(
+        section_scopes if section_scopes is not None else _default_section_scopes(artifact_input),
+        artifact_input,
+        source.material_types,
+    )
+    if (
+        source.source_id in _EXPLICIT_SECTION_SCOPE_SOURCE_IDS
+        and artifact_input.artifact_role == "q_and_a_transcript"
+        and artifact_input.material_type == "questions_and_answers"
+        and tuple(scope.scope_key for scope in normalized_scopes)
+        != ("prepared_remarks", "q_and_a")
+    ):
+        raise ValueError(
+            "mixed ECB Q&A representation must declare ordered "
+            "prepared_remarks and q_and_a scopes"
+        )
     _ensure_organization(session, source.organization_id)
     _ensure_source_policy_snapshot(session, source)
     event, event_created = _append_event(session, event_input)
     if artifact_input.metadata_known_at < event.metadata_known_at:
         raise ValueError("artifact metadata cannot be known before its event metadata")
-    version = _artifact_version(event.event_version_sha256, artifact_input)
+    version = _artifact_version(event.event_version_sha256, artifact_input, normalized_scopes)
     prior = (
         session.execute(
             select(CommunicationArtifact)
@@ -670,6 +1074,12 @@ def record_communication_artifact_metadata(
         session.add(artifact)
         session.flush()
         artifact_created = True
+    record_communication_artifact_section_scopes(
+        session,
+        artifact_id=artifact.id,
+        section_scopes=normalized_scopes,
+        metadata_known_at=artifact_input.metadata_known_at.replace(tzinfo=UTC),
+    )
     retrieval = session.execute(
         select(CommunicationArtifactRetrieval).where(
             CommunicationArtifactRetrieval.artifact_id == artifact.id,
@@ -851,6 +1261,10 @@ __all__ = [
     "CommunicationArtifactMeta",
     "CommunicationEventMeta",
     "CommunicationMetadataResult",
+    "CommunicationSectionScopeMeta",
+    "CommunicationSectionScopeSetResult",
     "append_catalogue_commodity_coverage",
+    "get_communication_artifact_section_scopes",
+    "record_communication_artifact_section_scopes",
     "record_communication_artifact_metadata",
 ]

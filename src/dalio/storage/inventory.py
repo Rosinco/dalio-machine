@@ -81,6 +81,7 @@ _EXPECTED_TABLES = (
     "claims",
     "communication_schema_contract",
     "communication_artifacts",
+    "communication_artifact_section_scope_sets",
     "communication_artifact_retrievals",
     "communication_artifact_contents",
     "communication_events",
@@ -109,6 +110,7 @@ _COMMUNICATION_TABLE_NAMES = (
     "organization_commodity_coverage",
     "communication_events",
     "communication_artifacts",
+    "communication_artifact_section_scope_sets",
     "communication_artifact_retrievals",
     "communication_artifact_contents",
     "communication_extractions",
@@ -231,6 +233,17 @@ _COMMUNICATION_REQUIRED_COLUMNS = {
             "supersedes_artifact_id",
         }
     ),
+    "communication_artifact_section_scope_sets": frozenset(
+        {
+            "artifact_id",
+            "artifact_version_sha256",
+            "scope_count",
+            "scopes_json",
+            "scope_set_sha256",
+            "metadata_known_at",
+            "canonicalization_version",
+        }
+    ),
     "communication_artifact_retrievals": frozenset(
         {
             "id",
@@ -260,6 +273,7 @@ _COMMUNICATION_REQUIRED_COLUMNS = {
         {
             "extraction_id",
             "ordinal",
+            "section_ordinal",
             "segment_kind",
             "speaker_name",
             "speaker_role",
@@ -303,6 +317,8 @@ _COMMUNICATION_REQUIRED_TRIGGERS = frozenset(
         "communication_content_matches_retrieval",
         "communication_content_successor_order",
         "communication_extractions_require_content",
+        "communication_section_scope_set_validate",
+        "communication_segments_match_scope_set",
         "communication_segments_reject_after_finalization",
         "communication_extraction_finalization_validate",
     }
@@ -379,6 +395,18 @@ _COMMUNICATION_CUSTOM_TRIGGER_FRAGMENTS = {
         "id = new.artifact_content_id",
         "new.extracted_at >= captured_at",
     ),
+    "communication_section_scope_set_validate": (
+        "before insert on communication_artifact_section_scope_sets",
+        "artifact.artifact_version_sha256 = new.artifact_version_sha256",
+        "json_each(new.scopes_json)",
+        "invalid communication artifact section-scope set",
+    ),
+    "communication_segments_match_scope_set": (
+        "before insert on communication_segments",
+        "new.section_ordinal",
+        "communication_artifact_section_scope_sets",
+        "communication segment conflicts with artifact section scopes",
+    ),
     "communication_segments_reject_after_finalization": (
         "from communication_extraction_finalizations",
         "extraction_id = new.extraction_id",
@@ -391,7 +419,9 @@ _COMMUNICATION_CUSTOM_TRIGGER_FRAGMENTS = {
         "select sum(char_count) from communication_segments",
     ),
 }
-_COMMUNICATION_CANONICALIZATION = "communication_segments_json_v1"
+_COMMUNICATION_CANONICALIZATION_V1 = "communication_segments_json_v1"
+_COMMUNICATION_CANONICALIZATION_V2 = "communication_segments_json_v2"
+_COMMUNICATION_SCOPE_CANONICALIZATION = "communication_artifact_section_scopes_json_v1"
 _COMMUNICATION_MATERIAL_TYPES = frozenset(
     {
         "annual_report",
@@ -449,6 +479,16 @@ _COMMUNICATION_ROLE_MATERIALS = {
     "subtitles": frozenset({"subtitles"}),
     "webcast_video": frozenset({"press_conference_video"}),
 }
+_COMMUNICATION_ROLE_SCOPE_KEYS = {
+    "prepared_remarks": "prepared_remarks",
+    "q_and_a_transcript": "q_and_a",
+    "full_transcript": "full_transcript",
+    "ceo_letter": "ceo_letter",
+    "chair_letter": "chair_letter",
+    "annual_report": "annual_report",
+    "subtitles": "subtitles",
+    "webcast_video": "webcast_video",
+}
 _COMMUNICATION_MATERIAL_ORIGINS = {
     "annual_report": frozenset({"publisher_authored"}),
     "ceo_letter": frozenset({"publisher_authored"}),
@@ -473,7 +513,7 @@ _COMMUNICATION_ORIGIN_PROVENANCE = {
     "automatic_caption": "official_hosted_automatic_caption",
     "local_asr": "local_derived_asr",
 }
-_COMMUNICATION_CANONICAL_SEGMENT_FIELDS = (
+_COMMUNICATION_CANONICAL_SEGMENT_FIELDS_V1 = (
     "ordinal",
     "segment_kind",
     "speaker_name",
@@ -488,6 +528,60 @@ _COMMUNICATION_CANONICAL_SEGMENT_FIELDS = (
     "start_ms",
     "end_ms",
 )
+_COMMUNICATION_CANONICAL_SEGMENT_FIELDS_V2 = (
+    "ordinal",
+    "section_ordinal",
+    *_COMMUNICATION_CANONICAL_SEGMENT_FIELDS_V1[1:],
+)
+_COMMUNICATION_SCOPE_FIELDS = (
+    "section_ordinal",
+    "scope_key",
+    "artifact_role",
+    "material_type",
+    "origin_type",
+    "provenance_tier",
+    "transcriber",
+    "transcriber_attribution",
+)
+_COMMUNICATION_SCOPE_SEGMENT_KINDS = {
+    "prepared_remarks": frozenset({"prepared_remarks", "heading", "other"}),
+    "q_and_a": frozenset(
+        {"q_and_a_question", "q_and_a_answer", "heading", "other"}
+    ),
+    "ceo_letter": frozenset({"letter", "heading", "other"}),
+    "chair_letter": frozenset({"letter", "heading", "other"}),
+    "annual_report": frozenset({"letter", "narrative", "heading", "other"}),
+    "full_transcript": frozenset(
+        {
+            "prepared_remarks",
+            "q_and_a_question",
+            "q_and_a_answer",
+            "narrative",
+            "heading",
+            "other",
+        }
+    ),
+    "subtitles": frozenset(
+        {
+            "prepared_remarks",
+            "q_and_a_question",
+            "q_and_a_answer",
+            "narrative",
+            "heading",
+            "other",
+        }
+    ),
+    "webcast_video": frozenset(
+        {
+            "prepared_remarks",
+            "q_and_a_question",
+            "q_and_a_answer",
+            "narrative",
+            "heading",
+            "other",
+        }
+    ),
+}
 
 EXPECTED_SERIES_IDS_BY_WORKSHEET = EXPECTED_PINK_SHEET_SERIES_IDS_BY_WORKSHEET
 EXPECTED_COMMODITY_PRICE_SERIES = EXPECTED_PINK_SHEET_PRICE_SERIES_COUNT
@@ -2266,13 +2360,21 @@ def _reports_inventory(
     }
 
 
-def _communication_corpus_sha256(segments: list[dict[str, Any]]) -> str:
+def _communication_corpus_sha256(
+    segments: list[dict[str, Any]],
+    canonicalization_version: str,
+) -> str:
     """Hash the exact, versioned communication-segment canonical form."""
+    if canonicalization_version == _COMMUNICATION_CANONICALIZATION_V1:
+        fields = _COMMUNICATION_CANONICAL_SEGMENT_FIELDS_V1
+    elif canonicalization_version == _COMMUNICATION_CANONICALIZATION_V2:
+        fields = _COMMUNICATION_CANONICAL_SEGMENT_FIELDS_V2
+    else:
+        raise ValueError("unsupported communication-segment canonicalization")
     payload = {
-        "canonicalization": _COMMUNICATION_CANONICALIZATION,
+        "canonicalization": canonicalization_version,
         "segments": [
-            {field: segment[field] for field in _COMMUNICATION_CANONICAL_SEGMENT_FIELDS}
-            for segment in segments
+            {field: segment[field] for field in fields} for segment in segments
         ],
     }
     encoded = json.dumps(
@@ -2513,6 +2615,71 @@ def _communication_artifact_semantically_valid(row: dict[str, Any]) -> bool:
     )
 
 
+def _communication_scope_semantically_valid(
+    scope: dict[str, Any],
+    *,
+    artifact: dict[str, Any],
+    policy_materials: list[str],
+) -> bool:
+    """Recheck one declared section without trusting insert-time triggers."""
+    if set(scope) != set(_COMMUNICATION_SCOPE_FIELDS):
+        return False
+    ordinal = scope.get("section_ordinal")
+    scope_key = scope.get("scope_key")
+    role = scope.get("artifact_role")
+    material = scope.get("material_type")
+    origin = scope.get("origin_type")
+    provenance = scope.get("provenance_tier")
+    transcriber = scope.get("transcriber")
+    attribution = scope.get("transcriber_attribution")
+    publisher = artifact.get("publisher")
+    if (
+        not isinstance(ordinal, int)
+        or isinstance(ordinal, bool)
+        or ordinal < 1
+        or not isinstance(scope_key, str)
+        or len(scope_key) > 96
+        or re.fullmatch(r"[a-z][a-z0-9_]*", scope_key) is None
+        or not isinstance(role, str)
+        or not isinstance(material, str)
+        or not isinstance(origin, str)
+        or not isinstance(provenance, str)
+        or not isinstance(attribution, str)
+        or (transcriber is not None and not isinstance(transcriber, str))
+    ):
+        return False
+    if (
+        material not in _COMMUNICATION_ROLE_MATERIALS.get(role, frozenset())
+        or scope_key != _COMMUNICATION_ROLE_SCOPE_KEYS.get(role)
+        or origin not in _COMMUNICATION_MATERIAL_ORIGINS.get(material, frozenset())
+        or provenance != _COMMUNICATION_ORIGIN_PROVENANCE.get(origin)
+        or material not in policy_materials
+        or origin == "local_asr"
+    ):
+        return False
+    if origin in {"publisher_authored", "official_published_media"}:
+        return transcriber is None and attribution == "not_applicable"
+    if origin in {"official_hosted_vendor", "automatic_caption", "local_asr"}:
+        return (
+            isinstance(transcriber, str)
+            and bool(transcriber.strip())
+            and transcriber != publisher
+            and attribution == "named_third_party"
+        )
+    if origin in {"official_published_transcript", "official_caption"}:
+        return (
+            (transcriber is None and attribution == "not_disclosed")
+            or (transcriber == publisher and attribution == "publisher")
+            or (
+                isinstance(transcriber, str)
+                and bool(transcriber.strip())
+                and transcriber != publisher
+                and attribution == "named_third_party"
+            )
+        )
+    return False
+
+
 def _file_sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -2743,6 +2910,13 @@ def _communication_integrity_inventory(
         "event_version_sha256_mismatch_count": None,
         "artifact_version_sha256_mismatch_count": None,
         "artifact_semantic_mismatch_count": None,
+        "missing_artifact_scope_set_count": None,
+        "orphan_artifact_scope_set_count": None,
+        "scope_set_artifact_binding_mismatch_count": None,
+        "scope_set_json_malformed_count": None,
+        "scope_set_json_noncanonical_count": None,
+        "scope_set_semantic_mismatch_count": None,
+        "scope_set_sha256_mismatch_count": None,
         "coverage_version_sha256_mismatch_count": None,
         "event_lineage_mismatch_count": None,
         "artifact_lineage_mismatch_count": None,
@@ -2768,6 +2942,11 @@ def _communication_integrity_inventory(
         "unfinalized_segment_count": None,
         "segment_text_sha256_mismatch_count": None,
         "segment_char_count_mismatch_count": None,
+        "segment_semantic_mismatch_count": None,
+        "segment_section_binding_mismatch_count": None,
+        "segment_section_order_mismatch_count": None,
+        "finalized_section_coverage_mismatch_count": None,
+        "finalized_section_semantic_mismatch_count": None,
         "finalization_structure_mismatch_count": None,
         "unsupported_canonicalization_count": None,
         "corpus_sha256_mismatch_count": None,
@@ -2847,6 +3026,7 @@ def _communication_integrity_inventory(
     coverage = tables["organization_commodity_coverage"]
     events = tables["communication_events"]
     artifacts = tables["communication_artifacts"]
+    scope_sets = tables["communication_artifact_section_scope_sets"]
     extractions = tables["communication_extractions"]
     segments = tables["communication_segments"]
     finalizations = tables["communication_extraction_finalizations"]
@@ -3030,6 +3210,148 @@ def _communication_integrity_inventory(
     ]
     artifact_by_id = {int(row["id"]): row for row in artifact_rows}
 
+    scope_set_rows = [
+        dict(row)
+        for row in connection.execute(
+            select(
+                *(
+                    scope_sets.c[field]
+                    for field in sorted(
+                        _COMMUNICATION_REQUIRED_COLUMNS[
+                            "communication_artifact_section_scope_sets"
+                        ]
+                    )
+                )
+            )
+        ).mappings()
+    ]
+    scope_set_by_artifact = {
+        int(row["artifact_id"]): row for row in scope_set_rows
+    }
+    parsed_scopes_by_artifact: dict[int, list[dict[str, Any]]] = {}
+    invalid_scope_artifact_ids: set[int] = set()
+    orphan_scope_set_count = 0
+    scope_binding_mismatch_count = 0
+    scope_json_malformed_count = 0
+    scope_json_noncanonical_count = 0
+    scope_semantic_mismatch_count = 0
+    scope_hash_mismatch_count = 0
+    for scope_set in scope_set_rows:
+        artifact_id = int(scope_set["artifact_id"])
+        artifact = artifact_by_id.get(artifact_id)
+        if artifact is None:
+            orphan_scope_set_count += 1
+            scope_binding_mismatch_count += 1
+            invalid_scope_artifact_ids.add(artifact_id)
+        else:
+            try:
+                binding_valid = (
+                    scope_set["artifact_version_sha256"]
+                    == artifact["artifact_version_sha256"]
+                    and scope_set["metadata_known_at"] >= artifact["metadata_known_at"]
+                )
+            except TypeError:
+                binding_valid = False
+            if not binding_valid:
+                scope_binding_mismatch_count += 1
+                invalid_scope_artifact_ids.add(artifact_id)
+
+        scopes: list[dict[str, Any]] | None = None
+        canonical_scopes_json: str | None = None
+        try:
+            decoded = json.loads(scope_set["scopes_json"])
+            if not isinstance(decoded, list):
+                raise ValueError("section scopes must be a JSON array")
+            if any(not isinstance(scope, dict) for scope in decoded):
+                raise ValueError("each section scope must be a JSON object")
+            scopes = decoded
+            canonical_scopes_json = json.dumps(
+                scopes,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+                allow_nan=False,
+            )
+        except (TypeError, ValueError, json.JSONDecodeError, UnicodeEncodeError):
+            scope_json_malformed_count += 1
+            invalid_scope_artifact_ids.add(artifact_id)
+        if scopes is None:
+            continue
+        parsed_scopes_by_artifact[artifact_id] = scopes
+        if canonical_scopes_json != scope_set["scopes_json"]:
+            scope_json_noncanonical_count += 1
+            invalid_scope_artifact_ids.add(artifact_id)
+
+        policy_key = (
+            str(artifact["catalogue_sha256"]),
+            str(artifact["source_id"]),
+        ) if artifact is not None else ("", "")
+        ordinals = [scope.get("section_ordinal") for scope in scopes]
+        scope_keys = [scope.get("scope_key") for scope in scopes]
+        try:
+            scope_keys_unique = len(scope_keys) == len(set(scope_keys))
+        except TypeError:
+            scope_keys_unique = False
+        artifact_semantics = (
+            artifact["artifact_role"],
+            artifact["material_type"],
+            artifact["origin_type"],
+            artifact["provenance_tier"],
+            artifact["transcriber"],
+            artifact["transcriber_attribution"],
+        ) if artifact is not None else None
+        primary_scope_matches = sum(
+            (
+                scope.get("artifact_role"),
+                scope.get("material_type"),
+                scope.get("origin_type"),
+                scope.get("provenance_tier"),
+                scope.get("transcriber"),
+                scope.get("transcriber_attribution"),
+            )
+            == artifact_semantics
+            for scope in scopes
+        )
+        semantic_valid = (
+            artifact is not None
+            and scope_set["canonicalization_version"]
+            == _COMMUNICATION_SCOPE_CANONICALIZATION
+            and isinstance(scope_set["scope_count"], int)
+            and not isinstance(scope_set["scope_count"], bool)
+            and 1 <= scope_set["scope_count"] <= 32
+            and len(scopes) == scope_set["scope_count"]
+            and ordinals == list(range(1, len(scopes) + 1))
+            and scope_keys_unique
+            and primary_scope_matches >= 1
+            and all(
+                _communication_scope_semantically_valid(
+                    scope,
+                    artifact=artifact,
+                    policy_materials=policy_materials.get(policy_key, []),
+                )
+                for scope in scopes
+            )
+        )
+        if not semantic_valid:
+            scope_semantic_mismatch_count += 1
+            invalid_scope_artifact_ids.add(artifact_id)
+        try:
+            expected_scope_hash = _canonical_dict_sha256(
+                {
+                    "artifact_version_sha256": scope_set["artifact_version_sha256"],
+                    "canonicalization_version": _COMMUNICATION_SCOPE_CANONICALIZATION,
+                    "section_scopes": scopes,
+                }
+            )
+        except (TypeError, ValueError, UnicodeEncodeError):
+            expected_scope_hash = None
+        if expected_scope_hash != scope_set["scope_set_sha256"]:
+            scope_hash_mismatch_count += 1
+            invalid_scope_artifact_ids.add(artifact_id)
+
+    missing_scope_set_count = len(set(artifact_by_id) - set(scope_set_by_artifact))
+    invalid_scope_artifact_ids.update(set(artifact_by_id) - set(scope_set_by_artifact))
+
     retrieval_table = tables["communication_artifact_retrievals"]
     retrieval_rows = [
         dict(row)
@@ -3052,16 +3374,19 @@ def _communication_integrity_inventory(
     for retrieval in retrieval_rows:
         artifact_id = int(retrieval["artifact_id"])
         artifact = artifact_by_id.get(artifact_id)
+        scope_set = scope_set_by_artifact.get(artifact_id)
         if artifact is None:
             orphan_retrieval_count += 1
             bad_retrieval_ids.add(int(retrieval["id"]))
             continue
         if (
-            retrieval["landing_url"] != artifact["landing_url"]
+            scope_set is None
+            or retrieval["landing_url"] != artifact["landing_url"]
             or retrieval["artifact_url"] != artifact["artifact_url"]
             or retrieval["retrieved_at"] < artifact["available_at"]
             or retrieval["metadata_known_at"] < retrieval["retrieved_at"]
             or retrieval["metadata_known_at"] < artifact["metadata_known_at"]
+            or retrieval["metadata_known_at"] < scope_set["metadata_known_at"]
         ):
             retrieval_mismatch_count += 1
             bad_retrieval_ids.add(int(retrieval["id"]))
@@ -3069,6 +3394,10 @@ def _communication_integrity_inventory(
                 retrieval["metadata_known_at"] < retrieval["retrieved_at"]
                 or retrieval["metadata_known_at"] < artifact["metadata_known_at"]
                 or retrieval["retrieved_at"] < artifact["available_at"]
+                or (
+                    scope_set is not None
+                    and retrieval["metadata_known_at"] < scope_set["metadata_known_at"]
+                )
             )
             continue
         if (
@@ -3132,11 +3461,12 @@ def _communication_integrity_inventory(
                         else None
                     ),
                     "available_at": _communication_iso(artifact["available_at"]),
+                    "section_scopes": parsed_scopes_by_artifact[int(artifact["id"])],
                     "landing_url": artifact["landing_url"],
                     "artifact_url": artifact["artifact_url"],
                 }
             )
-        except (TypeError, ValueError, UnicodeEncodeError):
+        except (KeyError, TypeError, ValueError, UnicodeEncodeError):
             expected_artifact_hash = None
         artifact_hash_mismatch_count += (
             expected_artifact_hash != artifact["artifact_version_sha256"]
@@ -3216,19 +3546,31 @@ def _communication_integrity_inventory(
         content_id = int(content["id"])
         artifact = artifact_by_id.get(int(content["artifact_id"]))
         retrieval = retrieval_by_id.get(int(content["retrieval_id"]))
+        scope_set = scope_set_by_artifact.get(int(content["artifact_id"]))
         if (
             artifact is None
             or retrieval is None
+            or scope_set is None
             or int(retrieval["artifact_id"]) != int(content["artifact_id"])
             or int(content["retrieval_id"]) in bad_retrieval_ids
             or artifact["rights_status"] not in {"cleared", "internal_only"}
             or content["captured_at"] < retrieval["retrieved_at"]
             or content["captured_at"] < retrieval["metadata_known_at"]
+            or content["captured_at"] < scope_set["metadata_known_at"]
         ):
             bad_content_bindings.add(content_id)
-        if retrieval is not None and (
-            content["captured_at"] < retrieval["retrieved_at"]
-            or content["captured_at"] < retrieval["metadata_known_at"]
+        if (
+            (
+                retrieval is not None
+                and (
+                    content["captured_at"] < retrieval["retrieved_at"]
+                    or content["captured_at"] < retrieval["metadata_known_at"]
+                )
+            )
+            or (
+                scope_set is not None
+                and content["captured_at"] < scope_set["metadata_known_at"]
+            )
         ):
             clock_mismatch_count += 1
 
@@ -3397,11 +3739,14 @@ def _communication_integrity_inventory(
     ]
     extraction_ids = {int(row["id"]) for row in extraction_rows}
     extraction_by_id = {int(row["id"]): row for row in extraction_rows}
+    artifact_id_by_extraction: dict[int, int] = {}
     bad_extraction_bindings: set[int] = set()
     for extraction in extraction_rows:
         extraction_id = int(extraction["id"])
         content_id = int(extraction["artifact_content_id"])
         content = content_by_id.get(content_id)
+        if content is not None:
+            artifact_id_by_extraction[extraction_id] = int(content["artifact_id"])
         if (
             content is None
             or content_id in bad_content_bindings
@@ -3418,7 +3763,10 @@ def _communication_integrity_inventory(
             select(
                 *(
                     segments.c[field]
-                    for field in ("extraction_id", *_COMMUNICATION_CANONICAL_SEGMENT_FIELDS)
+                    for field in (
+                        "extraction_id",
+                        *_COMMUNICATION_CANONICAL_SEGMENT_FIELDS_V2,
+                    )
                 ),
                 segments.c.text_sha256,
                 segments.c.char_count,
@@ -3430,9 +3778,41 @@ def _communication_integrity_inventory(
     char_count_mismatch_ids: set[int] = set()
     text_hash_mismatch_count = 0
     char_count_mismatch_count = 0
+    segment_semantic_mismatch_count = 0
+    segment_semantic_mismatch_ids: set[int] = set()
+    section_binding_mismatch_count = 0
+    section_binding_mismatch_ids: set[int] = set()
     for segment in segment_rows:
         extraction_id = int(segment["extraction_id"])
         segments_by_extraction[extraction_id].append(segment)
+        artifact_id = artifact_id_by_extraction.get(extraction_id)
+        declared_ordinals = [
+            scope.get("section_ordinal")
+            for scope in parsed_scopes_by_artifact.get(artifact_id, [])
+        ]
+        section_ordinal = segment["section_ordinal"]
+        declared_scope = next(
+            (
+                scope
+                for scope in parsed_scopes_by_artifact.get(artifact_id, [])
+                if scope.get("section_ordinal") == section_ordinal
+            ),
+            None,
+        )
+        allowed_segment_kinds = (
+            _COMMUNICATION_SCOPE_SEGMENT_KINDS.get(declared_scope.get("scope_key"), frozenset())
+            if declared_scope is not None
+            else frozenset()
+        )
+        if (
+            artifact_id is None
+            or isinstance(section_ordinal, bool)
+            or not isinstance(section_ordinal, int)
+            or section_ordinal not in declared_ordinals
+            or segment["segment_kind"] not in allowed_segment_kinds
+        ):
+            section_binding_mismatch_count += 1
+            section_binding_mismatch_ids.add(extraction_id)
         text_value = segment["text"]
         if isinstance(text_value, str):
             try:
@@ -3449,6 +3829,35 @@ def _communication_integrity_inventory(
         if expected_char_count != segment["char_count"]:
             char_count_mismatch_count += 1
             char_count_mismatch_ids.add(extraction_id)
+        segment_kind = segment["segment_kind"]
+        speaker_side = segment["speaker_side"]
+        if (
+            speaker_side not in {"publisher", "external", "moderator", "unknown"}
+            or (segment_kind == "q_and_a_question" and speaker_side == "publisher")
+            or (
+                segment_kind == "q_and_a_answer"
+                and speaker_side not in {"publisher", "unknown"}
+            )
+            or (
+                segment_kind in {"prepared_remarks", "letter"}
+                and speaker_side != "publisher"
+            )
+        ):
+            segment_semantic_mismatch_count += 1
+            segment_semantic_mismatch_ids.add(extraction_id)
+
+    section_order_mismatch_ids: set[int] = set()
+    for extraction_id, extraction_segments in segments_by_extraction.items():
+        section_ordinals = [segment["section_ordinal"] for segment in extraction_segments]
+        if any(
+            isinstance(left, int)
+            and not isinstance(left, bool)
+            and isinstance(right, int)
+            and not isinstance(right, bool)
+            and left > right
+            for left, right in zip(section_ordinals, section_ordinals[1:], strict=False)
+        ):
+            section_order_mismatch_ids.add(extraction_id)
 
     finalization_rows = [
         dict(row)
@@ -3465,6 +3874,8 @@ def _communication_integrity_inventory(
     ]
     finalized_ids = {int(row["extraction_id"]) for row in finalization_rows}
     bad_structure_ids: set[int] = set()
+    bad_section_coverage_ids: set[int] = set()
+    bad_section_semantic_ids: set[int] = set()
     unsupported_canonicalization_ids: set[int] = set()
     corpus_hash_mismatch_ids: set[int] = set()
     canonicalization_error_ids: set[int] = set()
@@ -3495,11 +3906,56 @@ def _communication_integrity_inventory(
         if extraction is not None and finalization["finalized_at"] < extraction["extracted_at"]:
             clock_mismatch_count += 1
             bad_structure_ids.add(extraction_id)
-        if finalization["canonicalization_version"] != _COMMUNICATION_CANONICALIZATION:
+        artifact_id = artifact_id_by_extraction.get(extraction_id)
+        declared_section_ordinals = [
+            scope.get("section_ordinal")
+            for scope in parsed_scopes_by_artifact.get(artifact_id, [])
+        ]
+        represented_section_ordinals = sorted(
+            {
+                segment["section_ordinal"]
+                for segment in extraction_segments
+                if isinstance(segment["section_ordinal"], int)
+                and not isinstance(segment["section_ordinal"], bool)
+            }
+        )
+        if (
+            artifact_id is None
+            or artifact_id in invalid_scope_artifact_ids
+            or represented_section_ordinals != declared_section_ordinals
+        ):
+            bad_section_coverage_ids.add(extraction_id)
+        for scope in parsed_scopes_by_artifact.get(artifact_id, []):
+            scope_segments = [
+                segment
+                for segment in extraction_segments
+                if segment["section_ordinal"] == scope.get("section_ordinal")
+            ]
+            kinds = {segment["segment_kind"] for segment in scope_segments}
+            if not (kinds - {"heading", "other"}):
+                bad_section_semantic_ids.add(extraction_id)
+            if scope.get("scope_key") == "prepared_remarks" and not any(
+                segment["segment_kind"] == "prepared_remarks"
+                and segment["speaker_side"] == "publisher"
+                for segment in scope_segments
+            ):
+                bad_section_semantic_ids.add(extraction_id)
+            if scope.get("scope_key") == "q_and_a" and not {
+                "q_and_a_question",
+                "q_and_a_answer",
+            }.issubset(kinds):
+                bad_section_semantic_ids.add(extraction_id)
+        if (
+            finalization["canonicalization_version"]
+            != _COMMUNICATION_CANONICALIZATION_V2
+        ):
             unsupported_canonicalization_ids.add(extraction_id)
             continue
         try:
-            expected_corpus_hash = _communication_corpus_sha256(extraction_segments)
+            expected_corpus_hash = _communication_corpus_sha256(
+                extraction_segments,
+                finalization["canonicalization_version"],
+            )
         except (KeyError, TypeError, ValueError, UnicodeEncodeError):
             canonicalization_error_ids.add(extraction_id)
             continue
@@ -3510,6 +3966,11 @@ def _communication_integrity_inventory(
         bad_extraction_bindings
         | text_hash_mismatch_ids
         | char_count_mismatch_ids
+        | segment_semantic_mismatch_ids
+        | section_binding_mismatch_ids
+        | section_order_mismatch_ids
+        | bad_section_coverage_ids
+        | bad_section_semantic_ids
         | bad_structure_ids
         | unsupported_canonicalization_ids
         | corpus_hash_mismatch_ids
@@ -3527,6 +3988,13 @@ def _communication_integrity_inventory(
             "event_version_sha256_mismatch_count": event_hash_mismatch_count,
             "artifact_version_sha256_mismatch_count": artifact_hash_mismatch_count,
             "artifact_semantic_mismatch_count": artifact_semantic_mismatch_count,
+            "missing_artifact_scope_set_count": missing_scope_set_count,
+            "orphan_artifact_scope_set_count": orphan_scope_set_count,
+            "scope_set_artifact_binding_mismatch_count": scope_binding_mismatch_count,
+            "scope_set_json_malformed_count": scope_json_malformed_count,
+            "scope_set_json_noncanonical_count": scope_json_noncanonical_count,
+            "scope_set_semantic_mismatch_count": scope_semantic_mismatch_count,
+            "scope_set_sha256_mismatch_count": scope_hash_mismatch_count,
             "coverage_version_sha256_mismatch_count": coverage_hash_mismatch_count,
             "event_lineage_mismatch_count": event_lineage_mismatch_count,
             "artifact_lineage_mismatch_count": artifact_lineage_mismatch_count,
@@ -3561,6 +4029,11 @@ def _communication_integrity_inventory(
             ),
             "segment_text_sha256_mismatch_count": text_hash_mismatch_count,
             "segment_char_count_mismatch_count": char_count_mismatch_count,
+            "segment_semantic_mismatch_count": segment_semantic_mismatch_count,
+            "segment_section_binding_mismatch_count": section_binding_mismatch_count,
+            "segment_section_order_mismatch_count": len(section_order_mismatch_ids),
+            "finalized_section_coverage_mismatch_count": len(bad_section_coverage_ids),
+            "finalized_section_semantic_mismatch_count": len(bad_section_semantic_ids),
             "finalization_structure_mismatch_count": len(bad_structure_ids),
             "unsupported_canonicalization_count": len(unsupported_canonicalization_ids),
             "corpus_sha256_mismatch_count": len(corpus_hash_mismatch_ids),
@@ -3578,6 +4051,13 @@ def _communication_integrity_inventory(
         ("event_version_sha256", result["event_version_sha256_mismatch_count"]),
         ("artifact_version_sha256", result["artifact_version_sha256_mismatch_count"]),
         ("artifact_semantics", result["artifact_semantic_mismatch_count"]),
+        ("missing_artifact_scope_set", result["missing_artifact_scope_set_count"]),
+        ("orphan_artifact_scope_set", result["orphan_artifact_scope_set_count"]),
+        ("scope_set_artifact_binding", result["scope_set_artifact_binding_mismatch_count"]),
+        ("scope_set_json", result["scope_set_json_malformed_count"]),
+        ("scope_set_json_canonical", result["scope_set_json_noncanonical_count"]),
+        ("scope_set_semantics", result["scope_set_semantic_mismatch_count"]),
+        ("scope_set_sha256", result["scope_set_sha256_mismatch_count"]),
         ("coverage_version_sha256", result["coverage_version_sha256_mismatch_count"]),
         ("event_lineage", result["event_lineage_mismatch_count"]),
         ("artifact_lineage", result["artifact_lineage_mismatch_count"]),
@@ -3597,6 +4077,17 @@ def _communication_integrity_inventory(
         ("extraction_content_binding", result["extraction_content_binding_mismatch_count"]),
         ("segment_text_sha256", result["segment_text_sha256_mismatch_count"]),
         ("segment_char_count", result["segment_char_count_mismatch_count"]),
+        ("segment_semantics", result["segment_semantic_mismatch_count"]),
+        ("segment_section_binding", result["segment_section_binding_mismatch_count"]),
+        ("segment_section_order", result["segment_section_order_mismatch_count"]),
+        (
+            "finalized_section_coverage",
+            result["finalized_section_coverage_mismatch_count"],
+        ),
+        (
+            "finalized_section_semantics",
+            result["finalized_section_semantic_mismatch_count"],
+        ),
         ("finalization_structure", result["finalization_structure_mismatch_count"]),
         ("canonicalization_version", result["unsupported_canonicalization_count"]),
         ("corpus_sha256", result["corpus_sha256_mismatch_count"]),
@@ -3627,6 +4118,7 @@ def _communications_inventory(
     coverage = tables.get("organization_commodity_coverage")
     events = tables.get("communication_events")
     artifacts = tables.get("communication_artifacts")
+    scope_sets = tables.get("communication_artifact_section_scope_sets")
     retrievals = tables.get("communication_artifact_retrievals")
     contents = tables.get("communication_artifact_contents")
     extractions = tables.get("communication_extractions")
@@ -3660,6 +4152,21 @@ def _communications_inventory(
         ).one()
 
     artifact_version_count = _count(connection, artifacts)
+    artifact_section_scope_set_count = _count(connection, scope_sets)
+    declared_section_scope_count: int | None = None
+    multi_section_artifact_count: int | None = None
+    if scope_sets is not None and {"scope_count"}.issubset(scope_sets.c.keys()):
+        declared_section_scope_count = int(
+            connection.scalar(select(func.sum(scope_sets.c.scope_count))) or 0
+        )
+        multi_section_artifact_count = int(
+            connection.scalar(
+                select(func.count())
+                .select_from(scope_sets)
+                .where(scope_sets.c.scope_count > 1)
+            )
+            or 0
+        )
     represented_source_count: int | None = None
     stored_content_artifact_count: int | None = None
     archived_artifact_count: int | None = None
@@ -3718,6 +4225,9 @@ def _communications_inventory(
         "event_count": logical_event_count,
         "event_version_count": event_version_count,
         "artifact_version_count": artifact_version_count,
+        "artifact_section_scope_set_count": artifact_section_scope_set_count,
+        "declared_section_scope_count": declared_section_scope_count,
+        "multi_section_artifact_count": multi_section_artifact_count,
         "artifact_retrieval_count": _count(connection, retrievals),
         "artifact_content_count": _count(connection, contents),
         "stored_content_artifact_count": stored_content_artifact_count,
@@ -3739,6 +4249,7 @@ def _communications_inventory(
         "artifacts_by_acquisition": counts_by(artifacts, "acquisition_status"),
         "commodity_mappings_by_status": counts_by(coverage, "mapping_status"),
         "segments_by_kind": counts_by(segments, "segment_kind"),
+        "segments_by_section_ordinal": counts_by(segments, "section_ordinal"),
         "segments_by_speaker_side": counts_by(segments, "speaker_side"),
         "finalizations_by_canonicalization": counts_by(finalizations, "canonicalization_version"),
         **integrity,
@@ -4095,6 +4606,8 @@ def render_inventory_summary(inventory: dict[str, Any]) -> str:
             f"{communications['catalogue_organization_count']} organizations; "
             f"{count_text(communications['event_version_count'])} event versions; "
             f"{count_text(communications['artifact_version_count'])} artifact versions; "
+            f"{count_text(communications['artifact_section_scope_set_count'])} scope sets "
+            f"({count_text(communications['multi_section_artifact_count'])} multi-section); "
             f"{count_text(communications['artifact_content_count'])} content captures; "
             f"{count_text(communications['finalized_extraction_count'])} finalized extractions; "
             f"{count_text(communications['finalized_segment_count'])} finalized segments; "

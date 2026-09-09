@@ -380,7 +380,7 @@ class CommunicationSchemaContract(Base):
             name="ck_communication_schema_contract_id",
         ),
         CheckConstraint(
-            "schema_version = 1",
+            "schema_version = 2",
             name="ck_communication_schema_contract_version",
         ),
         CheckConstraint(
@@ -1084,6 +1084,53 @@ class CommunicationArtifact(Base):
     )
 
 
+class CommunicationArtifactSectionScopeSet(Base):
+    """Atomic, immutable declaration of the semantic sections in one artifact.
+
+    The canonical JSON array keeps the ordered scope set indivisible: a mixed
+    document can map one artifact (and therefore every immutable byte capture
+    of it) to several semantic sections without creating duplicate artifacts or
+    partially inserting child rows.  ``metadata_known_at`` records when this
+    interpretation became available; changed interpretations require a new
+    artifact version rather than mutation of this row.
+    """
+
+    __tablename__ = "communication_artifact_section_scope_sets"
+
+    artifact_id = Column(
+        Integer,
+        ForeignKey("communication_artifacts.id", ondelete="RESTRICT"),
+        primary_key=True,
+    )
+    artifact_version_sha256 = Column(String(64), nullable=False, index=True)
+    scope_count = Column(Integer, nullable=False)
+    scopes_json = Column(Text, nullable=False)
+    scope_set_sha256 = Column(String(64), nullable=False, index=True)
+    metadata_known_at = Column(DateTime, nullable=False, index=True)
+    canonicalization_version = Column(String(64), nullable=False)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
+
+    __table_args__ = (
+        CheckConstraint(
+            "scope_count > 0 AND json_valid(scopes_json) "
+            "AND json_type(scopes_json) = 'array' "
+            "AND json_array_length(scopes_json) = scope_count",
+            name="ck_communication_section_scope_set_shape",
+        ),
+        CheckConstraint(
+            "length(artifact_version_sha256) = 64 "
+            "AND artifact_version_sha256 NOT GLOB '*[^0-9a-f]*' "
+            "AND length(scope_set_sha256) = 64 "
+            "AND scope_set_sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_communication_section_scope_set_sha256",
+        ),
+        CheckConstraint(
+            "canonicalization_version = 'communication_artifact_section_scopes_json_v1'",
+            name="ck_communication_section_scope_set_canonicalization",
+        ),
+    )
+
+
 class CommunicationArtifactRetrieval(Base):
     """Append-only observation that an unchanged artifact link was revisited."""
 
@@ -1254,6 +1301,7 @@ class CommunicationSegment(Base):
         primary_key=True,
     )
     ordinal = Column(Integer, primary_key=True)
+    section_ordinal = Column(Integer, nullable=False)
     segment_kind = Column(String(32), nullable=False, index=True)
     speaker_name = Column(String(192), nullable=True)
     speaker_role = Column(String(192), nullable=True)
@@ -1344,7 +1392,7 @@ class CommunicationExtractionFinalization(Base):
             name="ck_communication_extraction_finalization_sha256",
         ),
         CheckConstraint(
-            "canonicalization_version = 'communication_segments_json_v1'",
+            "canonicalization_version = 'communication_segments_json_v2'",
             name="ck_communication_extraction_canonicalization",
         ),
     )
@@ -1690,6 +1738,7 @@ for _immutable_model in (
     OrganizationCommodityCoverage,
     CommunicationEvent,
     CommunicationArtifact,
+    CommunicationArtifactSectionScopeSet,
     CommunicationArtifactRetrieval,
     CommunicationArtifactContent,
     CommunicationExtraction,
@@ -1759,6 +1808,11 @@ def _sqlite_read_only(path: Path) -> sqlite3.Connection:
 
 def _verify_exact_sqlite_backup(source_path: Path, backup_path: Path) -> None:
     """Fail unless ``backup_path`` is a complete logical copy of ``source_path``."""
+
+    if source_path.samefile(backup_path):
+        raise RuntimeError(
+            "SQLite backup must be a distinct filesystem object from its source"
+        )
 
     with (
         closing(_sqlite_read_only(source_path)) as source,
@@ -1846,11 +1900,12 @@ def _create_or_verify_release_migration_backup(
             _verify_exact_sqlite_backup(source_path, backup_path)
         else:
             temporary_path.unlink()
-            temporary_path = None
         _verify_exact_sqlite_backup(source_path, backup_path)
     finally:
         if temporary_path is not None:
             temporary_path.unlink(missing_ok=True)
+            Path(f"{temporary_path}-wal").unlink(missing_ok=True)
+            Path(f"{temporary_path}-shm").unlink(missing_ok=True)
 
 
 def create_verified_sqlite_backup(source_path: Path, backup_path: Path) -> Path:
@@ -2084,7 +2139,7 @@ def _migrate_release_recurrence_constraint(engine: Engine) -> None:
             raw_connection.close()
 
 
-_COMMUNICATION_SCHEMA_TABLES = (
+_COMMUNICATION_SCHEMA_V1_TABLES = (
     "communication_schema_contract",
     "organizations",
     "communication_source_policy_snapshots",
@@ -2096,6 +2151,11 @@ _COMMUNICATION_SCHEMA_TABLES = (
     "communication_extractions",
     "communication_segments",
     "communication_extraction_finalizations",
+)
+_COMMUNICATION_SCHEMA_TABLES = (
+    *_COMMUNICATION_SCHEMA_V1_TABLES[:6],
+    "communication_artifact_section_scope_sets",
+    *_COMMUNICATION_SCHEMA_V1_TABLES[6:],
 )
 _COMMUNICATION_CUSTOM_TRIGGERS = (
     "communication_policy_snapshot_validate",
@@ -2110,23 +2170,36 @@ _COMMUNICATION_CUSTOM_TRIGGERS = (
     "communication_content_matches_retrieval",
     "communication_content_successor_order",
     "communication_extractions_require_content",
+    "communication_section_scope_set_validate",
+    "communication_segments_match_scope_set",
     "communication_segments_reject_after_finalization",
     "communication_extraction_finalization_validate",
 )
-COMMUNICATION_SCHEMA_VERSION = 1
-COMMUNICATION_SCHEMA_SHA256 = "1fe8247a31b767f933b3c6f8646ee8b2536da2655bc8fc087ef99fe5f68dedb3"
-COMMUNICATION_TRIGGER_SHA256 = "62d2f2c2c9b152aeede8d4d4c203f05c24aba5697b311e534956053f6a315007"
+_COMMUNICATION_SCHEMA_V1_VERSION = 1
+_COMMUNICATION_SCHEMA_V1_SHA256 = (
+    "1fe8247a31b767f933b3c6f8646ee8b2536da2655bc8fc087ef99fe5f68dedb3"
+)
+_COMMUNICATION_TRIGGER_V1_SHA256 = (
+    "62d2f2c2c9b152aeede8d4d4c203f05c24aba5697b311e534956053f6a315007"
+)
+COMMUNICATION_SCHEMA_VERSION = 2
+COMMUNICATION_SCHEMA_SHA256 = "57ea8e7e6de787569aeaaa4e06dd419b4b6ccbbb78458eec2c8b92320d2c3e15"
+COMMUNICATION_TRIGGER_SHA256 = "f86163665f9d827d83018423137e8fa38900163735ea8aef5c1587531696504c"
 
 
-def _communication_ddl_sha256(connection, object_types: tuple[str, ...]) -> str:
-    placeholders = ",".join("?" for _ in _COMMUNICATION_SCHEMA_TABLES)
+def _communication_ddl_sha256(
+    connection,
+    object_types: tuple[str, ...],
+    table_names: tuple[str, ...] = _COMMUNICATION_SCHEMA_TABLES,
+) -> str:
+    placeholders = ",".join("?" for _ in table_names)
     type_placeholders = ",".join("?" for _ in object_types)
     rows = connection.exec_driver_sql(
         "SELECT type, name, tbl_name, sql FROM sqlite_master "
         f"WHERE tbl_name IN ({placeholders}) "
         f"AND type IN ({type_placeholders}) AND sql IS NOT NULL "
         "ORDER BY type, name, tbl_name",
-        (*_COMMUNICATION_SCHEMA_TABLES, *object_types),
+        (*table_names, *object_types),
     ).all()
     canonical = [
         {
@@ -2146,6 +2219,722 @@ def _communication_ddl_sha256(connection, object_types: tuple[str, ...]) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def _create_immutable_table_triggers(connection, table_names: tuple[str, ...]) -> None:
+    for table_name in table_names:
+        connection.exec_driver_sql(
+            f"""
+            CREATE TRIGGER IF NOT EXISTS {table_name}_reject_update
+            BEFORE UPDATE ON {table_name}
+            BEGIN
+                SELECT RAISE(ABORT, '{table_name} rows are immutable');
+            END
+            """
+        )
+        connection.exec_driver_sql(
+            f"""
+            CREATE TRIGGER IF NOT EXISTS {table_name}_reject_delete
+            BEFORE DELETE ON {table_name}
+            BEGIN
+                SELECT RAISE(ABORT, '{table_name} rows are immutable');
+            END
+            """
+        )
+
+
+def _create_communication_section_scope_triggers(connection) -> None:
+    connection.exec_driver_sql(
+        """
+        CREATE TRIGGER IF NOT EXISTS communication_section_scope_set_validate
+        BEFORE INSERT ON communication_artifact_section_scope_sets
+        WHEN NOT EXISTS (
+            SELECT 1
+            FROM communication_artifacts AS artifact
+            WHERE artifact.id = NEW.artifact_id
+              AND artifact.artifact_version_sha256 = NEW.artifact_version_sha256
+              AND NEW.metadata_known_at >= artifact.metadata_known_at
+        ) OR EXISTS (
+            SELECT 1 FROM communication_artifact_contents
+            WHERE artifact_id = NEW.artifact_id
+        ) OR EXISTS (
+            SELECT 1
+            FROM communication_extractions AS extraction
+            JOIN communication_artifact_contents AS content
+              ON content.id = extraction.artifact_content_id
+            WHERE content.artifact_id = NEW.artifact_id
+        ) OR EXISTS (
+            SELECT 1
+            FROM communication_segments AS segment
+            JOIN communication_extractions AS extraction
+              ON extraction.id = segment.extraction_id
+            JOIN communication_artifact_contents AS content
+              ON content.id = extraction.artifact_content_id
+            WHERE content.artifact_id = NEW.artifact_id
+        ) OR EXISTS (
+            SELECT 1 FROM json_each(NEW.scopes_json) AS scope
+            WHERE scope.type <> 'object'
+               OR (SELECT COUNT(*) FROM json_each(scope.value)) <> 8
+               OR EXISTS (
+                   SELECT 1 FROM json_each(scope.value) AS field
+                   WHERE field.key NOT IN (
+                       'section_ordinal', 'scope_key', 'artifact_role', 'material_type',
+                       'origin_type', 'provenance_tier', 'transcriber',
+                       'transcriber_attribution'
+                   )
+               )
+               OR json_type(scope.value, '$.section_ordinal') IS NOT 'integer'
+               OR json_extract(scope.value, '$.section_ordinal') < 1
+               OR json_type(scope.value, '$.scope_key') IS NOT 'text'
+               OR length(json_extract(scope.value, '$.scope_key')) NOT BETWEEN 1 AND 96
+               OR json_extract(scope.value, '$.scope_key')
+                    <> trim(json_extract(scope.value, '$.scope_key'))
+               OR substr(json_extract(scope.value, '$.scope_key'), 1, 1) NOT GLOB '[a-z]'
+               OR json_extract(scope.value, '$.scope_key') GLOB '*[^a-z0-9_]*'
+               OR json_type(scope.value, '$.artifact_role') IS NOT 'text'
+               OR json_type(scope.value, '$.material_type') IS NOT 'text'
+               OR json_type(scope.value, '$.origin_type') IS NOT 'text'
+               OR json_type(scope.value, '$.provenance_tier') IS NOT 'text'
+               OR json_type(scope.value, '$.transcriber_attribution') IS NOT 'text'
+               OR json_type(scope.value, '$.transcriber') IS NULL
+               OR json_type(scope.value, '$.transcriber') NOT IN ('text', 'null')
+               OR (
+                   json_type(scope.value, '$.transcriber') = 'text'
+                   AND length(trim(json_extract(scope.value, '$.transcriber'))) = 0
+               )
+               OR json_extract(scope.value, '$.section_ordinal')
+                    <> CAST(scope.key AS INTEGER) + 1
+        ) OR (
+            SELECT COUNT(DISTINCT json_extract(scope.value, '$.scope_key'))
+            FROM json_each(NEW.scopes_json) AS scope
+        ) <> NEW.scope_count OR (
+            SELECT COUNT(DISTINCT json_extract(scope.value, '$.section_ordinal'))
+            FROM json_each(NEW.scopes_json) AS scope
+        ) <> NEW.scope_count OR EXISTS (
+            SELECT 1 FROM json_each(NEW.scopes_json) AS scope
+            WHERE NOT (
+                (json_extract(scope.value, '$.scope_key') = 'prepared_remarks'
+                 AND json_extract(scope.value, '$.artifact_role') = 'prepared_remarks'
+                 AND json_extract(scope.value, '$.material_type') IN (
+                     'financial_results', 'management_review',
+                     'monetary_policy_statement', 'speech_text'
+                 )) OR
+                (json_extract(scope.value, '$.scope_key') = 'q_and_a'
+                 AND json_extract(scope.value, '$.artifact_role') = 'q_and_a_transcript'
+                 AND json_extract(scope.value, '$.material_type') = 'questions_and_answers') OR
+                (json_extract(scope.value, '$.scope_key') = 'full_transcript'
+                 AND json_extract(scope.value, '$.artifact_role') = 'full_transcript'
+                 AND json_extract(scope.value, '$.material_type') IN (
+                     'press_conference_transcript', 'results_transcript'
+                 )) OR
+                (json_extract(scope.value, '$.scope_key') = 'ceo_letter'
+                 AND json_extract(scope.value, '$.artifact_role') = 'ceo_letter'
+                 AND json_extract(scope.value, '$.material_type') = 'ceo_letter') OR
+                (json_extract(scope.value, '$.scope_key') = 'chair_letter'
+                 AND json_extract(scope.value, '$.artifact_role') = 'chair_letter'
+                 AND json_extract(scope.value, '$.material_type') IN (
+                     'annual_report', 'management_review'
+                 )) OR
+                (json_extract(scope.value, '$.scope_key') = 'annual_report'
+                 AND json_extract(scope.value, '$.artifact_role') = 'annual_report'
+                 AND json_extract(scope.value, '$.material_type') = 'annual_report') OR
+                (json_extract(scope.value, '$.scope_key') = 'subtitles'
+                 AND json_extract(scope.value, '$.artifact_role') = 'subtitles'
+                 AND json_extract(scope.value, '$.material_type') = 'subtitles') OR
+                (json_extract(scope.value, '$.scope_key') = 'webcast_video'
+                 AND json_extract(scope.value, '$.artifact_role') = 'webcast_video'
+                 AND json_extract(scope.value, '$.material_type') = 'press_conference_video')
+            )
+        ) OR EXISTS (
+            SELECT 1 FROM json_each(NEW.scopes_json) AS scope
+            WHERE NOT (
+                (json_extract(scope.value, '$.origin_type') = 'publisher_authored'
+                 AND json_extract(scope.value, '$.provenance_tier')
+                     = 'official_authored_text') OR
+                (json_extract(scope.value, '$.origin_type') = 'official_published_transcript'
+                 AND json_extract(scope.value, '$.provenance_tier')
+                     = 'official_published_transcript') OR
+                (json_extract(scope.value, '$.origin_type') = 'official_published_media'
+                 AND json_extract(scope.value, '$.provenance_tier')
+                     = 'official_published_media') OR
+                (json_extract(scope.value, '$.origin_type') = 'official_hosted_vendor'
+                 AND json_extract(scope.value, '$.provenance_tier')
+                     = 'official_hosted_third_party') OR
+                (json_extract(scope.value, '$.origin_type') = 'official_caption'
+                 AND json_extract(scope.value, '$.provenance_tier') = 'official_caption') OR
+                (json_extract(scope.value, '$.origin_type') = 'automatic_caption'
+                 AND json_extract(scope.value, '$.provenance_tier')
+                     = 'official_hosted_automatic_caption') OR
+                (json_extract(scope.value, '$.origin_type') = 'local_asr'
+                 AND json_extract(scope.value, '$.provenance_tier') = 'local_derived_asr')
+            )
+        ) OR EXISTS (
+            SELECT 1 FROM json_each(NEW.scopes_json) AS scope
+            WHERE NOT (
+                (json_extract(scope.value, '$.material_type') IN (
+                     'annual_report', 'ceo_letter', 'financial_results',
+                     'management_review', 'monetary_policy_statement', 'speech_text'
+                 ) AND json_extract(scope.value, '$.origin_type') = 'publisher_authored') OR
+                (json_extract(scope.value, '$.material_type') IN (
+                     'questions_and_answers', 'press_conference_transcript',
+                     'results_transcript'
+                 ) AND json_extract(scope.value, '$.origin_type') IN (
+                     'official_published_transcript', 'official_hosted_vendor'
+                 )) OR
+                (json_extract(scope.value, '$.material_type') = 'subtitles'
+                 AND json_extract(scope.value, '$.origin_type') IN (
+                     'official_caption', 'automatic_caption', 'local_asr'
+                 )) OR
+                (json_extract(scope.value, '$.material_type') = 'press_conference_video'
+                 AND json_extract(scope.value, '$.origin_type') = 'official_published_media')
+            )
+        ) OR EXISTS (
+            SELECT 1
+            FROM json_each(NEW.scopes_json) AS scope
+            JOIN communication_artifacts AS artifact ON artifact.id = NEW.artifact_id
+            WHERE NOT (
+                (json_extract(scope.value, '$.origin_type') IN (
+                     'publisher_authored', 'official_published_media'
+                 ) AND json_extract(scope.value, '$.transcriber') IS NULL
+                   AND json_extract(scope.value, '$.transcriber_attribution')
+                       = 'not_applicable') OR
+                (json_extract(scope.value, '$.origin_type') IN (
+                     'official_hosted_vendor', 'automatic_caption', 'local_asr'
+                 ) AND json_extract(scope.value, '$.transcriber') IS NOT NULL
+                   AND length(trim(json_extract(scope.value, '$.transcriber'))) > 0
+                   AND json_extract(scope.value, '$.transcriber') <> artifact.publisher
+                   AND json_extract(scope.value, '$.transcriber_attribution')
+                       = 'named_third_party') OR
+                (json_extract(scope.value, '$.origin_type') IN (
+                     'official_published_transcript', 'official_caption'
+                 ) AND (
+                    (json_extract(scope.value, '$.transcriber') IS NULL
+                     AND json_extract(scope.value, '$.transcriber_attribution')
+                         = 'not_disclosed') OR
+                    (json_extract(scope.value, '$.transcriber') = artifact.publisher
+                     AND json_extract(scope.value, '$.transcriber_attribution') = 'publisher') OR
+                    (json_extract(scope.value, '$.transcriber') IS NOT NULL
+                     AND length(trim(json_extract(scope.value, '$.transcriber'))) > 0
+                     AND json_extract(scope.value, '$.transcriber') <> artifact.publisher
+                     AND json_extract(scope.value, '$.transcriber_attribution')
+                         = 'named_third_party')
+                 ))
+            )
+        ) OR EXISTS (
+            SELECT 1 FROM json_each(NEW.scopes_json) AS scope
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM communication_artifacts AS artifact
+                JOIN communication_source_policy_snapshots AS policy
+                  ON policy.catalogue_sha256 = artifact.catalogue_sha256
+                 AND policy.source_id = artifact.source_id
+                JOIN json_each(policy.material_types_json) AS material
+                WHERE artifact.id = NEW.artifact_id
+                  AND material.value = json_extract(scope.value, '$.material_type')
+            )
+        ) OR NOT EXISTS (
+            SELECT 1
+            FROM json_each(NEW.scopes_json) AS scope
+            JOIN communication_artifacts AS artifact ON artifact.id = NEW.artifact_id
+            WHERE json_extract(scope.value, '$.artifact_role') = artifact.artifact_role
+              AND json_extract(scope.value, '$.material_type') = artifact.material_type
+              AND json_extract(scope.value, '$.origin_type') = artifact.origin_type
+              AND json_extract(scope.value, '$.provenance_tier') = artifact.provenance_tier
+              AND json_extract(scope.value, '$.transcriber') IS artifact.transcriber
+              AND json_extract(scope.value, '$.transcriber_attribution')
+                    = artifact.transcriber_attribution
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'invalid communication artifact section-scope set');
+        END
+        """
+    )
+    connection.exec_driver_sql(
+        """
+        CREATE TRIGGER IF NOT EXISTS communication_segments_match_scope_set
+        BEFORE INSERT ON communication_segments
+        WHEN (
+            NEW.section_ordinal IS NULL AND EXISTS (
+                SELECT 1
+                FROM communication_artifact_section_scope_sets AS scope_set
+                JOIN communication_artifact_contents AS content
+                  ON content.artifact_id = scope_set.artifact_id
+                JOIN communication_extractions AS extraction
+                  ON extraction.artifact_content_id = content.id
+                WHERE extraction.id = NEW.extraction_id
+            )
+        ) OR (
+            NEW.section_ordinal IS NOT NULL AND NOT EXISTS (
+                SELECT 1
+                FROM communication_artifact_section_scope_sets AS scope_set
+                JOIN communication_artifact_contents AS content
+                  ON content.artifact_id = scope_set.artifact_id
+                JOIN communication_extractions AS extraction
+                  ON extraction.artifact_content_id = content.id
+                JOIN json_each(scope_set.scopes_json) AS scope
+                WHERE extraction.id = NEW.extraction_id
+                  AND json_extract(scope.value, '$.section_ordinal') = NEW.section_ordinal
+                  AND (
+                      NEW.segment_kind IN ('heading', 'other') OR
+                      (json_extract(scope.value, '$.scope_key') = 'prepared_remarks'
+                       AND NEW.segment_kind = 'prepared_remarks') OR
+                      (json_extract(scope.value, '$.scope_key') = 'q_and_a'
+                       AND NEW.segment_kind IN ('q_and_a_question', 'q_and_a_answer')) OR
+                      (json_extract(scope.value, '$.scope_key') IN (
+                          'ceo_letter', 'chair_letter'
+                       ) AND NEW.segment_kind = 'letter') OR
+                      (json_extract(scope.value, '$.scope_key') = 'annual_report'
+                       AND NEW.segment_kind IN ('letter', 'narrative')) OR
+                      (json_extract(scope.value, '$.scope_key') IN (
+                          'full_transcript', 'subtitles', 'webcast_video'
+                       ) AND NEW.segment_kind IN (
+                          'prepared_remarks', 'q_and_a_question',
+                          'q_and_a_answer', 'narrative'
+                       ))
+                  )
+            )
+        ) OR EXISTS (
+            SELECT 1 FROM communication_segments AS prior
+            WHERE prior.extraction_id = NEW.extraction_id
+              AND prior.section_ordinal IS NOT NULL
+              AND (
+                  (prior.ordinal < NEW.ordinal
+                   AND prior.section_ordinal > NEW.section_ordinal) OR
+                  (prior.ordinal > NEW.ordinal
+                   AND prior.section_ordinal < NEW.section_ordinal)
+              )
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'communication segment conflicts with artifact section scopes');
+        END
+        """
+    )
+
+
+def _create_communication_artifact_use_triggers(connection) -> None:
+    connection.exec_driver_sql(
+        """
+        CREATE TRIGGER IF NOT EXISTS communication_retrieval_matches_artifact
+        BEFORE INSERT ON communication_artifact_retrievals
+        WHEN NOT EXISTS (
+            SELECT 1
+            FROM communication_artifacts AS artifact
+            JOIN communication_artifact_section_scope_sets AS scope_set
+              ON scope_set.artifact_id = artifact.id
+            WHERE artifact.id = NEW.artifact_id
+              AND scope_set.artifact_version_sha256 = artifact.artifact_version_sha256
+              AND artifact.landing_url = NEW.landing_url
+              AND artifact.artifact_url = NEW.artifact_url
+              AND NEW.retrieved_at >= artifact.available_at
+              AND NEW.metadata_known_at >= scope_set.metadata_known_at
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'retrieval observation conflicts with artifact');
+        END
+        """
+    )
+    connection.exec_driver_sql(
+        """
+        CREATE TRIGGER IF NOT EXISTS communication_content_matches_retrieval
+        BEFORE INSERT ON communication_artifact_contents
+        WHEN NOT EXISTS (
+            SELECT 1
+            FROM communication_artifacts AS artifact
+            JOIN communication_artifact_retrievals AS retrieval
+              ON retrieval.artifact_id = artifact.id
+            JOIN communication_artifact_section_scope_sets AS scope_set
+              ON scope_set.artifact_id = artifact.id
+            WHERE artifact.id = NEW.artifact_id
+              AND retrieval.id = NEW.retrieval_id
+              AND artifact.rights_status IN ('cleared', 'internal_only')
+              AND NEW.captured_at >= retrieval.retrieved_at
+              AND NEW.captured_at >= retrieval.metadata_known_at
+              AND NEW.captured_at >= scope_set.metadata_known_at
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'content capture conflicts with retrieval or rights policy');
+        END
+        """
+    )
+
+
+def _create_communication_segment_finalization_guard(connection) -> None:
+    connection.exec_driver_sql(
+        """
+        CREATE TRIGGER IF NOT EXISTS communication_segments_reject_after_finalization
+        BEFORE INSERT ON communication_segments
+        WHEN EXISTS (
+            SELECT 1 FROM communication_extraction_finalizations
+            WHERE extraction_id = NEW.extraction_id
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'finalized communication extraction cannot gain segments');
+        END
+        """
+    )
+
+
+def _create_communication_finalization_trigger(connection) -> None:
+    connection.exec_driver_sql(
+        """
+        CREATE TRIGGER IF NOT EXISTS communication_extraction_finalization_validate
+        BEFORE INSERT ON communication_extraction_finalizations
+        WHEN NOT EXISTS (
+            SELECT 1
+            FROM communication_extractions AS extraction
+            WHERE extraction.id = NEW.extraction_id
+              AND NEW.finalized_at >= extraction.extracted_at
+              AND NEW.segment_count = (
+                  SELECT COUNT(*) FROM communication_segments
+                  WHERE extraction_id = NEW.extraction_id
+              )
+              AND 1 = (
+                  SELECT MIN(ordinal) FROM communication_segments
+                  WHERE extraction_id = NEW.extraction_id
+              )
+              AND NEW.segment_count = (
+                  SELECT MAX(ordinal) FROM communication_segments
+                  WHERE extraction_id = NEW.extraction_id
+              )
+              AND NEW.total_char_count = (
+                  SELECT SUM(char_count) FROM communication_segments
+                  WHERE extraction_id = NEW.extraction_id
+              )
+              AND NEW.canonicalization_version = 'communication_segments_json_v2'
+              AND EXISTS (
+                      SELECT 1
+                      FROM communication_artifact_section_scope_sets AS scope_set
+                      JOIN communication_artifact_contents AS content
+                        ON content.artifact_id = scope_set.artifact_id
+                      WHERE content.id = extraction.artifact_content_id
+                        AND scope_set.scope_count = (
+                            SELECT COUNT(DISTINCT section_ordinal)
+                            FROM communication_segments
+                            WHERE extraction_id = NEW.extraction_id
+                              AND section_ordinal IS NOT NULL
+                        )
+                        AND 1 = (
+                            SELECT MIN(section_ordinal)
+                            FROM communication_segments
+                            WHERE extraction_id = NEW.extraction_id
+                        )
+                        AND scope_set.scope_count = (
+                            SELECT MAX(section_ordinal)
+                            FROM communication_segments
+                            WHERE extraction_id = NEW.extraction_id
+                        )
+                        AND NOT EXISTS (
+                            SELECT 1
+                            FROM communication_segments AS left_segment
+                            JOIN communication_segments AS right_segment
+                              ON right_segment.extraction_id = left_segment.extraction_id
+                             AND right_segment.ordinal > left_segment.ordinal
+                            WHERE left_segment.extraction_id = NEW.extraction_id
+                              AND left_segment.section_ordinal > right_segment.section_ordinal
+                        )
+              )
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM communication_artifact_section_scope_sets AS scope_set
+                  JOIN communication_artifact_contents AS content
+                    ON content.artifact_id = scope_set.artifact_id
+                  JOIN json_each(scope_set.scopes_json) AS scope
+                  WHERE content.id = extraction.artifact_content_id
+                    AND NOT EXISTS (
+                        SELECT 1 FROM communication_segments AS segment
+                        WHERE segment.extraction_id = NEW.extraction_id
+                          AND segment.section_ordinal = json_extract(
+                              scope.value, '$.section_ordinal'
+                          )
+                          AND segment.segment_kind NOT IN ('heading', 'other')
+                    )
+              )
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM communication_artifact_section_scope_sets AS scope_set
+                  JOIN communication_artifact_contents AS content
+                    ON content.artifact_id = scope_set.artifact_id
+                  JOIN json_each(scope_set.scopes_json) AS scope
+                  WHERE content.id = extraction.artifact_content_id
+                    AND json_extract(scope.value, '$.scope_key') = 'prepared_remarks'
+                    AND NOT EXISTS (
+                        SELECT 1 FROM communication_segments AS segment
+                        WHERE segment.extraction_id = NEW.extraction_id
+                          AND segment.section_ordinal = json_extract(
+                              scope.value, '$.section_ordinal'
+                          )
+                          AND segment.segment_kind = 'prepared_remarks'
+                          AND segment.speaker_side = 'publisher'
+                    )
+              )
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM communication_artifact_section_scope_sets AS scope_set
+                  JOIN communication_artifact_contents AS content
+                    ON content.artifact_id = scope_set.artifact_id
+                  JOIN json_each(scope_set.scopes_json) AS scope
+                  WHERE content.id = extraction.artifact_content_id
+                    AND json_extract(scope.value, '$.scope_key') = 'q_and_a'
+                    AND (
+                        NOT EXISTS (
+                            SELECT 1 FROM communication_segments AS segment
+                            WHERE segment.extraction_id = NEW.extraction_id
+                              AND segment.section_ordinal = json_extract(
+                                  scope.value, '$.section_ordinal'
+                              )
+                              AND segment.segment_kind = 'q_and_a_question'
+                        ) OR NOT EXISTS (
+                            SELECT 1 FROM communication_segments AS segment
+                            WHERE segment.extraction_id = NEW.extraction_id
+                              AND segment.section_ordinal = json_extract(
+                                  scope.value, '$.section_ordinal'
+                              )
+                              AND segment.segment_kind = 'q_and_a_answer'
+                        )
+                    )
+              )
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'communication extraction finalization does not match segments');
+        END
+        """
+    )
+
+
+_COMMUNICATION_SCHEMA_V2_MIGRATION_BACKUP_SUFFIX = (
+    ".before-communication-schema-v2.sqlite3"
+)
+
+
+def communication_schema_v2_migration_backup_path(engine: Engine) -> Path:
+    """Return the deterministic adjacent backup used by the v1-to-v2 migration."""
+
+    if engine.dialect.name != "sqlite":
+        raise RuntimeError("communication schema migration only supports SQLite")
+    database = engine.url.database
+    if not database or database == ":memory:":
+        raise RuntimeError("communication schema migration needs a file-backed SQLite database")
+    source = Path(database).expanduser().resolve()
+    return source.with_name(f"{source.name}{_COMMUNICATION_SCHEMA_V2_MIGRATION_BACKUP_SUFFIX}")
+
+
+def _communication_schema_generation(connection) -> str:
+    table_names = {
+        str(row[0])
+        for row in connection.exec_driver_sql(
+            "SELECT name FROM sqlite_master WHERE type = 'table'"
+        )
+    }
+    if any(
+        table_name.startswith("communication_")
+        and table_name not in _COMMUNICATION_SCHEMA_TABLES
+        for table_name in table_names
+    ):
+        return "unknown"
+    relevant = table_names.intersection(_COMMUNICATION_SCHEMA_TABLES)
+    if not relevant:
+        return "absent"
+    if relevant == set(_COMMUNICATION_SCHEMA_TABLES):
+        segment_columns = {
+            str(row[1])
+            for row in connection.exec_driver_sql(
+                "PRAGMA table_info('communication_segments')"
+            )
+        }
+        return "v2" if "section_ordinal" in segment_columns else "unknown"
+    if relevant == set(_COMMUNICATION_SCHEMA_V1_TABLES):
+        segment_columns = {
+            str(row[1])
+            for row in connection.exec_driver_sql(
+                "PRAGMA table_info('communication_segments')"
+            )
+        }
+        return "v1" if "section_ordinal" not in segment_columns else "unknown"
+    return "unknown"
+
+
+def _verify_communication_v1_contract(connection) -> None:
+    for table_name in _COMMUNICATION_SCHEMA_V1_TABLES:
+        expected = {column.name for column in Base.metadata.tables[table_name].columns}
+        if table_name == "communication_segments":
+            expected.remove("section_ordinal")
+        actual = {
+            str(row[1])
+            for row in connection.exec_driver_sql(f"PRAGMA table_info('{table_name}')")
+        }
+        if actual != expected:
+            raise RuntimeError(
+                "unknown institutional-communications v1 schema for "
+                f"{table_name}: missing={sorted(expected - actual)!r}, "
+                f"unexpected={sorted(actual - expected)!r}"
+            )
+    rows = connection.exec_driver_sql(
+        "SELECT schema_version, schema_sha256, trigger_sha256 "
+        "FROM communication_schema_contract "
+        "WHERE contract_id = 'institutional_communications'"
+    ).all()
+    if len(rows) != 1:
+        raise RuntimeError("institutional-communications v1 schema contract is missing")
+    version, stored_schema_sha256, stored_trigger_sha256 = rows[0]
+    actual_schema_sha256 = _communication_ddl_sha256(
+        connection,
+        ("table", "index"),
+        _COMMUNICATION_SCHEMA_V1_TABLES,
+    )
+    actual_trigger_sha256 = _communication_ddl_sha256(
+        connection,
+        ("trigger",),
+        _COMMUNICATION_SCHEMA_V1_TABLES,
+    )
+    if (
+        int(version) != _COMMUNICATION_SCHEMA_V1_VERSION
+        or str(stored_schema_sha256) != _COMMUNICATION_SCHEMA_V1_SHA256
+        or actual_schema_sha256 != _COMMUNICATION_SCHEMA_V1_SHA256
+        or str(stored_trigger_sha256) != _COMMUNICATION_TRIGGER_V1_SHA256
+        or actual_trigger_sha256 != _COMMUNICATION_TRIGGER_V1_SHA256
+    ):
+        raise RuntimeError("institutional-communications v1 schema fingerprint mismatch")
+
+
+def _migrate_communication_schema_v2(engine: Engine) -> None:
+    """Upgrade an empty, exactly fingerprinted v1 ledger after a verified backup.
+
+    V1 has no semantic section binding.  Automatically interpreting existing
+    artifacts, captures, or segments would be unsafe, so only a structurally
+    exact ledger with no non-contract communication rows is eligible.  Any
+    populated v1 ledger fails closed for an explicit, evidence-aware migration.
+    """
+
+    if engine.dialect.name != "sqlite":
+        raise RuntimeError("communication schema migration only supports SQLite")
+    with engine.connect() as connection:
+        generation = _communication_schema_generation(connection)
+    if generation in {"absent", "v2", "unknown"}:
+        return
+
+    with engine.connect() as connection:
+        connection.exec_driver_sql("BEGIN IMMEDIATE")
+        try:
+            generation = _communication_schema_generation(connection)
+            if generation == "v2":
+                connection.rollback()
+                return
+            if generation != "v1":
+                raise RuntimeError(
+                    "institutional-communications schema changed while awaiting migration lock"
+                )
+            _verify_communication_v1_contract(connection)
+            populated = {
+                table_name: int(
+                    connection.exec_driver_sql(
+                        f"SELECT COUNT(*) FROM {_quote_sqlite_identifier(table_name)}"
+                    ).scalar_one()
+                )
+                for table_name in _COMMUNICATION_SCHEMA_V1_TABLES
+                if table_name != "communication_schema_contract"
+            }
+            populated = {name: count for name, count in populated.items() if count}
+            if populated:
+                raise RuntimeError(
+                    "populated institutional-communications v1 schema requires an explicit "
+                    f"semantic migration; rows={populated!r}"
+                )
+
+            database_path = Path(
+                next(
+                    row[2]
+                    for row in connection.exec_driver_sql("PRAGMA database_list")
+                    if row[1] == "main"
+                )
+            ).resolve()
+            expected_path = Path(engine.url.database or "").expanduser().resolve()
+            if database_path != expected_path:
+                raise RuntimeError("SQLite engine path does not match its main database path")
+            create_verified_sqlite_backup(
+                database_path,
+                communication_schema_v2_migration_backup_path(engine),
+            )
+
+            for trigger_name in (
+                "communication_schema_contract_reject_update",
+                "communication_schema_contract_reject_delete",
+                "communication_segments_reject_update",
+                "communication_segments_reject_delete",
+                "communication_segments_reject_after_finalization",
+                "communication_segments_match_scope_set",
+                "communication_retrieval_matches_artifact",
+                "communication_content_matches_retrieval",
+                "communication_extraction_finalizations_reject_update",
+                "communication_extraction_finalizations_reject_delete",
+                "communication_extraction_finalization_validate",
+            ):
+                connection.exec_driver_sql(f"DROP TRIGGER IF EXISTS {trigger_name}")
+            connection.exec_driver_sql("DROP TABLE communication_extraction_finalizations")
+            connection.exec_driver_sql("DROP TABLE communication_segments")
+            connection.exec_driver_sql(
+                "ALTER TABLE communication_schema_contract "
+                "RENAME TO communication_schema_contract__v1"
+            )
+            CommunicationSchemaContract.__table__.create(connection)
+            CommunicationSegment.__table__.create(connection)
+            CommunicationExtractionFinalization.__table__.create(connection)
+            CommunicationArtifactSectionScopeSet.__table__.create(connection)
+            connection.exec_driver_sql("DROP TABLE communication_schema_contract__v1")
+
+            _create_immutable_table_triggers(
+                connection,
+                (
+                    "communication_schema_contract",
+                    "communication_artifact_section_scope_sets",
+                    "communication_segments",
+                    "communication_extraction_finalizations",
+                ),
+            )
+            _create_communication_section_scope_triggers(connection)
+            _create_communication_artifact_use_triggers(connection)
+            _create_communication_segment_finalization_guard(connection)
+            _create_communication_finalization_trigger(connection)
+
+            schema_sha256 = _communication_ddl_sha256(connection, ("table", "index"))
+            trigger_sha256 = _communication_ddl_sha256(connection, ("trigger",))
+            if schema_sha256 != COMMUNICATION_SCHEMA_SHA256:
+                raise RuntimeError(
+                    "migrated institutional-communications schema fingerprint mismatch"
+                )
+            if trigger_sha256 != COMMUNICATION_TRIGGER_SHA256:
+                raise RuntimeError(
+                    "migrated institutional-communications trigger fingerprint mismatch"
+                )
+            connection.exec_driver_sql(
+                "INSERT INTO communication_schema_contract "
+                "(contract_id, schema_version, schema_sha256, trigger_sha256, installed_at) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (
+                    "institutional_communications",
+                    COMMUNICATION_SCHEMA_VERSION,
+                    schema_sha256,
+                    trigger_sha256,
+                    datetime.now(UTC)
+                    .replace(tzinfo=None)
+                    .isoformat(sep=" ", timespec="microseconds"),
+                ),
+            )
+            violations = connection.exec_driver_sql("PRAGMA foreign_key_check").all()
+            if violations:
+                raise RuntimeError(
+                    "communication schema migration would break foreign keys: "
+                    f"{violations[:3]!r}"
+                )
+            integrity = connection.exec_driver_sql("PRAGMA integrity_check").all()
+            if integrity != [("ok",)]:
+                raise RuntimeError(
+                    "communication schema migration failed SQLite integrity_check: "
+                    f"{integrity[:3]!r}"
+                )
+            connection.commit()
+        except Exception:
+            connection.rollback()
+            raise
+
+
 def _preflight_communication_schema(engine: Engine) -> None:
     """Refuse an unknown pre-existing communications table layout.
 
@@ -2156,6 +2945,17 @@ def _preflight_communication_schema(engine: Engine) -> None:
 
     inspector = inspect(engine)
     present = set(inspector.get_table_names())
+    unexpected_communication = sorted(
+        table_name
+        for table_name in present
+        if table_name.startswith("communication_")
+        and table_name not in _COMMUNICATION_SCHEMA_TABLES
+    )
+    if unexpected_communication:
+        raise RuntimeError(
+            "unknown institutional-communications tables; "
+            f"unexpected={unexpected_communication!r}"
+        )
     present_communication = present.intersection(_COMMUNICATION_SCHEMA_TABLES)
     if not present_communication:
         return
@@ -2194,6 +2994,7 @@ def _preflight_communication_schema(engine: Engine) -> None:
 
 
 def init_db(engine: Engine) -> None:
+    _migrate_communication_schema_v2(engine)
     _preflight_communication_schema(engine)
     _migrate_release_recurrence_constraint(engine)
     Base.metadata.create_all(engine)
@@ -2210,6 +3011,7 @@ def init_db(engine: Engine) -> None:
         "organization_commodity_coverage",
         "communication_events",
         "communication_artifacts",
+        "communication_artifact_section_scope_sets",
         "communication_artifact_retrievals",
         "communication_artifact_contents",
         "communication_extractions",
@@ -2225,25 +3027,7 @@ def init_db(engine: Engine) -> None:
     with engine.begin() as connection:
         for trigger_name in _COMMUNICATION_CUSTOM_TRIGGERS:
             connection.exec_driver_sql(f"DROP TRIGGER IF EXISTS {trigger_name}")
-        for table_name in immutable_tables:
-            connection.exec_driver_sql(
-                f"""
-                CREATE TRIGGER IF NOT EXISTS {table_name}_reject_update
-                BEFORE UPDATE ON {table_name}
-                BEGIN
-                    SELECT RAISE(ABORT, '{table_name} rows are immutable');
-                END
-                """
-            )
-            connection.exec_driver_sql(
-                f"""
-                CREATE TRIGGER IF NOT EXISTS {table_name}_reject_delete
-                BEFORE DELETE ON {table_name}
-                BEGIN
-                    SELECT RAISE(ABORT, '{table_name} rows are immutable');
-                END
-                """
-            )
+        _create_immutable_table_triggers(connection, immutable_tables)
         connection.exec_driver_sql(
             """
             CREATE TRIGGER IF NOT EXISTS communication_policy_snapshot_validate
@@ -2501,11 +3285,16 @@ def init_db(engine: Engine) -> None:
             CREATE TRIGGER IF NOT EXISTS communication_retrieval_matches_artifact
             BEFORE INSERT ON communication_artifact_retrievals
             WHEN NOT EXISTS (
-                SELECT 1 FROM communication_artifacts AS artifact
+                SELECT 1
+                FROM communication_artifacts AS artifact
+                JOIN communication_artifact_section_scope_sets AS scope_set
+                  ON scope_set.artifact_id = artifact.id
                 WHERE artifact.id = NEW.artifact_id
+                  AND scope_set.artifact_version_sha256 = artifact.artifact_version_sha256
                   AND artifact.landing_url = NEW.landing_url
                   AND artifact.artifact_url = NEW.artifact_url
                   AND NEW.retrieved_at >= artifact.available_at
+                  AND NEW.metadata_known_at >= scope_set.metadata_known_at
             )
             BEGIN
                 SELECT RAISE(ABORT, 'retrieval observation conflicts with artifact');
@@ -2521,11 +3310,14 @@ def init_db(engine: Engine) -> None:
                 FROM communication_artifacts AS artifact
                 JOIN communication_artifact_retrievals AS retrieval
                   ON retrieval.artifact_id = artifact.id
+                JOIN communication_artifact_section_scope_sets AS scope_set
+                  ON scope_set.artifact_id = artifact.id
                 WHERE artifact.id = NEW.artifact_id
                   AND retrieval.id = NEW.retrieval_id
                   AND artifact.rights_status IN ('cleared', 'internal_only')
                   AND NEW.captured_at >= retrieval.retrieved_at
                   AND NEW.captured_at >= retrieval.metadata_known_at
+                  AND NEW.captured_at >= scope_set.metadata_known_at
             )
             BEGIN
                 SELECT RAISE(ABORT, 'content capture conflicts with retrieval or rights policy');
@@ -2566,50 +3358,9 @@ def init_db(engine: Engine) -> None:
             END
             """
         )
-        connection.exec_driver_sql(
-            """
-            CREATE TRIGGER IF NOT EXISTS communication_segments_reject_after_finalization
-            BEFORE INSERT ON communication_segments
-            WHEN EXISTS (
-                SELECT 1 FROM communication_extraction_finalizations
-                WHERE extraction_id = NEW.extraction_id
-            )
-            BEGIN
-                SELECT RAISE(ABORT, 'finalized communication extraction cannot gain segments');
-            END
-            """
-        )
-        connection.exec_driver_sql(
-            """
-            CREATE TRIGGER IF NOT EXISTS communication_extraction_finalization_validate
-            BEFORE INSERT ON communication_extraction_finalizations
-            WHEN NOT EXISTS (
-                SELECT 1
-                FROM communication_extractions AS extraction
-                WHERE extraction.id = NEW.extraction_id
-                  AND NEW.finalized_at >= extraction.extracted_at
-                  AND NEW.segment_count = (
-                      SELECT COUNT(*) FROM communication_segments
-                      WHERE extraction_id = NEW.extraction_id
-                  )
-                  AND 1 = (
-                      SELECT MIN(ordinal) FROM communication_segments
-                      WHERE extraction_id = NEW.extraction_id
-                  )
-                  AND NEW.segment_count = (
-                      SELECT MAX(ordinal) FROM communication_segments
-                      WHERE extraction_id = NEW.extraction_id
-                  )
-                  AND NEW.total_char_count = (
-                      SELECT SUM(char_count) FROM communication_segments
-                      WHERE extraction_id = NEW.extraction_id
-                  )
-            )
-            BEGIN
-                SELECT RAISE(ABORT, 'communication extraction finalization does not match segments');
-            END
-            """
-        )
+        _create_communication_section_scope_triggers(connection)
+        _create_communication_segment_finalization_guard(connection)
+        _create_communication_finalization_trigger(connection)
         schema_sha256 = _communication_ddl_sha256(connection, ("table", "index"))
         trigger_sha256 = _communication_ddl_sha256(connection, ("trigger",))
         if schema_sha256 != COMMUNICATION_SCHEMA_SHA256:

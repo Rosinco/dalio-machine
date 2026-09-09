@@ -28,11 +28,16 @@ Its generated human-readable rights-review packet is:
 with machine-readable companion
 `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\communication_rights_latest.json`.
 The immutable pair is
-`communication_rights_2026-09-09_61d94c907c50b7bb.{json,md}`. The full
+`communication_rights_2026-09-09_f841b5875835f9ef.{json,md}`. The full
 canonical semantic manifest SHA-256 is
-`ba16d73efbb929be3d85c8b4849ba90d41733e34d5f7369584659824e39bec34`, and
+`91848b6f144e4f2c46e821c3e24cbcf67be7d101e5781f5819dd6bcd10c87670`, and
 the canonical semantic packet self-hash is
-`61d94c907c50b7bb7198479dd00cf6d0b89d083e1cfbf5c2731d20863b8793d1`.
+`f841b5875835f9ef1d469c6484386b88d8f129fee72d1ff62e12cd59768cdd31`.
+The checked manifest file SHA-256 is
+`303cac84f313040c9bc7012bed82787dfc0e41cd02eddbbf81319a2866afa227`;
+the generated JSON and Markdown file SHA-256 values are respectively
+`158de96cb06f73b2b8d51b4668a8c15207f5f6f54e7adcc215541858187f0a6d`
+and `450030aabe7c87117b32a78f4ec8a055a02137550149db9230b1511a75ed14b0`.
 These are link and rights-review metadata only. They contain zero human rights
 decisions and authorize no content capture.
 
@@ -130,15 +135,32 @@ verification and has backup-file SHA-256
 `7857fde8fae443029ec8c6a8427ca717c5d66b0f5f92691e84320f4c6ef71b93`.
 After adding only the empty communications tables and guards, the live database
 has SHA-256 `8c982d3449c335129d6ffc6906409d40c310959f2c8b016a23b39076cd9e63db`.
-Its pinned communications table/index fingerprint is
+That was communications schema v1. Its pinned table/index fingerprint was
 `1fe8247a31b767f933b3c6f8646ee8b2536da2655bc8fc087ef99fe5f68dedb3`
-and trigger fingerprint is
+and its trigger fingerprint was
 `62d2f2c2c9b152aeede8d4d4c203f05c24aba5697b311e534956053f6a315007`.
+
+The controlled empty-ledger upgrade to communications schema v2 made this
+adjacent, non-overwriting recovery backup before any schema mutation:
+
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\dalio.db.before-communication-schema-v2.sqlite3`
+
+It is a logically exact v1 copy with file SHA-256
+`af56d59ba664330b25e0dc5d2337f22c7fc4d7b32271c11872eae5556b48d828`.
+The v2 live database has SHA-256
+`2fabc5a96d9757d23b249ebd86c8d1f734e38b53c529eaa77d2938e26b16684d`,
+table/index fingerprint
+`57ea8e7e6de787569aeaaa4e06dd419b4b6ccbbb78458eec2c8b92320d2c3e15`
+and trigger fingerprint
+`f86163665f9d827d83018423137e8fa38900163735ea8aef5c1587531696504c`.
+All 21 unaffected tables matched the v1 backup by row count and bidirectional
+SQLite `EXCEPT`; both files passed integrity and foreign-key checks. All
+communications evidence/domain tables remain empty.
 
 ## Validated refresh inventory (2026-09-09)
 
-The counts below are from the fully validated live `dalio.db` after installing
-the empty institutional-communications schema on top of the empty
+The counts below are from the fully validated live `dalio.db` after upgrading
+the empty institutional-communications schema to v2 on top of the empty
 report-decision ledger. No communication evidence, review or claim rows were
 added.
 Run the read-only inventory commands below to reproduce the inventory.
@@ -156,7 +178,7 @@ Run the read-only inventory commands below to reproduce the inventory.
 | Official institutional reports | 10 documents; 852 extracted pages; 0 verified claims |
 | Report review queue | 5 latest documents; 20 unverified model drafts; 0 promoted claims |
 | Human report decisions | 0 decisions; 0 verified claims; blank review only |
-| Institutional communications | 20 source policies / 18 organizations; 2025 Fed/ECB metadata pilot 16/16 exact text links; 0 database events; 0 artifacts; 0 content captures; 0 extracted segments; all acquisition rights pending |
+| Institutional communications | 20 source policies / 18 organizations; 2025 Fed/ECB metadata pilot 16/16 exact text links; ordered one-artifact/one-byte-lineage, multi-section schema v2; 0 database events; 0 artifacts/scopes/content captures/extracted segments; 0 sources cleared and acquisition automation false for all |
 | World Bank monthly commodity history | 63,179 rows; 70 prices + 17 indices; 1960-01–2026-08 |
 | Official-money history | 5,794 rows; 10/10 pinned native series |
 | Separate liquidity frontier | 20,676 rows; 22/22 series (3 BIS + 19 OFR) |
@@ -179,7 +201,7 @@ dalio-audit-observatory --db data/dalio.db --json
 | `reference/ap_funds_h1_2026.json` | Versioned metadata and model-checked transcription of 48 AP2/AP3/AP4 facts | Reproducible source input; not a replacement for the PDFs |
 | `reference/report_issues.json` | Exact metadata, hashes, filenames and page counts for ten official report issues | Versioned source input; not a replacement for the PDFs |
 | `reference/report_claim_candidates.json` | Checked, versioned candidate propositions and exact page locators for the report-review queue | Review input only; structural/excerpt checks do not make a candidate verified |
-| `reference/communication_pilot_events.json` | Closed 2025 Fed/ECB 8+8 event denominator, one exact first-party English text candidate per event, conservative metadata clocks and pending source-rights evidence | Link metadata only; no bytes, human rights decision or collection authority |
+| `reference/communication_pilot_events.json` | Closed 2025 Fed/ECB 8+8 event denominator, one exact first-party English text candidate per event, semantic section order, conservative metadata clocks and pending source-rights evidence | Link metadata only; no bytes, human rights decision or collection authority |
 | `artifacts/allocators/sha256/` | Content-addressed copies of official allocator PDFs | Durable evidence; do not treat as a disposable cache |
 | `artifacts/reports/sha256/` | Content-addressed copies of official central-bank/IMF/BIS PDFs | Durable evidence; do not treat as a disposable cache |
 | `artifacts/communications/` | Reserved content-addressed home for exact rights-cleared press-conference, earnings-communication, letter, caption and media artifacts | Empty by design until an exact artifact passes a documented rights review |
@@ -223,7 +245,10 @@ Different questions require different storage shapes:
 - Institutional communications use a sibling ledger rather than the bounded
   report manifest. Stable organizations, effective-dated commodity selection
   mappings, versioned events, representation-specific artifacts, retrieval-bound
-  byte captures, reproducible extractions and speaker-addressable segments remain separate. Host, historical
+  byte captures, atomic ordered section-scope sets, reproducible extractions and
+  scope-bound speaker-addressable segments remain separate. One mixed published
+  page remains one artifact version and one byte-capture lineage while its prepared
+  remarks and Q&A retain different provenance. Host, historical
   publisher, transcriber/caption origin, rights state, publication/availability/
   retrieval clocks and page/paragraph/timecode locators are explicit. The live
   tables are empty: the 20-policy catalogue covers 18 organizations and is
@@ -550,8 +575,11 @@ deterministic input layout.
   metadata pilot: no source authorizes automated content acquisition, no human
   rights decision exists, no transcript/subtitle/letter bytes or segments exist,
   and no communication text can feed scenarios or investor conclusions. The
-  next slice needs the ECB single-capture/multi-section storage mapping and a
-  hash-bound named-human rights-decision contract before any ingestion.
+  one-artifact/one-byte-lineage, multi-section storage mapping now exists, but no named-human
+  clearance has been recorded. A hash-bound rights-decision contract and an
+  explicit clearance are still required before any ingestion. Until then, safe
+  expansion is metadata-only: close additional year denominators and inventory
+  exact first-party representation links without downloading their content.
 - None of the 852 report pages has yet become a named, human-verified atomic
   claim, so central-bank/IMF/BIS conclusions do not yet feed risk analysis. The
   bounded 20-item review packet has shipped, but every item remains an

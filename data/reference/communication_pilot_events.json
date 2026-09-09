@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "methodology_version": "communication-metadata-pilot-v1",
+  "methodology_version": "communication-metadata-pilot-v2",
   "catalogue_sha256": "67d7049f1c63648c7b2d99dfee9eab290e2aca6469e9b872d0c605daaf716dc6",
   "pilot_id": "fed_ecb_2025_policy_press_conferences",
-  "created_by": "model:codex-primary-source-metadata-v1",
-  "created_at": "2026-09-09T08:06:59Z",
-  "as_known_at": "2026-09-09T08:06:59Z",
+  "created_by": "model:codex-primary-source-metadata-v2",
+  "created_at": "2026-09-09T10:59:45Z",
+  "as_known_at": "2026-09-09T10:59:45Z",
   "scope": {
     "start_date": "2025-01-01",
     "end_date": "2025-12-31",
@@ -70,7 +70,7 @@
           "summary": "The ECB's current copyright notice allows use of information obtained directly from its website subject to stated conditions; a named human must confirm those conditions and each page-specific notice for the intended archive, extraction, and downstream use.",
           "questions": [
             "Do the ECB website notice and each selected page permit the intended local byte archive and text extraction with recorded attribution?",
-            "How should separate prepared-remarks and Q-and-A section scopes reference one artifact and one byte capture without duplicating or misclassifying source bytes?"
+            "Do the applicable terms cover Q-and-A speech by non-ECB questioners, and what attribution or modification duties apply to that section?"
           ]
         }
       }
@@ -394,7 +394,7 @@
         "availability_status": "available",
         "checked_at": "2026-09-09T08:06:59Z",
         "status_evidence_url": "https://www.ecb.europa.eu/press/press_conference/monetary-policy-statement/2025/html/ecb.is250130~1f418aa0f4.en.html",
-        "status_note": "One official English HTML page contains prepared remarks and Q&A. Its Q&A role/type is a provisional primary classification; a single-capture, multi-section durable mapping is still required. No source bytes were archived by this metadata pilot.",
+        "status_note": "One official English HTML page contains prepared remarks and Q&A. No source bytes were archived by this metadata pilot.",
         "section_coverage": ["prepared_remarks", "q_and_a"],
         "candidate": {
           "artifact_key": "ecb_statement_with_q_and_a_2025_01_30",
@@ -432,7 +432,7 @@
         "availability_status": "available",
         "checked_at": "2026-09-09T08:06:59Z",
         "status_evidence_url": "https://www.ecb.europa.eu/press/press_conference/monetary-policy-statement/2025/html/ecb.is250306~4307bd0941.en.html",
-        "status_note": "One official English HTML page contains prepared remarks and Q&A. Its Q&A role/type is a provisional primary classification; a single-capture, multi-section durable mapping is still required. No source bytes were archived by this metadata pilot.",
+        "status_note": "One official English HTML page contains prepared remarks and Q&A. No source bytes were archived by this metadata pilot.",
         "section_coverage": ["prepared_remarks", "q_and_a"],
         "candidate": {
           "artifact_key": "ecb_statement_with_q_and_a_2025_03_06",
@@ -470,7 +470,7 @@
         "availability_status": "available",
         "checked_at": "2026-09-09T08:06:59Z",
         "status_evidence_url": "https://www.ecb.europa.eu/press/press_conference/monetary-policy-statement/2025/html/ecb.is250417~091c625eb6.en.html",
-        "status_note": "One official English HTML page contains prepared remarks and Q&A. Its Q&A role/type is a provisional primary classification; a single-capture, multi-section durable mapping is still required. No source bytes were archived by this metadata pilot.",
+        "status_note": "One official English HTML page contains prepared remarks and Q&A. No source bytes were archived by this metadata pilot.",
         "section_coverage": ["prepared_remarks", "q_and_a"],
         "candidate": {
           "artifact_key": "ecb_statement_with_q_and_a_2025_04_17",
@@ -508,7 +508,7 @@
         "availability_status": "available",
         "checked_at": "2026-09-09T08:06:59Z",
         "status_evidence_url": "https://www.ecb.europa.eu/press/press_conference/monetary-policy-statement/2025/html/ecb.is250605~f00a36ef2b.en.html",
-        "status_note": "One official English HTML page contains prepared remarks and Q&A. Its Q&A role/type is a provisional primary classification; a single-capture, multi-section durable mapping is still required. No source bytes were archived by this metadata pilot.",
+        "status_note": "One official English HTML page contains prepared remarks and Q&A. No source bytes were archived by this metadata pilot.",
         "section_coverage": ["prepared_remarks", "q_and_a"],
         "candidate": {
           "artifact_key": "ecb_statement_with_q_and_a_2025_06_05",
@@ -546,7 +546,7 @@
         "availability_status": "available",
         "checked_at": "2026-09-09T08:06:59Z",
         "status_evidence_url": "https://www.ecb.europa.eu/press/press_conference/monetary-policy-statement/2025/html/ecb.is250724~a66e730494.en.html",
-        "status_note": "One official English HTML page contains prepared remarks and Q&A. Its Q&A role/type is a provisional primary classification; a single-capture, multi-section durable mapping is still required. No source bytes were archived by this metadata pilot.",
+        "status_note": "One official English HTML page contains prepared remarks and Q&A. No source bytes were archived by this metadata pilot.",
         "section_coverage": ["prepared_remarks", "q_and_a"],
         "candidate": {
           "artifact_key": "ecb_statement_with_q_and_a_2025_07_24",
@@ -584,7 +584,7 @@
         "availability_status": "available",
         "checked_at": "2026-09-09T08:06:59Z",
         "status_evidence_url": "https://www.ecb.europa.eu/press/press_conference/monetary-policy-statement/2025/html/ecb.is250911~a13675b834.en.html",
-        "status_note": "One official English HTML page contains prepared remarks and Q&A. Its Q&A role/type is a provisional primary classification; a single-capture, multi-section durable mapping is still required. No source bytes were archived by this metadata pilot.",
+        "status_note": "One official English HTML page contains prepared remarks and Q&A. No source bytes were archived by this metadata pilot.",
         "section_coverage": ["prepared_remarks", "q_and_a"],
         "candidate": {
           "artifact_key": "ecb_statement_with_q_and_a_2025_09_11",
@@ -622,7 +622,7 @@
         "availability_status": "available",
         "checked_at": "2026-09-09T08:06:59Z",
         "status_evidence_url": "https://www.ecb.europa.eu/press/press_conference/monetary-policy-statement/2025/html/ecb.is251030~4f74dde15e.en.html",
-        "status_note": "One official English HTML page contains prepared remarks and Q&A. Its Q&A role/type is a provisional primary classification; a single-capture, multi-section durable mapping is still required. No source bytes were archived by this metadata pilot.",
+        "status_note": "One official English HTML page contains prepared remarks and Q&A. No source bytes were archived by this metadata pilot.",
         "section_coverage": ["prepared_remarks", "q_and_a"],
         "candidate": {
           "artifact_key": "ecb_statement_with_q_and_a_2025_10_30",
@@ -660,7 +660,7 @@
         "availability_status": "available",
         "checked_at": "2026-09-09T08:06:59Z",
         "status_evidence_url": "https://www.ecb.europa.eu/press/press_conference/monetary-policy-statement/2025/html/ecb.is251218~3a10402adb.en.html",
-        "status_note": "One official English HTML page contains prepared remarks and Q&A and records a correction to verbatim comments. Its Q&A role/type is a provisional primary classification; a single-capture, multi-section durable mapping is still required. No source bytes were archived by this metadata pilot.",
+        "status_note": "One official English HTML page contains prepared remarks and Q&A and records a correction to verbatim comments. No source bytes were archived by this metadata pilot.",
         "section_coverage": ["prepared_remarks", "q_and_a"],
         "candidate": {
           "artifact_key": "ecb_statement_with_q_and_a_2025_12_18",

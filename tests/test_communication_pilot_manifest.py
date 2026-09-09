@@ -126,7 +126,7 @@ def test_checked_manifest_semantic_hash_is_pinned():
     manifest = load_pilot_manifest(CHECKED_MANIFEST)
 
     assert pilot_manifest_sha256(manifest) == (
-        "ba16d73efbb929be3d85c8b4849ba90d41733e34d5f7369584659824e39bec34"
+        "91848b6f144e4f2c46e821c3e24cbcf67be7d101e5781f5819dd6bcd10c87670"
     )
 
 
@@ -144,13 +144,6 @@ def test_semantic_hash_ignores_set_like_and_record_order_but_detects_changes(tmp
         assert isinstance(questions, list)
         questions.reverse()
     _events(reordered).reverse()
-    for event in _events(reordered):
-        representation = event["representation"]
-        assert isinstance(representation, dict)
-        coverage = representation["section_coverage"]
-        assert isinstance(coverage, list)
-        coverage.reverse()
-
     reordered_manifest = load_pilot_manifest(_write(tmp_path, reordered))
     assert pilot_manifest_sha256(reordered_manifest) == pilot_manifest_sha256(original)
 
@@ -221,6 +214,13 @@ def test_loader_binds_current_source_catalogue_and_selected_representation(tmp_p
     spec = _organizations(payload)[1]["representation_spec"]
     assert isinstance(spec, dict)
     spec["section_coverage"] = ["q_and_a"]
+    with pytest.raises(ValueError, match="selected ecb pilot representation"):
+        load_pilot_manifest(_write(tmp_path, payload))
+
+    payload = _payload()
+    spec = _organizations(payload)[1]["representation_spec"]
+    assert isinstance(spec, dict)
+    spec["section_coverage"] = ["q_and_a", "prepared_remarks"]
     with pytest.raises(ValueError, match="selected ecb pilot representation"):
         load_pilot_manifest(_write(tmp_path, payload))
 
@@ -296,6 +296,13 @@ def test_each_event_has_exactly_one_available_selected_representation(tmp_path):
     representation = _event(payload, "ecb")["representation"]
     assert isinstance(representation, dict)
     representation["section_coverage"] = ["q_and_a"]
+    with pytest.raises(ValueError, match="section_coverage conflicts"):
+        load_pilot_manifest(_write(tmp_path, payload))
+
+    payload = _payload()
+    representation = _event(payload, "ecb")["representation"]
+    assert isinstance(representation, dict)
+    representation["section_coverage"] = ["q_and_a", "prepared_remarks"]
     with pytest.raises(ValueError, match="section_coverage conflicts"):
         load_pilot_manifest(_write(tmp_path, payload))
 

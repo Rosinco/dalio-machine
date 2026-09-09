@@ -15,8 +15,11 @@ from dalio.storage.communications import (
     CommodityCoverageMeta,
     CommunicationArtifactMeta,
     CommunicationEventMeta,
+    CommunicationSectionScopeMeta,
+    _artifact_version,
     append_catalogue_commodity_coverage,
     record_communication_artifact_metadata,
+    record_communication_artifact_section_scopes,
 )
 from dalio.storage.db import (
     CommunicationArtifact,
@@ -182,8 +185,25 @@ def _seed_cleared_artifact(session):
         artifact_version_sha256="a" * 64,
         supersedes_artifact_id=None,
     )
+    scope = CommunicationSectionScopeMeta(
+        section_ordinal=1,
+        scope_key="full_transcript",
+        artifact_role="full_transcript",
+        material_type="press_conference_transcript",
+        origin_type="official_published_transcript",
+        provenance_tier="official_published_transcript",
+        transcriber=None,
+        transcriber_attribution="not_disclosed",
+    )
+    artifact.artifact_version_sha256 = _artifact_version(event_sha256, artifact, (scope,))
     session.add(artifact)
     session.flush()
+    record_communication_artifact_section_scopes(
+        session,
+        artifact_id=artifact.id,
+        section_scopes=(scope,),
+        metadata_known_at=_at(30),
+    )
     retrieval = CommunicationArtifactRetrieval(
         artifact_id=artifact.id,
         retrieved_at=_naive_at(30),
