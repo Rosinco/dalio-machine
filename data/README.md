@@ -282,6 +282,12 @@ Run the read-only inventory commands below to reproduce the inventory.
 | Separate liquidity frontier | 20,676 rows; 22/22 series (3 BIS + 19 OFR) |
 | Derived liquidity exports | Five independent families; JSON + Markdown; no composite score |
 
+The sovereign-refinancing source-ready checkpoint is deliberately absent from
+this stored-coverage table. Its checked denominator contains 48 logical streams;
+Eurostat/ECB adapters exist for 31 harmonized scalar partitions, but no
+refinancing pipeline has ingested them and the live database has not changed.
+The remaining 17 national-native streams are still planned.
+
 The read-only inventory command derives these counts from the database and also
 lists every stored partition and gap:
 
@@ -303,6 +309,7 @@ dalio-audit-observatory --db data/dalio.db --json
 | `reference/communication_boe_2025_events.json` | Closed 2025 BoE four-event MPR press-conference denominator with separate transcript, official-page video and exact-caption observations | Link/platform-ID metadata only; no source-page archive, content bytes, rights decision or collection authority |
 | `reference/communication_riksbank_2025_events.json` | Closed 2025 Riksbank eight-event monetary-policy press-conference denominator with separate Swedish transcript, replay-page, slide and exact-caption observations | First-party link metadata only; no source-page/PDF archive, vendor locator, content bytes, rights decision or collection authority |
 | `reference/communication_rba_2025_events.json` | Closed 2025 RBA eight-event monetary-policy media-conference denominator with separate inline-transcript-page, officially linked external-video and exact-caption observations | Link/platform-ID metadata only; no page/media/audio content, slide claim, rights decision or collection authority |
+| `reference/sovereign_refinancing_v1.json` | Checked 48-stream Version 1 debt-maturity/refinancing denominator: 31 harmonized scalar and 17 national-native streams | Source contract only; it proves neither database coverage nor package completion |
 | `artifacts/allocators/sha256/` | Content-addressed copies of official allocator PDFs | Durable evidence; do not treat as a disposable cache |
 | `artifacts/reports/sha256/` | Content-addressed copies of official central-bank/IMF/BIS PDFs | Durable evidence; do not treat as a disposable cache |
 | `artifacts/communications/` | Reserved content-addressed home for exact rights-cleared press-conference, earnings-communication, letter, caption and media artifacts | Empty by design until an exact artifact passes a documented rights review |
@@ -328,6 +335,14 @@ Different questions require different storage shapes:
   series. The first full run stored 200 country-series histories; 64 other
   requested country-series combinations were valid voluntary non-reports, not
   zeros and not errors.
+- Sovereign refinancing is currently a source contract, not another stored
+  evidence shape. Strict Eurostat/ECB adapters validate 29 annual
+  general-government partitions for DE/FR/IT/ES/SE and two monthly
+  fixed-composition EA21 comparison histories, producing content-addressed
+  source/native/missingness evidence. Those artifacts are not yet release-bound
+  or ingested. EA21 is a comparator, not a sovereign issuer, and the 17 planned
+  national-native schedules and funding streams will require source-appropriate
+  shapes rather than invented scalar equivalence.
 - IMF BPM6 BOP data stores 25 reported financial-account transaction series per
   individual country: gross asset acquisition, gross liability incurrence and
   the publisher's net entry stay separate. A position change is never relabelled
@@ -616,6 +631,11 @@ dalio-communication-rights-packet
 dalio-communication-metadata-inventory
 ```
 
+There is not yet a sovereign-refinancing refresh command. The 31 adapter-backed
+scalar partitions must first receive an all-partition preflight, atomic release
+pipeline and release-bound artifact audit; do not describe direct adapter or
+saved-response checks as database ingestion.
+
 The liquidity-brief command reads the database in SQLite read-only mode and
 refreshes the fixed `data/snapshots/liquidity_latest.{json,md}` aliases plus
 content-addressed
@@ -718,7 +738,10 @@ deterministic input layout.
   expansion is metadata-only: close additional year denominators and inventory
   exact first-party representation links without downloading their content.
   The next bounded collection package is core-economy debt maturity and
-  refinancing structure.
+  refinancing structure. Its denominator is now fixed at 48 logical streams,
+  with 31 harmonized Eurostat/ECB scalar partitions source-ready and 17
+  national-native streams still planned. No refinancing pipeline, database
+  release or indicator exists yet.
 - None of the 852 report pages has yet become a named, human-verified atomic
   claim, so central-bank/IMF/BIS conclusions do not yet feed risk analysis. The
   bounded 20-item review packet has shipped, but every item remains an
@@ -731,8 +754,12 @@ deterministic input layout.
 - IMF PIP/DIP is voluntary and uneven. The current pull has all requested PIP
   partitions but no Saudi Arabian outward DIP total, equity or debt series;
   those absences are not zeros.
-- Debt redemption calendars/cash-flow schedules and cross-border banking claims
-  are not yet represented.
+- The sovereign-refinancing manifest and Eurostat/ECB adapters do not yet make
+  stored evidence: none of the 31 harmonized scalar partitions has passed an
+  atomic database ingestion/audit, and all 17 national-native issuer schedules
+  and funding streams remain unimplemented. Debt redemption calendars/cash-flow
+  schedules and cross-border banking claims are therefore not yet represented
+  in the live database.
 - Commodity history currently provides public spot/reference benchmarks, not
   futures curves, roll yields, collateral returns, tradable-index fees or an
   inflation/liquidity score. More columns must not become more voting weight.

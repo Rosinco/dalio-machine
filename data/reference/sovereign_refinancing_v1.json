@@ -1,0 +1,513 @@
+{
+  "schema_version": 1,
+  "manifest_id": "sovereign_refinancing_v1",
+  "evaluated_on": "2026-09-09",
+  "partition_count": 48,
+  "definition": "A bounded logical denominator for sovereign refinancing evidence. A partition is one independently refreshed publisher/source stream, not one output column or one maturity bucket.",
+  "core_sovereign_issuers": [
+    "BR",
+    "CN",
+    "DE",
+    "FR",
+    "IN",
+    "IT",
+    "JP",
+    "SE",
+    "UK",
+    "US"
+  ],
+  "comparison_entities": [
+    "ES",
+    "EA21_FIXED"
+  ],
+  "scope_rules": [
+    "The euro area is a comparison aggregate, not a sovereign issuer.",
+    "Central-government, general-government, marketable-debt and non-consolidated-security scopes remain distinct.",
+    "Original maturity, residual maturity, duration and time to refixing remain distinct.",
+    "A current security inventory is never backcast as a historical maturity profile.",
+    "A broad publisher maturity bucket is never prorated into narrower derived buckets.",
+    "Plans, forecasts, estimates, scheduled cash flows and outturns remain point-in-time distinct."
+  ],
+  "partitions": [
+    {
+      "partition_id": "eurostat_de_avg_residual_maturity",
+      "entity": "DE",
+      "entity_kind": "sovereign_issuer",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_rmd|A|S13|TOTAL|GD|YR|DE",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_rmd?lang=en&freq=A&sector=S13&maturity=TOTAL&na_item=GD&unit=YR&geo=DE"
+    },
+    {
+      "partition_id": "eurostat_de_total_debt_rmd_scope",
+      "entity": "DE",
+      "entity_kind": "sovereign_issuer",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_rmd|A|S13|TOTAL|GD|PC_GDP|DE",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_rmd?lang=en&freq=A&sector=S13&maturity=TOTAL&na_item=GD&unit=PC_GDP&geo=DE"
+    },
+    {
+      "partition_id": "eurostat_de_due_le1y",
+      "entity": "DE",
+      "entity_kind": "sovereign_issuer",
+      "family": "maturity_schedule",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_rmd|A|S13|Y_LE1|GD|PC_GDP|DE",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_rmd?lang=en&freq=A&sector=S13&maturity=Y_LE1&na_item=GD&unit=PC_GDP&geo=DE"
+    },
+    {
+      "partition_id": "eurostat_de_foreign_currency",
+      "entity": "DE",
+      "entity_kind": "sovereign_issuer",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_dcur|A|S13|FOR|GD|PC_GDP|DE",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_dcur?lang=en&freq=A&sector=S13&currency=FOR&na_item=GD&unit=PC_GDP&geo=DE"
+    },
+    {
+      "partition_id": "eurostat_de_apparent_cost",
+      "entity": "DE",
+      "entity_kind": "sovereign_issuer",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_acd|A|S13|RT|DE",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_acd?lang=en&freq=A&sector=S13&unit=RT&geo=DE"
+    },
+    {
+      "partition_id": "eurostat_de_lt_variable_rate",
+      "entity": "DE",
+      "entity_kind": "sovereign_issuer",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_ggd|A|GD_VAR|S1_S2|S13|Y_GT1|PC_GDP|DE",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_ggd?lang=en&freq=A&na_item=GD_VAR&sector2=S1_S2&sector=S13&maturity=Y_GT1&unit=PC_GDP&geo=DE"
+    },
+    {
+      "partition_id": "eurostat_fr_avg_residual_maturity",
+      "entity": "FR",
+      "entity_kind": "sovereign_issuer",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_rmd|A|S13|TOTAL|GD|YR|FR",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_rmd?lang=en&freq=A&sector=S13&maturity=TOTAL&na_item=GD&unit=YR&geo=FR"
+    },
+    {
+      "partition_id": "eurostat_fr_total_debt_rmd_scope",
+      "entity": "FR",
+      "entity_kind": "sovereign_issuer",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_rmd|A|S13|TOTAL|GD|PC_GDP|FR",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_rmd?lang=en&freq=A&sector=S13&maturity=TOTAL&na_item=GD&unit=PC_GDP&geo=FR"
+    },
+    {
+      "partition_id": "eurostat_fr_due_le1y",
+      "entity": "FR",
+      "entity_kind": "sovereign_issuer",
+      "family": "maturity_schedule",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_rmd|A|S13|Y_LE1|GD|PC_GDP|FR",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_rmd?lang=en&freq=A&sector=S13&maturity=Y_LE1&na_item=GD&unit=PC_GDP&geo=FR"
+    },
+    {
+      "partition_id": "eurostat_fr_foreign_currency",
+      "entity": "FR",
+      "entity_kind": "sovereign_issuer",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_dcur|A|S13|FOR|GD|PC_GDP|FR",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_dcur?lang=en&freq=A&sector=S13&currency=FOR&na_item=GD&unit=PC_GDP&geo=FR"
+    },
+    {
+      "partition_id": "eurostat_fr_apparent_cost",
+      "entity": "FR",
+      "entity_kind": "sovereign_issuer",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_acd|A|S13|RT|FR",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_acd?lang=en&freq=A&sector=S13&unit=RT&geo=FR"
+    },
+    {
+      "partition_id": "eurostat_fr_lt_variable_rate",
+      "entity": "FR",
+      "entity_kind": "sovereign_issuer",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_ggd|A|GD_VAR|S1_S2|S13|Y_GT1|PC_GDP|FR",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_ggd?lang=en&freq=A&na_item=GD_VAR&sector2=S1_S2&sector=S13&maturity=Y_GT1&unit=PC_GDP&geo=FR"
+    },
+    {
+      "partition_id": "eurostat_it_avg_residual_maturity",
+      "entity": "IT",
+      "entity_kind": "sovereign_issuer",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_rmd|A|S13|TOTAL|GD|YR|IT",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_rmd?lang=en&freq=A&sector=S13&maturity=TOTAL&na_item=GD&unit=YR&geo=IT"
+    },
+    {
+      "partition_id": "eurostat_it_total_debt_rmd_scope",
+      "entity": "IT",
+      "entity_kind": "sovereign_issuer",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_rmd|A|S13|TOTAL|GD|PC_GDP|IT",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_rmd?lang=en&freq=A&sector=S13&maturity=TOTAL&na_item=GD&unit=PC_GDP&geo=IT"
+    },
+    {
+      "partition_id": "eurostat_it_due_le1y",
+      "entity": "IT",
+      "entity_kind": "sovereign_issuer",
+      "family": "maturity_schedule",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_rmd|A|S13|Y_LE1|GD|PC_GDP|IT",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_rmd?lang=en&freq=A&sector=S13&maturity=Y_LE1&na_item=GD&unit=PC_GDP&geo=IT"
+    },
+    {
+      "partition_id": "eurostat_it_foreign_currency",
+      "entity": "IT",
+      "entity_kind": "sovereign_issuer",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_dcur|A|S13|FOR|GD|PC_GDP|IT",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_dcur?lang=en&freq=A&sector=S13&currency=FOR&na_item=GD&unit=PC_GDP&geo=IT"
+    },
+    {
+      "partition_id": "eurostat_it_apparent_cost",
+      "entity": "IT",
+      "entity_kind": "sovereign_issuer",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_acd|A|S13|RT|IT",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_acd?lang=en&freq=A&sector=S13&unit=RT&geo=IT"
+    },
+    {
+      "partition_id": "eurostat_it_lt_variable_rate",
+      "entity": "IT",
+      "entity_kind": "sovereign_issuer",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_ggd|A|GD_VAR|S1_S2|S13|Y_GT1|PC_GDP|IT",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_ggd?lang=en&freq=A&na_item=GD_VAR&sector2=S1_S2&sector=S13&maturity=Y_GT1&unit=PC_GDP&geo=IT"
+    },
+    {
+      "partition_id": "eurostat_es_avg_residual_maturity",
+      "entity": "ES",
+      "entity_kind": "comparison_sovereign",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_rmd|A|S13|TOTAL|GD|YR|ES",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_rmd?lang=en&freq=A&sector=S13&maturity=TOTAL&na_item=GD&unit=YR&geo=ES"
+    },
+    {
+      "partition_id": "eurostat_es_total_debt_rmd_scope",
+      "entity": "ES",
+      "entity_kind": "comparison_sovereign",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_rmd|A|S13|TOTAL|GD|PC_GDP|ES",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_rmd?lang=en&freq=A&sector=S13&maturity=TOTAL&na_item=GD&unit=PC_GDP&geo=ES"
+    },
+    {
+      "partition_id": "eurostat_es_due_le1y",
+      "entity": "ES",
+      "entity_kind": "comparison_sovereign",
+      "family": "maturity_schedule",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_rmd|A|S13|Y_LE1|GD|PC_GDP|ES",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_rmd?lang=en&freq=A&sector=S13&maturity=Y_LE1&na_item=GD&unit=PC_GDP&geo=ES"
+    },
+    {
+      "partition_id": "eurostat_es_foreign_currency",
+      "entity": "ES",
+      "entity_kind": "comparison_sovereign",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_dcur|A|S13|FOR|GD|PC_GDP|ES",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_dcur?lang=en&freq=A&sector=S13&currency=FOR&na_item=GD&unit=PC_GDP&geo=ES"
+    },
+    {
+      "partition_id": "eurostat_es_apparent_cost",
+      "entity": "ES",
+      "entity_kind": "comparison_sovereign",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_acd|A|S13|RT|ES",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_acd?lang=en&freq=A&sector=S13&unit=RT&geo=ES"
+    },
+    {
+      "partition_id": "eurostat_es_lt_variable_rate",
+      "entity": "ES",
+      "entity_kind": "comparison_sovereign",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_ggd|A|GD_VAR|S1_S2|S13|Y_GT1|PC_GDP|ES",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_ggd?lang=en&freq=A&na_item=GD_VAR&sector2=S1_S2&sector=S13&maturity=Y_GT1&unit=PC_GDP&geo=ES"
+    },
+    {
+      "partition_id": "eurostat_se_avg_residual_maturity",
+      "entity": "SE",
+      "entity_kind": "sovereign_issuer",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_rmd|A|S13|TOTAL|GD|YR|SE",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_rmd?lang=en&freq=A&sector=S13&maturity=TOTAL&na_item=GD&unit=YR&geo=SE"
+    },
+    {
+      "partition_id": "eurostat_se_total_debt_rmd_scope",
+      "entity": "SE",
+      "entity_kind": "sovereign_issuer",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_rmd|A|S13|TOTAL|GD|PC_GDP|SE",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_rmd?lang=en&freq=A&sector=S13&maturity=TOTAL&na_item=GD&unit=PC_GDP&geo=SE"
+    },
+    {
+      "partition_id": "eurostat_se_due_le1y",
+      "entity": "SE",
+      "entity_kind": "sovereign_issuer",
+      "family": "maturity_schedule",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_rmd|A|S13|Y_LE1|GD|PC_GDP|SE",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_rmd?lang=en&freq=A&sector=S13&maturity=Y_LE1&na_item=GD&unit=PC_GDP&geo=SE"
+    },
+    {
+      "partition_id": "eurostat_se_foreign_currency",
+      "entity": "SE",
+      "entity_kind": "sovereign_issuer",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_dcur|A|S13|FOR|GD|PC_GDP|SE",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_dcur?lang=en&freq=A&sector=S13&currency=FOR&na_item=GD&unit=PC_GDP&geo=SE"
+    },
+    {
+      "partition_id": "eurostat_se_apparent_cost",
+      "entity": "SE",
+      "entity_kind": "sovereign_issuer",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "Eurostat",
+      "native_identity": "gov_10dd_acd|A|S13|RT|SE",
+      "source_url": "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/gov_10dd_acd?lang=en&freq=A&sector=S13&unit=RT&geo=SE"
+    },
+    {
+      "partition_id": "ecb_ea21_avg_residual_maturity",
+      "entity": "EA21_FIXED",
+      "entity_kind": "comparison_aggregate",
+      "family": "portfolio_risk_history",
+      "phase": "harmonized_scalar",
+      "publisher": "European Central Bank",
+      "native_identity": "GFS.M.N.I10.W0.S13.S1.N.L.LE.F3.TT._Z.YR._T.F.V.A1._T",
+      "source_url": "https://data-api.ecb.europa.eu/service/data/GFS/M.N.I10.W0.S13.S1.N.L.LE.F3.TT._Z.YR._T.F.V.A1._T?format=csvdata"
+    },
+    {
+      "partition_id": "ecb_ea21_redemptions_1_12m_pct_gdp",
+      "entity": "EA21_FIXED",
+      "entity_kind": "comparison_aggregate",
+      "family": "maturity_schedule",
+      "phase": "harmonized_scalar",
+      "publisher": "European Central Bank",
+      "native_identity": "GFS.M.N.I10.W0.S13.S1.N.LD.F.F3.TS._Z.XDC_R_B1GQ_CY._T.F.V.C12._T",
+      "source_url": "https://data-api.ecb.europa.eu/service/data/GFS/M.N.I10.W0.S13.S1.N.LD.F.F3.TS._Z.XDC_R_B1GQ_CY._T.F.V.C12._T?format=csvdata"
+    },
+    {
+      "partition_id": "us_mspd_security_snapshot",
+      "entity": "US",
+      "entity_kind": "sovereign_issuer",
+      "family": "maturity_schedule",
+      "phase": "national_native",
+      "publisher": "U.S. Department of the Treasury, Bureau of the Fiscal Service",
+      "native_identity": "mspd_table_3",
+      "source_url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/debt/mspd/mspd_table_3"
+    },
+    {
+      "partition_id": "us_average_interest_rates",
+      "entity": "US",
+      "entity_kind": "sovereign_issuer",
+      "family": "portfolio_risk_history",
+      "phase": "national_native",
+      "publisher": "U.S. Department of the Treasury, Bureau of the Fiscal Service",
+      "native_identity": "avg_interest_rates",
+      "source_url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates"
+    },
+    {
+      "partition_id": "us_public_debt_transactions",
+      "entity": "US",
+      "entity_kind": "sovereign_issuer",
+      "family": "funding_plan_outturn",
+      "phase": "national_native",
+      "publisher": "U.S. Department of the Treasury, Bureau of the Fiscal Service",
+      "native_identity": "public_debt_transactions",
+      "source_url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/dts/public_debt_transactions"
+    },
+    {
+      "partition_id": "cn_central_government_annual_debt",
+      "entity": "CN",
+      "entity_kind": "sovereign_issuer",
+      "family": "funding_plan_outturn",
+      "phase": "national_native",
+      "publisher": "Ministry of Finance of the People's Republic of China",
+      "native_identity": "central_government_final_accounts_debt_table",
+      "source_url": "https://yss.mof.gov.cn/2024zyjs/"
+    },
+    {
+      "partition_id": "cn_local_government_monthly_debt",
+      "entity": "CN",
+      "entity_kind": "related_subsovereign_system",
+      "family": "portfolio_risk_history",
+      "phase": "national_native",
+      "publisher": "Ministry of Finance of the People's Republic of China",
+      "native_identity": "monthly_local_government_debt_statistics",
+      "source_url": "https://zwgls.mof.gov.cn/tjsj/"
+    },
+    {
+      "partition_id": "uk_gilts_in_issue",
+      "entity": "UK",
+      "entity_kind": "sovereign_issuer",
+      "family": "maturity_schedule",
+      "phase": "national_native",
+      "publisher": "United Kingdom Debt Management Office",
+      "native_identity": "D1A",
+      "source_url": "https://www.dmo.gov.uk/data/XmlDataReport?reportCode=D1A"
+    },
+    {
+      "partition_id": "uk_future_redemptions",
+      "entity": "UK",
+      "entity_kind": "sovereign_issuer",
+      "family": "maturity_schedule",
+      "phase": "national_native",
+      "publisher": "United Kingdom Debt Management Office",
+      "native_identity": "D8B",
+      "source_url": "https://www.dmo.gov.uk/data/pdfdatareport?reportCode=D8B"
+    },
+    {
+      "partition_id": "uk_index_linked_cashflows",
+      "entity": "UK",
+      "entity_kind": "sovereign_issuer",
+      "family": "maturity_schedule",
+      "phase": "national_native",
+      "publisher": "United Kingdom Debt Management Office",
+      "native_identity": "D5I",
+      "source_url": "https://www.dmo.gov.uk/data/ExportReport?reportCode=D5I"
+    },
+    {
+      "partition_id": "jp_scheduled_jgb_redemptions",
+      "entity": "JP",
+      "entity_kind": "sovereign_issuer",
+      "family": "maturity_schedule",
+      "phase": "national_native",
+      "publisher": "Ministry of Finance Japan",
+      "native_identity": "scheduled_redemption_of_jgb_at_maturity_workbook",
+      "source_url": "https://www.mof.go.jp/english/policy/jgbs/reference/Others/index.html"
+    },
+    {
+      "partition_id": "jp_debt_management_portfolio_history",
+      "entity": "JP",
+      "entity_kind": "sovereign_issuer",
+      "family": "portfolio_risk_history",
+      "phase": "national_native",
+      "publisher": "Ministry of Finance Japan",
+      "native_identity": "debt_management_report_supplement_workbook",
+      "source_url": "https://www.mof.go.jp/english/policy/jgbs/publication/debt_management_report/2026/index.html"
+    },
+    {
+      "partition_id": "se_central_government_debt_monthly_report",
+      "entity": "SE",
+      "entity_kind": "sovereign_issuer",
+      "family": "maturity_schedule",
+      "phase": "national_native",
+      "publisher": "Swedish National Debt Office",
+      "native_identity": "monthly_central_government_debt_report",
+      "source_url": "https://www.riksgalden.se/en/press-and-publications/publications/government-debt/"
+    },
+    {
+      "partition_id": "in_quarterly_public_debt_management",
+      "entity": "IN",
+      "entity_kind": "sovereign_issuer",
+      "family": "maturity_schedule",
+      "phase": "national_native",
+      "publisher": "India Department of Economic Affairs",
+      "native_identity": "quarterly_public_debt_management_report",
+      "source_url": "https://dea.gov.in/reports-public-debt-management"
+    },
+    {
+      "partition_id": "br_dpf_security_stock",
+      "entity": "BR",
+      "entity_kind": "sovereign_issuer",
+      "family": "maturity_schedule",
+      "phase": "national_native",
+      "publisher": "Brazil National Treasury",
+      "native_identity": "ckan:0998f610-bc25-4ce3-b32c-a873447500c2:b6280ed3-ef7e-4569-954a-bded97c2c8a1",
+      "source_url": "https://www.tesourotransparente.gov.br/ckan/dataset/0998f610-bc25-4ce3-b32c-a873447500c2/resource/b6280ed3-ef7e-4569-954a-bded97c2c8a1/download/estoquedpf.csv"
+    },
+    {
+      "partition_id": "br_monthly_debt_report",
+      "entity": "BR",
+      "entity_kind": "sovereign_issuer",
+      "family": "portfolio_risk_history",
+      "phase": "national_native",
+      "publisher": "Brazil National Treasury",
+      "native_identity": "monthly_debt_report_rmd",
+      "source_url": "https://www.tesourotransparente.gov.br/publicacoes/relatorio-mensal-da-divida-rmd/"
+    },
+    {
+      "partition_id": "de_federal_maturity_schedule",
+      "entity": "DE",
+      "entity_kind": "sovereign_issuer",
+      "family": "maturity_schedule",
+      "phase": "national_native",
+      "publisher": "German Finance Agency",
+      "native_identity": "federal_debt_maturity_schedule_pending_endpoint_verification",
+      "source_url": "https://www.deutsche-finanzagentur.de/en/federal-funding/debt-statistics/debt-level"
+    },
+    {
+      "partition_id": "fr_negotiable_debt_schedule",
+      "entity": "FR",
+      "entity_kind": "sovereign_issuer",
+      "family": "maturity_schedule",
+      "phase": "national_native",
+      "publisher": "Agence France Tresor",
+      "native_identity": "negotiable_state_debt_schedule_pending_endpoint_verification",
+      "source_url": "https://www.aft.gouv.fr/en/debt-key-figures"
+    },
+    {
+      "partition_id": "it_public_debt_maturity_schedule",
+      "entity": "IT",
+      "entity_kind": "sovereign_issuer",
+      "family": "maturity_schedule",
+      "phase": "national_native",
+      "publisher": "Italian Ministry of Economy and Finance, Department of the Treasury",
+      "native_identity": "public_debt_maturity_schedule_pending_endpoint_verification",
+      "source_url": "https://www.dt.mef.gov.it/en/debito_pubblico/"
+    }
+  ]
+}
