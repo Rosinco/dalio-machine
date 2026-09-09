@@ -41,6 +41,34 @@ and `450030aabe7c87117b32a78f4ec8a055a02137550149db9230b1511a75ed14b0`.
 These are link and rights-review metadata only. They contain zero human rights
 decisions and authorize no content capture.
 
+The checked, metadata-only 2025 Bank of England MPR cohort is:
+
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\reference\communication_boe_2025_events.json`
+
+Its generated representation inventory is:
+
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\communication_metadata_latest.md`
+
+with machine-readable companion
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\communication_metadata_latest.json`.
+The immutable pair is
+`communication_metadata_2026-09-09_97c6116f1c0b94a7.{json,md}`. The full
+semantic manifest SHA-256 is
+`4bba6c8415de46718a5ae6906d0d09e9041f7be1903dbeef7be4f40223717eb2`, and
+the inventory self-hash is
+`97c6116f1c0b94a7d9f6b01c8bebbdff1bc13b84b0e760665b4af24b870cc230`.
+The checked manifest file SHA-256 is
+`e0da5469e750b4a656130b446f88acc9f204d3ce2d7c7cf8ec3ca2432f3eea2e`;
+the generated latest JSON and Markdown file SHA-256 values are respectively
+`e17cd292bfba8c509716e158964d5e021bb12d21f654bf84e0788dff42dc6073`
+and `644b2fdac5932293fe5ac1fdf75281002d2289360de7b3aa1eb5176733430214`.
+The output measures four transcript links, four official-page video locators
+(three exact external-platform page URLs and one ID-only observation) and zero
+verified exact caption tracks against the same four-event denominator. It
+authorizes no content capture. The source pages used for link observation are
+not retained, so these hashes protect the recorded metadata rather than a
+historical copy of the changing live pages.
+
 The reserved content-addressed root for future, rights-cleared communication
 artifacts is:
 
@@ -178,7 +206,7 @@ Run the read-only inventory commands below to reproduce the inventory.
 | Official institutional reports | 10 documents; 852 extracted pages; 0 verified claims |
 | Report review queue | 5 latest documents; 20 unverified model drafts; 0 promoted claims |
 | Human report decisions | 0 decisions; 0 verified claims; blank review only |
-| Institutional communications | 20 source policies / 18 organizations; 2025 Fed/ECB metadata pilot 16/16 exact text links; ordered one-artifact/one-byte-lineage, multi-section schema v2; 0 database events; 0 artifacts/scopes/content captures/extracted segments; 0 sources cleared and acquisition automation false for all |
+| Institutional communications | 20 source policies / 18 organizations; 2025 Fed/ECB pilot 16/16 exact text links; 2025 BoE MPR cohort 4/4 events, 4/4 exact transcript links, 4/4 video locators (3 exact page URLs), 0/4 verified exact caption tracks; ordered one-artifact/one-byte-lineage, multi-section schema v2; 0 database events; 0 artifacts/scopes/content captures/extracted segments; 0 sources cleared and acquisition automation false for all |
 | World Bank monthly commodity history | 63,179 rows; 70 prices + 17 indices; 1960-01–2026-08 |
 | Official-money history | 5,794 rows; 10/10 pinned native series |
 | Separate liquidity frontier | 20,676 rows; 22/22 series (3 BIS + 19 OFR) |
@@ -202,6 +230,7 @@ dalio-audit-observatory --db data/dalio.db --json
 | `reference/report_issues.json` | Exact metadata, hashes, filenames and page counts for ten official report issues | Versioned source input; not a replacement for the PDFs |
 | `reference/report_claim_candidates.json` | Checked, versioned candidate propositions and exact page locators for the report-review queue | Review input only; structural/excerpt checks do not make a candidate verified |
 | `reference/communication_pilot_events.json` | Closed 2025 Fed/ECB 8+8 event denominator, one exact first-party English text candidate per event, semantic section order, conservative metadata clocks and pending source-rights evidence | Link metadata only; no bytes, human rights decision or collection authority |
+| `reference/communication_boe_2025_events.json` | Closed 2025 BoE four-event MPR press-conference denominator with separate transcript, official-page video and exact-caption observations | Link/platform-ID metadata only; no source-page archive, content bytes, rights decision or collection authority |
 | `artifacts/allocators/sha256/` | Content-addressed copies of official allocator PDFs | Durable evidence; do not treat as a disposable cache |
 | `artifacts/reports/sha256/` | Content-addressed copies of official central-bank/IMF/BIS PDFs | Durable evidence; do not treat as a disposable cache |
 | `artifacts/communications/` | Reserved content-addressed home for exact rights-cleared press-conference, earnings-communication, letter, caption and media artifacts | Empty by design until an exact artifact passes a documented rights review |
@@ -210,7 +239,7 @@ dalio-audit-observatory --db data/dalio.db --json
 | `artifacts/liquidity_frontier/` | Content-addressed BIS/OFR responses, provider semantic catalogues and OFR per-series payload/missingness ledgers | Durable release evidence; paths and full hashes are bound in `data_release_artifacts` and rechecked by inventory |
 | `cache/` | HTTP response cache used to reduce repeated source calls | Disposable, but a fresh rebuild then depends on the upstream source still serving the data |
 | `snapshots/` | Generated exports consumed by the dashboard or downstream tools, including fixed `liquidity_latest.{json,md}` aliases and hash-addressed `liquidity_YYYY-MM-DD_<snapshot-hash-prefix>.{json,md}` copies | Regenerable from the database and versioned calculation code; not source evidence |
-| `review/` | Generated report and communication-rights packets plus blank/editable packet-hash-bound human decision sheets | Regenerable or local review material; never source evidence, rights clearance or database truth before the appropriate human gate |
+| `review/` | Generated report packets, communication-rights packets, communication representation inventories and blank/editable packet-hash-bound human decision sheets | Regenerable or local review material; never source evidence, rights clearance or database truth before the appropriate gate |
 | `backups/` | Deliberate local database safety copies | Preserve until their replacement has been verified |
 
 ## Evidence shapes
@@ -501,6 +530,7 @@ dalio-liquidity-brief --db data/dalio.db
 dalio-report-review-packet --db data/dalio.db
 dalio-report-review prepare --db data/dalio.db
 dalio-communication-rights-packet
+dalio-communication-metadata-inventory
 ```
 
 The liquidity-brief command reads the database in SQLite read-only mode and
@@ -525,6 +555,13 @@ checked candidate catalogue against the latest eligible documents, archived PDF
 bytes, complete extractions and exact page excerpts before refreshing the fixed
 and hash-addressed files under `data/review/`. Its public-information cutoff is
 versioned in the catalogue rather than inferred from the run time.
+
+`dalio-communication-rights-packet` and
+`dalio-communication-metadata-inventory` are offline and database-free. The
+second command validates only the checked BoE manifest and refreshes
+`review/communication_metadata_latest.{json,md}` plus the hash-addressed pair.
+Neither command reads communication source content or grants acquisition
+authority.
 
 After `prepare`, open the printed Windows path and complete all four
 attestations plus one outcome for every candidate. Check and inspect progress
@@ -571,8 +608,10 @@ deterministic input layout.
 - Institutional communication history has not yet been collected. The 20-policy,
   18-organization catalogue covers a balanced first-party discovery universe,
   and the first closed denominator now covers the 8+8 regular 2025 Fed/ECB
-  policy press conferences with 16 exact official text links. That is only a
-  metadata pilot: no source authorizes automated content acquisition, no human
+  policy press conferences with 16 exact official text links. A separate closed
+  BoE 2025 cohort adds four MPR events, four exact transcript links, four video
+  locators and zero verified exact caption tracks. These are only metadata
+  inventories: no source authorizes automated content acquisition, no human
   rights decision exists, no transcript/subtitle/letter bytes or segments exist,
   and no communication text can feed scenarios or investor conclusions. The
   one-artifact/one-byte-lineage, multi-section storage mapping now exists, but no named-human

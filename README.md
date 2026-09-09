@@ -44,6 +44,12 @@ links and current official rights notices for human review. **No communication
 content bytes, database event/artifact rows or transcript segments have been
 collected**, and no automated acquisition is authorized. The pilot's 16/16 means
 link coverage only—not a rights-cleared or analysis-ready corpus.
+An independent 2025 Bank of England cohort closes all four Monetary Policy
+Report press-conference events and measures representations separately: 4/4
+exact Bank-hosted transcript links, 4/4 official-page video locators (3/4 exact
+external-platform page URLs) and 0/4 verified exact caption-track links. This is
+a metadata inventory only; an observed video never counts as a caption, and it
+adds no content or database rows.
 Future byte and segment hashes will prove reproducibility, not transcription
 fidelity; extracted text still needs trusted execution or named human review.
 
@@ -110,6 +116,9 @@ dalio-report-review status --db data/dalio.db --decisions data/review/report_dec
 # Offline metadata/rights review; no database, network, or source-content reads
 dalio-communication-rights-packet
 
+# Offline representation coverage for the checked 2025 BoE cohort; metadata only
+dalio-communication-metadata-inventory
+
 # Local official PDFs are deliberately acquired separately. The input folders
 # must contain the deterministic filenames recorded in data/reference/*.json.
 python -m dalio.pipelines.ingest_ap_funds --artifact-dir /path/to/verified-ap-pdfs
@@ -126,6 +135,13 @@ They do not download documents; the review-packet command only reads
 already-ingested evidence.
 
 From Windows Explorer, this checkout is available at `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine`; the local SQLite file is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\dalio.db`, and durable source evidence is under `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\artifacts`. The communications source-policy catalogue is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\src\dalio\communications\catalogue.py`; the checked Fed/ECB pilot is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\reference\communication_pilot_events.json`; its latest unverified rights packet is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\communication_rights_latest.md`; and a future rights-cleared archive will live under `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\artifacts\communications`. The latest generated liquidity brief is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\snapshots\liquidity_latest.md`; the latest unverified report review is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\report_claims_latest.md`; and the untouched human decision sheet is `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\report_decisions_2026-09-09_20c687f1cb907c71.json`. See `data/README.md` before copying, deleting or rebuilding anything under `data/`.
+
+The checked BoE cohort has the full Windows path
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\reference\communication_boe_2025_events.json`.
+Its generated metadata-only views are
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\communication_metadata_latest.md`
+and
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\communication_metadata_latest.json`.
 
 Riksbank SWEA contributes eight daily Swedish series: policy rate; 2-, 5- and 10-year government yields; and SEK per USD, EUR, NOK and GBP. No key is required. Keyless runs use a safe 13-second request interval for the official 5-calls/minute limit; when `RIKSBANK_API_KEY` is set, the adapter sends it in `Ocp-Apim-Subscription-Key` automatically. The NOK feed starts on 2023-11-27 because older observations were quoted per 100 NOK and are not mixed into the current per-1-NOK series.
 
@@ -234,6 +250,16 @@ be archived. See [ADR 0012](decisions/0012-institutional-communications-ledger.m
 [ADR 0013](decisions/0013-fed-ecb-communications-metadata-pilot.md) and
 [ADR 0014](decisions/0014-communication-section-scope-sets.md).
 
+`dalio-communication-metadata-inventory` is the separate offline view of
+`data/reference/communication_boe_2025_events.json`. It validates a closed
+four-event 2025 MPR denominator, then reports transcript, official-page video
+and exact-caption-track coverage against that same denominator. Its 4/4 video
+result means four official-page locators, including one ID-only observation; it
+does not mean four exact URLs or any verified captions. Fixed and hash-addressed
+JSON/Markdown outputs are written under `data/review/` with
+`content_capture_authorized=false`. See
+[ADR 0015](decisions/0015-boe-2025-communication-metadata-inventory.md).
+
 ## Tests
 
 ```bash
@@ -261,4 +287,4 @@ Tier drives dashboard confidence labels — Tier 2 readings are flagged as such.
 
 ## Status
 
-Pre-alpha. The cycle and fundamentals product is working, and the raw-history foundation now includes sovereign-debt anatomy, Swedish debt holders, IMF financial-account transactions, 127,970 bilateral investment-position rows, three Swedish AP-fund disclosures, a ten-document official-report corpus, 63,179 monthly commodity observations, ten official-money histories and 22 separate shadow-liquidity histories. Read-only liquidity diagnostics, a 20-item report review queue, an append-only human decision gate and a 20-policy/18-organization institutional-communications schema foundation are available. A closed 2025 Fed/ECB pilot adds 16/16 exact first-party text links, an offline rights-review packet and an ordered one-artifact/one-byte-lineage, multi-section storage contract, but no source content or database communication evidence rows. This is not a complete global money-flow map, a communications corpus, a universal M5, an additive liquidity total, a causal or deposit-flow model, or an investable commodity return history: all 20 report candidates still need named human review; every communication representation remains rights-gated; allocator history has only one H1 2026 release per fund; QPSD and IMF position coverage are voluntary and uneven; and debt cash-flow schedules, broader banking/funding channels and horizon risk scenarios remain to be built. See `project_context.md`, ADRs 0004–0014 and `data/README.md` for current boundaries.
+Pre-alpha. The cycle and fundamentals product is working, and the raw-history foundation now includes sovereign-debt anatomy, Swedish debt holders, IMF financial-account transactions, 127,970 bilateral investment-position rows, three Swedish AP-fund disclosures, a ten-document official-report corpus, 63,179 monthly commodity observations, ten official-money histories and 22 separate shadow-liquidity histories. Read-only liquidity diagnostics, a 20-item report review queue, an append-only human decision gate and a 20-policy/18-organization institutional-communications schema foundation are available. A closed 2025 Fed/ECB pilot adds 16/16 exact first-party text links and an offline rights-review packet; a separate closed 2025 BoE cohort adds representation-specific metadata for four MPR press conferences. The ordered one-artifact/one-byte-lineage, multi-section storage contract is ready, but there is no source content or database communication evidence. This is not a complete global money-flow map, a communications corpus, a universal M5, an additive liquidity total, a causal or deposit-flow model, or an investable commodity return history: all 20 report candidates still need named human review; every communication representation remains rights-gated; allocator history has only one H1 2026 release per fund; QPSD and IMF position coverage are voluntary and uneven; and debt cash-flow schedules, broader banking/funding channels and horizon risk scenarios remain to be built. See `project_context.md`, ADRs 0004–0015 and `data/README.md` for current boundaries.
