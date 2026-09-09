@@ -17,3 +17,4 @@ always-loaded state lives in `project_context.md` (Decision Log has one line per
 | [0010](0010-report-claim-review-queue.md) | Read-only, five-family model-draft review packet with exact evidence binding and a separate human-only approval gate | 2026-09-09 |
 | [0011](0011-human-report-claim-decisions.md) | Append-only, atomic human approve/revise/reject gate for hash-bound report candidates | 2026-09-09 |
 | [0012](0012-institutional-communications-ledger.md) | Rights-gated institutional communications catalogue and immutable event/artifact/segment evidence foundation | 2026-09-09 |
+| [0013](0013-fed-ecb-communications-metadata-pilot.md) | Closed 2025 Fed–ECB 8+8 press-conference metadata pilot with one exact first-party text candidate per event and human-gated acquisition | 2026-09-09 |

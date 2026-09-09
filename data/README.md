@@ -17,6 +17,25 @@ The institutional-communications source-policy catalogue is:
 
 `\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\src\dalio\communications\catalogue.py`
 
+The checked, metadata-only 2025 Fed/ECB pilot manifest is:
+
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\reference\communication_pilot_events.json`
+
+Its generated human-readable rights-review packet is:
+
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\communication_rights_latest.md`
+
+with machine-readable companion
+`\\wsl.localhost\Ubuntu\home\rosinco\workspace\dalio-machine\data\review\communication_rights_latest.json`.
+The immutable pair is
+`communication_rights_2026-09-09_61d94c907c50b7bb.{json,md}`. The full
+canonical semantic manifest SHA-256 is
+`ba16d73efbb929be3d85c8b4849ba90d41733e34d5f7369584659824e39bec34`, and
+the canonical semantic packet self-hash is
+`61d94c907c50b7bb7198479dd00cf6d0b89d083e1cfbf5c2731d20863b8793d1`.
+These are link and rights-review metadata only. They contain zero human rights
+decisions and authorize no content capture.
+
 The reserved content-addressed root for future, rights-cleared communication
 artifacts is:
 
@@ -137,7 +156,7 @@ Run the read-only inventory commands below to reproduce the inventory.
 | Official institutional reports | 10 documents; 852 extracted pages; 0 verified claims |
 | Report review queue | 5 latest documents; 20 unverified model drafts; 0 promoted claims |
 | Human report decisions | 0 decisions; 0 verified claims; blank review only |
-| Institutional communications | 20 source policies / 18 organizations; valid schema/integrity contract; 0 events; 0 artifacts; 0 content captures; 0 extracted segments; archive coverage not measured |
+| Institutional communications | 20 source policies / 18 organizations; 2025 Fed/ECB metadata pilot 16/16 exact text links; 0 database events; 0 artifacts; 0 content captures; 0 extracted segments; all acquisition rights pending |
 | World Bank monthly commodity history | 63,179 rows; 70 prices + 17 indices; 1960-01–2026-08 |
 | Official-money history | 5,794 rows; 10/10 pinned native series |
 | Separate liquidity frontier | 20,676 rows; 22/22 series (3 BIS + 19 OFR) |
@@ -160,6 +179,7 @@ dalio-audit-observatory --db data/dalio.db --json
 | `reference/ap_funds_h1_2026.json` | Versioned metadata and model-checked transcription of 48 AP2/AP3/AP4 facts | Reproducible source input; not a replacement for the PDFs |
 | `reference/report_issues.json` | Exact metadata, hashes, filenames and page counts for ten official report issues | Versioned source input; not a replacement for the PDFs |
 | `reference/report_claim_candidates.json` | Checked, versioned candidate propositions and exact page locators for the report-review queue | Review input only; structural/excerpt checks do not make a candidate verified |
+| `reference/communication_pilot_events.json` | Closed 2025 Fed/ECB 8+8 event denominator, one exact first-party English text candidate per event, conservative metadata clocks and pending source-rights evidence | Link metadata only; no bytes, human rights decision or collection authority |
 | `artifacts/allocators/sha256/` | Content-addressed copies of official allocator PDFs | Durable evidence; do not treat as a disposable cache |
 | `artifacts/reports/sha256/` | Content-addressed copies of official central-bank/IMF/BIS PDFs | Durable evidence; do not treat as a disposable cache |
 | `artifacts/communications/` | Reserved content-addressed home for exact rights-cleared press-conference, earnings-communication, letter, caption and media artifacts | Empty by design until an exact artifact passes a documented rights review |
@@ -168,7 +188,7 @@ dalio-audit-observatory --db data/dalio.db --json
 | `artifacts/liquidity_frontier/` | Content-addressed BIS/OFR responses, provider semantic catalogues and OFR per-series payload/missingness ledgers | Durable release evidence; paths and full hashes are bound in `data_release_artifacts` and rechecked by inventory |
 | `cache/` | HTTP response cache used to reduce repeated source calls | Disposable, but a fresh rebuild then depends on the upstream source still serving the data |
 | `snapshots/` | Generated exports consumed by the dashboard or downstream tools, including fixed `liquidity_latest.{json,md}` aliases and hash-addressed `liquidity_YYYY-MM-DD_<snapshot-hash-prefix>.{json,md}` copies | Regenerable from the database and versioned calculation code; not source evidence |
-| `review/` | Generated report packets plus blank/editable packet-hash-bound human decision sheets | Regenerable or local review material; never source evidence or database truth before interactive application |
+| `review/` | Generated report and communication-rights packets plus blank/editable packet-hash-bound human decision sheets | Regenerable or local review material; never source evidence, rights clearance or database truth before the appropriate human gate |
 | `backups/` | Deliberate local database safety copies | Preserve until their replacement has been verified |
 
 ## Evidence shapes
@@ -208,7 +228,10 @@ Different questions require different storage shapes:
   retrieval clocks and page/paragraph/timecode locators are explicit. The live
   tables are empty: the 20-policy catalogue covers 18 organizations and is
   source-discovery policy, not a downloaded corpus or evidence that an archive
-  is complete. Immutable link metadata can precede a rights-cleared byte capture;
+  is complete. The first closed pilot enumerates all eight 2025 Fed and eight
+  2025 ECB regular policy press conferences plus one selected official text URL
+  per event. Its 16/16 is link coverage, not corpus completeness or clearance.
+  Immutable link metadata can precede a rights-cleared byte capture;
   changed bytes at the same URL append another capture rather than rewriting the
   artifact. Inventory can rehash archived bytes and deterministic segment
   structures, but those checks do not prove transcript fidelity or trusted
@@ -452,6 +475,7 @@ python scripts/audit_observatory.py --db data/dalio.db
 dalio-liquidity-brief --db data/dalio.db
 dalio-report-review-packet --db data/dalio.db
 dalio-report-review prepare --db data/dalio.db
+dalio-communication-rights-packet
 ```
 
 The liquidity-brief command reads the database in SQLite read-only mode and
@@ -520,11 +544,14 @@ deterministic input layout.
 ## Known gaps
 
 - Institutional communication history has not yet been collected. The 20-policy,
-  18-organization catalogue covers a balanced first-party discovery universe, but no complete
-  event universe is pinned, no source authorizes automated content acquisition,
-  no transcript/subtitle/letter bytes or segments exist, and no communication
-  text can feed scenarios or investor conclusions. The next slice needs preserved
-  archive-index evidence and per-artifact rights review before ingestion.
+  18-organization catalogue covers a balanced first-party discovery universe,
+  and the first closed denominator now covers the 8+8 regular 2025 Fed/ECB
+  policy press conferences with 16 exact official text links. That is only a
+  metadata pilot: no source authorizes automated content acquisition, no human
+  rights decision exists, no transcript/subtitle/letter bytes or segments exist,
+  and no communication text can feed scenarios or investor conclusions. The
+  next slice needs the ECB single-capture/multi-section storage mapping and a
+  hash-bound named-human rights-decision contract before any ingestion.
 - None of the 852 report pages has yet become a named, human-verified atomic
   claim, so central-bank/IMF/BIS conclusions do not yet feed risk analysis. The
   bounded 20-item review packet has shipped, but every item remains an
