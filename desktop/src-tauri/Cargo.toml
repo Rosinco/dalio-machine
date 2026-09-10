@@ -1,6 +1,6 @@
 [package]
 name = "macro-atlas"
-version = "0.1.0"
+version = "0.1.1"
 description = "Offline macroeconomic research atlas"
 edition = "2021"
 

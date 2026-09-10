@@ -1,5 +1,38 @@
 import { describe, expect, it } from 'vitest';
-import { atYear, quintile, tradeSlices, latestTrade, format, historyLines } from './model';
+import { atYear, quintile, tradeSlices, latestTrade, format, historyLines, historyColor, historyPalette } from './model';
+
+describe('colour meaning', () => {
+  const debt = { scored: true, higher_is_better: false };
+  const output = { scored: true, higher_is_better: true };
+  it('shows low debt as green and high debt as red', () => {
+    expect(historyColor(20, [20, 150], debt)).toBe('#3b946c');
+    expect(historyColor(150, [20, 150], debt)).toBe('#cf5757');
+    expect(historyPalette(debt)[0]).toBe('#3b946c');
+    expect(historyPalette(debt)[4]).toBe('#cf5757');
+  });
+  it('shows stronger output as green and weaker output as red', () => {
+    expect(historyColor(10000, [10000, 70000], output)).toBe('#cf5757');
+    expect(historyColor(70000, [10000, 70000], output)).toBe('#3b946c');
+  });
+  it('preserves the direction across negative and positive fiscal balances', () => {
+    expect(historyColor(-12, [-12, 4], output)).toBe('#cf5757');
+    expect(historyColor(4, [-12, 4], output)).toBe('#3b946c');
+  });
+  it('uses yellow for the middle and for an undifferentiated panel', () => {
+    expect(historyColor(50, [0, 100], debt)).toBe('#e5ca61');
+    expect(historyColor(50, [50, 50], output)).toBe('#e5ca61');
+    expect(historyColor(50, [50, 50], debt)).toBe('#e5ca61');
+  });
+  it('uses a blue quantity scale for unscored or unspecified measures', () => {
+    expect(historyColor(100, [0, 100], { ...output, scored: false })).toBe('#245782');
+    expect(historyColor(100, [0, 100], undefined)).toBe('#245782');
+  });
+  it('keeps missing data grey while preserving a genuine zero', () => {
+    expect(historyColor(null, [0, 100], debt)).toBe('#e2e5de');
+    expect(historyColor(NaN, [0, 100], debt)).toBe('#e2e5de');
+    expect(historyColor(0, [0, 100], debt)).toBe('#3b946c');
+  });
+});
 
 describe('evidence semantics', () => {
   it('keeps missing scores distinct from genuine zero', () => {

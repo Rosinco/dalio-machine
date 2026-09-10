@@ -1,4 +1,4 @@
-import type { Country, Point, Trade } from './types';
+import type { Country, Indicator, Point, Trade } from './types';
 
 export const categories = {
   real_stuff: { label: 'Resources & people', short: 'Resources', description: 'Energy dependence and demographics' },
@@ -7,9 +7,29 @@ export const categories = {
   promises: { label: 'Debt & fiscal position', short: 'Debt', description: 'Debt, budgets and debt service' },
   enforcer: { label: 'Institutions & stability', short: 'Institutions', description: 'Institutions, stability and state capacity' },
 };
-export const palette = ['#d5b483', '#b5c5ad', '#78aa99', '#438576', '#205d54'];
+// Assessment colours always run from weaker (red), through mixed (yellow), to stronger (green).
+export const assessmentPalette = ['#cf5757', '#e79c73', '#e5ca61', '#9cbd75', '#3b946c'];
+export const quantityPalette = ['#dae7f3', '#aac9e3', '#76a6cc', '#467eaf', '#245782'];
+export const seriesColors = { selected: '#386ca5', comparison: '#8562a8' };
+export const tradePalette = ['#386ca5', '#8562a8', '#76a6cc', '#ab92c5', '#bccadd', '#e2e5ea'];
 export const missingColor = '#e2e5de';
 export const finite = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
+type Direction = Pick<Indicator, 'scored' | 'higher_is_better'> | undefined;
+export function indicatorDirection(meta: Direction) {
+  if (!meta?.scored || typeof meta.higher_is_better !== 'boolean') return 'neutral';
+  return meta.higher_is_better ? 'higher' : 'lower';
+}
+export function historyPalette(meta: Direction) {
+  const direction = indicatorDirection(meta);
+  return direction === 'neutral' ? quantityPalette : direction === 'lower' ? [...assessmentPalette].reverse() : assessmentPalette;
+}
+export function historyColor(value: number | null | undefined, range: readonly number[], meta: Direction) {
+  if (!finite(value)) return missingColor;
+  const [min, max] = range;
+  if (!finite(min) || !finite(max)) return missingColor;
+  const band = max === min ? 2 : Math.max(0, Math.min(4, Math.floor(5 * (value - min) / (max - min))));
+  return historyPalette(meta)[band];
+}
 export function quintile(score: number | null | undefined) {
   return finite(score) ? Math.max(0, Math.min(4, Math.floor(score / 20))) : null;
 }

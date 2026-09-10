@@ -32,6 +32,10 @@
   await waitFor(() => document.querySelector('select[aria-label="Map historical indicator"]'), 'History controls');
   select('Map historical indicator', 'gov_debt_pct_gdp');
   await waitFor(() => document.querySelector('.metric-readout')?.textContent.includes('Historical observation'), 'Historical map and observation');
+  await waitFor(() => document.querySelector('.legend')?.dataset.colourDirection === 'lower', 'Debt colour direction');
+  const legend = [...document.querySelectorAll('.legend-scale i')].map(el => getComputedStyle(el).backgroundColor);
+  if (legend[0] !== 'rgb(59, 148, 108)' || legend[4] !== 'rgb(207, 87, 87)') throw new Error('Debt colours are inverted');
+  checks.push('Low debt green / high debt red');
   click('[aria-label="Trade connections"]');
   await waitFor(() => document.querySelectorAll('.trade-partners button').length === 6, 'Trade chart');
   if (document.querySelector('.trade-partners')?.textContent.includes('Euro area')) throw new Error('Overlapping trade aggregate');

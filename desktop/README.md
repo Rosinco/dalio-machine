@@ -6,7 +6,16 @@ requires no terminal, Python environment, WSL, account or network connection.
 Windows WebView2 must be installed; it is present on Adam's PC. The Tauri installer
 configuration can also bundle its offline installer when distributing to another PC.
 
-## Version 0.1
+## Version 0.1.1
+
+Assessment colours consistently mean **red = weaker, yellow = mixed/middle,
+green = stronger**. Historical maps follow each scored indicator's existing
+`higher_is_better` direction: high debt or dependency is red; low debt or dependency
+is green. Bands are relative to the covered countries in the selected year, rather
+than absolute safe/danger thresholds. Missing observations stay grey. Unscored
+quantities and trade use blue; blue/purple chart lines identify countries or series.
+The radar's red inner rings represent weak scores and green outer rings strong
+scores. None of these presentation changes recalculate the saved fundamentals.
 
 - World map: 177 Natural Earth overview features; research for 21 countries and a
   separately selectable euro-area aggregate.
@@ -16,7 +25,7 @@ configuration can also bundle its offline installer when distributing to another
 - Annual history and forecast lines, with missing years left as gaps. A historical
   map displays raw observations for the selected year; it excludes forecasts and
   does not carry values forward. Its colour breaks adapt to that year's range and
-  do not express economic quality or historical ranks.
+  follow the indicator's saved direction, without calculating historical ranks.
 - Goods-trade map, doughnut and paired bar chart. Overlapping euro-area partner
   totals are excluded. The residual preserves the total-export denominator.
 - Read-only pressure diagrams for existing triggered rules, labelled as judgment.
@@ -78,12 +87,15 @@ needed to run it.
 
 After verification, run `scripts/install-windows.ps1` in Windows PowerShell. It
 copies the app into the current user's LocalAppData and creates **Macro Atlas** on
-their actual desktop, including OneDrive desktops. It refuses to replace a
-different executable in the same version folder or an unrelated desktop shortcut.
+their actual desktop, including OneDrive desktops. It updates earlier Macro Atlas
+shortcuts, keeps prior version folders, and refuses to replace a different
+executable in the same version folder or an unrelated desktop shortcut. `-Start`
+closes older Atlas viewer windows and opens the installed version.
 
 ## Verification
 
-`npm test` checks zero/missing score handling, historical gaps, forecast boundaries,
+`npm test` checks colour direction (including debt, negative values, missing values,
+equal observations and unscored quantities), zero/missing scores, historical gaps, forecast boundaries,
 single-vintage trade, overlapping aggregates and trade denominators.
 `scripts/verify_pack.py` checks every exported country against the original snapshot
 and verifies map coverage. `npm run test:browser` runs Playwright against

@@ -1,9 +1,10 @@
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { resolve, dirname } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 
@@ -15,7 +16,9 @@ const server = createServer();
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const port = server.address().port;
 await new Promise(resolve => server.close(resolve));
-const app = spawn(executable, [], { stdio: 'ignore', env: { ...process.env, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port}` } });
+// Keep the test browser and its preferences separate from an open Atlas window.
+const profile = await mkdtemp(resolve(tmpdir(), 'macro-atlas-test-'));
+const app = spawn(executable, [], { stdio: 'ignore', env: { ...process.env, WEBVIEW2_USER_DATA_FOLDER: profile, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port}` } });
 let launchError;
 app.on('error', error => { launchError = error; });
 let browser, page;
@@ -64,4 +67,6 @@ try {
 } finally {
   await browser?.close().catch(() => {});
   if (app.exitCode === null) app.kill();
+  await new Promise(resolve => setTimeout(resolve, 500));
+  await rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }).catch(() => console.warn(`Test profile still in use: ${profile}`));
 }
