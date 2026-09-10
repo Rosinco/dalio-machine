@@ -80,3 +80,8 @@
 @media(min-width:1600px){.business-sidebar{width:580px}.business-content{padding:27px 33px 0}.business-heading{padding:25px 33px 20px}}
 @media(max-width:1200px){.topbar .brand{min-width:280px}.topbar{gap:12px;padding:0 16px}.observatory-select{font-size:11px;max-width:173px}.business-sidebar{max-width:47vw}.business-content{padding:20px 22px 0}.business-heading{padding:20px 22px 17px}.business-map-filter{gap:8px}.business-map-filter>span:last-child{display:none}.business-workspace .map-heading h1{font-size:25px}.business-workspace .map-heading p{font-size:11px;max-width:280px;line-height:1.7}}
 @media(max-width:900px){.topbar .brand{min-width:0;gap:8px}.observatory-select{display:block;font-size:10px;padding:6px;max-width:165px;margin-left:10px}.business-sidebar{width:100%;max-width:none}.business-content{overflow:visible}.topbar .search input{min-width:60px}.topbar .brand-mark{display:none}.business-workspace .map-panel{min-height:600px}.business-content .section-title{flex-wrap:wrap}}
+
+.market-table table{min-width:720px}
+.market-table td:not(:last-child){white-space:nowrap}
+.market-table td:last-child{min-width:180px}
+.market-table small{display:block;margin-top:3px}

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import { decodeFinancialCompany, decodeFinancialRows, validateFinancialIndex, type FinancialCompany, type FinancialIndex } from './financialData';
 import { projectAnnual, type BranchData } from './branchComparison';
+import { decodeMarketRows } from './marketData';
 
 async function read(command: string, args: Record<string, string>) {
   if (isTauri()) return invoke(command, args);
@@ -51,7 +52,10 @@ export function useBranchAnnual(index: FinancialIndex | null, ids: string[]) {
         const raw: any = isTauri() ? await invoke('financial_annual', { pack: index.id, ids: batch }) : await read('financial_annual', { pack: index.id, ids: batch.join(',') });
         if (!active) return;
         if (raw?.pack !== index.id || !Array.isArray(raw.companies) || raw.companies.length !== batch.length || raw.companies.some((c: any, i: number) => c?.id !== batch[i])) throw new Error('Annual histories do not match the requested comparison.');
-        for (const c of raw.companies) data[c.id] = projectAnnual(decodeFinancialRows(c.annual, index, c.id, 'annual'));
+        for (const c of raw.companies) {
+          const reports = decodeFinancialRows(c.annual, index, c.id, 'annual');
+          data[c.id] = projectAnnual(reports, decodeMarketRows(c.market, index, c.id, reports));
+        }
         setState({ key, data: null, ready: false, error: '', loaded: Math.min(offset + 32, available.length) });
       }
       if (active) setState({ key, data, ready: true, error: '', loaded: available.length });

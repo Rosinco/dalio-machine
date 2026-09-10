@@ -32,6 +32,9 @@ fn compressed(bytes: &[u8]) -> Vec<u8> {
 fn fixture(root: &std::path::Path) -> (PathBuf, String) {
     let raw: Value =
         serde_json::from_str(include_str!("../../tests/fixtures/financial.json")).unwrap();
+    fixture_data(root, raw)
+}
+fn fixture_data(root: &std::path::Path, raw: Value) -> (PathBuf, String) {
     let path = root.join("build.sqlite");
     let conn = Connection::open(&path).unwrap();
     conn.execute_batch("CREATE TABLE metadata(key TEXT PRIMARY KEY,payload BLOB NOT NULL); CREATE TABLE companies(id TEXT PRIMARY KEY,payload BLOB NOT NULL,sha256 TEXT NOT NULL);").unwrap();
@@ -56,6 +59,63 @@ fn fixture(root: &std::path::Path) -> (PathBuf, String) {
     let target = root.join(format!("{id}.sqlite"));
     std::fs::rename(path, &target).unwrap();
     (target, id)
+}
+
+#[test]
+fn market_pack_keeps_dated_values_in_company_and_annual_reads() {
+    let tmp = Temp::new();
+    let raw: Value =
+        serde_json::from_str(include_str!("../../tests/fixtures/market.json")).unwrap();
+    let (path, id) = fixture_data(&tmp.0, raw);
+    let pack = Pack::open(&path, &id).unwrap();
+    pack.check_all().unwrap();
+    assert_eq!(pack.company("102").unwrap()["market"][0]["local"], 200.0);
+    let batch = pack.annual(&["102".into()]).unwrap();
+    assert_eq!(batch["companies"][0]["market"][0]["sek"], 2400.0);
+    assert_eq!(
+        batch["companies"][0]["market"][0]["price_date"],
+        "2026-02-02"
+    );
+    assert_eq!(batch["companies"][0]["market"][0]["fx_date"], "2026-01-30");
+}
+
+#[test]
+fn market_values_dates_units_and_flags_are_checked_even_with_valid_checksums() {
+    for (key, value) in [
+        ("local", json!(300)),
+        ("sek", json!(300)),
+        ("price_date", json!("2026-01-30")),
+        ("fx_date", json!("2026-02-03")),
+        ("fx_date", json!("2026-01-01")),
+        ("source_id", json!("unknown")),
+        ("flags", json!(["share_basis"])),
+        ("flags", json!(["unknown"])),
+        ("fx_instruments", json!(["123"])),
+        ("fx_method", json!("static_fallback")),
+    ] {
+        let tmp = Temp::new();
+        let mut raw: Value =
+            serde_json::from_str(include_str!("../../tests/fixtures/market.json")).unwrap();
+        raw["companies"]["102"]["market"][0][key] = value;
+        let (path, id) = fixture_data(&tmp.0, raw);
+        let pack = Pack::open(&path, &id).unwrap();
+        assert!(pack.check_all().is_err(), "accepted invalid {key}");
+    }
+}
+
+#[test]
+fn market_index_coverage_and_version_are_enforced() {
+    for version in [1, 2] {
+        let tmp = Temp::new();
+        let mut raw: Value =
+            serde_json::from_str(include_str!("../../tests/fixtures/market.json")).unwrap();
+        raw["index"]["version"] = json!(version);
+        if version == 2 {
+            raw["index"]["market"]["summary"]["sek"] = json!(2);
+        }
+        let (path, id) = fixture_data(&tmp.0, raw);
+        assert!(Pack::open(&path, &id).is_err());
+    }
 }
 
 #[test]

@@ -6,7 +6,7 @@ requires no terminal, Python environment, WSL, account or network connection.
 Windows WebView2 must be installed; it is present on Adam's PC. The Tauri installer
 configuration can also bundle its offline installer when distributing to another PC.
 
-## Version 0.7.0
+## Version 0.8.0
 
 Use the **Observatory** selector beside ATLAS to switch between **Macro**,
 **Sectors & branches**, and **Companies**. Each has its own Explore views.
@@ -23,9 +23,10 @@ when the app reopens.
   reporting periods remain available. Each listing has equal weight; cross-listings
   can repeat an issuer. This is saved-directory history, not a historical universe
   free of survivorship bias. Annual periods outside 330–400 days are excluded.
-- Points have equal size by default. **Bubble area** can instead show total assets
-  or revenue, in one reporting currency and with one scale across the chosen years.
-  Market cap is unavailable until price/share-count dates and split bases are verified.
+- **Bubble area** defaults to derived market cap in SEK. Equal-size points, total
+  assets and revenue remain selectable. Market cap is also a Y-axis measure, using
+  a common SEK scale across reporting currencies; assets/revenue use one reporting
+  currency. A missing size omits the bubble but retains a valid Y-axis benchmark input.
   ROIC and CAPEX remain separate future measures; existing proxies are labelled.
 - **Save new comparison** keeps the selection, filters, years, notes and exact data
   versions in Atlas's persistent local storage. Reopen it from **Saved in this branch**,
@@ -59,6 +60,20 @@ when the app reopens.
   Branches retain their own research coverage; older research packages keep their
   original company coverage without inheriting the full directory.
 
+- **16,895 listings have usable market-cap history**: 159,486 dated valuations.
+  All 19,140 listings retain explicit coverage; unavailable or flagged observations
+  stay blank. Company histories show the price, reported shares, historical FX,
+  valuation date, source snapshot and review reasons. Toggle between SEK and the
+  listing’s quote currency. Values are in millions.
+- Market cap is derived from reported shares × the first valid close on or within
+  30 calendar days after publication. It is a publication-date valuation, not a
+  fiscal-year-end value. Shares and prices come from the same saved download.
+  Historical FX uses observed direct rates or simultaneous USD cross-rates, at most
+  seven days old. No static currency fallback is applied. Source share-basis and
+  scale checks withhold suspect rows; preference, receipt and unit instruments
+  require a reviewed share basis. Each listing stays separate; these checks do not
+  certify every corporate action or consolidate the issuer’s share classes.
+
 - **18,943 listings have usable reports**: 268,884 annual and 603,720 quarterly
   records from the saved 2025-06-21 and 2026-08-10 downloads. Coverage includes the
   first/latest fiscal years and quarters, missing periods within the span, report
@@ -73,7 +88,8 @@ when the app reopens.
 - Amounts are in millions of the report's currency: stored amount divided by
   `currency_ratio`. Missing conversion leaves values unavailable; real zeroes stay
   zero. Currency changes leave gaps in monetary charts, with a currency selector.
-  Per-share figures are omitted because split-adjustment bases differ in the files.
+  Per-share financial ratios remain omitted because adjustment bases differ.
+  Reported share counts appear as explicit inputs in the market-cap audit table.
 - Earlier retained periods may come from an older accounting/restatement basis.
   The legacy five-company financial/research document remains available in older
   research packages; its source dates and original content remain unchanged.
@@ -203,9 +219,11 @@ Included assets retain country/company-level lazy loading. The source ledger's r
 provider artifact files are not copied into the package. Their contents are not
 independently verified by the offline viewer.
 
-Large Börsdata Parquet tables are not included in the application. Version 0.6
-uses a **96,309,248-byte SQLite companion**, indexed by listing ID with compressed
-company records. Its coverage index loads when needed; only the selected company's
+Large Börsdata Parquet tables are not included in the application. Version 0.8
+uses a **109,862,912-byte SQLite companion** (financial format v2), indexed by listing
+ID with compressed company records. The original 96 MB v1 pack remains readable.
+The v2 companion extends every company with annual valuation records and coverage.
+Existing annual/quarterly financial records are unchanged. Its coverage index loads when needed; only the selected company's
 reports enter the webview. This supports point lookups, rather than arbitrary
 cross-company analytical queries. The 101-million-row screener is never read.
 
@@ -280,6 +298,10 @@ source /mnt/c/Users/Adamb/borsdata_project/GitClone/Modern-Borsdata-Client/.venv
 PYTHONDONTWRITEBYTECODE=1 python scripts/export_financials.py \
   --borsdata-root /mnt/c/Users/Adamb/borsdata_project/GitClone/Modern-Borsdata-Client \
   --taxonomy public/data/taxonomy.json --output financial-data
+# Use the v1 pack ID printed by export_financials.py above.
+PYTHONDONTWRITEBYTECODE=1 python scripts/export_market_history.py \
+  --borsdata-root /mnt/c/Users/Adamb/borsdata_project/GitClone/Modern-Borsdata-Client \
+  --financial-pack financial-data/BASE_V1_PACK_ID.sqlite --output financial-data
 npm test
 npm run build
 ```
@@ -339,7 +361,7 @@ single-vintage trade, overlapping aggregates and trade denominators.
 It also checks score arithmetic and comparison eligibility, import checksums and
 validation, liquidity geography and gaps, business-document identity and company
 chart gaps, taxonomy search, shared-study counts, source binding and corrections.
-`python -m pytest tests/test_export_business.py tests/test_export_taxonomy.py tests/test_listing_catalogue.py tests/test_financial_history.py` (from `desktop/`, with
+`python -m pytest tests/test_export_business.py tests/test_export_taxonomy.py tests/test_listing_catalogue.py tests/test_financial_history.py tests/test_market_history.py` (from `desktop/`, with
 the Dalio venv activated) checks FX division, zero/missing values, denominator and
 quarterly-return rules, period validation, common-year catalogue projection,
 taxonomy identity, correction drift, deduplicated document inventories, newest-ID selection,
@@ -370,7 +392,9 @@ flags tested in both browser and native Windows flows.
 It restarts the executable to verify selected-company persistence and exports a
 portable research file containing all four source documents. Financial checks
 exercise no-report listings, currency conversion, missing/withheld periods and all
-three statements. Native tests export/import the full 96 MB financial pack,
+three statements. Market checks reconcile Holmen’s shares and price, EUR direct
+FX and PLN cross-rates, quality gaps and all-currency SEK branch medians. Native
+tests export/import the full 110 MB financial pack,
 reject malformed input and check persistence after process restart.
 It uses an isolated WebView profile and temporary native archive
 (`ATLAS_RESEARCH_DIR` and `ATLAS_FINANCIALS_DIR`, development/test overrides) and closes its own processes.

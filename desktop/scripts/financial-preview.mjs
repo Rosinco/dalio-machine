@@ -25,7 +25,7 @@ function pack(id) {
     db.exec('PRAGMA query_only=ON; PRAGMA trusted_schema=OFF;');
     const raw = db.prepare('SELECT payload FROM metadata WHERE key=?').get('index');
     const index = JSON.parse(gunzipSync(raw.payload, { maxOutputLength: 16000000 }));
-    if (index.format !== 'macro-atlas-financials' || index.version !== 1) throw new Error('Unsupported financial pack');
+    if (index.format !== 'macro-atlas-financials' || ![1, 2].includes(index.version)) throw new Error('Unsupported financial pack');
     const result = { db, index: { ...index, id, bytes: stat.size }, path, bytes: stat.size, mtimeMs: stat.mtimeMs };
     cache.set(id, result); return result;
   } catch (e) { db.close(); throw e; }
@@ -62,7 +62,7 @@ function middleware(req, res, next) {
       else if (operation === 'annual') {
         const ids = (url.searchParams.get('ids') ?? '').split(',');
         if (!ids.length || ids.length > 32 || new Set(ids).size !== ids.length) throw new Error('Request between 1 and 32 distinct listings');
-        result = { pack: p.index.id, companies: ids.map(id => ({ id, annual: company(id).annual })) };
+        result = { pack: p.index.id, companies: ids.map(id => { const c = company(id); return { id, annual: c.annual, ...(p.index.version === 2 ? { market: c.market } : {}) }; }) };
         if (JSON.stringify(result).length > 8_000_000) throw new Error('Annual batch exceeds 8 MB');
       } else throw new Error('Unknown financial operation');
     }

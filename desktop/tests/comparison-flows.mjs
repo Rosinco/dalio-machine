@@ -23,6 +23,15 @@ export async function restoreComparison(page, title = 'Skog – jämförelse med
   assert.equal(await page.getByLabel('Comparison selected year').inputValue(), '2024');
   assert.equal(await page.locator('[data-comparison-focus]').getAttribute('data-comparison-focus'), '102');
 }
+export async function restoreMarketComparison(page) {
+  await restoreComparison(page);
+  await page.locator('.saved-comparisons button').filter({ hasText: 'Skog – börsvärden i SEK' }).click();
+  assert.equal(await page.getByLabel('Branch comparison metric').inputValue(), 'market_cap');
+  assert.equal(await page.getByLabel('Branch bubble size').inputValue(), 'market_cap');
+  assert.equal(await page.getByLabel('Comparison reporting currency').inputValue(), 'all');
+  assert.equal(await page.getByLabel('Comparison selected year').inputValue(), '2024');
+  assert.equal(await page.getByLabel('Comparison research notes').inputValue(), 'Börsvärden med historiska kurser och valuta.');
+}
 export async function comparisonFlows(page, project) {
   const envelope = JSON.parse(await readFile(resolve(project, 'public/data/research.atlas.json'), 'utf8'));
   const taxonomy = JSON.parse(envelope.taxonomy.content), catalogue = taxonomy.catalogue;
@@ -35,8 +44,8 @@ export async function comparisonFlows(page, project) {
   const started = performance.now();
   await page.locator('[data-comparison-branch="21"][data-comparison-ready="true"]').waitFor({ timeout: 60000 });
   const forestryMs = Math.round(performance.now() - started);
-  assert.equal(await page.getByLabel('Branch bubble size').inputValue(), 'equal');
-  assert.match(await page.locator('.bubble-history').innerText(), /do not represent market cap/);
+  assert.equal(await page.getByLabel('Branch bubble size').inputValue(), 'market_cap');
+  assert.match(await page.locator('.bubble-history').innerText(), /Bubble area represents derived market cap/);
   assert.ok(Number(await page.locator('[data-bubble-points]').getAttribute('data-bubble-points')) > 0);
   const raw = [];
   for (let i = 0; i < branchIds.length; i += 32) raw.push(...(await annualRows(page, pack, branchIds.slice(i, i + 32))).companies);
@@ -81,6 +90,22 @@ export async function comparisonFlows(page, project) {
   await page.locator('.comparison-save-status').filter({ hasText: 'Saved' }).waitFor();
   await page.screenshot({ path: resolve(project, 'test-results/branch-comparison.png') });
   const savedId = await page.locator('[data-saved-comparison]').first().getAttribute('data-saved-comparison');
+  // All trading currencies share a dated SEK scale, independently of reporting currency.
+  await page.getByLabel('Branch bubble size').selectOption('market_cap');
+  await page.getByLabel('Branch comparison metric').selectOption('market_cap');
+  await page.getByLabel('Comparison reporting currency').selectOption('all');
+  const marketValues = raw.flatMap(c => c.market.filter(r => r.year === 2024 && r.sek !== null).map(r => r.sek)).sort((a, b) => a - b);
+  const marketMedian = (marketValues[(marketValues.length - 1) >> 1] + marketValues[marketValues.length >> 1]) / 2;
+  assert.equal(Number(await page.locator('[data-benchmark-n]').getAttribute('data-benchmark-n')), marketValues.length);
+  assert.ok((await page.locator('.comparison-readout').innerText()).includes(new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(marketMedian)));
+  assert.equal(Number(await page.locator('[data-comparison-listing="102"] [data-comparison-value]').getAttribute('data-comparison-value')), 66283.6272);
+  assert.match(await page.locator('[data-comparison-listing="102"]').innerText(), /Valued 2025-01-31[\s\S]*SEK million/);
+  await page.getByLabel('Saved comparison name').fill('Skog – börsvärden i SEK');
+  await page.getByLabel('Comparison research notes').fill('Börsvärden med historiska kurser och valuta.');
+  await page.getByRole('button', { name: 'Save new comparison', exact: true }).click();
+  await page.locator('.comparison-save-status').filter({ hasText: 'Saved' }).waitFor();
+  await page.locator('.comparison-heading').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: resolve(project, 'test-results/branch-market-cap.png') });
   await page.evaluate(() => {
     const key = 'macro-atlas-branch-comparisons-v1', data = JSON.parse(localStorage.getItem(key));
     data.items.push({ ...data.items[0], id: 'other-version', title: 'Different data version', financial: 'd'.repeat(64) });
@@ -91,6 +116,7 @@ export async function comparisonFlows(page, project) {
   assert.equal(await page.locator('[data-comparison-listing="102"] [data-comparison-value]').getAttribute('data-comparison-value'), '');
   assert.match(await page.locator('[data-comparison-listing="102"]').innerText(), /Outside current directory filters/);
   await page.reload();
+  await restoreMarketComparison(page);
   await restoreComparison(page);
   assert.equal(await page.locator(`[data-saved-comparison="${savedId}"]`).count(), 1);
   assert.equal(await page.locator('.saved-comparisons button').filter({ hasText: 'Different data version' }).isDisabled(), true);
@@ -115,5 +141,5 @@ export async function comparisonFlows(page, project) {
   await page.setViewportSize(originalViewport);
   await page.getByLabel('Open financials for Holmen', { exact: true }).click();
   await page.locator('[data-company="102"][data-business-ready="true"] [data-financial-history="102"]').waitFor();
-  return { savedId, forestryMs, miningMs, checks: ['Branch bubbles and whole-cohort medians reconcile to annual source rows and selected reporting currency', 'Missing data and out-of-scope selections remain explicit; market cap, ROIC and CAPEX are not substituted', 'Saved comparison preserves Unicode notes, fiscal years, metrics, filters, focus and exact data version across reload', 'Linked year playback, branch cancellation and opening the correct company financial history work offline', 'Largest branch loads annual histories in bounded batches without rendering the full company directory'] };
+  return { savedId, forestryMs, miningMs, checks: ['Market-cap Y-axis and bubble areas use dated SEK values across reporting currencies, including after saved-view reload', 'Branch bubbles and whole-cohort medians reconcile to annual source rows and selected reporting currency', 'Missing data and out-of-scope selections remain explicit; unverified ROIC and CAPEX remain unavailable', 'Saved comparison preserves Unicode notes, fiscal years, metrics, filters, focus and exact data version across reload', 'Linked year playback, branch cancellation and opening the correct company financial history work offline', 'Largest branch loads annual histories in bounded batches without rendering the full company directory'] };
 }

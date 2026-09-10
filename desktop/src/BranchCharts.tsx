@@ -27,12 +27,12 @@ export default function BranchCharts({ data, companies, settings: s, stats, onPo
     itemStyle: { color: comparisonColors[s.selected.indexOf(c.id)] },
     data: (data[c.id] ?? []).filter(r => r.year >= s.from && r.year <= s.to).flatMap(r => {
       const o = observation(r, s);
-      return o.value === null || o.size === null ? [] : [{ id: c.id, year: r.year, value: [r.year, o.value, o.size], start: r.start, end: r.end, snapshot: r.source_as_of,
+      return o.value === null || o.size === null ? [] : [{ id: c.id, year: r.year, value: [r.year, o.value, o.size], start: r.start, end: r.end, snapshot: r.source_as_of, valuationDate: r.market?.price_date, fxDate: r.market?.fx_date,
         itemStyle: { opacity: r.year === s.year ? 1 : c.id === s.focus ? .72 : .32, borderColor: '#ffffff', borderWidth: r.year === s.year ? 2 : .5 } }];
     }),
   }));
   const pointTooltip = (p: any) => p.seriesName === 'Branch median' ? `FY ${p.data.year}\nBranch median: ${format(p.value[1], 2)} ${unit}\n${p.data.n} valid listings`
-    : `${p.seriesName} · FY ${p.data.year}\n${branchMetrics[s.metric]}: ${format(p.value[1], 2)} ${unit}\n${s.size === 'equal' ? 'Equal-size point' : `${branchMetrics[s.size]}: ${format(p.value[2], 2)} ${s.currency} million`}\nPeriod: ${p.data.start} → ${p.data.end}\nSource snapshot: ${p.data.snapshot}`;
+    : `${p.seriesName} · FY ${p.data.year}\n${branchMetrics[s.metric]}: ${format(p.value[1], 2)} ${unit}\n${s.size === 'equal' ? 'Equal-size point' : `${branchMetrics[s.size]}: ${format(p.value[2], 2)} ${s.size === 'market_cap' ? 'SEK' : s.currency} million`}\n${s.size === 'market_cap' || s.metric === 'market_cap' ? `Valued: ${p.data.valuationDate ?? 'unavailable'} · FX: ${p.data.fxDate ?? 'unavailable'}\n` : ''}Period: ${p.data.start} → ${p.data.end}\nSource snapshot: ${p.data.snapshot}`;
   return <>
     <section className="branch-chart-card bubble-history" data-bubble-points={pointCount} data-size-mode={s.size}>
       <div className="comparison-section-title"><div><div className="eyebrow">THROUGH THE CYCLE</div><h2>{branchMetrics[s.metric]}</h2></div><span>{unit} · fiscal years</span></div>
@@ -41,7 +41,7 @@ export default function BranchCharts({ data, companies, settings: s, stats, onPo
         ...series,
       ] }} />
       <p className="chart-caption">Grey line: median of all valid listings in the filtered branch. Shading: middle 50% (at least 4 observations per year). Colours identify listings. Click a point to select its listing and year.</p>
-      <p className="chart-caption">{s.size === 'equal' ? 'Points have equal size; they do not represent market cap.' : `Bubble area represents ${branchMetrics[s.size].toLowerCase()} in ${s.currency}, using the same scale across the displayed period. Missing or non-positive sizes are omitted. This is not market cap.`}</p>
+      <p className="chart-caption">{s.size === 'equal' ? 'Points have equal size.' : s.size === 'market_cap' ? 'Bubble area represents derived market cap in SEK, using one scale across all displayed years. Valuations use dated closes around report publication. Missing or flagged sizes are omitted; the Y-axis benchmark still includes valid financial observations.' : `Bubble area represents ${branchMetrics[s.size].toLowerCase()} in ${s.currency}, using the same scale across the displayed period. Missing or non-positive sizes are omitted. This is not market cap.`}</p>
       {!pointCount && <p className="comparison-empty">No selected listing has a comparable observation with a valid bubble size in this period. The table explains missing values.</p>}
     </section>
     <div className="comparison-small-charts">

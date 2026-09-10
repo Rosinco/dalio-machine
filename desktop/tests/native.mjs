@@ -1,4 +1,4 @@
-import { comparisonFlows, restoreComparison } from './comparison-flows.mjs';
+import { comparisonFlows, restoreComparison, restoreMarketComparison } from './comparison-flows.mjs';
 import { financialFlows } from './financial-flows.mjs';
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
@@ -92,6 +92,8 @@ try {
   await page.locator(`[data-active-release="${research.current.id}"] [data-company="102"][data-business-ready="true"]`).waitFor();
   await page.locator(`[data-financial-history="102"][data-financial-pack="${financial.index.id}"]`).waitFor();
   report.checks.push('Imported company financial pack survives native process restart');
+  await restoreMarketComparison(page);
+  report.checks.push('SEK market-cap metrics, bubble size, all-currency filter and Swedish notes survive native process restart');
   await restoreComparison(page);
   await page.screenshot({ path: resolve(resultFolder, 'windows-branch-comparison.png') });
   report.checks.push('Saved branch comparison and Swedish research notes survive native process restart');
@@ -136,6 +138,7 @@ try {
     await page.screenshot({ path: resolve(resultFolder, 'windows-native-failure.png') }).catch(() => {});
     console.error(await page.locator('body').innerText().catch(() => 'Page text unavailable'));
   }
+  console.error('Native failure state', { appExitCode: app?.exitCode, appSignal: app?.signalCode, pageClosed: page?.isClosed(), browserConnected: browser?.isConnected() });
   console.error(error);
   process.exitCode = 1;
 } finally {

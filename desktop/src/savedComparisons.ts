@@ -12,7 +12,7 @@ function validate(v: any): asserts v is SavedComparison {
   check(typeof v.created === 'string' && /^\d{4}-\d{2}-\d{2}T.+Z$/.test(v.created) && Number.isFinite(Date.parse(v.created)));
   check(hash(v.release) && hash(v.financial) && hash(v.taxonomy) && typeof v.branch === 'string' && /^(?:[1-9][0-9]{0,9}|unassigned)$/.test(v.branch));
   const s = v.settings;
-  check(s && typeof s === 'object' && Object.hasOwn(branchMetrics, s.metric) && ['equal', 'revenues', 'total_assets'].includes(s.size));
+  check(s && typeof s === 'object' && Object.hasOwn(branchMetrics, s.metric) && ['equal', 'revenues', 'total_assets', 'market_cap'].includes(s.size));
   check(typeof s.currency === 'string' && /^(?:all|[A-Z]{3})$/.test(s.currency) && (!needsCurrency(s) || s.currency !== 'all'));
   check(typeof s.country === 'string' && /^(?:all|[A-Z]{2})$/.test(s.country) && ['all', 'latest', 'older'].includes(s.presence));
   check(Number.isInteger(s.month) && s.month >= 0 && s.month <= 12);

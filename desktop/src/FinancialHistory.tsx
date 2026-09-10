@@ -4,6 +4,7 @@ import { format, seriesColors } from './model';
 import { hasFinancialHistory, statementLabels, type CompanyCoverage, type FinancialCompany, type FinancialIndex } from './financialData';
 import type { CompanyEntry } from './listingCatalogue';
 import FinancialChart from './FinancialChart';
+import MarketHistory from './MarketHistory';
 
 const count = (n: number) => n.toLocaleString('en-US');
 const statements = {
@@ -26,6 +27,7 @@ export default function FinancialHistory({ entry, index, company }: { entry: Com
       <p className="chart-caption">Coverage describes saved reports. Missing periods and unavailable values stay blank; a download date is not a financial period.</p>
       {coverage.withheld > 0 && <p className="financial-quality-note">{count(coverage.withheld)} source {coverage.withheld === 1 ? 'row withheld' : 'rows withheld'} because the period, date or currency metadata could not be used. See the source notes below.</p>}
     </section>
+    <MarketHistory company={company} index={index} name={entry.display_name} />
     {hasFinancialHistory(coverage) ? <>
       <section><div className="period-overview"><div><small>LATEST FULL YEAR</small><strong>{annual ? periodLabel(annual) : 'Unavailable'}</strong><span>Reported {annual?.report_date ?? 'date unavailable'}</span></div><div><small>LATEST SAVED QUARTER</small><strong>{quarter ? periodLabel(quarter) : 'Unavailable'}</strong><span>Reported {quarter?.report_date ?? 'date unavailable'}</span></div></div></section>
       <section><div className="section-title"><h3>Financial history</h3><div className="frequency-buttons" role="group" aria-label="Financial reporting frequency"><button aria-pressed={frequency === 'annual'} onClick={() => { setFrequency('annual'); setPeriod(''); }}>Annual</button><button aria-pressed={frequency === 'quarterly'} onClick={() => { setFrequency('quarterly'); setPeriod(''); }}>Quarterly</button></div></div>

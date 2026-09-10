@@ -55,6 +55,35 @@ excluding lease principal and interest, and is not owner earnings. Separately ve
 ROIC, CAPEX, market cap, historical universes, event overlays, scenarios and physical
 assets remain later work.
 
+### Source audit follow-up, 2026-09-10
+
+A broader read-only audit found an existing derived market-cap history at
+`studies/filter_baselines/classic_screens/output/parquet/screens_panel_returns.parquet`
+in the Börsdata project. Its 125,211 listing/year rows span 2005–2025; 124,650 have
+positive market cap in both local currency and SEK. All positive values reconcile
+to saved entry price times shares. There are 116,689 positive rows after the
+existing `basis_ok_1y` and `!scale_suspect` checks; these heuristics do not certify
+all corporate actions. The producer uses the frozen 2025-06-21 source and dates
+valuation at the saved `entry_date`, generally around report publication.
+It is a useful existing method and dataset to adapt to the newer saved snapshot.
+Market-cap implementation should start with this evidence and retain dates,
+currency, share basis and quality flags. The earlier report-pack-only search was
+too narrow to establish absence from the whole Börsdata project.
+
+The 101,298,011-row screener file also contains latest KPI-50 market cap for
+16,673 listing IDs, ten annual offsets for shares (KPI 61) and provider CAPEX
+(KPI 64), plus latest/aggregate ROIC (KPI 37). Direct annual KPI-50 and KPI-37
+series are absent from both summary-history files and the screener history.
+Provider CAPEX often matches net investing cash flow, so its label alone does
+not establish a pure fixed-asset-investment measure. For Holmen, the report field
+`stock_price_average` matches the report-date close in all 20 checked annual
+reports; it must not silently be presented as a fiscal-year average or end price.
+
+Detailed counts, source examples and read-only audit scripts are saved locally
+at `/home/rosinco/workspace/atlas-borsdata-audit-2026-09-10/README.md`.
+This audit changes the next implementation's starting point; the installed v0.7
+data pack and available chart measures remain as described above.
+
 ## Data access and persistence
 
 The immutable v0.6 financial SQLite pack and all research/taxonomy identities remain

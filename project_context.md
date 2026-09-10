@@ -61,7 +61,15 @@ Bubble area can explicitly encode assets or revenue in one reporting currency;
 market cap awaits verified split/date alignment. The saved directory is not a
 reconstructed historical universe. Return on capital is labelled as a pre-tax proxy;
 investing cash flow is explicitly distinguished from CAPEX.
-The user's later-stage request is recorded in ADR 0022: extend the deep-dive funnel
+Version 0.8 (ADR 0027) extends the financial companion to format v2 (110 MB),
+adding market-cap coverage for all 19,140 listings: 159,486 usable dated valuations
+across 16,895 listings. Reported shares and publication-window closes use matching
+saved downloads; SEK uses observed direct or simultaneous USD cross-rates up to
+seven days old. Explicit quality flags withhold uncertain share/price bases. Company
+views expose inputs, dates and local/SEK history. Branches default to SEK market-cap
+bubble area and offer a market-cap Y-axis across reporting currencies. Annual and
+quarterly statements, macro research and original v1 financial packs are preserved.
+The user’s later-stage request is recorded in ADR 0022: extend the deep-dive funnel
 with balance-sheet analysis and a sourced physical-resource inventory (locations,
 what each asset is, ownership/lease/JV status and reporting dates) for map markers
 and boundaries. Physical assets, new forecasts and DuckDB queries remain future

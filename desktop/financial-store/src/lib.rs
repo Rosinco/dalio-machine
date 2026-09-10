@@ -1,4 +1,5 @@
 //! Immutable, indexed financial companion packs.
+mod market;
 use flate2::read::GzDecoder;
 use rusqlite::{Connection, OpenFlags, OptionalExtension};
 use serde_json::{json, Value};
@@ -114,7 +115,7 @@ fn integer(v: &Value) -> bool {
 fn validate_index(v: &Value) -> Result<()> {
     check(
         v["format"] == "macro-atlas-financials"
-            && v["version"] == 1
+            && (v["version"] == 1 || v["version"] == 2)
             && v["taxonomy_sha256"].as_str().is_some_and(hash_id)
             && v["as_of"].as_str().is_some_and(day),
         "Unsupported financial pack or source binding.",
@@ -305,6 +306,7 @@ fn validate_index(v: &Value) -> Result<()> {
             ],
         "Financial source totals do not reconcile",
     )?;
+    market::validate_index(v)?;
     Ok(())
 }
 
@@ -515,6 +517,7 @@ impl Pack {
                 "Invalid withheld report metadata",
             )?;
         }
+        market::validate_company(&self.index, &v, id)?;
         Ok(v)
     }
     pub fn annual(&self, ids: &[String]) -> Result<Value> {
@@ -529,9 +532,14 @@ impl Pack {
             // Verify the original complete payload before projecting annual rows.
             let mut company = self.company(id)?;
             let annual = company["annual"].take();
-            bytes += annual.to_string().len();
+            let market = company["market"].take();
+            bytes += annual.to_string().len() + market.to_string().len();
             check(bytes <= 8_000_000, "Annual batch exceeds 8 MB.")?;
-            rows.push(json!({"id": id, "annual": annual}));
+            let mut row = json!({"id": id, "annual": annual});
+            if self.index["version"] == 2 {
+                row["market"] = market;
+            }
+            rows.push(row);
         }
         Ok(json!({"pack": self.id, "companies": rows}))
     }
