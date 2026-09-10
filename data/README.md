@@ -872,3 +872,27 @@ required company exposures. They are Observatory hypotheses with no calibrated
 probabilities, numerical stress forecast or company verdict. The source
 SQLite database is opened read-only and these exports are gitignored local
 artifacts, separate from Macro Atlas's bundled data.
+
+### Sweden monitoring supplements (ADR 0031)
+
+`artifacts/sweden_monitoring/responses/<sha256>.bin` retains exact official
+SCB and Riksbank response bytes. `bundles/<sha256>.json` records the complete
+fixed five-signal attempt set, original URLs, hashes, HTTP outcomes, clocks and
+batch-completion availability. Failed attempts are retained; the newest eligible
+batch supplies all scalar inputs without fallback to older successful series.
+These supplements are not backdated onto legacy scalar releases or ingested
+into the database in this slice.
+
+`snapshots/sweden_monitoring/<snapshot-sha256>/` contains the offline `SE.md`
+report and full `snapshot.json`. Its `LATEST.json` pointer is updated after
+complete publication. The report joins the supplement to independently verified
+country-assessment and national debt evidence at an exact known-at cutoff;
+the SQLite source is read-only. Preserve source bundles and responses with the
+reports. Like other generated artifacts, they remain local and gitignored.
+
+`snapshots/sweden_monitoring/validation/` retains the complete initial database
+inventory, first-hand discovery receipts, source-cell audits, reproducibility
+checks and validation logs. SCB's dataset-update timestamp is preserved
+separately from publication and retrieval. The MIR definition PDF was reviewed
+through an official browser extraction but is not retained as local PDF bytes;
+the discovery receipt records this limitation and its exact documentation URL.

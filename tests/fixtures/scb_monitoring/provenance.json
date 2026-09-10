@@ -1,0 +1,90 @@
+{
+  "purpose": "Exact original JSON-stat2 metadata and scalar responses used in offline parser tests. No tests access the network. Fixtures are not production acquisition receipts.",
+  "source_selection": [
+    {
+      "key": "industrial_production",
+      "request": {
+        "method": "GET",
+        "metadata_url": "https://api.scb.se/OV0104/v2beta/api/v2/tables/TAB1872/metadata?lang=en",
+        "source_url": "https://api.scb.se/OV0104/v2beta/api/v2/tables/TAB1872/data?valueCodes%5BSNI2007%5D=B%2BC&valueCodes%5BContentsCode%5D=NV0402AL&valueCodes%5BTid%5D=%2A&outputFormat=json-stat2&lang=en",
+        "table_id": "TAB1872",
+        "selection": {
+          "SNI2007": "B+C",
+          "ContentsCode": "NV0402AL",
+          "Tid": "*"
+        },
+        "output_format": "json-stat2",
+        "language": "en"
+      },
+      "files": {
+        "metadata": {
+          "filename": "industrial_production_metadata.json",
+          "sha256": "f5ddcbe85ac73e793283144ee60909dcdf84f9dc91a1aa3a92b13656623c1311"
+        },
+        "response": {
+          "filename": "industrial_production_response.json",
+          "sha256": "b094f92e935542bb209ed1ab30a5fe35266338836efe6f9111f3c71227cfc0e4"
+        }
+      },
+      "publisher_updated_at": "2026-09-10T06:00:00+00:00"
+    },
+    {
+      "key": "industrial_orders",
+      "request": {
+        "method": "GET",
+        "metadata_url": "https://api.scb.se/OV0104/v2beta/api/v2/tables/TAB1710/metadata?lang=en",
+        "source_url": "https://api.scb.se/OV0104/v2beta/api/v2/tables/TAB1710/data?valueCodes%5BMarknad%5D=TOTALA&valueCodes%5BSNI2007%5D=B%2BC&valueCodes%5BContentsCode%5D=NV0501BD&valueCodes%5BTid%5D=%2A&outputFormat=json-stat2&lang=en",
+        "table_id": "TAB1710",
+        "selection": {
+          "Marknad": "TOTALA",
+          "SNI2007": "B+C",
+          "ContentsCode": "NV0501BD",
+          "Tid": "*"
+        },
+        "output_format": "json-stat2",
+        "language": "en"
+      },
+      "files": {
+        "metadata": {
+          "filename": "industrial_orders_metadata.json",
+          "sha256": "3c6f4cf96638259e517d735e3c6a75bf252ff0e1928378ad17da4febfd2298d1"
+        },
+        "response": {
+          "filename": "industrial_orders_response.json",
+          "sha256": "a97839cf70475d83c4015c48121ebb7dd14f41ff6fdb6e561c4d8c40c54a9d7b"
+        }
+      },
+      "publisher_updated_at": "2026-09-10T06:00:00+00:00"
+    },
+    {
+      "key": "corporate_new_lending_rate",
+      "request": {
+        "method": "GET",
+        "metadata_url": "https://api.scb.se/OV0104/v2beta/api/v2/tables/TAB5780/metadata?lang=en",
+        "source_url": "https://api.scb.se/OV0104/v2beta/api/v2/tables/TAB5780/data?valueCodes%5BReferenssektor%5D=1.1&valueCodes%5BMotpartssektor%5D=1&valueCodes%5BAvtal%5D=0100&valueCodes%5BRantebindningstid%5D=1.1&valueCodes%5BContentsCode%5D=000004ZT&valueCodes%5BTid%5D=%2A&outputFormat=json-stat2&lang=en",
+        "table_id": "TAB5780",
+        "selection": {
+          "Referenssektor": "1.1",
+          "Motpartssektor": "1",
+          "Avtal": "0100",
+          "Rantebindningstid": "1.1",
+          "ContentsCode": "000004ZT",
+          "Tid": "*"
+        },
+        "output_format": "json-stat2",
+        "language": "en"
+      },
+      "files": {
+        "metadata": {
+          "filename": "corporate_new_lending_rate_metadata.json",
+          "sha256": "5c98e39dcb4dce734c27e76192a6071f18733cc9b0faf27270c5eeec1842821f"
+        },
+        "response": {
+          "filename": "corporate_new_lending_rate_response.json",
+          "sha256": "098020cb8eb63c1670185e4e9a37e424b8d11a2d53264ceefcf97cd2c1ff5cb8"
+        }
+      },
+      "publisher_updated_at": "2026-08-27T06:00:00+00:00"
+    }
+  ]
+}

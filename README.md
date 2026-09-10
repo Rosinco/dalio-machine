@@ -25,6 +25,24 @@ verdicts. These files are not yet bundled into Macro Atlas. See ADR 0030 and
 
 ## What it does
 
+The **Sweden monitoring pilot** connects the country scenarios to five original
+SCB/Riksbank histories: industrial production, orders, business lending rates,
+the policy rate and the ten-year government benchmark yield. It adds dated
+comparisons, source definitions, freshness and evidence that challenges each
+scenario, alongside the existing original debt-office context. Missing data,
+forecasts and observed outcomes remain separate.
+
+```bash
+python -m dalio.pipelines.fetch_sweden_monitoring --artifact-root data/artifacts/sweden_monitoring
+python -m dalio.pipelines.build_sweden_monitoring --db data/dalio.db
+```
+
+The collector retains complete original-response supplements; it does not
+write to the source database. The offline consumer writes `SE.md` and
+`snapshot.json` under `data/snapshots/sweden_monitoring/<hash>/`. Use `--known-at`
+for exact historical selection and `--no-latest` to review an export before
+publishing its pointer. See ADR 0031 and `HANDOFF.md` for the verified checkpoint.
+
 For 8 economies (US, CN, EU, UK, JP, SE, IN, BR), it pulls macro indicators from FRED, BIS, Riksbank, IMF, OECD, SCB and World Bank, then classifies cycle stage with rule-based logic. The World Fundamentals Map extends coverage to 22 players. Numeric pipelines preserve complete source snapshots in an append-only release ledger beside the compatible latest-value table, enabling honest “what was known then?” queries from the ledger cutover onward.
 
 The raw evidence layer now also preserves facts that should not be flattened into one score:
