@@ -10,6 +10,8 @@ from sqlalchemy.orm import Session
 
 from dalio.countries import COUNTRIES, RANKING_POPULATION
 from dalio.data_sources.company_country_macro import (
+    archive,
+    canonical,
     collect_bundle,
     company_country_manifest,
     load_bundle,
@@ -48,7 +50,8 @@ def fake_client():
     client = Mock()
     def response(url, **kwargs):
         payload = wb_page() if "/country/" in url else metadata()
-        result = Mock(status_code=200, content=json.dumps(payload).encode(), headers={})
+        result = Mock(status_code=200, content=json.dumps(payload).encode(), headers={},
+                      url=url, history=[])
         result.raise_for_status.return_value = None
         return result
     client.get.side_effect = response
@@ -58,7 +61,7 @@ def fake_client():
 def bundle(tmp_path):
     return collect_bundle(artifact_dir=tmp_path / "artifacts", countries=("BE",),
                           families=("wb",), indicators=(SPEC.indicator,),
-                          client=fake_client(), retrieved_at=NOW)
+                          client=fake_client(), clock=lambda: NOW)
 
 
 def test_country_manifest_does_not_change_ranking_population():
@@ -146,7 +149,7 @@ def test_source_error_is_not_reported_as_absent_country_data(tmp_path):
     client = fake_client()
     client.get.side_effect = RuntimeError("publisher unavailable")
     path = collect_bundle(artifact_dir=tmp_path, countries=("BE",), families=("wb",),
-                          indicators=(SPEC.indicator,), client=client, retrieved_at=NOW)
+                          indicators=(SPEC.indicator,), client=client, clock=lambda: NOW)
     result = load_bundle(path)
     assert result["summary"]["source_error_partitions"] == 1
     assert result["summary"]["missing_partitions"] == 0
@@ -182,7 +185,7 @@ def test_late_partition_failure_rolls_back_entire_batch(tmp_path, monkeypatch):
     client.get.side_effect = both_countries
     path = collect_bundle(artifact_dir=tmp_path / "artifacts", countries=("BE", "DK"),
                           families=("wb",), indicators=(SPEC.indicator,),
-                          client=client, retrieved_at=NOW)
+                          client=client, clock=lambda: NOW)
     import dalio.pipelines.fetch_company_country_macro as pipeline
     original = pipeline.ingest_release_snapshot
     calls = 0
@@ -199,3 +202,74 @@ def test_late_partition_failure_rolls_back_entire_batch(tmp_path, monkeypatch):
     with Session(engine) as session:
         assert session.scalar(select(func.count()).select_from(Observation)) == 0
         assert session.scalar(select(func.count()).select_from(DataRelease)) == 0
+
+
+def test_retimed_bundle_cannot_precede_recorded_receipts(tmp_path):
+    path = bundle(tmp_path)
+    payload = json.loads(path.read_bytes())
+    payload["retrieved_at"] = "2026-09-01T19:00:00+00:00"
+    retimed = archive(canonical(payload), tmp_path / "retimed")
+    with pytest.raises(ValueError, match="receipt"):
+        load_bundle(retimed)
+
+
+def test_recorded_receipts_cannot_precede_publisher_update(tmp_path):
+    path = bundle(tmp_path)
+    payload = json.loads(path.read_bytes())
+    payload["retrieved_at"] = "2026-06-30T19:00:00+00:00"
+    for request in payload["requests"]:
+        request["obtained_at"] = payload["retrieved_at"]
+    retimed = archive(canonical(payload), tmp_path / "retimed")
+    with pytest.raises(ValueError, match="publisher update"):
+        load_bundle(retimed)
+
+
+@pytest.mark.parametrize("mutation", ["missing_final_url", "third_party_final_url", "redirect_history"])
+def test_offline_replay_rejects_unverified_delivery_origin(tmp_path, mutation):
+    path = bundle(tmp_path)
+    payload = json.loads(path.read_bytes())
+    request = payload["requests"][0]
+    if mutation == "missing_final_url":
+        request.pop("final_url")
+    elif mutation == "third_party_final_url":
+        request["final_url"] = "https://third-party.invalid/data.json"
+    else:
+        request["redirect_history"] = ["https://third-party.invalid/intermediate"]
+    altered = archive(canonical(payload), tmp_path / "altered")
+    with pytest.raises(ValueError, match="delivery"):
+        load_bundle(altered)
+
+
+def test_collector_disables_redirects_and_reports_redirect_as_source_error(tmp_path):
+    client = fake_client()
+    original = client.get.side_effect
+    def redirected(url, **kwargs):
+        assert kwargs["allow_redirects"] is False
+        result = original(url, **kwargs)
+        result.status_code = 302
+        result.headers = {"Location": "https://third-party.invalid/data.json"}
+        return result
+    client.get.side_effect = redirected
+    path = collect_bundle(artifact_dir=tmp_path, countries=("BE",), families=("wb",),
+                          indicators=(SPEC.indicator,), client=client, clock=lambda: NOW)
+    result = load_bundle(path)
+    assert result["summary"]["source_error_partitions"] == 1
+    assert result["summary"]["ready_partitions"] == 0
+
+
+def test_receipt_clocks_normalize_utc_offsets(tmp_path):
+    path = bundle(tmp_path)
+    payload = json.loads(path.read_bytes())
+    for request in payload["requests"]:
+        request["obtained_at"] = "2026-09-10T21:00:00+02:00"
+    equivalent = archive(canonical(payload), tmp_path / "equivalent")
+    assert load_bundle(equivalent)["summary"]["ready_partitions"] == 1
+
+
+def test_known_http_update_cannot_postdate_source_receipt(tmp_path):
+    path = bundle(tmp_path)
+    payload = json.loads(path.read_bytes())
+    payload["requests"][0]["headers"]["Last-Modified"] = "Thu, 10 Sep 2026 20:00:00 GMT"
+    altered = archive(canonical(payload), tmp_path / "altered")
+    with pytest.raises(ValueError, match="publisher update"):
+        load_bundle(altered)

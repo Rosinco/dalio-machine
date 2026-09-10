@@ -15,6 +15,7 @@ import logging
 import math
 from dataclasses import asdict
 from datetime import UTC, date, datetime
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 
 import pandas as pd
@@ -29,7 +30,7 @@ MANIFEST_SHA256 = "91965456fa9387ad687ccd0ad971229ddeba68f88e2ccea27a4dbdc7a7e3a
 COUNTRY_CODES = ("BE", "CA", "CH", "DE", "DK", "EE", "ES", "FI", "FR", "GB",
                  "IT", "LT", "LV", "NL", "NO", "PL", "PT", "SE", "US")
 COLUMNS = ["country", "indicator", "date", "value", "source", "series_id", "status"]
-METHOD = "company-country-official-macro-v1"
+METHOD = "company-country-official-macro-v2"
 
 
 def canonical(value) -> bytes:
@@ -79,6 +80,30 @@ def _finite(value):
     if not math.isfinite(value):
         raise ValueError("Publisher value must be finite")
     return float(value)
+
+
+def _utc(value):
+    timestamp = datetime.fromisoformat(value) if isinstance(value, str) else value
+    if not isinstance(timestamp, datetime) or timestamp.tzinfo is None:
+        raise ValueError("Acquisition clocks must be timezone-aware")
+    return timestamp.astimezone(UTC)
+
+
+def _publisher_clock(value, received_at):
+    """Validate provider updates without inventing a timezone for date-only metadata."""
+    if value is None:
+        return
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("Invalid publisher update clock")
+    update = datetime.fromisoformat(value)
+    if update.tzinfo is None:
+        # WB dates and IMF DataMapper last-modified timestamps carry no timezone.
+        # Their calendar date is checked; exact within-day ordering stays unknown.
+        future = update.date() > received_at.date()
+    else:
+        future = update.astimezone(UTC) > received_at
+    if future:
+        raise ValueError("Source receipt precedes publisher update")
 
 
 def _frame(rows):
@@ -191,7 +216,7 @@ def _specs(families, indicators):
 
 
 def collect_bundle(*, artifact_dir: Path, countries=None, families=("wb", "imf"),
-                   indicators=None, client=None, retrieved_at=None) -> Path:
+                   indicators=None, client=None, clock=None) -> Path:
     """Collect official bytes, then write a complete offline-replayable batch manifest.
 
     Each failed publisher request is a source error, never evidence of no data.
@@ -200,23 +225,31 @@ def collect_bundle(*, artifact_dir: Path, countries=None, families=("wb", "imf")
     selection = selected_countries(countries)
     specs = _specs(families, indicators)
     country_map = {row["iso3"]: row["country"] for row in selection}
-    year = (retrieved_at or datetime.now(UTC)).year
+    now = clock or (lambda: datetime.now(UTC))
+    year = _utc(now()).year
     session = client or requests.Session()
     if client is None:
         session.headers.update({"User-Agent": "DalioMacroResearch/1.0 (official statistics research)"})
     requests_log, series = [], []
 
     def obtain(url):
-        response = session.get(url, timeout=45)
+        # Keep the evidence delivery boundary explicit. A future publisher
+        # redirect requires review of its destination rather than automatic follow.
+        response = session.get(url, timeout=45, allow_redirects=False)
         body = response.content
         path = archive(body, artifact_dir / "responses")
         index = len(requests_log)
         requests_log.append(dict(url=url, path=str(path), sha256=digest(body),
                                  http_status=response.status_code,
-                                 obtained_at=datetime.now(UTC).isoformat(),
+                                 obtained_at=_utc(now()).isoformat(),
+                                 final_url=response.url,
+                                 redirect_history=[step.url for step in response.history],
                                  headers={key: value for key, value in response.headers.items()
-                                          if key.lower() in {"content-type", "last-modified", "etag"}}))
+                                          if key.lower() in {"content-type", "last-modified",
+                                                             "etag", "location"}}))
         response.raise_for_status()
+        if response.status_code != 200 or response.history or response.url != url:
+            raise ValueError("Unsupported HTTP status or redirected delivery")
         return index, json.loads(body)
 
     imf_metadata = None
@@ -264,10 +297,10 @@ def collect_bundle(*, artifact_dir: Path, countries=None, families=("wb", "imf")
             logger.warning("Source error %s/%s: %s", family, spec.indicator, exc)
             record.update(status="source_error", error=f"{type(exc).__name__}: {exc}")
         series.append(record)
-    body = canonical(dict(schema_version=1, method=METHOD, manifest=company_country_manifest(),
+    body = canonical(dict(schema_version=2, method=METHOD, manifest=company_country_manifest(),
         countries=[row["listing_iso2"] for row in selection], year=year,
         families=list(families), indicators=list(indicators) if indicators else None,
-        retrieved_at=(retrieved_at or datetime.now(UTC)).isoformat(),
+        retrieved_at=_utc(now()).isoformat(),
         requests=requests_log, series=series))
     path = archive(body, artifact_dir / "bundles")
     load_bundle(path)  # Full replay preflight before returning a usable batch.
@@ -280,7 +313,7 @@ def load_bundle(path: Path) -> dict:
     if path.stem != digest(body):
         raise ValueError("Batch bundle hash mismatch")
     bundle = json.loads(body)
-    if (bundle.get("schema_version") != 1 or bundle.get("method") != METHOD
+    if (bundle.get("schema_version") != 2 or bundle.get("method") != METHOD
             or bundle.get("manifest") != company_country_manifest()):
         raise ValueError("Batch method/country manifest mismatch")
     selection = selected_countries(bundle["countries"])
@@ -290,11 +323,13 @@ def load_bundle(path: Path) -> dict:
     if len(specs) != len(bundle["series"]):
         raise ValueError("Batch series denominator mismatch")
     country_map = {row["iso3"]: row["country"] for row in selection}
-    retrieved_at = datetime.fromisoformat(bundle["retrieved_at"])
-    if retrieved_at.tzinfo is None or retrieved_at.year != bundle["year"]:
+    retrieved_at = _utc(bundle["retrieved_at"])
+    if retrieved_at.year != bundle["year"]:
         raise ValueError("Batch retrieval clock mismatch")
     payloads = []
     for request in bundle["requests"]:
+        if _utc(request["obtained_at"]) > retrieved_at:
+            raise ValueError("Batch retrieval precedes source receipt")
         raw = Path(request["path"]).read_bytes()
         if digest(raw) != request["sha256"]:
             raise ValueError("Source response artifact hash mismatch")
@@ -322,6 +357,15 @@ def load_bundle(path: Path) -> dict:
         contents = [payloads[index] for index in indices]
         if not refs or any(ref["http_status"] != 200 for ref in refs):
             raise ValueError("Validated series binds unsuccessful HTTP response")
+        if any(ref.get("final_url") != ref["url"] or ref.get("redirect_history") != []
+               for ref in refs):
+            raise ValueError("Unverified or redirected source delivery")
+        for ref in refs:
+            for key, value in ref["headers"].items():
+                if key.lower() == "last-modified":
+                    update = parsedate_to_datetime(value)
+                    if _utc(update) > _utc(ref["obtained_at"]):
+                        raise ValueError("Source receipt precedes HTTP publisher update")
         if family == "wb":
             urls = [f"{WB_BASE_URL}/indicator/{spec.wb_code}?format=json&source={spec.source_id}"]
             urls += [WorldBankSource._url(spec, list(country_map), page, bundle["year"])
@@ -333,11 +377,15 @@ def load_bundle(path: Path) -> dict:
                 raise ValueError("World Bank indicator metadata mismatch")
             metadata = meta[1][0]
             frame, missing = parse_worldbank(contents[1:], spec, country_map, bundle["year"])
+            for payload, ref in zip(contents[1:], refs[1:], strict=True):
+                _publisher_clock(payload[0].get("lastupdated"), _utc(ref["obtained_at"]))
             sources = (spec.source_label,)
         else:
             urls = [f"{IMF_DM_BASE}/indicators", f"{IMF_DM_BASE}/{spec.imf_code}"]
             metadata = contents[0].get("indicators", {}).get(spec.imf_code, {})
             frame, missing = parse_imf(contents[1], metadata, spec, country_map, bundle["year"])
+            for ref in refs:
+                _publisher_clock(metadata.get("last-modified"), _utc(ref["obtained_at"]))
             source = "IMF_FISCAL_MONITOR" if spec == IMF_FUNDAMENTALS[3] else "IMF_WEO"
             sources = (source, source + "_FCST")
         if [ref["url"] for ref in refs] != urls:
