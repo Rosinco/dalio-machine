@@ -43,6 +43,7 @@ from dalio.storage.db import (
     ReleaseObservation,
     init_db,
 )
+from dalio.storage.national_debt import audit_national_debt
 from dalio.storage.releases import (
     ProjectionScope,
     ReleaseArtifactMeta,
@@ -384,9 +385,10 @@ def load_stored_refinancing_batch(
     demonstrably available by that time, never before it.
     """
     audit = audit_refinancing(engine, as_of=as_of)
-    if audit["ready_partitions"] != 31:
+    if audit["harmonized_ready"] != 31:
         raise ValueError("Promotion requires all 31 harmonized partitions verified")
-    rows = {row["partition_id"]: row for row in audit["partitions"] if row["ready"]}
+    rows = {row["partition_id"]: row for row in audit["partitions"]
+            if row["ready"] and row["phase"] == "harmonized_scalar"}
     run_at = max(_utc(datetime.fromisoformat(row["retrieved_at"])) for row in rows.values())
     batch = []
     for binding in refinancing_bindings():
@@ -510,6 +512,8 @@ def audit_refinancing(engine: Engine, *, as_of: date | None = None) -> dict[str,
         for model in models
     )
     audit_on = as_of or datetime.now(UTC).date()
+    native = audit_national_debt(engine, as_of=audit_on)
+    native_streams = {stream["stream_id"]: stream for stream in native["streams"]}
     rows = []
     with Session(engine) as session:
         for partition in manifest.partitions:
@@ -535,8 +539,20 @@ def audit_refinancing(engine: Engine, *, as_of: date | None = None) -> dict[str,
                 else:
                     row["issues"] = ["required database tables/columns absent"]
             else:
-                row["issues"] = ["national-native collection planned"]
+                stream = native_streams.get(partition.partition_id)
+                if stream and stream["stored_snapshots"]:
+                    row.update(stored=True, ready=stream["ready"],
+                               stored_snapshots=stream["stored_snapshots"],
+                               ready_snapshots=stream["ready_snapshots"],
+                               first_reference_date=stream["first_reference_date"],
+                               latest_reference_date=stream["latest_reference_date"])
+                    if not stream["ready"]:
+                        row["issues"] = ["national snapshot evidence failed verification"]
+                else:
+                    row["issues"] = ["national-native collection planned"]
             rows.append(row)
+    native_rows = [row for row in rows if row["phase"] == "national_native"]
+    native_ready = sum(row["ready"] for row in native_rows)
     return {
         "schema_version": 1,
         "as_of": audit_on.isoformat(),
@@ -544,7 +560,12 @@ def audit_refinancing(engine: Engine, *, as_of: date | None = None) -> dict[str,
         "catalogue_sha256": _sha256(refinancing_catalogue_bytes()),
         "expected_partitions": 48,
         "harmonized_expected": 31,
-        "national_native_planned": 17,
+        "harmonized_ready": sum(row["ready"] for row in rows if row["phase"] == "harmonized_scalar"),
+        "national_native_ready": native_ready,
+        "national_native_planned": sum(not row["stored"] for row in native_rows),
+        "national_native_remaining": 17 - native_ready,
+        "native_fact_count": native["fact_count"],
+        "national_native": native,
         "stored_partitions": sum(row["stored"] for row in rows),
         "ready_partitions": sum(row["ready"] for row in rows),
         "observation_count": sum(row["observation_count"] for row in rows if row["ready"]),

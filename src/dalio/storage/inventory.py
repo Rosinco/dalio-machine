@@ -97,6 +97,7 @@ _EXPECTED_TABLES = (
     "document_extractions",
     "document_pages",
     "observations",
+    "national_debt_facts",
     "organization_commodity_coverage",
     "organizations",
     "release_observations",

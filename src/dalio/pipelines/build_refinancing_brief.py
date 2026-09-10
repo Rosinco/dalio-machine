@@ -19,7 +19,7 @@ from dalio.data_sources.eurostat_refinancing import (
     INDICATOR_LT_VARIABLE_RATE,
     INDICATOR_RMD_SCOPE,
 )
-from dalio.storage.refinancing import load_stored_refinancing_batch
+from dalio.storage.refinancing import audit_refinancing, load_stored_refinancing_batch
 
 COUNTRIES = {"DE": "Germany", "FR": "France", "IT": "Italy", "ES": "Spain", "SE": "Sweden"}
 METRICS = {
@@ -34,6 +34,7 @@ METRICS = {
 def build_brief(engine: Engine, *, as_of: date) -> dict:
     """Fail closed unless source bytes, immutable rows and current rows agree."""
     batch = load_stored_refinancing_batch(engine, as_of=as_of)
+    audit = audit_refinancing(engine, as_of=as_of)
     histories = {
         (item.binding.spec.country, item.binding.spec.indicator): {
             row.date: {"value": float(row.value), "status": row.status}
@@ -110,7 +111,7 @@ def build_brief(engine: Engine, *, as_of: date) -> dict:
         "observation_count": sum(len(item.frame) for item in batch),
         "harmonized_ready": 31,
         "total_expected": 48,
-        "national_native_planned": 17,
+        "national_native_planned": audit["national_native_remaining"],
         "countries": countries,
         "euro_area_comparison": comparison,
         "due_share_formula": "100 * same-country same-year gov_10dd_rmd Y_LE1 PC_GDP / TOTAL PC_GDP",
@@ -159,7 +160,7 @@ def render_markdown(brief: dict) -> str:
         f"# Sovereign refinancing evidence — {brief['as_of']}",
         "",
         f"Verified {brief['observation_count']:,} observations across 31 harmonized histories. "
-        "The fixed package contains 48 streams; 17 national debt-office streams remain planned.",
+        f"The fixed package contains 48 streams; {brief['national_native_planned']} national debt-office streams remain unfinished.",
         "",
         f"Complete collected batch available at {brief['complete_batch_available_at']}. "
         "This is a descriptive comparison of stored evidence; no composite refinancing score is assigned.",

@@ -21,16 +21,30 @@ When adding a new indicator: snake_case, semantically meaningful (`cpi_yoy`, not
 
 ## Data source priority
 
-When the same indicator is available from multiple sources, prefer in this order:
+User direction (2026-09-10): use first-hand sources whenever available. For
+country-specific collection, prefer the original statistical office, central
+bank or debt office. Retain original response bytes, publication/reference and
+retrieval clocks, units and definitions. An official distributor is not
+necessarily the original producer: keep its underlying source attribution.
+
+Use official harmonized BIS/IMF/World Bank/OECD datasets for a comparable
+cross-country baseline, clearly labelled as such. Acquire national originals
+alongside that baseline as the collection deepens; never silently substitute
+different scopes or rewrite the scoring source order merely because collection
+coverage expanded.
+
+The existing cross-country scoring preferences are:
 
 1. **BIS** — for credit/debt series (Total Credit dataset is canonical for cross-country comparability)
 2. **IMF** — for cross-country macro
 3. **FRED** — for US-native series + their international subset (often slightly delayed)
 4. **OECD** — for productivity, R&D, education
 5. **WID** — for inequality
-6. **National central banks** — only when above sources don't cover (e.g. Riksbank for Swedish-specific series)
+6. **National central banks** — native country measures (e.g. Riksbank Swedish-specific series)
 
-Reason: cross-country comparability matters more than freshness for cycle classification.
+These scoring preferences concern comparable definitions for cycle
+classification; they do not override the user's preference for original
+publishers when collecting national evidence.
 
 ## Honest output
 

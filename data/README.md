@@ -286,7 +286,7 @@ The 2026-09-10 refinancing collection adds 697 observations in 31 immutable
 releases and 124 artifact bindings: 297 annual Eurostat observations and 400
 monthly ECB observations. All 31 harmonized partitions pass source re-parsing,
 ledger and current-projection checks. The denominator remains 48 logical
-streams; 17 national-native streams are still planned. The new numeric evidence
+streams; the later original Swedish monthly tranche closes one national stream, leaving 16. The new numeric evidence
 is independent of the human-reviewed report and communications gates.
 
 The read-only inventory command derives these counts from the database and also
@@ -345,7 +345,7 @@ Different questions require different storage shapes:
   ledger and the checked ingestion catalogue. All 31 are preflighted before one
   atomic transaction. The compatible projection preserves the full 65-character
   ECB key; the denominator entity EA21_FIXED maps explicitly to adapter country
-  EA21. The 17 national-native schedules and funding streams still need
+  EA21. Sixteen fixed-denominator national-native streams still need
   source-appropriate shapes.
 - IMF BPM6 BOP data stores 25 reported financial-account transaction series per
   individual country: gross asset acquisition, gross liability incurrence and
@@ -760,7 +760,7 @@ deterministic input layout.
   The next bounded collection package is core-economy debt maturity and
   refinancing structure. Its denominator is now fixed at 48 logical streams,
   with 31 harmonized Eurostat/ECB histories now ingested and audited and
-  17 national-native streams still planned. A descriptive brief is available;
+  one Swedish monthly stream covered and 16 national-native streams remaining. A descriptive brief is available;
   no composite refinancing risk score is assigned.
 - None of the 852 report pages has yet become a named, human-verified atomic
   claim, so central-bank/IMF/BIS conclusions do not yet feed risk analysis. The
@@ -777,8 +777,8 @@ deterministic input layout.
 - Harmonized refinancing history is now stored (31/31 source-contract checks
   pass), but historical depth differs: many French, Italian and Spanish
   series begin in 2020 and Sweden has only 2021/2022 onward. The full native
-  missingness axis is retained, never zero-filled. All 17 national-native
-  issuer schedules and funding streams remain unimplemented. Annual remaining
+  missingness axis is retained, never zero-filled. Eight Swedish monthly reports and funding workbook 2026:1 now supply native
+  cells. Sixteen fixed-denominator national streams remain unimplemented. Annual remaining
   maturity buckets do not supply a contractual five-year cash-flow schedule;
   wider cross-border banking claims remain a separate unfinished package.
 - Commodity history currently provides public spot/reference benchmarks, not
@@ -795,3 +795,54 @@ deterministic input layout.
   1–5-year scenario, transmission and SEK small-investor portfolio layer remain
   analysis work. Stored transactions, positions and diagnostic co-movements are
   evidence for that work, not causal proof by themselves.
+
+
+### Company-country and original Swedish debt expansion (2026-09-10)
+
+The verified working database now has 336,949 current scalar observations,
+424,800 immutable scalar observations, 3,455 releases, 2,207 artifact bindings
+and 26 tables. This update adds 7,343 net current scalar rows and 1,595 native
+debt cells. Staging/live comparison preserved every pre-existing immutable row
+and all unrelated current observations. Both integrity checks passed, and
+offline replay created zero additional releases.
+
+The separately checked Börsdata listing-country acquisition manifest covers
+19 countries and 19,140 saved listings. Fourteen World Bank and five IMF source
+series per country provide 361 histories / 18 distinct metrics / 15,616 batch
+observations. This is a batch total, not the net change in the working database.
+Nine countries previously had no macro observations. World Bank metadata keeps
+underlying producer/source notes; IMF keeps WEO/Fiscal Monitor identity and
+vintage. First-hand national publishers are preferred as collection deepens.
+The original scoring population is unchanged.
+
+Eight original Riksgälden January–August 2026 PDFs and funding workbook 2026:1
+add 1,595 immutable `national_debt_facts` cells: 1,400 observed, 49 forecast and
+146 missing/structural cells. There are 1,449 finite values. The 48-stream debt
+contract now has 32 ready streams, with 16 national streams remaining; the
+funding workbook is a separate extension. This is selected numeric evidence,
+not complete document extraction or verified narrative analysis.
+
+```bash
+python -m dalio.pipelines.fetch_company_country_macro --db <staging.sqlite>
+python -m dalio.pipelines.fetch_company_country_macro --db data/dalio.db --from-bundle <verified-bundle.json>
+python -m dalio.pipelines.fetch_riksgalden_debt --db <staging.sqlite>
+python -m dalio.pipelines.fetch_riksgalden_debt --db data/dalio.db --from-db <verified-staging.sqlite>
+```
+
+Fresh acquisition preflights the complete selection, rejects redirected/wrong
+origins and inconsistent clocks, and preserves source bytes. Replay verifies
+prior rows/evidence before accepting retries. Stage and verify a backup before
+updating the working database. Native cells preserve exact periods, units,
+contractual dates, aggregation and derivative/valuation scope; forecasts and
+missing cells never become historical outcomes or zeros.
+
+Retain these together:
+
+- `reference/company_listing_countries_v1.json`: checked listing-country universe.
+- `artifacts/company_country_macro/`: official responses, metadata and v2 bundles.
+- `artifacts/debt_refinancing/national/riksgalden/`: original PDFs/XLSX and four evidence roles.
+- `artifacts/debt_refinancing/runs/2026-09-10-country-expansion/`: combined staging/live/replay audits and analysis scripts.
+- `backups/dalio-before-country-native-expansion-2026-09-10.sqlite3`: verified pre-expansion recovery database.
+- `snapshots/company-country-macro-2026-09-10-summary.{md,json}`: geographic coverage and common-period macro comparison.
+- `snapshots/sweden-native-debt-2026-09-10.{md,json}`: source-attributed debt composition, selected security maturity schedule and separately labelled financing forecasts.
+- `snapshots/company-country-first-hand-sources-2026-09-10.md`: national-source discovery backlog; identified endpoints are not a claim of ingested national series.

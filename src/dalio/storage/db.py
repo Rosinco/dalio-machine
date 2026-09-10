@@ -110,6 +110,43 @@ class DataRelease(Base):
     )
 
 
+class NationalDebtFact(Base):
+    """One native debt-office numeric cell in an immutable document snapshot.
+
+    Security identity, maturity/refixing basis and other source dimensions stay
+    explicit; these records are not flattened into scalar observations.
+    """
+
+    __tablename__ = "national_debt_facts"
+
+    id = Column(Integer, primary_key=True)
+    release_id = Column(Integer, ForeignKey("data_releases.id", ondelete="RESTRICT"),
+                        nullable=False, index=True)
+    fact_key = Column(String(64), nullable=False)
+    country = Column(String(8), nullable=False, index=True)
+    fact_type = Column(String(64), nullable=False)
+    metric = Column(String(128), nullable=False, index=True)
+    value = Column(Float, nullable=True)
+    unit = Column(String(64), nullable=False)
+    period_start = Column(Date, nullable=False)
+    period_end = Column(Date, nullable=False)
+    status = Column(String(32), nullable=False)
+    dimensions_json = Column(Text, nullable=False)
+    source_locator = Column(Text, nullable=False)
+    native_label = Column(Text, nullable=False)
+    native_value = Column(Text, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("release_id", "fact_key", name="uq_national_debt_release_fact"),
+        CheckConstraint("period_start <= period_end", name="ck_national_debt_period"),
+        CheckConstraint("status IN ('observed', 'forecast', 'not_reported')",
+                        name="ck_national_debt_status"),
+        CheckConstraint("(status = 'not_reported' AND value IS NULL) OR "
+                        "(status <> 'not_reported' AND value IS NOT NULL)",
+                        name="ck_national_debt_missingness"),
+    )
+
+
 class DataReleaseArtifact(Base):
     """One immutable raw-artifact manifest entry attached to a data release."""
 
@@ -1732,6 +1769,7 @@ for _immutable_model in (
     DataRelease,
     DataReleaseArtifact,
     ReleaseObservation,
+    NationalDebtFact,
     DebtHolderPosition,
     CrossBorderPosition,
     AllocatorFact,
@@ -3005,6 +3043,7 @@ def init_db(engine: Engine) -> None:
         "data_releases",
         "data_release_artifacts",
         "release_observations",
+        "national_debt_facts",
         "debt_holder_positions",
         "cross_border_positions",
         "allocator_facts",
