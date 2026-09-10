@@ -73,6 +73,7 @@ from dalio.data_sources.worldbank_commodities import (
     WORLD_CODE,
 )
 from dalio.data_sources.worldbank_qpsd import QPSD_COUNTRIES, QPSD_SERIES, QPSD_SOURCE
+from dalio.storage.refinancing import audit_refinancing
 from dalio.storage.releases import make_partition_key
 
 _EXPECTED_TABLES = (
@@ -4522,7 +4523,11 @@ def build_observatory_inventory(
             as_of=inventory_as_of,
         )
 
+    refinancing = audit_refinancing(engine, as_of=inventory_as_of)
     readiness = {
+        "sovereign_refinancing": _coverage_status(
+            refinancing["ready_partitions"], refinancing["expected_partitions"]
+        ),
         "current_observations": _availability(observations["row_count"]),
         "immutable_release_history": _availability(releases["release_count"]),
         "sovereign_debt_anatomy": _coverage_status(
@@ -4569,6 +4574,7 @@ def build_observatory_inventory(
         "communications": communications,
         "cross_border_positions": cross_border,
         "market_history": market_history,
+        "sovereign_refinancing": refinancing,
         "readiness": readiness,
     }
 
@@ -4588,6 +4594,7 @@ def render_inventory_summary(inventory: dict[str, Any]) -> str:
     commodities = market["commodities"]
     money = market["money_liquidity"]
     shadow = market["shadow_liquidity"]
+    refinancing = inventory["sovereign_refinancing"]
 
     def count_text(value: int | None) -> str:
         return "table absent" if value is None else f"{value:,}"
@@ -4628,6 +4635,10 @@ def render_inventory_summary(inventory: dict[str, Any]) -> str:
             f"readiness {inventory['readiness']['institutional_communications']}; "
             "semantic fidelity/extractor trust not verified; archive coverage not measured",
             position_line,
+            f"Sovereign refinancing: {refinancing['ready_partitions']}/"
+            f"{refinancing['expected_partitions']} streams ready; "
+            f"{refinancing['harmonized_expected']} harmonized expected; "
+            f"{refinancing['national_native_planned']} national-native planned",
             f"Commodity history: {commodities['ready_series']}/"
             f"{commodities['expected_series']} expected series ready; "
             f"{commodities['stored_series']} stored; "

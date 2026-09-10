@@ -1676,6 +1676,7 @@ def test_inventory_reports_structured_coverage_and_evidence_without_mutating(tmp
         "current_observations": "available",
         "immutable_release_history": "available",
         "sovereign_debt_anatomy": "partial",
+        "sovereign_refinancing": "empty",
         "cross_border_transactions": "partial",
         "debt_holder_positions": "available",
         "allocator_disclosures": "available",

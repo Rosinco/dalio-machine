@@ -53,7 +53,10 @@ class Observation(Base):
     date = Column(Date, nullable=False, index=True)
     value = Column(Float, nullable=False)
     source = Column(String(32), nullable=False)
-    series_id = Column(String(64), nullable=False)
+    # Preserve full native keys (ECB GFS refinancing includes a 65-character
+    # key), matching the immutable ledger. Existing SQLite VARCHAR(64) columns
+    # do not enforce a length limit and need no destructive table migration.
+    series_id = Column(String(128), nullable=False)
     fetched_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
 
     __table_args__ = (
