@@ -73,6 +73,31 @@ fn source_binding_and_per_company_reads_survive_reopening() {
 }
 
 #[test]
+fn annual_batch_is_bounded_source_checked_and_omits_quarterly_payloads() {
+    let tmp = Temp::new();
+    let (path, id) = fixture(&tmp.0);
+    let mut store = Store::new(tmp.0.clone(), tmp.0.join("imports"));
+    let rows = store.annual(&id, &["102".into()]).unwrap();
+    assert_eq!(rows["pack"], id);
+    assert_eq!(rows["companies"][0]["annual"][0][8], 200.0);
+    assert!(rows["companies"][0].get("quarterly").is_none());
+    assert!(store.annual(&id, &["102".into(), "102".into()]).is_err());
+    assert!(store.annual(&id, &vec!["102".into(); 33]).is_err());
+    assert!(store.annual(&id, &["999999".into()]).is_err());
+    drop(store);
+    let conn = Connection::open(&path).unwrap();
+    conn.execute(
+        "UPDATE companies SET payload=?1 WHERE id='102'",
+        [compressed(b"{}")],
+    )
+    .unwrap();
+    drop(conn);
+    let hash = digest_file(&path).unwrap();
+    let pack = Pack::open(&path, &hash).unwrap();
+    assert!(pack.annual(&["102".into()]).is_err());
+}
+
+#[test]
 fn chunked_import_validates_before_publish_and_duplicate_is_immutable() {
     let tmp = Temp::new();
     let (path, id) = fixture(&tmp.0);

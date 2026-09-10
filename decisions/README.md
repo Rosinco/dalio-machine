@@ -30,3 +30,4 @@ always-loaded state lives in `project_context.md` (Decision Log has one line per
 | [0023](0023-borsdata-taxonomy-directory.md) | Full bilingual Börsdata directory, separate research coverage and reviewed classification corrections, v3 offline packages | 2026-09-10 |
 | [0024](0024-downloaded-company-directory.md) | All downloaded company listings, latest identity per ID, country/branch navigation, older-only labels and source-conflict flags | 2026-09-10 |
 | [0025](0025-company-financial-history.md) | Indexed offline annual/quarterly histories across the listing directory, source-bound SQLite companion and financial statements | 2026-09-10 |
+| [0026](0026-branch-history-comparisons.md) | Historical branch bubbles, whole-cohort medians and IQR, synchronized charts/table and source-bound saved comparisons | 2026-09-10 |

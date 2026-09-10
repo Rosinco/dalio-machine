@@ -52,6 +52,15 @@ conversion, missingness, source dates and older retained periods remain explicit
 Native Rust bundles SQLite; the Vite preview uses Node SQLite. Financial packs import
 in bounded chunks, validate every record and export separately from unchanged v1/v2/v3
 research packages. Archived five-company peer/research profiles remain separate.
+Version 0.7 (ADR 0026) adds a wide branch comparison workspace: annual bubbles,
+whole-filtered-branch median/IQR and coverage, linked ratio charts and a fiscal-year
+financial table. Up to eight listings share a selected year/focus; saved comparisons
+bind settings and notes to exact research, taxonomy and financial-pack identities.
+Annual requests are bounded to 32 listings, with only branch data retained in memory.
+Bubble area can explicitly encode assets or revenue in one reporting currency;
+market cap awaits verified split/date alignment. The saved directory is not a
+reconstructed historical universe. Return on capital is labelled as a pre-tax proxy;
+investing cash flow is explicitly distinguished from CAPEX.
 The user's later-stage request is recorded in ADR 0022: extend the deep-dive funnel
 with balance-sheet analysis and a sourced physical-resource inventory (locations,
 what each asset is, ownership/lease/JV status and reporting dates) for map markers
@@ -470,6 +479,7 @@ semantically reviewed.
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
+| 2026-09-10 | **ADR 0026** — branch histories and saved comparisons | Compare annual values with a whole-branch median/IQR, linked charts and exact-version saved notes; single-currency monetary measures and explicit market-cap/ROIC/CAPEX gaps. See `decisions/0026-branch-history-comparisons.md`. |
 | 2026-09-10 | **ADR 0025** — indexed company financial histories and three statements | Reconcile saved annual/quarterly reports, preserve source dates and raw FX-scaled amounts, and attach an immutable SQLite pack only to its matching directory. See `decisions/0025-company-financial-history.md`. |
 | 2026-09-10 | **ADR 0024** — populate the company directory from all downloaded Börsdata instrument metadata | Latest record wins by instrument ID; older-only and separate listings remain identifiable. All branch/country counts reconcile, source conflicts stay visible, and financial-profile coverage remains separate. See `decisions/0024-downloaded-company-directory.md`. |
 | 2026-09-10 | **ADR 0023** — use Börsdata sector/branch IDs and bilingual labels as Atlas defaults, with separately reviewed corrections | Reuse the maintained 10-sector/94-branch division, keep source assignments, and distinguish branch studies, saved dossiers and profiles available offline. V3 packages bind the directory to the selected business export; old packages cannot inherit newer taxonomy. See `decisions/0023-borsdata-taxonomy-directory.md`. |
@@ -506,6 +516,7 @@ semantically reviewed.
 
 | Date | Change | Files |
 |------|--------|-------|
+| 2026-09-10 | **Macro Atlas 0.7.0: branch comparisons (ADR 0026).** Annual bubbles, whole-filtered-branch median/IQR and coverage, linked charts/table, eight-listing selections and saved settings/Swedish notes tied to exact data versions. Single-currency monetary comparisons and explicit size choices preserve missingness; market cap awaits verified split/date alignment. Bounded annual reads loaded Mining’s 1,745 listings in 1.36 s in Windows. Verified 1,238 Python / 51 frontend / 19 Rust tests and complete browser/Windows flows, including process restart, with no external requests or runtime errors. | `desktop/`, `decisions/0026-branch-history-comparisons.md` |
 | 2026-09-10 | **Macro Atlas 0.6.0: company financial histories (ADR 0025).** A 96 MB source-bound SQLite companion serves 872,604 annual/quarterly reports for 18,943 listings, with 197 no-report listings and 1,174 withheld source rows. Coverage, source dates, currency conversion and three financial statements accompany per-company reads. Financial packs export/import separately from unchanged research JSON. Verified 1,238 Python / 43 frontend / 18 Rust tests and complete browser/Windows flows, including exact 96 MB export/import and process restart with no external requests or runtime errors. | `desktop/`, `decisions/0025-company-financial-history.md` |
 | 2026-09-10 | **Macro Atlas 0.5.0: complete downloaded company directory (ADR 0024).** Merged latest saved metadata by instrument ID: 19,140 listings, 19 countries, all 94 branches; 1,547 older-only IDs retain their date, and 11 source sector conflicts retain original values and review flags. Search, pagination, country/presence filters and basic identity panels accompany the five financial profiles. Taxonomy v2 is hash-bound inside the v3 package. Verified 1,227 Python / 37 frontend / 14 Rust tests and browser/Windows offline imports, exports and restart. | `desktop/`, `decisions/0024-downloaded-company-directory.md` |
 | 2026-09-09 | **Sovereign-refinancing source-ready checkpoint (ADR 0020).** Fixed the Version 1 denominator at 48 logical streams and added strict source adapters for 29 annual Eurostat general-government partitions across DE/FR/IT/ES/SE plus two monthly fixed-composition EA21 comparison histories. Sweden's unavailable variable-rate partition is excluded, not zero-filled. Saved official responses validate a 31-year Eurostat DE example and two 200-month ECB histories. No pipeline, release binding, database ingestion, live-database mutation, derived indicator or risk conclusion was added; 17 national-native streams remain planned. | `data/reference/sovereign_refinancing_v1.json`, `src/dalio/data_sources/{sovereign_refinancing,eurostat_refinancing,ecb_refinancing}.py`, `tests/test_{sovereign_refinancing_manifest,eurostat_refinancing,ecb_refinancing}.py`, `decisions/0020-sovereign-refinancing-evidence-denominator.md`, `README.md`, `data/README.md`, `project_context.md` |

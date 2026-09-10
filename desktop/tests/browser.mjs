@@ -1,3 +1,4 @@
+import { comparisonFlows } from './comparison-flows.mjs';
 import { financialFlows } from './financial-flows.mjs';
 import { chromium } from 'playwright';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
@@ -31,6 +32,11 @@ const start = performance.now();
 await page.goto(base);
 await page.locator('[data-country="SE"][data-ready="true"]').waitFor();
 await page.locator('[data-map-ready="true"]').waitFor();
+if (process.argv.includes('--comparison-only')) {
+  console.log(JSON.stringify(await comparisonFlows(page, process.cwd())));
+  assert.deepEqual(external, []); assert.deepEqual(errors, []);
+  await browser.close(); process.exit(0);
+}
 if (process.argv.includes('--financial-only')) {
   await page.getByLabel('Observatory', { exact: true }).selectOption('companies');
   await page.locator('[data-business-ready="true"]').waitFor();
@@ -110,6 +116,8 @@ const listings = await listingFlows(page, process.cwd());
 taxonomy.checks.push(...listings.checks); timing.listing_flows_ms = listings.duration_ms;
 const financial = await financialFlows(page, process.cwd());
 taxonomy.checks.push(...financial.checks); timing.financial_company_switch_ms = financial.timings;
+const comparison = await comparisonFlows(page, process.cwd());
+taxonomy.checks.push(...comparison.checks); timing.branch_forestry_ms = comparison.forestryMs; timing.branch_mining_ms = comparison.miningMs;
 await page.setViewportSize({ width: 1100, height: 760 });
 await page.screenshot({ path: 'test-results/company-compact.png' });
 assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);

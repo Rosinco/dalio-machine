@@ -49,13 +49,22 @@ function middleware(req, res, next) {
         res.setHeader('Content-Disposition', `attachment; filename="Macro-Atlas-Financials-${p.index.as_of}-${p.index.id.slice(0, 12)}.sqlite"`);
         createReadStream(p.path).pipe(res); return;
       }
-      if (operation !== 'company') throw new Error('Unknown financial operation');
-      const id = url.searchParams.get('id');
-      if (!/^[1-9][0-9]{0,9}$/.test(id ?? '') || !p.index.companies[id]) throw new Error('Listing is unavailable in this financial pack');
-      const row = p.db.prepare('SELECT payload, sha256 FROM companies WHERE id=?').get(id);
-      const bytes = gunzipSync(row.payload, { maxOutputLength: 2000000 });
-      if (digest(bytes) !== row.sha256 || row.sha256 !== p.index.companies[id].sha256) throw new Error('Company history checksum mismatch');
-      result = JSON.parse(bytes);
+      const company = id => {
+        if (!/^[1-9][0-9]{0,9}$/.test(id ?? '') || !p.index.companies[id]) throw new Error('Listing is unavailable in this financial pack');
+        const row = p.db.prepare('SELECT payload, sha256 FROM companies WHERE id=?').get(id);
+        const bytes = gunzipSync(row.payload, { maxOutputLength: 2000000 });
+        if (digest(bytes) !== row.sha256 || row.sha256 !== p.index.companies[id].sha256) throw new Error('Company history checksum mismatch');
+        const raw = JSON.parse(bytes);
+        if (raw.id !== id) throw new Error('Company history identity mismatch');
+        return raw;
+      };
+      if (operation === 'company') result = company(url.searchParams.get('id'));
+      else if (operation === 'annual') {
+        const ids = (url.searchParams.get('ids') ?? '').split(',');
+        if (!ids.length || ids.length > 32 || new Set(ids).size !== ids.length) throw new Error('Request between 1 and 32 distinct listings');
+        result = { pack: p.index.id, companies: ids.map(id => ({ id, annual: company(id).annual })) };
+        if (JSON.stringify(result).length > 8_000_000) throw new Error('Annual batch exceeds 8 MB');
+      } else throw new Error('Unknown financial operation');
     }
     res.setHeader('Content-Type', 'application/json'); res.setHeader('Cache-Control', 'no-store'); res.end(JSON.stringify(result));
   } catch (e) { res.statusCode = 400; res.setHeader('Content-Type', 'text/plain'); res.end(e.message); }

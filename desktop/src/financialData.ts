@@ -59,35 +59,41 @@ export function validateFinancialIndex(v: any, taxonomy: string): asserts v is F
   check(sourceRows === s.source_rows && outside === s.outside_directory && usableRows === annual + quarterly && withheldRows === withheld, 'Financial source totals do not reconcile.');
 }
 
+export function decodeFinancialRows(rows: any, index: FinancialIndex, id: string, freq: 'annual' | 'quarterly'): SourcedReport[] {
+  const coverage = index.companies[id];
+  check(companyId(id) && coverage, 'Financial history does not match the selected listing.');
+  const sources = new Map(index.sources.map(s => [s.id, s])), currencies = new Set<string>();
+  check(Array.isArray(rows) && rows.length === coverage[freq].count && rows.length <= 2000);
+  let previous = 0;
+  const reports = rows.map((r: any) => {
+    check(Array.isArray(r) && r.length === 8 + financialColumns.length);
+    const [year, period, start, end, published, code, fx, sourceId] = r, source = sources.get(sourceId);
+    check(integer(year, 2300) && year >= 2000 && (freq === 'annual' ? period === 5 : integer(period, 4) && period >= 1) && year * 5 + period > previous, 'Duplicate or unordered financial periods.'); previous = year * 5 + period;
+    check(source?.frequency === freq && day(start) && day(end) && start <= end && end <= source.as_of && (published === null || day(published) && published >= end && published <= source.as_of), 'Invalid report dates or financial source.');
+    check(currency(code) && numeric(fx) && r.slice(8).every(numeric)); currencies.add(code);
+    const raw: Record<string, number | null> = {}, values: Record<string, number | null> = {};
+    financialColumns.forEach((key, i) => { raw[key] = r[8 + i]; const amount = fx !== null && fx > 0 && raw[key] !== null ? raw[key]! / fx : null; values[key] = finite(amount) ? amount : null; });
+    const ratio = (numerator: number | null, denominator: number | null) => { const n = numerator !== null && denominator !== null && denominator > 0 ? 100 * numerator / denominator : null; return finite(n) ? n : null; };
+    values.operating_margin = ratio(values.operating_income, values.revenues);
+    values.operating_cash_margin = ratio(values.cash_flow_from_operating_activities, values.revenues);
+    values.equity_ratio = ratio(values.total_equity, values.total_assets);
+    values.net_debt_to_equity = ratio(values.net_debt, values.total_equity);
+    values.return_on_capital = period === 5 ? ratio(values.operating_income, values.total_equity !== null && values.net_debt !== null ? values.total_equity + values.net_debt : null) : null;
+    return { year, period, start, end, report_date: published, currency: code, currency_ratio: fx, source_id: sourceId, source_as_of: source!.as_of, raw, values };
+  });
+  const first = reports[0], last = reports.at(-1), c = coverage[freq];
+  const position = (r: SourcedReport) => freq === 'annual' ? r.year : r.year * 4 + r.period - 1;
+  check(c.first === (first?.year ?? null) && c.last === (last?.year ?? null) && c.last_period === (last?.period ?? null) && c.end === (last?.end ?? null) && c.published === (last?.report_date ?? null) && c.gaps === (last ? position(last) - position(first) + 1 - reports.length : 0) && c.unavailable === reports.filter((r: SourcedReport) => r.currency_ratio === null || r.currency_ratio <= 0 || Object.values(r.raw).every(n => n === null)).length, 'Financial reports disagree with their coverage index.');
+  check([...currencies].every(c => coverage.currencies.includes(c)), 'Unexpected reporting currency.');
+  return reports;
+}
+
 export function decodeFinancialCompany(v: any, index: FinancialIndex, id: string): FinancialCompany {
   const coverage = index.companies[id];
   check(companyId(id) && coverage && object(v) && v.id === id, 'Financial history does not match the selected listing.');
-  const sources = new Map(index.sources.map(s => [s.id, s])), currencies = new Set<string>();
-  const decode = (freq: 'annual' | 'quarterly'): SourcedReport[] => {
-    const rows = v[freq]; check(Array.isArray(rows) && rows.length === coverage[freq].count && rows.length <= 2000);
-    let previous = 0;
-    const reports = rows.map((r: any) => {
-      check(Array.isArray(r) && r.length === 8 + financialColumns.length);
-      const [year, period, start, end, published, code, fx, sourceId] = r, source = sources.get(sourceId);
-      check(integer(year, 2300) && year >= 2000 && (freq === 'annual' ? period === 5 : integer(period, 4) && period >= 1) && year * 5 + period > previous, 'Duplicate or unordered financial periods.'); previous = year * 5 + period;
-      check(source?.frequency === freq && day(start) && day(end) && start <= end && end <= source.as_of && (published === null || day(published) && published >= end && published <= source.as_of), 'Invalid report dates or financial source.');
-      check(currency(code) && numeric(fx) && r.slice(8).every(numeric)); currencies.add(code);
-      const raw: Record<string, number | null> = {}, values: Record<string, number | null> = {};
-      financialColumns.forEach((key, i) => { raw[key] = r[8 + i]; const amount = fx !== null && fx > 0 && raw[key] !== null ? raw[key]! / fx : null; values[key] = finite(amount) ? amount : null; });
-      const ratio = (numerator: number | null, denominator: number | null) => { const n = numerator !== null && denominator !== null && denominator > 0 ? 100 * numerator / denominator : null; return finite(n) ? n : null; };
-      values.operating_margin = ratio(values.operating_income, values.revenues);
-      values.operating_cash_margin = ratio(values.cash_flow_from_operating_activities, values.revenues);
-      values.equity_ratio = ratio(values.total_equity, values.total_assets);
-      values.net_debt_to_equity = ratio(values.net_debt, values.total_equity);
-      values.return_on_capital = period === 5 ? ratio(values.operating_income, values.total_equity !== null && values.net_debt !== null ? values.total_equity + values.net_debt : null) : null;
-      return { year, period, start, end, report_date: published, currency: code, currency_ratio: fx, source_id: sourceId, source_as_of: source!.as_of, raw, values };
-    });
-    const first = reports[0], last = reports.at(-1), c = coverage[freq];
-    const position = (r: SourcedReport) => freq === 'annual' ? r.year : r.year * 4 + r.period - 1;
-    check(c.first === (first?.year ?? null) && c.last === (last?.year ?? null) && c.last_period === (last?.period ?? null) && c.end === (last?.end ?? null) && c.published === (last?.report_date ?? null) && c.gaps === (last ? position(last) - position(first) + 1 - reports.length : 0) && c.unavailable === reports.filter((r: SourcedReport) => r.currency_ratio === null || r.currency_ratio <= 0 || Object.values(r.raw).every(n => n === null)).length, 'Financial reports disagree with their coverage index.');
-    return reports;
-  };
-  const annual = decode('annual'), quarterly = decode('quarterly');
+  const annual = decodeFinancialRows(v.annual, index, id, 'annual'), quarterly = decodeFinancialRows(v.quarterly, index, id, 'quarterly');
+  const currencies = new Set([...annual, ...quarterly].map(r => r.currency));
+  const sources = new Map(index.sources.map(s => [s.id, s]));
   check([...currencies].sort().join(',') === [...coverage.currencies].sort().join(','));
   check(Array.isArray(v.withheld) && v.withheld.length === coverage.withheld && v.withheld.every((r: any) => object(r) && Number.isSafeInteger(r.year) && Number.isSafeInteger(r.period) && sources.has(r.source_id) && ['start', 'end', 'published', 'reason'].every(k => typeof r[k] === 'string' && r[k].length <= 2000)));
   return { id, annual, quarterly, withheld: v.withheld };

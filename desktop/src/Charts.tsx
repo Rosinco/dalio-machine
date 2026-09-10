@@ -1,15 +1,16 @@
 import { useEffect, useRef } from 'react';
 import * as echarts from 'echarts/core';
-import { LineChart, RadarChart, BarChart, PieChart } from 'echarts/charts';
-import { GridComponent, TooltipComponent, RadarComponent, LegendComponent, DataZoomComponent, MarkAreaComponent, GraphicComponent } from 'echarts/components';
+import { LineChart, RadarChart, BarChart, PieChart, ScatterChart, CustomChart } from 'echarts/charts';
+import { GridComponent, TooltipComponent, RadarComponent, LegendComponent, DataZoomComponent, MarkAreaComponent, MarkLineComponent, GraphicComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import type { EChartsCoreOption } from 'echarts/core';
 import type { AtlasIndex, Country, Indicator, Point } from './types';
 import { categories, finite, format, historyLines, seriesColors } from './model';
 
-echarts.use([LineChart, RadarChart, BarChart, PieChart, GridComponent, TooltipComponent, RadarComponent, LegendComponent, DataZoomComponent, MarkAreaComponent, GraphicComponent, CanvasRenderer]);
+echarts.use([LineChart, RadarChart, BarChart, PieChart, ScatterChart, CustomChart, GridComponent, TooltipComponent, RadarComponent, LegendComponent, DataZoomComponent, MarkAreaComponent, MarkLineComponent, GraphicComponent, CanvasRenderer]);
 
-export function Chart({ option, height = 230, label }: { option: EChartsCoreOption; height?: number; label: string }) {
+export type ChartPoint = { id?: string; year: number };
+export function Chart({ option, height = 230, label, onPoint }: { option: EChartsCoreOption; height?: number; label: string; onPoint?: (point: ChartPoint) => void }) {
   const element = useRef<HTMLDivElement>(null);
   const instance = useRef<echarts.EChartsType | null>(null);
   useEffect(() => {
@@ -21,6 +22,12 @@ export function Chart({ option, height = 230, label }: { option: EChartsCoreOpti
     return () => { observer.disconnect(); chart.dispose(); instance.current = null; };
   }, []);
   useEffect(() => { instance.current?.setOption({ animation: false, textStyle: { fontFamily: 'Segoe UI, sans-serif' }, ...option, tooltip: { ...(typeof option.tooltip === 'object' && option.tooltip !== null ? option.tooltip : {}), renderMode: 'richText' } }, true); }, [option]);
+  useEffect(() => {
+    const chart = instance.current;
+    const click = (event: any) => { if (Number.isInteger(event.data?.year)) onPoint?.({ year: event.data.year, id: event.data.id }); };
+    if (onPoint) chart?.on('click', click);
+    return () => { chart?.off('click', click); };
+  }, [onPoint]);
   return <div ref={element} role="img" aria-label={label} style={{ height, width: '100%' }} />;
 }
 

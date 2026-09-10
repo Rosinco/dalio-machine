@@ -1,3 +1,4 @@
+import { comparisonFlows, restoreComparison } from './comparison-flows.mjs';
 import { financialFlows } from './financial-flows.mjs';
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
@@ -82,6 +83,8 @@ try {
   report.checks.push(...listings.checks); report.listingFlowsMs = listings.duration_ms;
   const financial = await financialFlows(page, project, { native: true, archive });
   report.checks.push(...financial.checks); report.financialCompanySwitchMs = financial.timings; report.financialExport = financial.exportedPath;
+  const comparison = await comparisonFlows(page, project);
+  report.checks.push(...comparison.checks); report.branchForestryMs = comparison.forestryMs; report.branchMiningMs = comparison.miningMs;
   const firstPid = app.pid;
   await stopApp();
   console.log(`Windows app restarted for persistence testing: ${await startApp()}`);
@@ -89,6 +92,11 @@ try {
   await page.locator(`[data-active-release="${research.current.id}"] [data-company="102"][data-business-ready="true"]`).waitFor();
   await page.locator(`[data-financial-history="102"][data-financial-pack="${financial.index.id}"]`).waitFor();
   report.checks.push('Imported company financial pack survives native process restart');
+  await restoreComparison(page);
+  await page.screenshot({ path: resolve(resultFolder, 'windows-branch-comparison.png') });
+  report.checks.push('Saved branch comparison and Swedish research notes survive native process restart');
+  await page.getByLabel('Open financials for Holmen', { exact: true }).click();
+  await page.locator('[data-company="102"][data-business-ready="true"]').waitFor();
   await page.screenshot({ path: resolve(resultFolder, 'windows-holmen.png') });
   await page.getByLabel('Observatory', { exact: true }).selectOption('macro');
   await page.getByLabel('Open data library').click();

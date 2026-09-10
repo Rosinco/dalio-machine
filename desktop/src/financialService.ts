@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { invoke, isTauri } from '@tauri-apps/api/core';
-import { decodeFinancialCompany, validateFinancialIndex, type FinancialCompany, type FinancialIndex } from './financialData';
+import { decodeFinancialCompany, decodeFinancialRows, validateFinancialIndex, type FinancialCompany, type FinancialIndex } from './financialData';
+import { projectAnnual, type BranchData } from './branchComparison';
 
 async function read(command: string, args: Record<string, string>) {
   if (isTauri()) return invoke(command, args);
@@ -31,6 +32,36 @@ export function useFinancialIndex(taxonomy: string | null | undefined, enabled: 
 }
 export function useFinancialCompany(index: FinancialIndex | null, id: string | undefined) {
   return useFinancialResource<FinancialCompany>(index && id && index.companies[id] ? `${index.id}:${id}` : '', async () => decodeFinancialCompany(await read('financial_company', { pack: index!.id, id: id! }), index!, id!));
+}
+export function useBranchAnnual(index: FinancialIndex | null, ids: string[]) {
+  const [state, setState] = useState<Resource<BranchData> & { loaded: number }>({ key: '', data: null, ready: false, error: '', loaded: 0 });
+  const key = index ? `${index.id}:${ids.join(',')}` : '';
+  useEffect(() => {
+    let active = true;
+    setState({ key, data: null, ready: !key, error: '', loaded: 0 });
+    if (!index) return;
+    const run = async () => {
+      const data: BranchData = {};
+      const available = ids.filter(id => index.companies[id]?.annual.count);
+      const total = available.reduce((n, id) => n + index.companies[id].annual.count, 0);
+      if (total > 100000) throw new Error('This branch exceeds the 100,000 annual-report limit for an interactive comparison.');
+      for (let offset = 0; offset < available.length; offset += 32) {
+        if (!active) return;
+        const batch = available.slice(offset, offset + 32);
+        const raw: any = isTauri() ? await invoke('financial_annual', { pack: index.id, ids: batch }) : await read('financial_annual', { pack: index.id, ids: batch.join(',') });
+        if (!active) return;
+        if (raw?.pack !== index.id || !Array.isArray(raw.companies) || raw.companies.length !== batch.length || raw.companies.some((c: any, i: number) => c?.id !== batch[i])) throw new Error('Annual histories do not match the requested comparison.');
+        for (const c of raw.companies) data[c.id] = projectAnnual(decodeFinancialRows(c.annual, index, c.id, 'annual'));
+        setState({ key, data: null, ready: false, error: '', loaded: Math.min(offset + 32, available.length) });
+      }
+      if (active) setState({ key, data, ready: true, error: '', loaded: available.length });
+    };
+    run().catch(e => { if (active) setState({ key, data: null, ready: true, error: String(e instanceof Error ? e.message : e), loaded: 0 }); });
+    return () => { active = false; };
+    // Pack and ordered IDs fully identify this request; cancelled branches never publish partial medians.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  return state.key === key ? state : { key, data: null, ready: !key, error: '', loaded: 0 };
 }
 export async function importFinancialFile(file: File, progress: (percent: number) => void): Promise<FinancialIndex> {
   if (!isTauri()) throw new Error('Import financial histories in the desktop application.');

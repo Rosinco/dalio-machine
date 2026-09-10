@@ -72,7 +72,7 @@ dependencies = [
 
 [[package]]
 name = "atlas-financial-store"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "flate2",
  "rusqlite",
@@ -82,7 +82,7 @@ dependencies = [
 
 [[package]]
 name = "atlas-research-store"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -1825,7 +1825,7 @@ checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 
 [[package]]
 name = "macro-atlas"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "atlas-financial-store",
  "atlas-research-store",

@@ -4,6 +4,7 @@ import WorldMap, { type Paint } from './WorldMap';
 import { Chart } from './Charts';
 import FinancialChart from './FinancialChart';
 import FinancialHistory from './FinancialHistory';
+import BranchExplorer from './BranchExplorer';
 import type { FinancialIndex } from './financialData';
 import { useFinancialCompany } from './financialService';
 import { amountLabels, financialSeries, formulas, metricLabels, periodLabel, ratioLabels, type BusinessIndex, type Company, type CompanySummary, type Observatory, type SavedStudy } from './business';
@@ -16,8 +17,8 @@ import { BranchCoverage, BranchInventory, ClassificationDetails, TaxonomyDirecto
 import { CompanyList, ListingDetails } from './CompanyDirectory';
 export { DirectorySearch as BusinessSearch } from './CompanyDirectory';
 
-type View = 'browse' | 'overview' | 'companies' | 'financials' | 'peers' | 'context' | 'research';
-const sectorViews = [{ id: 'browse', label: 'Browse sectors and branches', short: 'Browse', icon: ListTree }, { id: 'overview', label: 'Branch overview', short: 'Branch', icon: Trees }, { id: 'companies', label: 'Branch companies', short: 'Companies', icon: Building2 }, { id: 'context', label: 'Branch macro context', short: 'Context', icon: Globe2 }, { id: 'research', label: 'Branch research', short: 'Research', icon: BookOpen }] as const;
+type View = 'browse' | 'overview' | 'companies' | 'compare' | 'financials' | 'peers' | 'context' | 'research';
+const sectorViews = [{ id: 'browse', label: 'Browse sectors and branches', short: 'Browse', icon: ListTree }, { id: 'overview', label: 'Branch overview', short: 'Branch', icon: Trees }, { id: 'companies', label: 'Branch companies', short: 'Companies', icon: Building2 }, { id: 'compare', label: 'Branch comparison', short: 'Compare', icon: TrendingUp }, { id: 'context', label: 'Branch macro context', short: 'Context', icon: Globe2 }, { id: 'research', label: 'Branch research', short: 'Research', icon: BookOpen }] as const;
 const companyViews = [{ id: 'financials', label: 'Company financials', short: 'Profile', icon: TrendingUp }, { id: 'peers', label: 'Company peers', short: 'Peers', icon: Building2 }, { id: 'context', label: 'Company macro context', short: 'Context', icon: Globe2 }, { id: 'research', label: 'Company research', short: 'Research', icon: BookOpen }] as const;
 
 export default function BusinessWorkspace({ observatory, index, taxonomy, financial, financialReady, financialError, ready, error, macro, release, code, selectedName, companyId, branchId, onBranch, onCountry, onCompany, onMacro, onSector, onLibrary }: {
@@ -47,6 +48,7 @@ export default function BusinessWorkspace({ observatory, index, taxonomy, financ
   const countries = useMemo(() => listingCountries(index, taxonomy), [index, taxonomy]);
   const names = useMemo(() => ({ ...Object.fromEntries(Object.entries(macro.countries).map(([k, c]) => [k, c.name])), ...countries }), [macro, countries]);
   const companies = useMemo(() => observatory === 'sectors' ? scoped.filter(e => (companyBranch(e, taxonomy) ?? 'unassigned') === activeBranchId) : scoped, [scoped, taxonomy, activeBranchId, observatory]);
+  const branchEntries = useMemo(() => entries.filter(e => (companyBranch(e, taxonomy) ?? 'unassigned') === activeBranchId), [entries, taxonomy, activeBranchId]);
   const local = useMemo(() => companies.filter(c => (c.listing_country ?? 'ZZ') === code), [companies, code]);
   const peers = useMemo(() => scoped.filter(e => companyBranch(e, taxonomy) === (entry ? companyBranch(entry, taxonomy) : null)), [scoped, taxonomy, entry]);
   const countryName = names[code] || selectedName || code;
@@ -59,7 +61,8 @@ export default function BusinessWorkspace({ observatory, index, taxonomy, financ
   const canShow = !!index || !!taxonomy?.catalogue;
   const hasDetails = financialReady && (observatory !== 'companies' || !entry || (financial ? history.ready : !selected || detail.ready && !!company));
   return <div className="workspace business-workspace" data-observatory={observatory} data-listing-count={entries.length} data-financial-count={financial?.summary.with_reports ?? 0}>
-    <nav className="rail" aria-label={`${observatory === 'sectors' ? 'Sector' : 'Company'} views`}><div className="rail-label">EXPLORE</div>{views.map(item => <button key={item.id} className={view === item.id ? 'active' : ''} aria-label={item.label} aria-pressed={view === item.id} onClick={() => setView(item.id)}><item.icon size={21} strokeWidth={1.5} /><span>{item.short}</span></button>)}<div className="rail-spacer" /><button onClick={onLibrary} aria-label="About this release"><Layers3 size={20} /><span>Library</span></button><span className="rail-version">V0.6.0</span></nav>
+    <nav className="rail" aria-label={`${observatory === 'sectors' ? 'Sector' : 'Company'} views`}><div className="rail-label">EXPLORE</div>{views.map(item => <button key={item.id} className={view === item.id ? 'active' : ''} aria-label={item.label} aria-pressed={view === item.id} onClick={() => setView(item.id)}><item.icon size={21} strokeWidth={1.5} /><span>{item.short}</span></button>)}<div className="rail-spacer" /><button onClick={onLibrary} aria-label="About this release"><Layers3 size={20} /><span>Library</span></button><span className="rail-version">V0.7.0</span></nav>
+    {observatory === 'sectors' && view === 'compare' ? <BranchExplorer key={`${release.id}:${financial?.id}:${activeBranchId}`} entries={branchEntries} financial={financial} financialReady={financialReady} financialError={financialError} release={release} taxonomy={taxonomy} branchId={activeBranchId} branchName={branchName} onBranch={onBranch} onBrowse={browse} onCompany={onCompany} /> : <>
     <main className="map-panel">
       <div className="map-heading business-map-heading"><div><div className="eyebrow">{observatory === 'sectors' ? 'SECTORS & BRANCHES' : 'COMPANY OBSERVATORY'}</div><h1>{observatory === 'sectors' ? branchName : entry?.display_name ?? 'Explore companies'}</h1><p>{observatory === 'sectors' ? 'Connect a branch, its businesses and the wider economy.' : 'Explore your saved company directory and financial research.'}</p></div></div>
       <button className="map-filter business-map-filter branch-breadcrumb" aria-label="Choose a sector or branch" onClick={browse}><Trees size={15} /><span>{sectorName}</span><ChevronRight size={13} /><strong>{branchName}</strong><span>BROWSE</span></button>
@@ -79,6 +82,7 @@ export default function BusinessWorkspace({ observatory, index, taxonomy, financ
         {observatory === 'companies' && entry && <ClassificationDetails taxonomy={taxonomy} company={entry} />}
         <div className="business-content">
           {observatory === 'sectors' && view === 'overview' && <>
+            <section><h3>Explore this branch through time</h3><p className="business-note">Compare annual company histories with the branch median, follow the same year across charts, and save your research notes.</p><button className="primary" onClick={() => setView('compare')}>Open branch comparison <ArrowRight size={15} /></button></section>
             {taxonomy && branch && <BranchCoverage taxonomy={taxonomy} branch={branch} profiles={counts[branch.id]?.profiles ?? 0} listings={companies.length} histories={counts[branch.id]?.histories} />}
             {hasBranchResearch && index && <section><h3>{sectorName} → {branchName}</h3><p className="business-note">{index.branch.description}</p><div className="value-chain" aria-label="Forestry value chain"><span>Forest & fibre</span><ChevronRight size={14} /><span>Wood, pulp & mills</span><ChevronRight size={14} /><span>Construction, paper & packaging</span></div><p className="chart-caption">Qualitative value chain from the archived branch study · {index.branch.as_of}.</p></section>}
             <section><div className="section-title"><h3>Companies listed in {countryName}</h3><span className="micro">{local.length.toLocaleString('en-US')} LISTINGS</span></div><CompanyList companies={local} taxonomy={taxonomy} onCompany={onCompany} /><p className="business-note">Each Börsdata ID has its own directory entry. Separate listings can represent the same business.</p></section>
@@ -97,6 +101,7 @@ export default function BusinessWorkspace({ observatory, index, taxonomy, financ
         </div>
       </>}
     </aside>
+    </>}
   </div>;
 }
 

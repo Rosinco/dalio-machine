@@ -32,6 +32,14 @@ async fn financial_company(
     financial_work(state, move |s| s.company(&pack, &id)).await
 }
 #[tauri::command]
+async fn financial_annual(
+    state: tauri::State<'_, FinancialState>,
+    pack: String,
+    ids: Vec<String>,
+) -> Result<serde_json::Value, String> {
+    financial_work(state, move |s| s.annual(&pack, &ids)).await
+}
+#[tauri::command]
 async fn financial_begin(
     state: tauri::State<'_, FinancialState>,
     bytes: u64,
@@ -202,6 +210,7 @@ fn main() {
             research_export,
             financial_index,
             financial_company,
+            financial_annual,
             financial_begin,
             financial_append,
             financial_cancel,

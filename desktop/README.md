@@ -6,13 +6,32 @@ requires no terminal, Python environment, WSL, account or network connection.
 Windows WebView2 must be installed; it is present on Adam's PC. The Tauri installer
 configuration can also bundle its offline installer when distributing to another PC.
 
-## Version 0.6.0
+## Version 0.7.0
 
 Use the **Observatory** selector beside ATLAS to switch between **Macro**,
 **Sectors & branches**, and **Companies**. Each has its own Explore views.
 Start with **Sectors & branches → Browse → Forest & Wood Products → Holmen**.
 Country, branch and company selections carry across observatories and persist
 when the app reopens.
+
+- **Sectors & branches → Compare** opens the branch-history workspace. Choose
+  up to eight listings, the Y-axis measure, reporting currency, listing country,
+  saved-download coverage, fiscal closing month and year range. Click a bubble to
+  select its company/year; supporting histories and the financial table follow.
+- The grey line is the **median of the whole filtered branch**, with a middle-50%
+  band when at least four observations exist. Annual valid/total counts and exact
+  reporting periods remain available. Each listing has equal weight; cross-listings
+  can repeat an issuer. This is saved-directory history, not a historical universe
+  free of survivorship bias. Annual periods outside 330–400 days are excluded.
+- Points have equal size by default. **Bubble area** can instead show total assets
+  or revenue, in one reporting currency and with one scale across the chosen years.
+  Market cap is unavailable until price/share-count dates and split bases are verified.
+  ROIC and CAPEX remain separate future measures; existing proxies are labelled.
+- **Save new comparison** keeps the selection, filters, years, notes and exact data
+  versions in Atlas's persistent local storage. Reopen it from **Saved in this branch**,
+  including after restarting the app. Different data versions cannot silently replace
+  the saved basis. Notes/settings must be saved explicitly and are currently separate
+  from exported research and financial packs.
 
 - **19,140 company listings** fill all 94 branches across 19 listing countries.
   The newest saved instrument download (2026-08-10) contributes 17,593; another
@@ -21,7 +40,7 @@ when the app reopens.
   Separate share classes and depositary receipts retain their own Börsdata IDs.
 - Search by company name, ticker, ISIN or instrument ID. Global search shows at most
   20 listings; branch and country lists show 50 per page. Filter by listing country,
-  all/latest/older downloads, or search within a branch. Each listing opens an
+  all/latest/older downloads, or search within a branch. Each listing opens a
   financial history and an identity panel; badges distinguish report coverage from
   the five saved research profiles.
 - The saved Börsdata hierarchy includes **10 sectors and 94 branches**. Search in

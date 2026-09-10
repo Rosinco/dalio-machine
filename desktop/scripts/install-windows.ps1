@@ -43,12 +43,12 @@ $shortcut.IconLocation = "$destination,0"
 $shortcut.Save()
 [pscustomobject]@{ Executable = $destination; Shortcut = $shortcutPath; SHA256 = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash } | ConvertTo-Json
 if ($Start) {
-  # Older Atlas versions are read-only viewers. Close only their own windows.
+  # Close only older Atlas windows owned by this installation.
   foreach ($old in @(Get-Process -Name 'Macro Atlas' -ErrorAction SilentlyContinue | Where-Object { $_.Path -match $ownedPath -and $_.Path -ne $destination })) {
     $null = $old.CloseMainWindow()
     if (-not $old.WaitForExit(5000)) {
       # A closed WebView2 window can leave its viewer process alive briefly.
-      # There is no editable document in Atlas; preferences are already persisted.
+      # Explicitly saved comparisons and preferences are already persisted.
       $old.Kill()
       if (-not $old.WaitForExit(5000)) { throw 'The previous Atlas process could not stop.' }
     }

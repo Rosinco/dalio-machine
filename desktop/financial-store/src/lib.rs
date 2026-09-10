@@ -517,6 +517,24 @@ impl Pack {
         }
         Ok(v)
     }
+    pub fn annual(&self, ids: &[String]) -> Result<Value> {
+        let unique: std::collections::BTreeSet<_> = ids.iter().collect();
+        check(
+            !ids.is_empty() && ids.len() <= 32 && unique.len() == ids.len(),
+            "Request between 1 and 32 distinct listings.",
+        )?;
+        let mut rows = Vec::new();
+        let mut bytes = 0;
+        for id in ids {
+            // Verify the original complete payload before projecting annual rows.
+            let mut company = self.company(id)?;
+            let annual = company["annual"].take();
+            bytes += annual.to_string().len();
+            check(bytes <= 8_000_000, "Annual batch exceeds 8 MB.")?;
+            rows.push(json!({"id": id, "annual": annual}));
+        }
+        Ok(json!({"pack": self.id, "companies": rows}))
+    }
     pub fn check_all(&self) -> Result<()> {
         for id in self.index["companies"].as_object().unwrap().keys() {
             self.company(id).map_err(|e| format!("Listing {id}: {e}"))?;
@@ -604,6 +622,9 @@ impl Store {
     }
     pub fn company(&mut self, pack: &str, id: &str) -> Result<Value> {
         self.load(pack)?.company(id)
+    }
+    pub fn annual(&mut self, pack: &str, ids: &[String]) -> Result<Value> {
+        self.load(pack)?.annual(ids)
     }
     pub fn begin(&mut self, bytes: u64) -> Result<String> {
         check(
