@@ -92,7 +92,7 @@ fn tampered_payload_cannot_change_the_archive() {
 #[test]
 fn schema_validation_rejects_unsupported_and_invalid_scored_data() {
     let mut bad: Value = serde_json::from_str(&fixture()).unwrap();
-    bad["schema_version"] = json!(2);
+    bad["schema_version"] = json!(3);
     assert!(inspect(&bad.to_string()).is_err());
     bad["schema_version"] = json!(1);
     let mut raw: Value =
@@ -102,6 +102,81 @@ fn schema_validation_rejects_unsupported_and_invalid_scored_data() {
     bad["fundamentals"]["sha256"] = json!(format!("{:x}", Sha256::digest(content.as_bytes())));
     bad["fundamentals"]["content"] = json!(content);
     assert!(inspect(&bad.to_string()).is_err());
+}
+
+fn business_package(raw: &Value) -> Value {
+    let mut package: Value = serde_json::from_str(&fixture()).unwrap();
+    let content = raw.to_string();
+    package["schema_version"] = json!(2);
+    package["business"] = json!({"source_file":"business.json", "sha256":atlas_research_store::digest(content.as_bytes()), "content":content});
+    package
+}
+
+#[test]
+fn business_survives_restart_and_projects_without_loading_history_into_index() {
+    let raw: Value =
+        serde_json::from_str(include_str!("../../tests/fixtures/business.json")).unwrap();
+    let package = business_package(&raw);
+    let dir = Temp::new();
+    let store = Archive::new(dir.0.clone());
+    let legacy = store.import(&fixture()).unwrap();
+    assert!(store
+        .resource(&legacy.id, "business-index")
+        .unwrap()
+        .is_null());
+    let release = store.import(&package.to_string()).unwrap();
+    assert_eq!(release.company_count, 1);
+    let expected = format!(
+        "macro-atlas-research-v2\n{}\n\n{}",
+        package["fundamentals"]["sha256"].as_str().unwrap(),
+        package["business"]["sha256"].as_str().unwrap()
+    );
+    assert_eq!(
+        release.id,
+        atlas_research_store::digest(expected.as_bytes())
+    );
+    let reopened = Archive::new(dir.0.clone());
+    let index = reopened.resource(&release.id, "business-index").unwrap();
+    assert_eq!(index["common_year"], 2020);
+    assert!(index["companies"]["102"].get("annual").is_none());
+    assert!(index.get("research").is_none());
+    assert_eq!(
+        reopened.resource(&release.id, "company:102").unwrap()["annual"][0]["values"]["revenues"],
+        100
+    );
+    assert!(reopened.resource(&release.id, "company:../").is_err());
+    assert_eq!(
+        reopened.resource(&release.id, "business-research").unwrap(),
+        raw["research"]
+    );
+}
+
+#[test]
+fn malformed_business_and_v1_business_collisions_are_rejected() {
+    let mut raw: Value =
+        serde_json::from_str(include_str!("../../tests/fixtures/business.json")).unwrap();
+    let mut old = business_package(&raw);
+    old["schema_version"] = json!(1);
+    assert!(inspect(&old.to_string()).is_err());
+    let mut damaged = business_package(&raw);
+    damaged["business"]["content"] = json!("{}");
+    assert!(inspect(&damaged.to_string()).is_err());
+    let first = raw["companies"]["102"]["annual"][0].clone();
+    raw["companies"]["102"]["annual"]
+        .as_array_mut()
+        .unwrap()
+        .push(first);
+    assert!(inspect(&business_package(&raw).to_string()).is_err());
+}
+
+#[test]
+fn archived_research_accepts_full_length_prose_with_a_separate_size_limit() {
+    let mut raw: Value =
+        serde_json::from_str(include_str!("../../tests/fixtures/business.json")).unwrap();
+    raw["research"][0]["text"] = json!("Å".repeat(25000));
+    assert!(inspect(&business_package(&raw).to_string()).is_ok());
+    raw["research"][0]["text"] = json!("x".repeat(1000001));
+    assert!(inspect(&business_package(&raw).to_string()).is_err());
 }
 
 #[test]

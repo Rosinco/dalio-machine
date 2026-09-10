@@ -1,16 +1,52 @@
 # Macro Atlas desktop
 
-An offline Windows viewer for the existing Dalio fundamentals snapshot. The app
+An offline Windows viewer for saved Dalio macro and Börsdata company research. The app
 bundles its map, scripts, charts and source data. Starting the packaged executable
 requires no terminal, Python environment, WSL, account or network connection.
 Windows WebView2 must be installed; it is present on Adam's PC. The Tauri installer
 configuration can also bundle its offline installer when distributing to another PC.
 
-## Version 0.2.0
+## Version 0.3.0
+
+Use the **Observatory** selector beside ATLAS to switch between **Macro**,
+**Sectors & branches**, and **Companies**. Each has its own Explore views.
+Start with **Sectors & branches → Sweden → Forestry → Holmen**. Country and
+company selections carry across observatories and persist when the app reopens.
+
+- Five companies: Holmen, SCA, Billerud, Stora Enso and UPM, one canonical listing
+  each. The included Börsdata snapshot is **2026-08-10**: 100 annual reports
+  (2006–2025) and 200 quarterly reports (40 per company). Holmen's latest saved
+  quarter is Q1 2026; the other four have Q2 2026. No missing reports are invented.
+- Interactive annual/quarterly charts, source-period figures, cash flow and debt,
+  and descriptive profitability ratios. Amounts are in millions of the report's
+  currency: stored amount divided by `currency_ratio`. Missing conversion leaves
+  values unavailable. Currency changes leave gaps in amount charts.
+- A five-company peer panel uses the latest exactly matching full-year dates
+  (**FY 2025** in this package). Ratios are compared without FX conversion;
+  absolute SEK and EUR amounts are never added or ranked together. Blue/purple
+  identify the selected company and peers, with no good/bad rating.
+- May 2026 branch research, the archived Holmen deep dive and source register are
+  readable offline. Dates and original financial anchors remain visible. Financial
+  refreshes do not refresh old prices, segment descriptions or investment verdicts.
+- Dated Dalio observations sit beside qualitative research questions. Finland has
+  no macro country profile in the included release; Sweden is never substituted.
+  No new branch forecast or company headwind/tailwind assessment is calculated.
+- The map shows **selected listing-country coverage**, with explicit limits. The
+  next physical-asset stage will extend the deep-dive funnel with balance-sheet
+  analysis and a sourced inventory of owned/leased/joint-venture resources,
+  locations and reporting dates (ADR 0022). There are no plant markers yet.
+
+Return on capital is the existing annual pre-tax proxy, EBIT divided by year-end
+equity plus net debt, not adjusted ROIC or company-reported ROCE. Forest revaluations
+and transactions can distort reported profits. Börsdata FCF retains the provider
+definition, excluding lease principal and interest; it is not owner earnings.
+
+The existing macro capabilities remain available:
 
 - **Research library:** import `.atlas.json` files, select earlier releases and
   export a portable copy to Downloads. Refreshing data no longer requires a rebuild.
-  Included vintages: 2026-09-08 (fundamentals + liquidity) and 2026-08-24
+  Included vintages: 2026-09-08 (fundamentals + liquidity, with company data dated
+  separately at 2026-08-10) and 2026-08-24
   (fundamentals only). Each panel follows the active release.
 - **Score explanations:** select a category below the radar to see raw observations,
   percentile direction, equal effective weights, contributions and source dates.
@@ -50,39 +86,53 @@ scores. None of these presentation changes recalculate the saved fundamentals.
 The app reads the selected saved vintage. Historical charts are **not** point-in-time
 replays. Source metadata in this snapshot is insufficient for a per-point release
 ledger, so the UI does not invent it. The five-year GDP-growth headline and annual
-growth history are explicitly distinguished. Company/sector layers and geographic
-asset inventories are later slices; no company sites or forecasts are fabricated.
+growth history are explicitly distinguished. Geographic asset inventories and new
+sector forecasts are later slices; no company sites or forecasts are fabricated.
 
 ## Data flow and scale
 
 The canonical Python pipelines remain authoritative. `export_research.py` wraps the
-exact UTF-8 fundamentals and optional liquidity JSON with their SHA-256 hashes. Its
+exact UTF-8 fundamentals, optional liquidity and optional business JSON with their SHA-256 hashes. Its
 bundle mode also uses `export_snapshot.py`, which validates
 with Dalio's existing parser and creates a compact index, individual country files,
 and a history-map file. Startup loads summaries; selecting a country loads only its
 history; the full small annual panel loads only in History mode. The source SQLite
 database is never opened or modified by the exporter or viewer. Original data and
-all statistical calculations remain unchanged.
+all Dalio statistical calculations remain unchanged.
+
+`export_business.py` reads selected instruments and projected report columns via
+Börsdata's existing `core.data.read_validated` API and shared schemas. Parquet
+predicate pushdown selects just five instrument IDs; the screener is never read.
+The exporter rejects output paths inside the Börsdata project. Source Parquet and
+research files are hashed for provenance, without rewriting them. The business
+document projects into a small catalogue, per-company resources and branch prose.
+Only the selected company's full history is sent to the view. The cohort and
+dated, qualitative segment/driver notes are explicit in the exporter, not a new
+statistical classifier or competitor database.
 
 Native imported packages live in
 `%LOCALAPPDATA%\local.research.macro-atlas\research-v1\<package-id>.atlas.json`,
-outside the executable's version directory. The package ID hashes the two source
-hashes, so duplicate imports are idempotent. The Rust `research-store` crate checks
+outside the executable's version directory. Version 1 packages keep their original
+two-document identity. Version 2 adds the business-document hash; its identity is
+SHA-256 of `macro-atlas-research-v2\n<fundamentals-hash>\n<liquidity-hash-or-empty>\n<business-hash-or-empty>`.
+Duplicate imports are idempotent. A v1 envelope containing a business document is
+rejected, preventing that document from being omitted from identity checks.
+The Rust `research-store` crate checks
 format, bounds, required renderable fields and checksums before publishing a complete
 file with a non-overwriting hard link. It only exposes fixed resource names and
-country codes. A damaged archive entry is reported without hiding usable entries.
+country codes and numeric company identifiers. A damaged archive entry is reported without hiding usable entries.
 Checksums establish file integrity, not publisher authenticity. Browser previews
 use IndexedDB; those imports are separate from the installed Windows library.
 
 The local import limit is 32 MiB per package. Native imported resources are projected
 from that bounded package on demand; this release is not a large analytical database.
-Included assets retain country-level lazy loading. The source ledger's referenced
+Included assets retain country/company-level lazy loading. The source ledger's referenced
 provider artifact files are not copied into the package. Their contents are not
 independently verified by the offline viewer.
 
-Large Börsdata Parquet tables are not included or loaded by this release. A future
-bounded query layer can supply company/peer slices using DuckDB or the existing
-Python adapters. Do not load the 101-million-row screener file into the webview.
+Large Börsdata Parquet tables are not included in the application. A future bounded
+query layer can support wider company universes using DuckDB or existing Python
+adapters. Do not load the 101-million-row screener file into the webview.
 
 ## Build and refresh
 
@@ -90,11 +140,17 @@ From this `desktop/` folder:
 
 ```sh
 npm ci
+source /mnt/c/Users/Adamb/borsdata_project/GitClone/Modern-Borsdata-Client/.venv-wsl/bin/activate
+PYTHONDONTWRITEBYTECODE=1 python scripts/export_business.py \
+  --borsdata-root /mnt/c/Users/Adamb/borsdata_project/GitClone/Modern-Borsdata-Client \
+  --snapshot 2026-08-10 \
+  --output /tmp/atlas-business-2026-08-10.json
 source /home/rosinco/workspace/dalio-machine/.venv/bin/activate
 python scripts/export_research.py \
   --fundamentals /home/rosinco/workspace/dalio-machine/data/snapshots/fundamentals_latest.json \
   --liquidity /home/rosinco/workspace/dalio-machine/data/snapshots/liquidity_latest.json \
   --previous /home/rosinco/workspace/dalio-machine/data/snapshots/fundamentals_2026-08-24.json \
+  --business /tmp/atlas-business-2026-08-10.json \
   --bundle public/data
 python scripts/verify_pack.py \
   --source /home/rosinco/workspace/dalio-machine/data/snapshots/fundamentals_latest.json
@@ -111,10 +167,12 @@ through **Library → Import research file**:
 python scripts/export_research.py \
   --fundamentals /home/rosinco/workspace/dalio-machine/data/snapshots/fundamentals_latest.json \
   --liquidity /home/rosinco/workspace/dalio-machine/data/snapshots/liquidity_latest.json \
+  --business /tmp/atlas-business-2026-08-10.json \
   --output /tmp/Macro-Atlas-Research.atlas.json
 ```
 
-Omit `--liquidity` for a fundamentals-only package. Each document retains its own
+Omit `--business` for the legacy v1 format, and omit `--liquidity` as well for
+a fundamentals-only package. Each document retains its own
 date; packaging does not make old observations newer. The exporter reads saved
 files and never refreshes data from the network. Updated map geometry, new data
 schemas or application features still require a new app build.
@@ -147,10 +205,15 @@ closes older Atlas viewer windows and opens the installed version.
 equal observations and unscored quantities), zero/missing scores, historical gaps, forecast boundaries,
 single-vintage trade, overlapping aggregates and trade denominators.
 It also checks score arithmetic and comparison eligibility, import checksums and
-validation, liquidity geography and gaps. The standalone Rust archive has filesystem
+validation, liquidity geography and gaps, business-document identity and company
+chart gaps. `python -m pytest tests/test_export_business.py` (from `desktop/`, with
+the Dalio venv activated) checks FX division, zero/missing values, denominator and
+quarterly-return rules, period validation and common-year catalogue projection.
+The standalone Rust archive has filesystem
 tests runnable with `cargo test --manifest-path research-store/Cargo.toml`.
 `cargo run --manifest-path research-store/Cargo.toml --example verify -- FILE...`
-validates real exported packages and checks exact country/liquidity round trips.
+validates real exported packages and checks exact country/liquidity/company round
+trips and parity with the Python-generated company catalogue.
 `scripts/verify_pack.py` checks every exported country against the original snapshot
 and verifies map coverage. `npm run test:browser` runs Playwright against
 `npm run preview -- --port 1420`, blocks all external app resources, exercises the
@@ -160,8 +223,10 @@ main flows and writes screenshots and timings to `test-results/`.
 native WebView2 map, charts, comparison and modes, audits startup requests, and
 captures a screenshot. It also exports one history CSV to Downloads and verifies
 its contents, imports a real older package, rejects damaged input, checks duplicate
-imports, restarts the executable to verify persistence, and exports a portable
-research file. It uses an isolated WebView profile and temporary native archive
+imports, exercises all three observatories and the five-company slice, imports a
+v2 business package, restarts the executable to verify selected-company persistence,
+and exports a portable research file containing all three source documents.
+It uses an isolated WebView profile and temporary native archive
 (`ATLAS_RESEARCH_DIR`, a development/test override) and closes its own processes.
 Pass `-Executable` to check an installed copy. The test never disables the PC's
 network connection or closes other applications.

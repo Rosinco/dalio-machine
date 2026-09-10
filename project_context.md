@@ -17,8 +17,21 @@ Version 0.2 adds an immutable release library, category calculation and change
 drilldowns, and the saved liquidity diagnostics (national/currency-area broad money,
 offshore credit, US MMF/repo, coverage and source ledger). It covers the existing
 country panel, categories, annual histories/forecasts and goods trade; history uses
-the selected vintage, not point-in-time replay. Sector/company/asset
-layers and DuckDB queries remain future slices. Build, refresh and test instructions:
+the selected vintage, not point-in-time replay. Version 0.3 (ADR 0022) adds Macro,
+Sectors & branches, and Company observatories, with contextual Explore navigation
+and Sweden → Materials → Forestry → Holmen. A selective, read-only export of the
+saved Börsdata 2026-08-10 snapshot supplies five canonical Nordic listings, 100
+annual and 200 quarterly reports; native reporting currencies, dates and missingness
+remain explicit. Matching full-year ratios support a descriptive peer comparison.
+Archived May 2026 prose and Dalio macro context retain separate dates; no new
+investment verdict or sector forecast is calculated. V2 portable packages include
+the business-document hash and expose catalogue/company resources lazily; v1
+packages and identities remain supported. Map colours show listing coverage.
+The user's later-stage request is recorded in ADR 0022: extend the deep-dive funnel
+with balance-sheet analysis and a sourced physical-resource inventory (locations,
+what each asset is, ownership/lease/JV status and reporting dates) for map markers
+and boundaries. Physical assets, new forecasts and DuckDB queries remain future
+slices. Build, refresh and test instructions:
 `desktop/README.md`. Generated data and binaries are gitignored.
 
 - **Runtime:** Python 3.12

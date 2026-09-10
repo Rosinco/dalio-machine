@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { decodePackage, digest, previousRelease } from './research';
 import type { ResearchRelease } from './types';
+import businessFixture from '../tests/fixtures/business.json';
+import { businessIndex, financialSeries } from './business';
 
 const categories = ['real_stuff', 'production', 'exchange', 'promises', 'enforcer'];
 function fixture() {
@@ -31,7 +33,7 @@ describe('portable research files', () => {
   it('rejects damaged content and unsupported schema before import', async () => {
     const payload = await envelope(); payload.fundamentals.content = '{}';
     await expect(decodePackage(JSON.stringify(payload))).rejects.toThrow(/checksum/);
-    await expect(decodePackage(JSON.stringify({ ...await envelope(), schema_version: 2 }))).rejects.toThrow(/version/);
+    await expect(decodePackage(JSON.stringify({ ...await envelope(), schema_version: 3 }))).rejects.toThrow(/version/);
   });
   it('rejects invalid scores, dates and duplicate history years despite valid checksums', async () => {
     const invalidScore = fixture(); invalidScore.countries.SE.categories.promises.score = 150;
@@ -52,5 +54,43 @@ describe('portable research files', () => {
     const current = release('current', '2021-01-04T12:00:00+00:00', 'current-fund');
     expect(previousRelease([current, same, old], current)?.id).toBe('old');
     expect(previousRelease([current, same], current)).toBeUndefined();
+  });
+});
+
+describe('business research packages', () => {
+  async function companyPackage(raw = structuredClone(businessFixture)) {
+    const content = JSON.stringify(raw);
+    return { ...await envelope(), schema_version: 2, business: { source_file: 'business.json', sha256: await digest(content), content } };
+  }
+  it('hashes all documents, keeps v1 identity and projects a small company catalogue', async () => {
+    const legacy = await envelope();
+    const v1 = await decodePackage(JSON.stringify(legacy));
+    expect(v1.release.id).toBe(await digest(`macro-atlas-research-v1\n${legacy.fundamentals.sha256}\n`));
+    expect(v1.business).toBeNull();
+    const payload = await companyPackage();
+    const decoded = await decodePackage(JSON.stringify(payload));
+    expect(decoded.release.id).toBe(await digest(`macro-atlas-research-v2\n${payload.fundamentals.sha256}\n\n${payload.business.sha256}`));
+    expect(decoded.release.company_count).toBe(1);
+    const index = businessIndex(decoded.business!);
+    expect(index.common_year).toBe(2020);
+    expect(index.companies['102'].latest_annual?.values.cash_flow_from_operating_activities).toBe(0);
+    expect(index.companies['102']).not.toHaveProperty('annual');
+    expect(index).not.toHaveProperty('research');
+  });
+  it('rejects business checksum damage, duplicate periods and a v1 document collision', async () => {
+    const damaged = await companyPackage(); damaged.business.content = '{}';
+    await expect(decodePackage(JSON.stringify(damaged))).rejects.toThrow(/checksum/);
+    const raw = structuredClone(businessFixture); raw.companies['102'].annual.push(raw.companies['102'].annual[0]);
+    await expect(decodePackage(JSON.stringify(await companyPackage(raw)))).rejects.toThrow(/Duplicate/);
+    await expect(decodePackage(JSON.stringify({ ...await companyPackage(), schema_version: 1 }))).rejects.toThrow(/version/i);
+  });
+  it('rejects missing financial fields and keeps gaps and changed currency out of amount charts', async () => {
+    const decoded = await decodePackage(JSON.stringify(await companyPackage()));
+    const first = decoded.business!.companies['102'].annual[0];
+    const third = { ...first, year: 2022, currency: 'EUR' };
+    expect(financialSeries([first, third], 'revenues', 'SEK').values).toEqual([100, null, null]);
+    expect(financialSeries([first, third], 'operating_margin', 'SEK').values).toEqual([10, null, 10]);
+    const raw = structuredClone(businessFixture); delete (raw.companies['102'].annual[0].values as Record<string, unknown>).revenues;
+    await expect(decodePackage(JSON.stringify(await companyPackage(raw)))).rejects.toThrow(/business/);
   });
 });

@@ -14,12 +14,13 @@ export type Cell = {
 export type ResearchRelease = {
   id: string; as_of: string; generated_at: string; fundamentals_sha256: string;
   liquidity_as_of: string | null; liquidity_sha256: string | null;
+  business_as_of?: string | null; business_sha256?: string | null; company_count?: number;
   country_count: number; indicator_count: number;
   storage: 'included' | 'imported'; base?: string; package_url?: string;
 };
 export type ResearchCatalogue = { version: number; default_id: string; releases: ResearchRelease[] };
 export type ResearchDocument = { source_file: string; sha256: string; content: string };
-export type ResearchPackage = { format: string; schema_version: number; fundamentals: ResearchDocument; liquidity: ResearchDocument | null };
+export type ResearchPackage = { format: string; schema_version: number; fundamentals: ResearchDocument; liquidity: ResearchDocument | null; business?: ResearchDocument | null };
 export type HistoryPanel = Record<string, Record<string, Point[]>>;
 export type Point = { year: number; value: number | null; is_forecast: boolean };
 export type Pressure = {

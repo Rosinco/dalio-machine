@@ -1,4 +1,5 @@
 //! Validated, immutable local research files. No network or source-database access.
+mod business;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 use sha2::{Digest, Sha256};
@@ -31,6 +32,7 @@ struct Package {
     schema_version: u32,
     fundamentals: Document,
     liquidity: Option<Document>,
+    business: Option<Document>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Release {
@@ -40,6 +42,10 @@ pub struct Release {
     pub fundamentals_sha256: String,
     pub liquidity_as_of: Option<String>,
     pub liquidity_sha256: Option<String>,
+    pub business_as_of: Option<String>,
+    pub business_sha256: Option<String>,
+    #[serde(default)]
+    pub company_count: usize,
     pub country_count: usize,
     pub indicator_count: usize,
 }
@@ -52,6 +58,7 @@ struct Validated {
     package: Package,
     fundamentals: Value,
     liquidity: Option<Value>,
+    business: Option<Value>,
     release: Release,
 }
 
@@ -560,7 +567,9 @@ fn validate(text: &str) -> Result<Validated> {
     let package: Package = serde_json::from_str(text)
         .map_err(|_| "Choose a Macro Atlas research file (.atlas.json).".to_string())?;
     check(
-        package.format == "macro-atlas-research" && package.schema_version == 1,
+        package.format == "macro-atlas-research"
+            && (1..=2).contains(&package.schema_version)
+            && (package.schema_version != 1 || package.business.is_none()),
         "This research package requires a different Atlas version.",
     )?;
     let fundamentals = document(&package.fundamentals)?;
@@ -570,15 +579,22 @@ fn validate(text: &str) -> Result<Validated> {
         validate_liquidity(raw)?;
     }
     let liquidity_hash = package.liquidity.as_ref().map(|d| d.sha256.clone());
+    let business = package.business.as_ref().map(document).transpose()?;
+    if let Some(raw) = &business {
+        business::validate(raw)?;
+    }
+    let business_hash = package.business.as_ref().map(|d| d.sha256.clone());
+    let mut identity = format!(
+        "macro-atlas-research-v{}\n{}\n{}",
+        package.schema_version,
+        package.fundamentals.sha256,
+        liquidity_hash.as_deref().unwrap_or("")
+    );
+    if package.schema_version == 2 {
+        identity.push_str(&format!("\n{}", business_hash.as_deref().unwrap_or("")));
+    }
     let release = Release {
-        id: digest(
-            format!(
-                "macro-atlas-research-v1\n{}\n{}",
-                package.fundamentals.sha256,
-                liquidity_hash.as_deref().unwrap_or("")
-            )
-            .as_bytes(),
-        ),
+        id: digest(identity.as_bytes()),
         as_of: fundamentals["as_of"].as_str().unwrap().into(),
         generated_at: fundamentals["generated_at"].as_str().unwrap().into(),
         fundamentals_sha256: package.fundamentals.sha256.clone(),
@@ -586,6 +602,13 @@ fn validate(text: &str) -> Result<Validated> {
             .as_ref()
             .map(|v| v["as_of"].as_str().unwrap().into()),
         liquidity_sha256: liquidity_hash,
+        business_as_of: business
+            .as_ref()
+            .map(|v| v["as_of"].as_str().unwrap().into()),
+        business_sha256: business_hash,
+        company_count: business
+            .as_ref()
+            .map_or(0, |v| v["companies"].as_object().unwrap().len()),
         country_count: fundamentals["countries"].as_object().unwrap().len(),
         indicator_count: fundamentals["indicators"].as_array().unwrap().len(),
     };
@@ -593,6 +616,7 @@ fn validate(text: &str) -> Result<Validated> {
         package,
         fundamentals,
         liquidity,
+        business,
         release,
     })
 }
@@ -712,6 +736,25 @@ impl Archive {
                     .collect(),
             )),
             "liquidity" => Ok(validated.liquidity.unwrap_or(Value::Null)),
+            "business-index" => Ok(validated
+                .business
+                .as_ref()
+                .map(business::index)
+                .unwrap_or(Value::Null)),
+            "business-research" => Ok(validated
+                .business
+                .as_ref()
+                .map(|b| b["research"].clone())
+                .unwrap_or(Value::Null)),
+            _ if resource.starts_with("company:") => {
+                let company = &resource[8..];
+                check(business::company_id(company), "Invalid company identifier.")?;
+                Ok(validated
+                    .business
+                    .as_ref()
+                    .map(|b| b["companies"][company].clone())
+                    .unwrap_or(Value::Null))
+            }
             _ if resource.starts_with("country:") => {
                 let code = &resource[8..];
                 check(is_code(code), "Invalid country identifier.")?;

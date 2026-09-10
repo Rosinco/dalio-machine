@@ -24,7 +24,7 @@ $ownedPath = '^' + [regex]::Escape($appFolder) + '\\\d+\.\d+\.\d+\\Macro Atlas\.
 if ((Test-Path -LiteralPath $shortcutPath) -and $shortcut.TargetPath -and ($shortcut.TargetPath -notmatch $ownedPath)) { throw 'An unrelated Macro Atlas shortcut already exists.' }
 $shortcut.TargetPath = $destination
 $shortcut.WorkingDirectory = $folder
-$shortcut.Description = 'Offline world map, macroeconomic charts and saved Dalio research'
+$shortcut.Description = 'Offline macro, sector and company observatories with saved research'
 $shortcut.IconLocation = "$destination,0"
 $shortcut.Save()
 [pscustomobject]@{ Executable = $destination; Shortcut = $shortcutPath; SHA256 = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash } | ConvertTo-Json

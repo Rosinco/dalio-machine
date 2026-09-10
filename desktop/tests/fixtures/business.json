@@ -1,0 +1,132 @@
+{
+  "version": 1,
+  "as_of": "2021-01-01",
+  "exported_at": "2021-01-01T12:00:00Z",
+  "default_company": "102",
+  "countries": {
+    "SE": "Sweden"
+  },
+  "branch": {
+    "id": "21",
+    "name": "Test forestry",
+    "source_name": "Synthetic",
+    "sector_id": "7",
+    "sector_name": "Materials",
+    "source_id": "test",
+    "as_of": "2020-01-01",
+    "description": "Test branch",
+    "drivers": [
+      {
+        "title": "Demand",
+        "text": "Synthetic context",
+        "indicator": "gdp_growth_fwd5"
+      }
+    ]
+  },
+  "companies": {
+    "102": {
+      "id": "102",
+      "name": "Test Holmen",
+      "listing_name": "Test Holmen B",
+      "ticker": "HOLM B",
+      "isin": "TEST",
+      "listing_country": "SE",
+      "report_currency": "SEK",
+      "stock_currency": "SEK",
+      "sector_id": "7",
+      "branch_id": "21",
+      "segments": [
+        "Wood"
+      ],
+      "overlap": "Synthetic overlap",
+      "context_as_of": "2020-01-01",
+      "context_source_id": "test",
+      "instrument_source_id": "test",
+      "annual_source_id": "test",
+      "quarterly_source_id": "test",
+      "annual": [
+        {
+          "year": 2020,
+          "period": 5,
+          "start": "2020-01-01",
+          "end": "2020-12-31",
+          "report_date": null,
+          "currency": "SEK",
+          "currency_ratio": 1,
+          "raw": {
+            "revenues": 100,
+            "operating_income": 10,
+            "profit_to_equity_holders": null,
+            "cash_flow_from_operating_activities": 0,
+            "free_cash_flow": null,
+            "total_equity": 40,
+            "net_debt": 10,
+            "total_assets": 80,
+            "cash_and_equivalents": null,
+            "current_assets": null,
+            "current_liabilities": null,
+            "non_current_assets": null,
+            "non_current_liabilities": null,
+            "intangible_assets": null,
+            "tangible_assets": null,
+            "financial_assets": null
+          },
+          "values": {
+            "revenues": 100,
+            "operating_income": 10,
+            "profit_to_equity_holders": null,
+            "cash_flow_from_operating_activities": 0,
+            "free_cash_flow": null,
+            "total_equity": 40,
+            "net_debt": 10,
+            "total_assets": 80,
+            "cash_and_equivalents": null,
+            "current_assets": null,
+            "current_liabilities": null,
+            "non_current_assets": null,
+            "non_current_liabilities": null,
+            "intangible_assets": null,
+            "tangible_assets": null,
+            "financial_assets": null,
+            "operating_margin": 10,
+            "operating_cash_margin": 0,
+            "equity_ratio": 50,
+            "net_debt_to_equity": 25,
+            "return_on_capital": 20
+          }
+        }
+      ],
+      "quarterly": [],
+      "research": [
+        {
+          "title": "Synthetic archived study",
+          "as_of": "2020-01-01",
+          "basis": "Synthetic old research, not a current recommendation.",
+          "source_id": "test",
+          "text": "Plain text <script>test</script>"
+        }
+      ]
+    }
+  },
+  "research": [
+    {
+      "title": "Synthetic archived study",
+      "as_of": "2020-01-01",
+      "basis": "Synthetic old research, not a current recommendation.",
+      "source_id": "test",
+      "text": "Plain text <script>test</script>"
+    }
+  ],
+  "sources": [
+    {
+      "id": "test",
+      "label": "Synthetic evidence",
+      "path": "test.json",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "bytes": 100
+    }
+  ],
+  "limitations": [
+    "Synthetic financial fixture."
+  ]
+}
