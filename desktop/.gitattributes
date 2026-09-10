@@ -1,0 +1,2 @@
+# Keep third-party notice text as supplied by its upstream packages.
+public/THIRD-PARTY-NOTICES.txt -whitespace

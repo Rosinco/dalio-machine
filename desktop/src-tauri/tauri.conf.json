@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Macro Atlas",
+  "version": "0.1.0",
+  "identifier": "local.research.macro-atlas",
+  "build": { "frontendDist": "../dist", "devUrl": "http://localhost:1420", "beforeDevCommand": "npm run dev", "beforeBuildCommand": "npm run build" },
+  "app": {
+    "windows": [{ "title": "Macro Atlas", "width": 1500, "height": 960, "minWidth": 1000, "minHeight": 700, "center": true, "backgroundColor": "#f5f6f0", "theme": "Light" }],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; connect-src 'self' ipc: http://ipc.localhost; object-src 'none'; frame-src 'none'; base-uri 'self'"
+    }
+  },
+  "bundle": { "active": true, "targets": ["nsis"], "icon": ["icons/icon.ico", "icons/icon.png"], "windows": { "webviewInstallMode": { "type": "offlineInstaller" } } }
+}

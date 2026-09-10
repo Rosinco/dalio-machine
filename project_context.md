@@ -10,6 +10,14 @@ The framework is treated as a descriptive lens, not a predictive oracle. The pro
 
 ## Tech Stack
 
+The `desktop/` presentation target (ADR 0021, 2026-09-10) adds **Macro Atlas**:
+an offline Windows Tauri/React/MapLibre viewer with ECharts and React Flow. It reads
+validated, bundled fundamentals JSON exports, never the source database. It covers
+the existing country panel, current categories, annual histories/forecasts and goods
+trade; history is latest-vintage, not point-in-time replay. Sector/company/asset
+layers and DuckDB queries remain future slices. Build, refresh and test instructions:
+`desktop/README.md`. Generated data and binaries are gitignored.
+
 - **Runtime:** Python 3.12
 - **Framework:** Streamlit (dashboard), SQLAlchemy 2.x (storage), pandas (compute)
 - **Test Framework:** pytest with mocked HTTP (pytest-mock + responses)

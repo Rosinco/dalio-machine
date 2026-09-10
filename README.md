@@ -1,5 +1,9 @@
 # dalio-machine — Macro History & Risk Observatory
 
+**Offline desktop viewer:** [Macro Atlas](desktop/README.md) adds a Windows world
+map with country profiles, scorecards, historical charts and trade views, using the
+existing saved fundamentals release. Its source and build instructions are in `desktop/`.
+
 One auditable, point-in-time account of the world economy, growing from a macro-cycle dashboard built on Ray Dalio's economic-machine framework. It tracks cycles and fundamentals today and is expanding into institutional reports, sovereign debt, large-allocator positions, capital flows, commodity pressure and monetary liquidity for a SEK-based household investor. It is a decision-support tool, **not** a market-timing signal generator.
 
 ## What it does
