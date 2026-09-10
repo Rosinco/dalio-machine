@@ -1,4 +1,4 @@
-# Macro Atlas / dalio-machine handoff — 2026-09-10
+# Macro Atlas / dalio-machine handoff — 2026-09-11
 
 ## Identity and working locations
 
@@ -89,6 +89,51 @@ from canonical `main` preserved database, 775 protected source files and all
 21 output files byte-for-byte, including modification times. Validation logs,
 receipts and reproducible audit scripts are saved alongside the snapshots.
 
+## Sweden monitoring pilot
+
+The Sweden monitoring pilot in ADR 0031 now extends the country-assessment
+layer. Implementation `3579eef` is integrated on `main`. The retained-data audit
+checked all 158 Swedish scalar releases and
+126 bound scalar artifacts; it distinguished unused existing data from the
+specific gaps in industrial production, orders and corporate lending rates.
+Legacy caches matched the stored histories but did not establish historical
+raw-delivery provenance.
+
+Five original SCB/Riksbank series are now captured with new, honest clocks:
+adjusted industrial production and order indices, the SEK business lending rate
+on new and renegotiated agreements, the effective policy rate and the ten-year
+government benchmark yield. New scalar evidence stays in immutable supplements
+and output JSON; this slice does not mutate the source database or scoring.
+Existing original Riksgälden context is restored and shown separately.
+
+Successful capture: `3cee14e94e7c3074f392247557b358b0edc9910e246b892dd15ab43dd39e6601`.
+Its conservative availability is **2026-09-10T22:10:11.307779+00:00**. The report
+uses **2026-09-10 as its UTC assessment date**; collection occurred after
+midnight on the local Stockholm calendar. An earlier sandbox DNS-failed batch
+is retained as a failed attempt and supplies no monitoring facts.
+
+The first report has five comparable signals. Production and orders compare
+May–July with February–April; the business lending rate compares July with
+April; daily rates use their actual 90-day anchor dates. Original source
+definitions, missingness, freshness and dataset-update clocks are preserved.
+Historical same-vintage changes are not forecast errors or revisions since an
+earlier capture. Scenarios remain hypotheses, with explicit limits and evidence
+that would challenge their assumptions.
+
+Canonical monitoring snapshot:
+`a9b80f90572615358ce85c9244ec1b25691be2a3bb2fae3f74aaebf2f9ed7629`.
+Open its `SE.md` under `data/snapshots/sweden_monitoring/`.
+
+Validation: **1,449 integrated tests passed**, followed by **85 focused tests**
+on the final monitoring code and presentation; Ruff and diff checks are clean.
+The canonical source audit checked all **11,862 native scalar slots** (11,788
+numeric and 74 missing), all five comparisons, 19 parent histories/875 annual
+observations, seven native debt facts and **64 citations**. It also verified
+all 52 displayed table values and exact report replay. SQLite integrity and
+foreign-key checks pass. The database still matches its pre-collection hash,
+size and modification time. Exact export replay preserves all 100 protected
+source files and both immutable output files, including modification times.
+
 ## Durable local evidence
 
 Database, downloaded source files and generated reports are intentionally
@@ -113,6 +158,13 @@ them together:
   `countries/<code>.md` reports
 - `data/snapshots/country_assessments/validation/`: source-cell audit,
   deterministic read-only rerun receipt, audit scripts and integrated test log
+- `data/artifacts/sweden_monitoring/`: immutable five-signal attempt bundles
+  and exact original SCB/Riksbank response bytes
+- `data/snapshots/sweden_monitoring/LATEST.json`: pointer to the complete
+  offline `SE.md` and `snapshot.json` monitoring export
+- `data/snapshots/sweden_monitoring/validation/`: retained-data audit,
+  source-discovery records, capture receipts, source-cell reconciliation,
+  deterministic replay checks and test logs
 
 The older country v1 bundle is superseded by v2; do not promote it. Source
 bytes and publication/reference/acquisition dates are retained separately.
@@ -130,38 +182,21 @@ map markers are future work.
 
 ## Next development step
 
-Recommended next slice, still planned: **a Sweden scenario-monitoring report**.
-Connect a small, fixed set of existing scenario signposts to dated evidence on
-real activity/orders, credit and interest rates, and government funding.
+Extend the verified Sweden monitoring approach to the other listing countries
+in bounded batches. Audit existing series first, then select original sources
+with explicit native scopes, seasonal adjustment, units and publication clocks.
+Do not force non-comparable country loan-rate or industry definitions into one
+ranking. Retain named gaps when an original signal is unavailable.
 
-1. Audit the whole retained database and source artifacts before collecting
-   more. An indicator outside the current assessment input set may already be
-   stored elsewhere. Record exact series, definitions, frequency, history,
-   freshness and release/artifact coverage; distinguish an unused series from
-   a missing or unsuitable one.
-2. Connect eligible existing evidence, then acquire only the specific gaps
-   needed for the pilot, preferring SCB, Riksbank and Riksgälden originals.
-   Preserve publication, reference and availability clocks and source-native
-   definitions. Unavailable signposts remain explicit gaps.
-3. Produce one offline Sweden table and accompanying JSON: latest value and
-   reference period, comparable historical change, source and freshness,
-   linked scenario, observed developments and evidence that challenges its
-   assumptions. Define comparison rules before interpreting the results.
-   Compare releases at exact known-at cutoffs where the ledger supports it.
+A later compatible capture can support a separate change-since-last-capture
+comparison, distinguishing revised historical values from newly added periods.
+The current report only calculates historical changes within one captured
+vintage. Energy, lending standards, defaults, actual government funding
+execution and company/customer geography remain additional research inputs.
 
-The pilot is complete when every selected signpost has reproducible source
-lineage or a named gap, and the Sweden report clearly distinguishes observations
-from scenario interpretation. Monthly or quarterly growth is not a direct
-annual forecast error; government yields are not company borrowing costs, and
-refixing is not principal maturity. Do not convert the monitoring table into
-mechanical probabilities or causal verdicts.
-
-After validating the pilot, extend the same approach to the other 18 countries
-and deepen energy, sector and company evidence as needed. Company implications
-still require actual revenue, asset, cost and financing exposures. A later
-desktop export can present the profiles and monitoring in Macro Atlas's
-sidebar. This handoff update plans the next slice; it does not claim that the
-monitoring layer or a new desktop bundle has been built.
+Company implications still require actual revenue, asset, cost and financing
+exposures. A later desktop export can present the profiles and monitoring in
+Macro Atlas's sidebar; the bundled application data remains unchanged.
 
 The user explicitly prefers **first-hand sources whenever available**. This
 is recorded in `CLAUDE.md`; official WB/IMF harmonized baselines retain their
@@ -172,7 +207,7 @@ The ranking population and existing scoring methodology are unchanged.
 Twenty institutional report drafts remain unverified; communication content
 remains outside the acquired evidence. Numeric analysis can proceed without
 inventing report reviews or communications clearance. See ADRs 0004, 0017,
-0028–0030, and `project_context.md` for the current architecture.
+0028–0031, and `project_context.md` for the current architecture.
 
 ## Working commands
 
@@ -182,9 +217,18 @@ pytest -q
 ruff check src tests
 python -m dalio.storage.inventory --db data/dalio.db --json
 python -m dalio.pipelines.build_country_assessments --db data/dalio.db --as-of 2026-09-10 --known-at 2026-09-10T21:10:00+00:00
+python -m dalio.pipelines.fetch_sweden_monitoring --artifact-root data/artifacts/sweden_monitoring
+python -m dalio.pipelines.build_sweden_monitoring --db data/dalio.db --as-of 2026-09-10 --known-at 2026-09-10T22:10:11.307779+00:00
 ```
 
 Assessment worktree: `/home/rosinco/workspace/dalio-country-assessments`, branch
 `feat/country-assessments`. Use the canonical venv and `PYTHONPATH=src` in a
 feature worktree. Tests use mocked sources; actual assessment builds use
 retained local bytes and open the source database read-only.
+
+Monitoring worktree: `/home/rosinco/workspace/dalio-sweden-monitoring`, branch
+`feat/sweden-scenario-monitoring`. The fetch command makes fresh network
+requests and retains new acquisition clocks; the build command is offline.
+For exact replay, use the captured cutoff above and preserve the associated
+source bundle and response files. Source locations participate in snapshot
+identity, so publication is finalized from canonical `main`.

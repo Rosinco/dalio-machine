@@ -110,3 +110,25 @@ reconciliation, independent interpretation review and a read-only deterministic
 rerun are required for the completed checkpoint. The next stage is to extend
 this verified monitoring contract to the other countries, with explicit native
 definition differences and gaps, then join actual sector/company exposures.
+
+### Verified checkpoint
+
+Implementation `3579eef` is integrated on `main`. The complete original capture
+`3cee14e94e7c3074f392247557b358b0edc9910e246b892dd15ab43dd39e6601`
+finished at `2026-09-10T22:10:11.307779+00:00` (after local Stockholm midnight).
+All five series succeeded. The UTC assessment date is 2026-09-10.
+
+Canonical published snapshot:
+`a9b80f90572615358ce85c9244ec1b25691be2a3bb2fae3f74aaebf2f9ed7629`.
+The independent raw-cell audit reconciles 11,862 scalar slots (11,788 numeric,
+74 explicitly missing), all five comparisons, seven native debt facts, 64
+citations and 52 displayed table values. It revalidates the 19 parent source
+histories with 875 annual observations and exact renderer output. SQLite
+integrity and foreign-key checks pass; the database hash/size/mtime matches the
+pre-collection inventory. An exact export rerun preserves 100 protected source
+files and both output files in bytes and modification time.
+
+The integrated suite passed 1,449 tests; all 85 monitoring/source/export tests
+passed again after the final presentation corrections. Ruff and diff checks
+are clean. Audit scripts, receipts, raw discovery evidence, capture outcomes
+and logs are retained under `data/snapshots/sweden_monitoring/validation/`.
