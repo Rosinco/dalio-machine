@@ -1,0 +1,129 @@
+{
+  "index": {
+    "format": "macro-atlas-financials",
+    "version": 1,
+    "taxonomy_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "as_of": "2026-08-10",
+    "generated_at": "2026-09-10T12:00:00Z",
+    "columns": [
+      "revenues",
+      "operating_income",
+      "profit_to_equity_holders",
+      "cash_flow_from_operating_activities",
+      "free_cash_flow",
+      "total_equity",
+      "net_debt",
+      "total_assets",
+      "cash_and_equivalents",
+      "current_assets",
+      "current_liabilities",
+      "non_current_assets",
+      "non_current_liabilities",
+      "intangible_assets",
+      "tangible_assets",
+      "financial_assets",
+      "gross_income",
+      "profit_before_tax",
+      "net_sales",
+      "total_liabilities_and_equity",
+      "cash_flow_from_investing_activities",
+      "cash_flow_from_financing_activities",
+      "cash_flow_for_the_year"
+    ],
+    "sources": [
+      {
+        "id": "latest-a",
+        "as_of": "2026-08-10",
+        "frequency": "annual",
+        "path": "synthetic/reports.parquet",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "bytes": 1,
+        "rows": 1,
+        "outside_directory": 0,
+        "usable": 1,
+        "withheld": 0
+      }
+    ],
+    "summary": {
+      "listings": 1,
+      "with_reports": 1,
+      "annual": 1,
+      "quarterly": 0,
+      "withheld": 0,
+      "source_rows": 1,
+      "outside_directory": 0,
+      "superseded": 0
+    },
+    "companies": {
+      "102": {
+        "annual": {
+          "count": 1,
+          "first": 2025,
+          "last": 2025,
+          "last_period": 5,
+          "end": "2025-12-31",
+          "published": "2026-02-01",
+          "gaps": 0,
+          "unavailable": 0
+        },
+        "quarterly": {
+          "count": 0,
+          "first": null,
+          "last": null,
+          "last_period": null,
+          "end": null,
+          "published": null,
+          "gaps": 0,
+          "unavailable": 0
+        },
+        "withheld": 0,
+        "currencies": [
+          "EUR"
+        ],
+        "sha256": "132b30cc4e9cdd1e47938630dc7b2580d618a37727dbca8de44144b3f42cb37a"
+      }
+    }
+  },
+  "companies": {
+    "102": {
+      "id": "102",
+      "annual": [
+        [
+          2025,
+          5,
+          "2025-01-01",
+          "2025-12-31",
+          "2026-02-01",
+          "EUR",
+          2.0,
+          "latest-a",
+          200.0,
+          20.0,
+          null,
+          0.0,
+          null,
+          80.0,
+          20.0,
+          160.0,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          60.0,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      ],
+      "quarterly": [],
+      "withheld": []
+    }
+  }
+}

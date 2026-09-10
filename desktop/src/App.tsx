@@ -1,3 +1,5 @@
+import { useFinancialIndex } from './financialService';
+import './financial.css';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDownToLine, ArrowRight, BookOpen, Check, ChevronDown, Compass, Globe2, Info, Layers3, Search, Share2, TrendingUp, X } from 'lucide-react';
 import WorldMap, { type Paint } from './WorldMap';
@@ -66,6 +68,8 @@ export default function App() {
   const country = detail.country;
   const business = useReleaseResource<BusinessIndex>(release, 'business-index', observatory !== 'macro');
   const taxonomy = useReleaseResource<Taxonomy>(release, 'taxonomy', observatory !== 'macro');
+  const [financialRevision, setFinancialRevision] = useState(0);
+  const financial = useFinancialIndex(release?.taxonomy_sha256, observatory !== 'macro' || libraryOpen, financialRevision);
   useEffect(() => {
     const selected = companyEntry(companyId, business.data, taxonomy.data);
     if (observatory === 'companies' && selected && taxonomy.ready) setBranchId(companyBranch(selected, taxonomy.data) ?? 'unassigned');
@@ -181,12 +185,12 @@ export default function App() {
       <div className="brand"><div className="brand-mark"><Compass size={25} strokeWidth={1.3} /></div><div><strong>ATLAS<span> / </span></strong><select className="observatory-select" aria-label="Observatory" value={observatory} onChange={e => { setObservatory(e.target.value as Observatory); setSearchOpen(false); setQuery(''); }}><option value="macro">Macro observatory</option><option value="sectors">Sectors & branches</option><option value="companies">Company observatory</option></select></div></div>
       {observatory === 'macro' ? <div className="search" ref={searchRef}><Search size={16} /><input aria-label="Search countries" placeholder="Find a country…" value={query} onFocus={() => setSearchOpen(true)} onChange={e => { setQuery(e.target.value); setSearchOpen(true); }} onKeyDown={e => { if (e.key === 'Enter' && matches[0]) selectCountry(matches[0][0]); }} /><span className="search-hint">{countries.length} economies</span>
         {searchOpen && <div className="search-results">{matches.map(([k, c]) => <button key={k} onClick={() => selectCountry(k)}><span className="country-code">{k}</span>{c.name}<span className="result-note">{c.on_map ? c.currency : 'Aggregate'}</span></button>)}{!matches.length && <p>No matching country in this data release.</p>}</div>}
-      </div> : <BusinessSearch index={business.data} taxonomy={taxonomy.data} onCompany={selectCompany} onCountry={selectCountry} />}
+      </div> : <BusinessSearch index={business.data} taxonomy={taxonomy.data} financial={financial.data} onCompany={selectCompany} onCountry={selectCountry} />}
       <div className="release"><span className="status-dot" />Offline ready <span className="release-divider">|</span><button className="release-picker" aria-label="Choose research release" onClick={() => setLibraryOpen(true)}>Data release {index.as_of}<ChevronDown size={12} /></button></div>
       <button className="header-icon" aria-label="Open data library" onClick={() => setLibraryOpen(true)}><BookOpen size={19} /></button>
     </header>
     {observatory === 'macro' ? <div className="workspace">
-      <nav className="rail" aria-label="Map modes"><div className="rail-label">EXPLORE</div>{modes.map(m => <button key={m.id} className={mode === m.id ? 'active' : ''} aria-label={m.label} aria-pressed={mode === m.id} onClick={() => changeMode(m.id)}><m.icon size={21} strokeWidth={1.5} /><span>{m.id === 'fundamentals' ? 'World' : m.id === 'history' ? 'History' : 'Trade'}</span></button>)}<div className="rail-spacer" /><button onClick={() => setLibraryOpen(true)} aria-label="About this release"><Layers3 size={20} strokeWidth={1.5} /><span>Library</span></button><span className="rail-version">V0.5.0</span></nav>
+      <nav className="rail" aria-label="Map modes"><div className="rail-label">EXPLORE</div>{modes.map(m => <button key={m.id} className={mode === m.id ? 'active' : ''} aria-label={m.label} aria-pressed={mode === m.id} onClick={() => changeMode(m.id)}><m.icon size={21} strokeWidth={1.5} /><span>{m.id === 'fundamentals' ? 'World' : m.id === 'history' ? 'History' : 'Trade'}</span></button>)}<div className="rail-spacer" /><button onClick={() => setLibraryOpen(true)} aria-label="About this release"><Layers3 size={20} strokeWidth={1.5} /><span>Library</span></button><span className="rail-version">V0.6.0</span></nav>
       <main className="map-panel">
         <div className="map-heading"><div><div className="eyebrow">THE WORLD, IN CONTEXT</div><h1>{mode === 'fundamentals' ? 'World fundamentals' : mode === 'history' ? 'History & outlook' : 'Trade connections'}</h1><p>{mode === 'fundamentals' ? 'Explore the forces shaping each economy.' : mode === 'history' ? 'Follow the data through time, from one saved release.' : `Where ${country?.name ?? 'an economy'} sells its goods.`}</p></div><span className="coverage-pill">{countries.filter(([, c]) => c.on_map).length} countries <span>+ {countries.filter(([, c]) => !c.on_map).map(([, c]) => c.name).join(", ")}</span></span></div>
         <div className="map-filter"><span>{mode === 'fundamentals' ? 'COLOUR BY' : mode === 'history' ? 'INDICATOR' : 'MEASURE'}</span>{mode === 'fundamentals' ? <select aria-label="Map category" value={category} onChange={e => setCategory(e.target.value as Category)}>{index.categories.map(k => <option value={k} key={k}>{categories[k].label}</option>)}</select> : mode === 'history' ? <select aria-label="Map historical indicator" value={metric} onChange={e => setMetric(e.target.value)}>{index.indicators.map(i => <option key={i.name} value={i.name}>{i.name === 'gdp_growth_fwd5' ? 'GDP growth · annual' : i.label}</option>)}</select> : <strong>Share of selected country’s goods exports</strong>}<ChevronDown size={14} /></div>
@@ -239,9 +243,9 @@ export default function App() {
           </div>
         </>}
       </aside>
-    </div> : <BusinessWorkspace key={release.id} observatory={observatory} index={business.data} taxonomy={taxonomy.data} ready={business.ready && taxonomy.ready} error={business.error || taxonomy.error} macro={index} release={release} code={code} selectedName={unknownName} companyId={companyId} branchId={branchId} onBranch={setBranchId} onCountry={selectCountry} onCompany={selectCompany} onMacro={() => { setObservatory('macro'); changeMode('fundamentals'); }} onSector={() => { const selected = companyEntry(companyId, business.data, taxonomy.data); if (observatory === 'companies' && selected) setBranchId(companyBranch(selected, taxonomy.data) ?? 'unassigned'); setObservatory('sectors'); }} onLibrary={() => setLibraryOpen(true)} />}
+    </div> : <BusinessWorkspace key={release.id} observatory={observatory} index={business.data} taxonomy={taxonomy.data} financial={financial.data} financialReady={financial.ready} financialError={financial.error} ready={business.ready && taxonomy.ready} error={business.error || taxonomy.error} macro={index} release={release} code={code} selectedName={unknownName} companyId={companyId} branchId={branchId} onBranch={setBranchId} onCountry={selectCountry} onCompany={selectCompany} onMacro={() => { setObservatory('macro'); changeMode('fundamentals'); }} onSector={() => { const selected = companyEntry(companyId, business.data, taxonomy.data); if (observatory === 'companies' && selected) setBranchId(companyBranch(selected, taxonomy.data) ?? 'unassigned'); setObservatory('sectors'); }} onLibrary={() => setLibraryOpen(true)} />}
     {message && <div className="toast" role="status"><Check size={16} />{message}<button aria-label="Dismiss message" onClick={() => setMessage('')}><X size={14} /></button></div>}
-    {libraryOpen && <ResearchLibrary releases={releases} active={release} unreadable={unreadable} onUse={openRelease} onImported={refreshLibrary} onClose={() => setLibraryOpen(false)} />}
+    {libraryOpen && <ResearchLibrary financial={financial.data} financialReady={financial.ready} financialError={financial.error} onFinancialImported={() => setFinancialRevision(n => n + 1)} releases={releases} active={release} unreadable={unreadable} onUse={openRelease} onImported={refreshLibrary} onClose={() => setLibraryOpen(false)} />}
   </div>;
 }
 

@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, BookOpen, Building2, ChevronRight, Globe2, Info, Layers3, ListTree, TrendingUp, Trees } from 'lucide-react';
 import WorldMap, { type Paint } from './WorldMap';
 import { Chart } from './Charts';
+import FinancialChart from './FinancialChart';
+import FinancialHistory from './FinancialHistory';
+import type { FinancialIndex } from './financialData';
+import { useFinancialCompany } from './financialService';
 import { amountLabels, financialSeries, formulas, metricLabels, periodLabel, ratioLabels, type BusinessIndex, type Company, type CompanySummary, type Observatory, type SavedStudy } from './business';
 import { finite, format, missingColor, quantityPalette, seriesColors } from './model';
 import type { AtlasIndex, ResearchRelease } from './types';
@@ -16,9 +20,9 @@ type View = 'browse' | 'overview' | 'companies' | 'financials' | 'peers' | 'cont
 const sectorViews = [{ id: 'browse', label: 'Browse sectors and branches', short: 'Browse', icon: ListTree }, { id: 'overview', label: 'Branch overview', short: 'Branch', icon: Trees }, { id: 'companies', label: 'Branch companies', short: 'Companies', icon: Building2 }, { id: 'context', label: 'Branch macro context', short: 'Context', icon: Globe2 }, { id: 'research', label: 'Branch research', short: 'Research', icon: BookOpen }] as const;
 const companyViews = [{ id: 'financials', label: 'Company financials', short: 'Profile', icon: TrendingUp }, { id: 'peers', label: 'Company peers', short: 'Peers', icon: Building2 }, { id: 'context', label: 'Company macro context', short: 'Context', icon: Globe2 }, { id: 'research', label: 'Company research', short: 'Research', icon: BookOpen }] as const;
 
-export default function BusinessWorkspace({ observatory, index, taxonomy, ready, error, macro, release, code, selectedName, companyId, branchId, onBranch, onCountry, onCompany, onMacro, onSector, onLibrary }: {
+export default function BusinessWorkspace({ observatory, index, taxonomy, financial, financialReady, financialError, ready, error, macro, release, code, selectedName, companyId, branchId, onBranch, onCountry, onCompany, onMacro, onSector, onLibrary }: {
   observatory: Exclude<Observatory, 'macro'>; index: BusinessIndex | null; ready: boolean; error: string; macro: AtlasIndex; release: ResearchRelease;
-  taxonomy: Taxonomy | null; branchId: string; onBranch: (id: string) => void;
+  taxonomy: Taxonomy | null; financial: FinancialIndex | null; financialReady: boolean; financialError: string; branchId: string; onBranch: (id: string) => void;
   code: string; selectedName: string; companyId: string; onCountry: (code: string, name?: string) => void; onCompany: (id: string) => void;
   onMacro: () => void; onSector: () => void; onLibrary: () => void;
 }) {
@@ -26,9 +30,10 @@ export default function BusinessWorkspace({ observatory, index, taxonomy, ready,
   const [presence, setPresence] = useState<Presence>('all'), [allCountries, setAllCountries] = useState(false);
   useEffect(() => setView(observatory === 'companies' ? 'financials' : 'browse'), [observatory, companyId]);
   useEffect(() => { document.querySelector('.business-content')?.scrollTo({ top: 0 }); }, [view, code, companyId, branchId]);
-  const entries = useMemo(() => companyEntries(index, taxonomy), [index, taxonomy]);
+  const entries = useMemo(() => companyEntries(index, taxonomy, financial), [index, taxonomy, financial]);
   const entry = entries.find(e => e.id === companyId && (e.listing_country ?? 'ZZ') === code);
   const selected = entry?.profile;
+  const history = useFinancialCompany(financial, observatory === 'companies' ? entry?.id : undefined);
   const latest = taxonomy?.catalogue?.as_of ?? index?.as_of ?? '';
   const scoped = useMemo(() => entries.filter(e => presenceMatches(e, presence, latest)), [entries, presence, latest]);
   const counts = useMemo(() => countBranches(scoped, taxonomy), [scoped, taxonomy]);
@@ -52,9 +57,9 @@ export default function BusinessWorkspace({ observatory, index, taxonomy, ready,
   const chooseBranch = (id: string) => { onBranch(id); setView('overview'); };
   const browse = () => { onSector(); setView('browse'); };
   const canShow = !!index || !!taxonomy?.catalogue;
-  const hasDetails = !selected || observatory !== 'companies' || detail.ready && !!company;
-  return <div className="workspace business-workspace" data-observatory={observatory} data-listing-count={entries.length}>
-    <nav className="rail" aria-label={`${observatory === 'sectors' ? 'Sector' : 'Company'} views`}><div className="rail-label">EXPLORE</div>{views.map(item => <button key={item.id} className={view === item.id ? 'active' : ''} aria-label={item.label} aria-pressed={view === item.id} onClick={() => setView(item.id)}><item.icon size={21} strokeWidth={1.5} /><span>{item.short}</span></button>)}<div className="rail-spacer" /><button onClick={onLibrary} aria-label="About this release"><Layers3 size={20} /><span>Library</span></button><span className="rail-version">V0.5.0</span></nav>
+  const hasDetails = financialReady && (observatory !== 'companies' || !entry || (financial ? history.ready : !selected || detail.ready && !!company));
+  return <div className="workspace business-workspace" data-observatory={observatory} data-listing-count={entries.length} data-financial-count={financial?.summary.with_reports ?? 0}>
+    <nav className="rail" aria-label={`${observatory === 'sectors' ? 'Sector' : 'Company'} views`}><div className="rail-label">EXPLORE</div>{views.map(item => <button key={item.id} className={view === item.id ? 'active' : ''} aria-label={item.label} aria-pressed={view === item.id} onClick={() => setView(item.id)}><item.icon size={21} strokeWidth={1.5} /><span>{item.short}</span></button>)}<div className="rail-spacer" /><button onClick={onLibrary} aria-label="About this release"><Layers3 size={20} /><span>Library</span></button><span className="rail-version">V0.6.0</span></nav>
     <main className="map-panel">
       <div className="map-heading business-map-heading"><div><div className="eyebrow">{observatory === 'sectors' ? 'SECTORS & BRANCHES' : 'COMPANY OBSERVATORY'}</div><h1>{observatory === 'sectors' ? branchName : entry?.display_name ?? 'Explore companies'}</h1><p>{observatory === 'sectors' ? 'Connect a branch, its businesses and the wider economy.' : 'Explore your saved company directory and financial research.'}</p></div></div>
       <button className="map-filter business-map-filter branch-breadcrumb" aria-label="Choose a sector or branch" onClick={browse}><Trees size={15} /><span>{sectorName}</span><ChevronRight size={13} /><strong>{branchName}</strong><span>BROWSE</span></button>
@@ -74,14 +79,14 @@ export default function BusinessWorkspace({ observatory, index, taxonomy, ready,
         {observatory === 'companies' && entry && <ClassificationDetails taxonomy={taxonomy} company={entry} />}
         <div className="business-content">
           {observatory === 'sectors' && view === 'overview' && <>
-            {taxonomy && branch && <BranchCoverage taxonomy={taxonomy} branch={branch} profiles={counts[branch.id]?.profiles ?? 0} listings={companies.length} />}
+            {taxonomy && branch && <BranchCoverage taxonomy={taxonomy} branch={branch} profiles={counts[branch.id]?.profiles ?? 0} listings={companies.length} histories={counts[branch.id]?.histories} />}
             {hasBranchResearch && index && <section><h3>{sectorName} → {branchName}</h3><p className="business-note">{index.branch.description}</p><div className="value-chain" aria-label="Forestry value chain"><span>Forest & fibre</span><ChevronRight size={14} /><span>Wood, pulp & mills</span><ChevronRight size={14} /><span>Construction, paper & packaging</span></div><p className="chart-caption">Qualitative value chain from the archived branch study · {index.branch.as_of}.</p></section>}
             <section><div className="section-title"><h3>Companies listed in {countryName}</h3><span className="micro">{local.length.toLocaleString('en-US')} LISTINGS</span></div><CompanyList companies={local} taxonomy={taxonomy} onCompany={onCompany} /><p className="business-note">Each Börsdata ID has its own directory entry. Separate listings can represent the same business.</p></section>
             <section><h3>Connect the research</h3><div className="context-actions"><button onClick={() => setView('companies')}>Browse all listings in this branch <ArrowRight size={14} /></button><button onClick={() => setView('context')}>Macro context <ArrowRight size={14} /></button><button onClick={() => setView('research')}>{hasBranchResearch ? 'Read archived branch research' : 'View project research inventory'} <ArrowRight size={14} /></button></div><p className="business-note">Saved research retains its own dates. No refreshed branch forecast is included.</p></section>
           </>}
           {observatory === 'sectors' && view === 'companies' && <section><h3>{branchName}: company listings</h3><label className="business-note"><input type="checkbox" aria-label="Show all listing countries" checked={allCountries} onChange={e => setAllCountries(e.target.checked)} /> Show all listing countries</label><CompanyList companies={allCountries ? companies : local} taxonomy={taxonomy} onCompany={onCompany} /></section>}
           {observatory === 'companies' && !entry && <section><h3>Choose a company in {countryName}</h3><CompanyList companies={local} taxonomy={taxonomy} onCompany={onCompany} /></section>}
-          {observatory === 'companies' && entry && view === 'financials' && (selected && index ? detail.error ? <p role="alert">{detail.error}</p> : company ? <Financials company={company} index={index} /> : <div className="empty">Opening company history…</div> : taxonomy?.catalogue ? <ListingDetails entry={entry} taxonomy={taxonomy} onSector={browse} onMacro={onMacro} /> : null)}
+          {observatory === 'companies' && entry && view === 'financials' && <>{!financialReady ? <div className="empty">Opening financial coverage…</div> : financialError ? <p role="alert">{financialError}</p> : financial && entry.financial ? history.error ? <p role="alert">{history.error}</p> : history.data ? <FinancialHistory key={`${financial.id}:${entry.id}`} entry={entry} index={financial} company={history.data} /> : <div className="empty">Opening company history…</div> : selected && index ? detail.error ? <p role="alert">{detail.error}</p> : company ? <Financials company={company} index={index} /> : <div className="empty">Opening company history…</div> : <p className="business-note">No matching financial history pack is available for this release.</p>}{taxonomy?.catalogue && <details key={entry.id} className="listing-record" open={!financial && !selected}><summary>Company identity and saved sources</summary><ListingDetails entry={entry} taxonomy={taxonomy} onSector={browse} onMacro={onMacro} /></details>}</>}
           {observatory === 'companies' && entry && view === 'peers' && (selected && index ? <PeerComparison index={index} selected={selected} onCompany={onCompany} /> : <section><h3>Other listings in this branch</h3><p className="business-note">These share a Börsdata branch assignment. Detailed competitor relationships and comparable financial analysis can be added as the research grows.</p><CompanyList companies={peers} taxonomy={taxonomy} onCompany={onCompany} /></section>)}
           {view === 'context' && (observatory === 'sectors' || entry) && (hasBranchResearch && index ? <MacroContext index={index} macro={macro} code={code} countryName={countryName} onMacro={onMacro} /> : <section><h3>Branch context is not included yet</h3><p className="business-note">This release has no saved macro exposure analysis for {branchName}. Open the country observatory to inspect the available macro data.</p><button className="primary" onClick={onMacro}>Open {countryName} in Macro <ArrowRight size={15} /></button></section>)}
           {view === 'research' && (observatory === 'sectors' || entry) && <>
@@ -116,10 +121,6 @@ function Financials({ company, index }: { company: Company; index: BusinessIndex
   </>;
 }
 
-function FinancialChart({ labels, series, label, unit }: { labels: string[]; series: { name: string; values: (number | null)[]; color: string }[]; label: string; unit: string }) {
-  if (!series.some(s => s.values.some(finite))) return <div className="empty">No comparable saved observations for this chart.</div>;
-  return <Chart label={label} height={240} option={{ tooltip: { trigger: 'axis', valueFormatter: (v: number) => `${format(v, 2)} ${unit}` }, legend: { bottom: 0, textStyle: { color: '#637467', fontSize: 9 } }, grid: { left: 55, right: 15, top: 20, bottom: 70 }, xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 9, color: '#697b6c' }, axisLine: { lineStyle: { color: '#dce4d8' } }, axisTick: { show: false } }, yAxis: { type: 'value', scale: true, axisLabel: { fontSize: 9, color: '#697b6c', formatter: (v: number) => Math.abs(v) >= 1000 ? `${format(v / 1000, 1)}k` : format(v, 1) }, splitLine: { lineStyle: { color: '#e4e9df', type: 'dashed' } } }, dataZoom: [{ type: 'inside' }, { type: 'slider', bottom: 28, height: 14, showDetail: false, borderColor: '#dce4d8' }], series: series.map(s => ({ type: 'line', name: s.name, data: s.values, connectNulls: false, showSymbol: false, lineStyle: { width: 2, color: s.color }, itemStyle: { color: s.color } })) }} />;
-}
 
 function PeerComparison({ index, selected, onCompany }: { index: BusinessIndex; selected: CompanySummary; onCompany: (id: string) => void }) {
   const [metric, setMetric] = useState('operating_margin');

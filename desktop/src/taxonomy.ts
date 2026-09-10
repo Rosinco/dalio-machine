@@ -27,7 +27,7 @@ export function findBranches(taxonomy: Taxonomy, query: string, sector: string, 
   const term = fold(query);
   return Object.values(taxonomy.branches).filter(b => (sector === 'all' || b.sector_id === sector)
     && fold(`${b.id} ${b.name_sv} ${b.name_en} ${taxonomy.sectors[b.sector_id].name_sv} ${taxonomy.sectors[b.sector_id].name_en}`).includes(term)
-    && (coverage === 'all' || coverage === 'listings' && (counts?.[b.id]?.listings ?? 0) > 0 || coverage === 'profiles' && (counts ? counts[b.id]?.profiles ?? 0 : branchCompanies(index, taxonomy, b.id).length) > 0 || coverage === 'studies' && b.study_status === 'graduated' || coverage === 'dives' && branchDives(taxonomy, b).length > 0))
+    && (coverage === 'all' || coverage === 'histories' && (counts?.[b.id]?.histories ?? 0) > 0 || coverage === 'listings' && (counts?.[b.id]?.listings ?? 0) > 0 || coverage === 'profiles' && (counts ? counts[b.id]?.profiles ?? 0 : branchCompanies(index, taxonomy, b.id).length) > 0 || coverage === 'studies' && b.study_status === 'graduated' || coverage === 'dives' && branchDives(taxonomy, b).length > 0))
     .sort((a, b) => a.name_en.localeCompare(b.name_en));
 }
 

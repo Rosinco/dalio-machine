@@ -1,9 +1,10 @@
+import FinancialLibrary, { type FinancialLibraryProps } from './FinancialLibrary';
 import { useRef, useState } from 'react';
 import { ArrowDownToLine, ArrowRight, Check, FileUp, X } from 'lucide-react';
 import type { ResearchRelease } from './types';
 import { exportResearch, importResearch, inspectResearch, MAX_PACKAGE_BYTES } from './research';
 
-export default function ResearchLibrary({ releases, active, unreadable, onUse, onImported, onClose }: {
+export default function ResearchLibrary({ releases, active, unreadable, onUse, onImported, onClose, financial, financialReady, financialError, onFinancialImported }: FinancialLibraryProps & {
   releases: ResearchRelease[]; active: ResearchRelease; unreadable: number;
   onUse: (release: ResearchRelease) => Promise<void>; onImported: (release: ResearchRelease) => Promise<void>; onClose: () => void;
 }) {
@@ -49,6 +50,7 @@ export default function ResearchLibrary({ releases, active, unreadable, onUse, o
           const release = await importResearch(candidate.text); await onImported(release); setCandidate(null); setMessage('Research saved and opened.');
         })}>Import and use <ArrowRight size={15} /></button>
       </section>}
+      <FinancialLibrary financial={financial} financialReady={financialReady} financialError={financialError} onFinancialImported={onFinancialImported} />
       <div className="section-title"><h3>Available releases</h3><span className="micro">{releases.length} saved</span></div>
       <div className="release-grid">{releases.map(release => <article key={release.id} className={`release-card ${active.id === release.id ? 'active' : ''}`} data-release-id={release.id} data-storage={release.storage}>
         <div className="release-card-heading"><strong>{release.as_of}</strong><span>{release.storage === 'included' ? 'Included' : 'Imported'}</span></div>
@@ -57,7 +59,7 @@ export default function ResearchLibrary({ releases, active, unreadable, onUse, o
         <button className="secondary" disabled={busy || active.id === release.id} aria-label={`Use release ${release.as_of}`} onClick={() => void run(async () => { await onUse(release); setMessage(`Opened research from ${release.as_of}.`); })}>{active.id === release.id ? <><Check size={14} />Active release</> : <>Use this release <ArrowRight size={14} /></>}</button>
       </article>)}</div>
       <details className="library-help"><summary>How to update the research</summary><p>Export a Macro Atlas research file from the desktop tools, then choose “Import research file” here. The file contains saved fundamentals and, when included, liquidity diagnostics, Börsdata company research and the sector/branch directory. Importing works without rebuilding or reinstalling Atlas.</p><p>Imported releases are copied into your local application data. “Save a copy” exports a portable research file for backup or another computer. There is no automatic online refresh.</p></details>
-      <p className="chart-caption">Macro Atlas 0.5.0 · Country boundaries: Natural Earth, public domain. Company coverage follows saved Börsdata listing countries. Verified physical assets and new branch forecasts are future research stages.</p>
+      <p className="chart-caption">Macro Atlas 0.6.0 · Country boundaries: Natural Earth, public domain. Company coverage follows saved Börsdata listing countries. Verified physical assets and new branch forecasts are future research stages.</p>
     </div>
   </div>;
 }

@@ -33,9 +33,11 @@ export async function listingFlows(page, project) {
   assert.ok(oldRow);
   await page.getByLabel('Filter company listings', { exact: true }).fill(oldRow.name);
   await page.locator(`[data-listing="${oldRow.id}"]`).click();
+  await page.locator(`[data-company="${oldRow.id}"][data-business-ready="true"]`).waitFor();
+  await page.locator('.listing-record > summary').click();
   await page.locator(`[data-listing-detail="${oldRow.id}"]`).waitFor();
   assert.match(await page.locator('.older-listing-note').innerText(), /2025-06-21[\s\S]*does not establish its listing status/);
-  assert.equal(await page.locator('[data-financial]').count(), 0);
+  assert.equal(await page.locator('[data-financial-history]').count(), 1);
   await coverage.selectOption('all');
   await search.fill('a');
   assert.equal(await page.locator('[data-search-listing]').count(), 20);
@@ -43,13 +45,17 @@ export async function listingFlows(page, project) {
   const example = rows.find(r => r.name?.toLowerCase().startsWith('aak ') && r.source_as_of === catalogue.as_of) ?? latest.find(r => r.listing_country === 'SE' && r.name?.length > 15 && r.id !== '102');
   await search.fill(example.name);
   await page.locator(`[data-search-listing="${example.id}"]`).click();
+  await page.locator(`[data-company="${example.id}"][data-business-ready="true"]`).waitFor();
+  await page.locator('.listing-record > summary').click();
   await page.locator(`[data-listing-detail="${example.id}"]`).waitFor();
   assert.equal(await page.locator('.business-sidebar').getAttribute('data-branch'), taxonomy.classifications[example.id].branch_id);
   assert.match(await page.locator('.listing-identity').innerText(), new RegExp(example.id));
-  assert.equal(await page.locator('[data-financial]').count(), 0);
+  assert.equal(await page.locator('[data-financial-history]').count(), 1);
   await page.screenshot({ path: resolve(project, 'test-results/company-directory-entry.png') });
-  // Metadata-only entries survive restart independently of the five rich profiles.
+  // Company selection and source identity survive restart independently of the five research profiles.
   await page.reload();
+  await page.locator(`[data-company="${example.id}"][data-business-ready="true"]`).waitFor();
+  await page.locator('.listing-record > summary').click();
   await page.locator(`[data-listing-detail="${example.id}"]`).waitFor();
   await search.fill('Nidhogg Resources');
   await page.locator('[data-search-listing="548"]').click();
@@ -72,5 +78,5 @@ export async function listingFlows(page, project) {
   await page.getByLabel('Filter branch coverage', { exact: true }).selectOption('all');
   await search.fill('Holmen'); await search.press('Enter');
   await page.locator('[data-company="102"][data-business-ready="true"]').waitFor();
-  return { duration_ms: Math.round(performance.now() - start), checks: ['19,140 listings reconcile across all 94 branches and 19 country filters', 'Company pages render at most 50 distinct listings; search is bounded at 20', 'All/latest/older coverage reconciles to 17,593 current and 1,547 older records', 'Directory-only identity and source date persist after reload without financial charts', 'Source sector conflict preserves both IDs and is visibly flagged', 'Older-only branch filters do not inherit current financial-profile counts'] };
+  return { duration_ms: Math.round(performance.now() - start), checks: ['19,140 listings reconcile across all 94 branches and 19 country filters', 'Company pages render at most 50 distinct listings; search is bounded at 20', 'All/latest/older coverage reconciles to 17,593 current and 1,547 older records', 'Company identity, saved source date and financial histories persist after reload', 'Source sector conflict preserves both IDs and is visibly flagged', 'Older-only branch filters do not inherit current financial-profile counts'] };
 }

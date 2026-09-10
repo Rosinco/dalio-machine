@@ -14,6 +14,20 @@ if (Test-Path -LiteralPath $destination) {
   $built = (Get-FileHash -LiteralPath $binary -Algorithm SHA256).Hash
   if ($installed -ne $built) { throw 'A different app already occupies this version folder; use a new version folder.' }
 } else { Copy-Item -LiteralPath $binary -Destination $destination }
+$financialFolder = Join-Path $folder 'financial-data'
+$financialSource = Join-Path $project 'financial-data'
+$packs = @(Get-ChildItem -LiteralPath $financialSource -Filter '*.sqlite' -File)
+if ($packs.Count -eq 0) { throw 'The financial history pack is missing.' }
+New-Item -ItemType Directory -Path $financialFolder -Force | Out-Null
+foreach ($pack in $packs) {
+  $packHash = (Get-FileHash -LiteralPath $pack.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+  if ($pack.BaseName -cne $packHash) { throw 'Financial history checksum failed before installation.' }
+  $packDestination = Join-Path $financialFolder $pack.Name
+  if (Test-Path -LiteralPath $packDestination) {
+    if ((Get-FileHash -LiteralPath $packDestination -Algorithm SHA256).Hash.ToLowerInvariant() -cne $packHash) { throw 'A different financial pack already occupies this version folder.' }
+  } else { Copy-Item -LiteralPath $pack.FullName -Destination $packDestination }
+  if ((Get-FileHash -LiteralPath $packDestination -Algorithm SHA256).Hash.ToLowerInvariant() -cne $packHash) { throw 'Installed financial history checksum failed.' }
+}
 Copy-Item -LiteralPath (Join-Path $project 'public\THIRD-PARTY-NOTICES.txt') -Destination (Join-Path $folder 'THIRD-PARTY-NOTICES.txt')
 Copy-Item -LiteralPath (Join-Path $project 'README.md') -Destination (Join-Path $folder 'README.md')
 $desktop = [Environment]::GetFolderPath('Desktop')

@@ -21,7 +21,7 @@ export async function taxonomyFlows(page, project) {
   assert.equal(await page.locator('.branch-choice').count(), 17);
   await page.getByLabel('Filter branch coverage').selectOption('profiles');
   assert.equal(await page.locator('.branch-choice').count(), 1);
-  assert.match(await page.locator('.branch-choice').innerText(), /5 financial profiles/);
+  assert.match(await page.locator('.branch-choice').innerText(), /5 research profiles/);
   await page.getByLabel('Filter branch coverage').selectOption('all');
   await page.getByLabel('Filter sectors', { exact: true }).selectOption('7');
   assert.equal(await page.locator('.branch-choice').count(), Object.values(taxonomy.branches).filter(b => b.sector_id === '7').length);
@@ -41,7 +41,7 @@ export async function taxonomyFlows(page, project) {
   assert.equal(await page.getByLabel('Forestry value chain').count(), 0);
   assert.equal(Number(await page.locator('[data-country-listing-count]').getAttribute('data-country-listing-count')), countryCount(biotech.id, 'SE'));
   assert.ok(await page.locator('.company-list [data-listing]').count() > 0);
-  assert.equal(await page.locator('.coverage-grid strong').last().innerText(), '0');
+  assert.equal(await page.locator('.coverage-grid strong').last().innerText(), '1136');
   await page.getByLabel('Branch macro context', { exact: true }).click();
   assert.match(await page.locator('.business-content').innerText(), /Branch context is not included yet/);
   assert.equal(await page.locator('.macro-observation').count(), 0);

@@ -1,7 +1,79 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use atlas_research_store::{Archive, Library, Release};
+use std::sync::{Arc, Mutex};
 use tauri::Manager;
+
+type FinancialState = Arc<Mutex<atlas_financial_store::Store>>;
+async fn financial_work<T: Send + 'static>(
+    state: tauri::State<'_, FinancialState>,
+    action: impl FnOnce(&mut atlas_financial_store::Store) -> Result<T, String> + Send + 'static,
+) -> Result<T, String> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        action(&mut *state.lock().map_err(|_| "Financial store is unavailable")?)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+#[tauri::command]
+async fn financial_index(
+    state: tauri::State<'_, FinancialState>,
+    taxonomy: String,
+) -> Result<serde_json::Value, String> {
+    financial_work(state, move |s| s.index(&taxonomy)).await
+}
+#[tauri::command]
+async fn financial_company(
+    state: tauri::State<'_, FinancialState>,
+    pack: String,
+    id: String,
+) -> Result<serde_json::Value, String> {
+    financial_work(state, move |s| s.company(&pack, &id)).await
+}
+#[tauri::command]
+async fn financial_begin(
+    state: tauri::State<'_, FinancialState>,
+    bytes: u64,
+) -> Result<String, String> {
+    financial_work(state, move |s| s.begin(bytes)).await
+}
+#[tauri::command]
+async fn financial_append(
+    state: tauri::State<'_, FinancialState>,
+    token: String,
+    offset: u64,
+    data: Vec<u8>,
+) -> Result<(), String> {
+    financial_work(state, move |s| s.append(&token, offset, &data)).await
+}
+#[tauri::command]
+async fn financial_cancel(
+    state: tauri::State<'_, FinancialState>,
+    token: String,
+) -> Result<(), String> {
+    financial_work(state, move |s| s.cancel(&token)).await
+}
+#[tauri::command]
+async fn financial_finish(
+    state: tauri::State<'_, FinancialState>,
+    token: String,
+) -> Result<serde_json::Value, String> {
+    financial_work(state, move |s| s.finish(&token)).await
+}
+#[tauri::command]
+async fn financial_export(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, FinancialState>,
+    pack: String,
+) -> Result<String, String> {
+    let folder = app.path().download_dir().map_err(|e| e.to_string())?;
+    financial_work(state, move |s| {
+        s.export(&pack, &folder)
+            .map(|p| p.to_string_lossy().into_owned())
+    })
+    .await
+}
 
 fn archive(app: &tauri::AppHandle) -> Result<Archive, String> {
     // Native tests set this to their temporary directory, isolating the live library.
@@ -106,6 +178,20 @@ fn export_csv(app: tauri::AppHandle, filename: String, contents: String) -> Resu
 
 fn main() {
     tauri::Builder::default()
+        .setup(|app| {
+            let included = match std::env::var_os("ATLAS_FINANCIALS_DIR") {
+                Some(path) => std::path::PathBuf::from(path),
+                None => app.path().resource_dir()?.join("financial-data"),
+            };
+            let imported = match std::env::var_os("ATLAS_RESEARCH_DIR") {
+                Some(path) => std::path::PathBuf::from(path).join("financial-packs"),
+                None => app.path().app_local_data_dir()?.join("financial-packs-v1"),
+            };
+            app.manage(Arc::new(Mutex::new(atlas_financial_store::Store::new(
+                included, imported,
+            ))));
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             export_csv,
             research_list,
@@ -113,7 +199,14 @@ fn main() {
             research_import,
             research_resource,
             research_package,
-            research_export
+            research_export,
+            financial_index,
+            financial_company,
+            financial_begin,
+            financial_append,
+            financial_cancel,
+            financial_finish,
+            financial_export
         ])
         .run(tauri::generate_context!())
         .expect("Macro Atlas could not start");

@@ -1,7 +1,8 @@
+import { financialFlows } from './financial-flows.mjs';
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
-import { readFile, writeFile, mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, mkdtemp, rm, copyFile, readdir } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -19,6 +20,9 @@ await mkdir(resultFolder, { recursive: true });
 // Isolate both the WebView preferences and the native research archive.
 const profile = await mkdtemp(resolve(tmpdir(), 'macro-atlas-test-'));
 const archive = resolve(profile, 'research');
+// Exercise local Windows storage, as installed. Cross-WSL filesystem reads have
+// very different latency and do not represent the portable application's runtime.
+const financialFolder = resolve(profile, 'included-financials');
 let app, browser, page;
 const runtimeErrors = [], externalRequests = [];
 async function startApp() {
@@ -26,7 +30,7 @@ async function startApp() {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const port = server.address().port;
   await new Promise(resolve => server.close(resolve));
-  app = spawn(executable, [], { stdio: 'ignore', env: { ...process.env, ATLAS_RESEARCH_DIR: archive, WEBVIEW2_USER_DATA_FOLDER: profile, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port}` } });
+  app = spawn(executable, [], { stdio: 'ignore', env: { ...process.env, ATLAS_RESEARCH_DIR: archive, ATLAS_FINANCIALS_DIR: financialFolder, WEBVIEW2_USER_DATA_FOLDER: profile, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port}` } });
   let launchError;
   app.on('error', error => { launchError = error; });
   const deadline = Date.now() + 25000;
@@ -56,6 +60,11 @@ async function stopApp() {
   }
 }
 try {
+  await mkdir(financialFolder);
+  for (const name of await readdir(resolve(project, 'financial-data'))) {
+    if (/^[a-f0-9]{64}\.sqlite$/.test(name)) await copyFile(resolve(project, 'financial-data', name), resolve(financialFolder, name));
+  }
+  console.log('Financial pack copied to local Windows test storage');
   console.log(`Windows app started for testing: ${await startApp()}`);
   await page.evaluate(() => localStorage.clear());
   await page.reload();
@@ -71,11 +80,15 @@ try {
   report.checks.push(...taxonomy.checks);
   const listings = await listingFlows(page, project);
   report.checks.push(...listings.checks); report.listingFlowsMs = listings.duration_ms;
+  const financial = await financialFlows(page, project, { native: true, archive });
+  report.checks.push(...financial.checks); report.financialCompanySwitchMs = financial.timings; report.financialExport = financial.exportedPath;
   const firstPid = app.pid;
   await stopApp();
   console.log(`Windows app restarted for persistence testing: ${await startApp()}`);
   assert.notEqual(app.pid, firstPid);
   await page.locator(`[data-active-release="${research.current.id}"] [data-company="102"][data-business-ready="true"]`).waitFor();
+  await page.locator(`[data-financial-history="102"][data-financial-pack="${financial.index.id}"]`).waitFor();
+  report.checks.push('Imported company financial pack survives native process restart');
   await page.screenshot({ path: resolve(resultFolder, 'windows-holmen.png') });
   await page.getByLabel('Observatory', { exact: true }).selectOption('macro');
   await page.getByLabel('Open data library').click();

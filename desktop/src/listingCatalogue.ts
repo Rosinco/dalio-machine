@@ -1,3 +1,4 @@
+import { hasFinancialHistory, type CompanyCoverage, type FinancialIndex } from './financialData';
 import type { BusinessDocument, BusinessIndex, CompanySummary } from './business';
 import type { Branch, Classification, FileRecord, Taxonomy } from './taxonomy';
 
@@ -7,28 +8,28 @@ export type ListingCatalogue = { version: number; as_of: string; exported_at: st
   snapshots: { as_of: string; instruments: FileRecord; countries: FileRecord; instrument_count: number; company_count: number; excluded_count: number }[];
   listings: Record<string, Listing>;
 };
-export type CompanyEntry = Listing & { display_name: string; profile: CompanySummary | null; search: string };
+export type CompanyEntry = Listing & { display_name: string; profile: CompanySummary | null; financial?: CompanyCoverage; search: string };
 export type Presence = 'all' | 'latest' | 'older';
-export type BranchCounts = Record<string, { listings: number; profiles: number }>;
+export type BranchCounts = Record<string, { listings: number; profiles: number; histories?: number }>;
 export const normalizeSearch = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 export function listingCountries(index: BusinessIndex | null, taxonomy: Taxonomy | null) {
   return { ...index?.countries, ...Object.fromEntries(Object.values(taxonomy?.catalogue?.countries ?? {}).filter(c => c.iso2).map(c => [c.iso2!, c.name_en])) };
 }
-export function companyEntry(id: string, index: BusinessIndex | null, taxonomy: Taxonomy | null): CompanyEntry | undefined {
+export function companyEntry(id: string, index: BusinessIndex | null, taxonomy: Taxonomy | null, financial?: FinancialIndex | null): CompanyEntry | undefined {
   const profile = index?.companies[id] ?? null, listing = taxonomy?.catalogue?.listings[id];
   if (!listing && !profile) return undefined;
   const raw: Listing = listing ?? { ...profile!, country_id: '', instrument_type: 0, source_as_of: index!.as_of, listing_date: null };
   const display_name = profile?.name ?? raw.name ?? `Listing ${id}`;
-  return { ...raw, display_name, profile, search: normalizeSearch(`${display_name} ${raw.name ?? ''} ${raw.ticker ?? ''} ${raw.isin ?? ''} ${raw.id}`) };
+  return { ...raw, display_name, profile, financial: financial?.companies[id], search: normalizeSearch(`${display_name} ${raw.name ?? ''} ${raw.ticker ?? ''} ${raw.isin ?? ''} ${raw.id}`) };
 }
-export function companyEntries(index: BusinessIndex | null, taxonomy: Taxonomy | null): CompanyEntry[] {
-  return Object.keys(taxonomy?.catalogue?.listings ?? index?.companies ?? {}).map(id => companyEntry(id, index, taxonomy)!)
+export function companyEntries(index: BusinessIndex | null, taxonomy: Taxonomy | null, financial?: FinancialIndex | null): CompanyEntry[] {
+  return Object.keys(taxonomy?.catalogue?.listings ?? index?.companies ?? {}).map(id => companyEntry(id, index, taxonomy, financial)!)
     .sort((a, b) => Number(!!b.profile) - Number(!!a.profile) || a.display_name.localeCompare(b.display_name) || Number(a.id) - Number(b.id));
 }
 export function presenceMatches(entry: CompanyEntry, presence: Presence, latest: string) { return presence === 'all' || (entry.source_as_of === latest) === (presence === 'latest'); }
 export function countBranches(entries: CompanyEntry[], taxonomy: Taxonomy | null): BranchCounts {
   const counts: BranchCounts = {};
-  for (const e of entries) { const branch = taxonomy?.classifications[e.id] ? taxonomy.classifications[e.id].branch_id : e.branch_id; if (!branch) continue; const n = counts[branch] ??= { listings: 0, profiles: 0 }; n.listings++; if (e.profile) n.profiles++; }
+  for (const e of entries) { const branch = taxonomy?.classifications[e.id] ? taxonomy.classifications[e.id].branch_id : e.branch_id; if (!branch) continue; const n = counts[branch] ??= { listings: 0, profiles: 0 }; n.listings++; if (e.profile) n.profiles++; if (e.financial) n.histories = (n.histories ?? 0) + Number(hasFinancialHistory(e.financial)); }
   return counts;
 }
 

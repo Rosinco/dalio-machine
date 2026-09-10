@@ -1,0 +1,10 @@
+[package]
+name = "atlas-financial-store"
+version = "0.6.0"
+edition = "2021"
+
+[dependencies]
+serde_json = "1"
+sha2 = "0.10"
+flate2 = "1"
+rusqlite = { version = "0.40.1", features = ["bundled", "limits"] }

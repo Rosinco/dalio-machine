@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import financialPreview from './scripts/financial-preview.mjs';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), financialPreview()],
   base: './',
   clearScreen: false,
   server: { port: 1420, strictPort: true },

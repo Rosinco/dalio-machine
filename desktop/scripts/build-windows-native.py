@@ -3,6 +3,7 @@
 Fallback for cargo-xwin's slow per-file CAB decompression. Same official Microsoft
 SDK and CRT downloads, with Rust targeting x86_64-pc-windows-msvc.
 """
+import json
 import os
 import subprocess
 from pathlib import Path
@@ -34,7 +35,20 @@ env["CXX_x86_64_pc_windows_msvc"] = str(llvm / "clang-cl")
 env["RC"] = str(llvm / "llvm-rc")
 env["INCLUDE"] = ";".join(map(str, includes))
 env["CC_SHELL_ESCAPED_FLAGS"] = "1"
-env["CFLAGS_x86_64_pc_windows_msvc"] = " ".join(f'/imsvc"{p}"' for p in includes)
+# Windows SDK includes use case-insensitive names (for example DriverSpecs.h).
+# LLVM's virtual filesystem supplies those semantics on Linux without altering
+# the extracted Microsoft headers. SQLite is compiled into the portable binary.
+def virtual_directory(path):
+    return {"type": "directory", "name": str(path), "contents": [
+        virtual_directory(child) if child.is_dir() else
+        {"type": "file", "name": child.name, "external-contents": str(child)}
+        for child in sorted(path.iterdir())
+    ]}
+
+overlay = tools / "atlas-sdk-case-overlay.json"
+overlay.write_text(json.dumps({"version": 0, "case-sensitive": False,
+                              "roots": [virtual_directory(p) for p in includes]}))
+env["CFLAGS_x86_64_pc_windows_msvc"] = " ".join(f'/imsvc"{p}"' for p in includes) + f' /clang:-ivfsoverlay /clang:"{overlay}"'
 env["CARGO_ENCODED_RUSTFLAGS"] = "\x1f".join(
     [f"-Lnative={p}" for p in libraries] + ["-Ctarget-feature=+crt-static"]
 )

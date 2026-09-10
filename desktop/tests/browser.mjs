@@ -1,3 +1,4 @@
+import { financialFlows } from './financial-flows.mjs';
 import { chromium } from 'playwright';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
@@ -9,6 +10,8 @@ import { listingFlows } from './listing-flows.mjs';
 const base = process.env.ATLAS_URL || 'http://127.0.0.1:1420';
 await mkdir('test-results', { recursive: true });
 const browser = await chromium.launch({ executablePath: '/opt/google/chrome/chrome', headless: true, args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+let page;
+try {
 const context = await browser.newContext({ viewport: { width: 1500, height: 960 } });
 const external = [], errors = [], timing = {};
 const csp = JSON.parse(await readFile('src-tauri/tauri.conf.json', 'utf8')).app.security.csp;
@@ -21,13 +24,19 @@ await context.route('**/*', async route => {
   if (url.startsWith(base) || url.startsWith('blob:') || url.startsWith('data:')) return route.continue();
   external.push(url); return route.abort();
 });
-const page = await context.newPage();
+page = await context.newPage();
 page.on('pageerror', e => errors.push(e.message));
 page.on('console', e => { if (e.type() === 'error') console.error('Browser:', e.text()); });
 const start = performance.now();
 await page.goto(base);
 await page.locator('[data-country="SE"][data-ready="true"]').waitFor();
 await page.locator('[data-map-ready="true"]').waitFor();
+if (process.argv.includes('--financial-only')) {
+  await page.getByLabel('Observatory', { exact: true }).selectOption('companies');
+  await page.locator('[data-business-ready="true"]').waitFor();
+  console.log(JSON.stringify(await financialFlows(page, process.cwd()), (key, value) => key === 'index' ? undefined : value));
+  await browser.close(); process.exit(0);
+}
 await page.waitForFunction(() => document.querySelector('.maplibregl-canvas')?.width > 0);
 await page.waitForTimeout(800);
 timing.startup_ms = Math.round(performance.now() - start);
@@ -99,6 +108,8 @@ const business = await businessFlows(page, process.cwd());
 const taxonomy = await taxonomyFlows(page, process.cwd());
 const listings = await listingFlows(page, process.cwd());
 taxonomy.checks.push(...listings.checks); timing.listing_flows_ms = listings.duration_ms;
+const financial = await financialFlows(page, process.cwd());
+taxonomy.checks.push(...financial.checks); timing.financial_company_switch_ms = financial.timings;
 await page.setViewportSize({ width: 1100, height: 760 });
 await page.screenshot({ path: 'test-results/company-compact.png' });
 assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
@@ -116,3 +127,10 @@ assert.deepEqual(errors, [], 'The browser must not report runtime errors');
 await writeFile('test-results/browser-report.json', JSON.stringify({ timing, externalRequests: external, runtimeErrors: errors, checks: ['native content security policy', 'initial Sweden', 'map click', 'comparison', 'category change', 'history mode/year', 'indicator evidence', 'trade denominator', 'country search', 'lazy flow diagram', 'evidence manifest', 'library', 'CSV export', 'compact viewport', ...research.checks, ...business.checks, ...taxonomy.checks] }, null, 2));
 console.log(JSON.stringify({ status: 'PASS', timing, researchChecks: research.checks, businessChecks: business.checks, taxonomyChecks: taxonomy.checks, externalRequests: external.length, runtimeErrors: errors.length }));
 await browser.close();
+} catch (error) {
+  if (page) {
+    await page.screenshot({ path: 'test-results/browser-failure.png' }).catch(() => {});
+    console.error(await page.locator('body').innerText().catch(() => 'Page unavailable'));
+  }
+  throw error;
+} finally { await browser.close(); }
