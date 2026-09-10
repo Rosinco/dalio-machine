@@ -2,7 +2,7 @@
 
 import json
 import sqlite3
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -38,6 +38,12 @@ def fake_batch():
 
 @pytest.fixture
 def acquisition(monkeypatch):
+    class ReceiptClock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return RECEIPT
+
+    monkeypatch.setattr(pipeline, "datetime", ReceiptClock)
     client = MagicMock()
 
     def get(url, **kwargs):
@@ -220,3 +226,74 @@ def test_owned_http_session_is_closed_on_preflight_failure(acquisition, monkeypa
     with pytest.raises(ValueError, match="Invalid final document"):
         pipeline.prepare_batch(artifact_root=tmp_path)
     client.close.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "clock", [RECEIPT.replace(tzinfo=None), RECEIPT - timedelta(microseconds=1)]
+)
+def test_explicit_receipt_cannot_be_naive_or_backdated(acquisition, monkeypatch, tmp_path, clock):
+    client, _, _, prepare = acquisition
+    target = MagicMock()
+    monkeypatch.setattr(pipeline, "make_engine", target)
+    with pytest.raises(ValueError, match="receipt"):
+        pipeline.run_pipeline(
+            db_path=tmp_path / "untouched.sqlite",
+            client=client,
+            artifact_root=tmp_path / "evidence",
+            retrieved_at=clock,
+        )
+    prepare.assert_not_called()
+    target.assert_not_called()
+    assert not (tmp_path / "untouched.sqlite").exists()
+
+
+def test_receipt_follows_final_response_and_precedes_parsing(acquisition, monkeypatch, tmp_path):
+    client, pdf, xlsx, prepare = acquisition
+    events = []
+    times = iter(RECEIPT + timedelta(seconds=i) for i in range(10))
+
+    class ResponseClock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            events.append("receipt")
+            return next(times)
+
+    monkeypatch.setattr(pipeline, "datetime", ResponseClock)
+    original_get = client.get.side_effect
+    client.get.side_effect = lambda *args, **kwargs: (
+        events.append("response"),
+        original_get(*args, **kwargs),
+    )[1]
+    pdf.side_effect = lambda body, *, spec: (events.append("parse"), fake_document(spec))[1]
+    xlsx.side_effect = lambda body, *, spec: (events.append("parse"), fake_document(spec))[1]
+    batch = pipeline.prepare_batch(client=client, artifact_root=tmp_path)
+    assert events[:27] == ["response", "receipt", "parse"] * 9
+    assert batch[-1].retrieved_at >= RECEIPT + timedelta(seconds=8)
+    assert prepare.call_args.kwargs["retrieved_at"] == batch[-1].retrieved_at
+
+
+@pytest.mark.parametrize("offset,accepted", [(7, False), (8, True)])
+def test_explicit_receipt_is_checked_against_last_download(
+    acquisition, monkeypatch, tmp_path, offset, accepted
+):
+    client, _, _, prepare = acquisition
+    times = iter(RECEIPT + timedelta(seconds=i) for i in range(9))
+
+    class ResponseClock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return next(times)
+
+    monkeypatch.setattr(pipeline, "datetime", ResponseClock)
+    kwargs = {
+        "client": client,
+        "artifact_root": tmp_path,
+        "retrieved_at": RECEIPT + timedelta(seconds=offset),
+    }
+    if accepted:
+        assert pipeline.prepare_batch(**kwargs)[-1].retrieved_at == kwargs["retrieved_at"]
+    else:
+        with pytest.raises(ValueError, match="predates actual source acquisition"):
+            pipeline.prepare_batch(**kwargs)
+        prepare.assert_not_called()
+    assert client.get.call_count == 9

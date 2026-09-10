@@ -31,7 +31,7 @@ from dalio.storage.national_debt import (
 )
 
 logger = logging.getLogger(__name__)
-DEFAULT_EVIDENCE_ROOT = Path("data/artifacts/debt_refinancing/riksgalden")
+DEFAULT_EVIDENCE_ROOT = Path("data/artifacts/debt_refinancing/national/riksgalden")
 MAX_DOCUMENT_BYTES = 10_000_000
 
 
@@ -71,9 +71,13 @@ def prepare_batch(
     retrieved_at: datetime | None = None,
 ) -> tuple[PreparedNativePartition, ...]:
     """Acquire and preflight every document before opening any target database."""
+    if retrieved_at is not None and (
+        retrieved_at.tzinfo is None or retrieved_at.utcoffset() is None
+    ):
+        raise ValueError("Explicit receipt timestamp must include a timezone")
     owned_client = client is None
     client = requests.Session() if client is None else client
-    documents = []
+    documents, response_receipts = [], []
     try:
         for position, spec in enumerate(RIKSGALDEN_DOCUMENT_SPECS, 1):
             logger.info(
@@ -85,6 +89,7 @@ def prepare_batch(
                 allow_redirects=False,
                 headers={"User-Agent": DEFAULT_USER_AGENT},
             )
+            response_receipts.append(datetime.now(UTC))
             actual_url = urlsplit(response.url)
             if (
                 response.status_code != 200
@@ -117,7 +122,14 @@ def prepare_batch(
             documents.append(parser(body, spec=spec))
         # The receipt clock follows the complete acquisition, never the period or
         # a publication timestamp. Offline replay retains this original clock.
-        receipt = retrieved_at or datetime.now(UTC)
+        latest_response_receipt = max(response_receipts)
+        if retrieved_at is not None and retrieved_at < latest_response_receipt:
+            raise ValueError("Explicit receipt timestamp predates actual source acquisition")
+        receipt = (
+            retrieved_at.astimezone(UTC)
+            if retrieved_at is not None
+            else max(datetime.now(UTC), latest_response_receipt)
+        )
         batch = prepare_native_batch(documents, artifact_root=artifact_root, retrieved_at=receipt)
         return _check_complete_batch(batch)
     finally:
