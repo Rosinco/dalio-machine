@@ -28,3 +28,4 @@ always-loaded state lives in `project_context.md` (Decision Log has one line per
 | [0021](0021-offline-desktop-atlas.md) | Offline Tauri/MapLibre desktop viewer for existing fundamentals, history and trade snapshots | 2026-09-10 |
 | [0022](0022-sector-and-company-observatories.md) | Contextual observatories, selective Börsdata forestry export, dated company research and v2 offline packages; later balance-sheet/physical-asset funnel | 2026-09-10 |
 | [0023](0023-borsdata-taxonomy-directory.md) | Full bilingual Börsdata directory, separate research coverage and reviewed classification corrections, v3 offline packages | 2026-09-10 |
+| [0024](0024-downloaded-company-directory.md) | All downloaded company listings, latest identity per ID, country/branch navigation, older-only labels and source-conflict flags | 2026-09-10 |

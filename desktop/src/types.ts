@@ -15,7 +15,7 @@ export type ResearchRelease = {
   id: string; as_of: string; generated_at: string; fundamentals_sha256: string;
   liquidity_as_of: string | null; liquidity_sha256: string | null;
   business_as_of?: string | null; business_sha256?: string | null; company_count?: number;
-  taxonomy_as_of?: string | null; taxonomy_sha256?: string | null; sector_count?: number; branch_count?: number;
+  taxonomy_as_of?: string | null; taxonomy_sha256?: string | null; sector_count?: number; branch_count?: number; listing_count?: number;
   country_count: number; indicator_count: number;
   storage: 'included' | 'imported'; base?: string; package_url?: string;
 };

@@ -45,10 +45,16 @@ def package(
     directory = document(taxonomy) if taxonomy else None
     directory_raw = json.loads(directory["content"]) if directory else None
     if directory_raw and (
-        directory_raw.get("version") != 1
+        directory_raw.get("version") not in (1, 2)
         or directory_raw.get("business_sha256") != (company["sha256"] if company else None)
         or directory_raw.get("classification_as_of")
-        != (company_raw["as_of"] if company_raw else None)
+        != (
+            directory_raw.get("catalogue", {}).get("as_of")
+            if directory_raw.get("version") == 2
+            else company_raw["as_of"]
+            if company_raw
+            else None
+        )
     ):
         raise ValueError("Taxonomy does not match the selected business document")
     version = 3 if directory else 2 if company else 1
@@ -72,6 +78,9 @@ def package(
         "taxonomy_sha256": directory["sha256"] if directory else None,
         "sector_count": len(directory_raw["sectors"]) if directory_raw else 0,
         "branch_count": len(directory_raw["branches"]) if directory_raw else 0,
+        "listing_count": len(directory_raw.get("catalogue", {}).get("listings", {}))
+        if directory_raw
+        else 0,
         "company_count": len(company_raw["companies"]) if company_raw else 0,
         "country_count": len(raw["countries"]),
         "indicator_count": len(raw["indicators"]),

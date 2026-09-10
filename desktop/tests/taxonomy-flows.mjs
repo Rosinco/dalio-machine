@@ -8,8 +8,11 @@ export async function taxonomyFlows(page, project) {
   const payload = JSON.parse(original), taxonomy = JSON.parse(payload.taxonomy.content);
   const catalogue = JSON.parse(await readFile(resolve(project, 'public/data/catalog.json'), 'utf8'));
   const current = catalogue.releases.find(r => r.id === catalogue.default_id);
+  const listings = Object.values(taxonomy.catalogue.listings);
+  const countryCount = (branch, country) => listings.filter(c => taxonomy.classifications[c.id].branch_id === branch && c.listing_country === country).length;
   await page.getByLabel('Observatory', { exact: true }).selectOption('sectors');
   await page.locator('[data-taxonomy-ready="true"]').waitFor();
+  await page.getByLabel('Company listing country', { exact: true }).selectOption('SE');
   assert.equal(await page.locator('.branch-choice').count(), 94);
   assert.equal(await page.locator('.sector-group').count(), 10);
   assert.match(await page.getByLabel('Directory coverage').innerText(), /10[\s\S]*94[\s\S]*17[\s\S]*89/);
@@ -18,7 +21,7 @@ export async function taxonomyFlows(page, project) {
   assert.equal(await page.locator('.branch-choice').count(), 17);
   await page.getByLabel('Filter branch coverage').selectOption('profiles');
   assert.equal(await page.locator('.branch-choice').count(), 1);
-  assert.match(await page.locator('.branch-choice').innerText(), /5 profiles in Atlas/);
+  assert.match(await page.locator('.branch-choice').innerText(), /5 financial profiles/);
   await page.getByLabel('Filter branch coverage').selectOption('all');
   await page.getByLabel('Filter sectors', { exact: true }).selectOption('7');
   assert.equal(await page.locator('.branch-choice').count(), Object.values(taxonomy.branches).filter(b => b.sector_id === '7').length);
@@ -36,7 +39,9 @@ export async function taxonomyFlows(page, project) {
   assert.match(await page.locator('.branch-coverage').innerText(), /Pending/);
   assert.equal(await page.getByLabel('Open Holmen', { exact: true }).count(), 0);
   assert.equal(await page.getByLabel('Forestry value chain').count(), 0);
-  assert.deepEqual(await page.locator('.country-coverage strong').allTextContents(), ['0', '0']);
+  assert.equal(Number(await page.locator('[data-country-listing-count]').getAttribute('data-country-listing-count')), countryCount(biotech.id, 'SE'));
+  assert.ok(await page.locator('.company-list [data-listing]').count() > 0);
+  assert.equal(await page.locator('.coverage-grid strong').last().innerText(), '0');
   await page.getByLabel('Branch macro context', { exact: true }).click();
   assert.match(await page.locator('.business-content').innerText(), /Branch context is not included yet/);
   assert.equal(await page.locator('.macro-observation').count(), 0);
@@ -100,8 +105,7 @@ export async function taxonomyFlows(page, project) {
   await page.locator('[data-taxonomy-ready="true"]').waitFor();
   await search.fill('Biotechnology');
   await page.locator(`.branch-choice[data-branch="${biotech.id}"]`).click();
-  assert.equal(await page.locator('.country-coverage').getByRole('button', { name: /Sweden/ }).locator('strong').innerText(), '1');
-  assert.equal(await page.locator('.country-coverage').getByRole('button', { name: /Finland/ }).locator('strong').innerText(), '0');
+  assert.equal(Number(await page.locator('[data-country-listing-count]').getAttribute('data-country-listing-count')), countryCount(biotech.id, 'SE') + 1);
   await page.getByLabel('Open Holmen', { exact: true }).click();
   await page.locator(`[data-company="102"][data-branch="${biotech.id}"][data-business-ready="true"]`).waitFor();
   await page.locator('.classification-details summary').click();
@@ -125,5 +129,5 @@ export async function taxonomyFlows(page, project) {
   await page.locator('[data-company="102"][data-business-ready="true"]').waitFor();
   await page.reload();
   await page.locator(`[data-active-release="${current.id}"] [data-company="102"][data-branch="21"][data-business-ready="true"]`).waitFor();
-  return { legacyId, legacyText, checks: ['All 10 sectors and 94 branches; separate 17-study/89-dossier coverage', 'Swedish, English and accent-insensitive search; sector and coverage filters', 'Unresearched branch clears companies, map coverage, forestry context and archived prose', 'Branch selection survives reload', 'Shared study inventory is deduplicated', 'Company selection restores branch and source classification', 'Compact directory has no horizontal overflow', 'Taxonomy checksum and business binding failures rejected', 'Reviewed correction changes branch coverage while preserving original IDs', 'V2 import remains usable and cannot inherit V3 taxonomy', 'V3 directory and company selection survive reload'] };
+  return { legacyId, legacyText, checks: ['All 10 sectors and 94 branches; separate 17-study/89-dossier coverage', 'Swedish, English and accent-insensitive search; sector and coverage filters', 'Unresearched branch has its own company listings and counts without inheriting forestry context or prose', 'Branch selection survives reload', 'Shared study inventory is deduplicated', 'Company selection restores branch and source classification', 'Compact directory has no horizontal overflow', 'Taxonomy checksum and business binding failures rejected', 'Reviewed correction changes branch coverage while preserving original IDs', 'V2 import remains usable and cannot inherit V3 taxonomy', 'V3 directory and company selection survive reload'] };
 }

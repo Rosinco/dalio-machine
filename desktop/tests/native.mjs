@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import { researchFlows } from './research-flows.mjs';
 import { businessFlows } from './business-flows.mjs';
 import { taxonomyFlows } from './taxonomy-flows.mjs';
+import { listingFlows } from './listing-flows.mjs';
 
 const project = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const executable = process.argv[2] || resolve(project, 'src-tauri/target/x86_64-pc-windows-msvc/release/macro-atlas.exe');
@@ -68,6 +69,8 @@ try {
   assert.equal(await readFile(resolve(archive, `${business.current.id}.atlas.json`), 'utf8'), business.original);
   const taxonomy = await taxonomyFlows(page, project);
   report.checks.push(...taxonomy.checks);
+  const listings = await listingFlows(page, project);
+  report.checks.push(...listings.checks); report.listingFlowsMs = listings.duration_ms;
   const firstPid = app.pid;
   await stopApp();
   console.log(`Windows app restarted for persistence testing: ${await startApp()}`);

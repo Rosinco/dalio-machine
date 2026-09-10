@@ -4,6 +4,7 @@ import type { ResearchRelease } from './types';
 import businessFixture from '../tests/fixtures/business.json';
 import { businessIndex, financialSeries } from './business';
 import taxonomyFixture from '../tests/fixtures/taxonomy.json';
+import listingFixture from '../tests/fixtures/taxonomy-listings.json';
 import { directoryTotals, findBranches, fold, validateTaxonomy } from './taxonomy';
 
 const categories = ['real_stuff', 'production', 'exchange', 'promises', 'enforcer'];
@@ -60,10 +61,10 @@ describe('portable research files', () => {
 });
 
 describe('taxonomy directory and v3 identity', () => {
-  async function directoryPackage(raw = structuredClone(taxonomyFixture)) {
+  async function directoryPackage(raw: unknown = structuredClone(taxonomyFixture)) {
     const businessContent = JSON.stringify(businessFixture);
     const business = { source_file: 'business.json', content: businessContent, sha256: await digest(businessContent) };
-    const content = JSON.stringify({ ...raw, business_sha256: business.sha256 });
+    const content = JSON.stringify({ ...(raw as object), business_sha256: business.sha256 });
     return { ...await envelope(), schema_version: 3, business, taxonomy: { source_file: 'taxonomy.json', content, sha256: await digest(content) } };
   }
   it('includes the directory hash in identity and retains the source classification', async () => {
@@ -73,6 +74,15 @@ describe('taxonomy directory and v3 identity', () => {
     expect(decoded.taxonomy?.classifications['102'].source_branch_id).toBe('21');
     expect(decoded.release.branch_count).toBe(2);
     expect(decoded.release.sector_count).toBe(2);
+  });
+  it('includes every directory listing in the hashed v3 resource while keeping financial coverage separate', async () => {
+    const payload = await directoryPackage(listingFixture);
+    const decoded = await decodePackage(JSON.stringify(payload));
+    expect(decoded.release.listing_count).toBe(6);
+    expect(decoded.release.company_count).toBe(1);
+    expect(decoded.taxonomy?.catalogue).toEqual(listingFixture.catalogue);
+    const damaged = structuredClone(payload); damaged.taxonomy.content = payload.taxonomy.content.replace('Synthetic Åland 201', 'Changed name');
+    await expect(decodePackage(JSON.stringify(damaged))).rejects.toThrow(/checksum/);
   });
   it('does not accept an unhashed directory in v2 or a mismatched business binding', async () => {
     await expect(decodePackage(JSON.stringify({ ...await directoryPackage(), schema_version: 2 }))).rejects.toThrow(/version/i);

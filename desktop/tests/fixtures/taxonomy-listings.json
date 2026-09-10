@@ -1,0 +1,308 @@
+{
+  "version": 2,
+  "as_of": "2026-09-10",
+  "exported_at": "2026-09-10T12:00:00Z",
+  "business_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "classification_as_of": "2026-08-10",
+  "sectors": {
+    "5": {
+      "id": "5",
+      "name_sv": "Industri",
+      "name_en": "Industrials",
+      "slug": "industri"
+    },
+    "7": {
+      "id": "7",
+      "name_sv": "Material",
+      "name_en": "Materials",
+      "slug": "material"
+    }
+  },
+  "branches": {
+    "21": {
+      "id": "21",
+      "sector_id": "7",
+      "name_sv": "Skogsbolag",
+      "name_en": "Forest & Wood Products",
+      "study_path": "studies/sectors/material/skogsbolag",
+      "study_status": "graduated",
+      "corpus_status": "none",
+      "overview": {
+        "path": "studies/sectors/material/skogsbolag/README.md",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "bytes": 100
+      },
+      "deep_dives": [],
+      "shared_study_ids": [
+        "shared"
+      ]
+    },
+    "31": {
+      "id": "31",
+      "sector_id": "5",
+      "name_sv": "Byggmaterial",
+      "name_en": "Construction Materials",
+      "study_path": "studies/sectors/industri/byggmaterial",
+      "study_status": "scaffold",
+      "corpus_status": "none",
+      "overview": {
+        "path": "studies/sectors/industri/byggmaterial/README.md",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "bytes": 100
+      },
+      "deep_dives": [],
+      "shared_study_ids": [
+        "shared"
+      ]
+    }
+  },
+  "classifications": {
+    "102": {
+      "company_id": "102",
+      "source_sector_id": "7",
+      "source_branch_id": "21",
+      "sector_id": "7",
+      "branch_id": "21",
+      "status": "source",
+      "correction": null
+    },
+    "201": {
+      "company_id": "201",
+      "source_sector_id": "5",
+      "source_branch_id": "31",
+      "sector_id": "5",
+      "branch_id": "31",
+      "status": "source",
+      "correction": null
+    },
+    "202": {
+      "company_id": "202",
+      "source_sector_id": "5",
+      "source_branch_id": "31",
+      "sector_id": "5",
+      "branch_id": "31",
+      "status": "source",
+      "correction": null
+    },
+    "203": {
+      "company_id": "203",
+      "source_sector_id": "7",
+      "source_branch_id": "21",
+      "sector_id": "7",
+      "branch_id": "21",
+      "status": "source",
+      "correction": null
+    },
+    "204": {
+      "company_id": "204",
+      "source_sector_id": "7",
+      "source_branch_id": null,
+      "sector_id": null,
+      "branch_id": null,
+      "status": "unclassified",
+      "correction": null
+    },
+    "205": {
+      "company_id": "205",
+      "source_sector_id": "3",
+      "source_branch_id": "31",
+      "sector_id": "5",
+      "branch_id": "31",
+      "status": "sector_mismatch",
+      "correction": null
+    }
+  },
+  "shared_studies": {
+    "shared": {
+      "id": "shared",
+      "path": "material/shared",
+      "branch_ids": [
+        "21",
+        "31"
+      ],
+      "overview": {
+        "path": "studies/sectors/material/shared/WORKFLOW.md",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "bytes": 100
+      },
+      "deep_dives": [
+        {
+          "folder": "studies/sectors/material/shared/deep_dives/example",
+          "label": "example",
+          "documents": [
+            {
+              "path": "studies/sectors/material/shared/deep_dives/example/deep_dive.md",
+              "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "bytes": 100
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "unmapped_deep_dives": [],
+  "sources": [
+    {
+      "path": "taxonomy.csv",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "bytes": 100
+    }
+  ],
+  "corrections_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "notes": [
+    "Synthetic coverage fixture; no research judgments."
+  ],
+  "catalogue": {
+    "version": 1,
+    "as_of": "2026-08-10",
+    "exported_at": "2026-09-10T12:00:00Z",
+    "included_types": [
+      0,
+      1,
+      3,
+      8,
+      9,
+      10
+    ],
+    "countries": {
+      "1": {
+        "id": "1",
+        "name": "Sverige",
+        "name_en": "Sweden",
+        "iso2": "SE"
+      },
+      "3": {
+        "id": "3",
+        "name": "Finland",
+        "name_en": "Finland",
+        "iso2": "FI"
+      }
+    },
+    "snapshots": [
+      {
+        "as_of": "2025-06-21",
+        "instruments": {
+          "path": "data/2025-06-21/instruments.parquet",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "bytes": 100
+        },
+        "countries": {
+          "path": "data/2025-06-21/countries.parquet",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "bytes": 100
+        },
+        "instrument_count": 4,
+        "company_count": 3,
+        "excluded_count": 1
+      },
+      {
+        "as_of": "2026-08-10",
+        "instruments": {
+          "path": "data/2026-08-10/instruments.parquet",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "bytes": 100
+        },
+        "countries": {
+          "path": "data/2026-08-10/countries.parquet",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "bytes": 100
+        },
+        "instrument_count": 6,
+        "company_count": 5,
+        "excluded_count": 1
+      }
+    ],
+    "listings": {
+      "102": {
+        "id": "102",
+        "name": "Synthetic Åland 102",
+        "ticker": "AL102",
+        "isin": "FI0000000001",
+        "country_id": "1",
+        "listing_country": "SE",
+        "sector_id": "7",
+        "branch_id": "21",
+        "instrument_type": 0,
+        "source_as_of": "2026-08-10",
+        "listing_date": null,
+        "stock_currency": null,
+        "report_currency": null
+      },
+      "201": {
+        "id": "201",
+        "name": "Synthetic Åland 201",
+        "ticker": "AL201",
+        "isin": "FI0000000001",
+        "country_id": "1",
+        "listing_country": "SE",
+        "sector_id": "5",
+        "branch_id": "31",
+        "instrument_type": 3,
+        "source_as_of": "2026-08-10",
+        "listing_date": null,
+        "stock_currency": null,
+        "report_currency": null
+      },
+      "202": {
+        "id": "202",
+        "name": "Synthetic Åland 202",
+        "ticker": "AL202",
+        "isin": "FI0000000001",
+        "country_id": "3",
+        "listing_country": "FI",
+        "sector_id": "5",
+        "branch_id": "31",
+        "instrument_type": 9,
+        "source_as_of": "2026-08-10",
+        "listing_date": null,
+        "stock_currency": null,
+        "report_currency": null
+      },
+      "203": {
+        "id": "203",
+        "name": "Synthetic Åland 203",
+        "ticker": "AL203",
+        "isin": "FI0000000001",
+        "country_id": "1",
+        "listing_country": "SE",
+        "sector_id": "7",
+        "branch_id": "21",
+        "instrument_type": 0,
+        "source_as_of": "2025-06-21",
+        "listing_date": null,
+        "stock_currency": null,
+        "report_currency": null
+      },
+      "204": {
+        "id": "204",
+        "name": null,
+        "ticker": null,
+        "isin": "FI0000000001",
+        "country_id": "999",
+        "listing_country": null,
+        "sector_id": "7",
+        "branch_id": null,
+        "instrument_type": 0,
+        "source_as_of": "2026-08-10",
+        "listing_date": null,
+        "stock_currency": null,
+        "report_currency": null
+      },
+      "205": {
+        "id": "205",
+        "name": "Synthetic Åland 205",
+        "ticker": "AL205",
+        "isin": "FI0000000001",
+        "country_id": "1",
+        "listing_country": "SE",
+        "sector_id": "3",
+        "branch_id": "31",
+        "instrument_type": 0,
+        "source_as_of": "2026-08-10",
+        "listing_date": null,
+        "stock_currency": null,
+        "report_currency": null
+      }
+    }
+  }
+}

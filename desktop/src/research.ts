@@ -123,6 +123,7 @@ export async function decodePackage(text: string): Promise<{ payload: ResearchPa
     liquidity_as_of: liquidity?.as_of ?? null, liquidity_sha256: payload.liquidity?.sha256 ?? null,
     business_as_of: business?.as_of ?? null, business_sha256: payload.business?.sha256 ?? null, company_count: business ? Object.keys(business.companies).length : 0,
     taxonomy_as_of: taxonomy?.as_of ?? null, taxonomy_sha256: payload.taxonomy?.sha256 ?? null, sector_count: taxonomy ? Object.keys(taxonomy.sectors).length : 0, branch_count: taxonomy ? Object.keys(taxonomy.branches).length : 0,
+    listing_count: Object.keys(taxonomy?.catalogue?.listings ?? {}).length,
     country_count: Object.keys(fundamentals.countries).length, indicator_count: fundamentals.indicators.length, storage: 'imported',
   };
   return { payload, release, fundamentals, liquidity, business, taxonomy };

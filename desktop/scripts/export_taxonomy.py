@@ -9,6 +9,7 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
+from listing_model import classify_listing
 from taxonomy_model import classify, corrections_by_company, dive_inventory, file_record, hierarchy
 
 # These shared themes are explicitly documented in the source crosswalk and INDEX.
@@ -18,7 +19,9 @@ SHARED_STUDIES = {
 }
 
 
-def export(root: Path, business: Path | None, corrections: Path, output: Path) -> dict:
+def export(
+    root: Path, business: Path | None, corrections: Path, output: Path, listings: Path | None = None
+) -> dict:
     if output.resolve().is_relative_to(root.resolve()):
         raise ValueError("Atlas exports must be written outside the Börsdata project")
     crosswalk = root / "data/complementing/taxonomy/branch_crosswalk.csv"
@@ -31,15 +34,29 @@ def export(root: Path, business: Path | None, corrections: Path, output: Path) -
     )
     sectors, branches = hierarchy(rows)
     correction_raw = json.loads(corrections.read_text(encoding="utf-8"))
-    reviewed = corrections_by_company(correction_raw, branches)
+    catalogue = json.loads(listings.read_text(encoding="utf-8")) if listings else None
+    if catalogue:
+        if catalogue.get("version") != 1 or correction_raw.get("version") != 1:
+            raise ValueError("Unsupported catalogue or correction version")
+        reviewed = {r["company_id"]: r for r in correction_raw["corrections"]}
+        if len(reviewed) != len(correction_raw["corrections"]):
+            raise ValueError("Duplicate company correction")
+    else:
+        reviewed = corrections_by_company(correction_raw, branches)
     business_bytes = business.read_bytes() if business else None
     business_raw = json.loads(business_bytes) if business_bytes else None
-    companies = business_raw["companies"] if business_raw else {}
+    companies = (
+        catalogue["listings"] if catalogue else business_raw["companies"] if business_raw else {}
+    )
+    if business_raw and not set(business_raw["companies"]).issubset(companies):
+        raise ValueError("Business profiles are missing from the listing catalogue")
     missing = set(reviewed) - set(companies)
     if missing:
         raise ValueError(f"Corrections must accompany included company records: {sorted(missing)}")
     classifications = {
-        key: classify(key, c["sector_id"], c["branch_id"], reviewed.get(key), branches)
+        key: (classify_listing if catalogue else classify)(
+            key, c["sector_id"], c["branch_id"], reviewed.get(key), branches
+        )
         for key, c in companies.items()
     }
     for branch in branches.values():
@@ -72,12 +89,18 @@ def export(root: Path, business: Path | None, corrections: Path, output: Path) -
     all_dives = dive_inventory(root, all_studies)
     unmapped = [d for d in all_dives if d["folder"] not in mapped]
     now = datetime.now(UTC).isoformat()
+    if any(r["reviewed_at"] > now[:10] for r in reviewed.values()):
+        raise ValueError("A correction review cannot be in the future")
     result = {
-        "version": 1,
+        "version": 2 if catalogue else 1,
         "as_of": now[:10],
         "exported_at": now,
         "business_sha256": hashlib.sha256(business_bytes).hexdigest() if business_bytes else None,
-        "classification_as_of": business_raw["as_of"] if business_raw else None,
+        "classification_as_of": catalogue["as_of"]
+        if catalogue
+        else business_raw["as_of"]
+        if business_raw
+        else None,
         "sectors": sectors,
         "branches": branches,
         "classifications": classifications,
@@ -97,6 +120,11 @@ def export(root: Path, business: Path | None, corrections: Path, output: Path) -
             "Only profiles in the active business package can be opened in Atlas. Other project documents are inventoried here; their full contents are not included.",
         ],
     }
+    if catalogue:
+        result["catalogue"] = catalogue
+        result["notes"][-1] = (
+            "Company identity entries cover saved company listings. Only the separately included financial profiles and archived text can be read as full research in Atlas."
+        )
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
         json.dumps(result, ensure_ascii=False, separators=(",", ":"), allow_nan=False),
@@ -108,7 +136,12 @@ def export(root: Path, business: Path | None, corrections: Path, output: Path) -
         "branch_studies": sum(b["study_status"] == "graduated" for b in branches.values()),
         "deep_dive_folders": len(all_dives),
         "unmapped": len(unmapped),
-        "profiles": len(companies),
+        "listings": len(companies),
+        "profiles": len(business_raw["companies"]) if business_raw else 0,
+        "classification_issues": sum(
+            c["status"] in ("sector_mismatch", "unclassified", "needs_review")
+            for c in classifications.values()
+        ),
         "bytes": output.stat().st_size,
     }
 
@@ -117,6 +150,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--borsdata-root", type=Path, required=True)
     parser.add_argument("--business", type=Path)
+    parser.add_argument("--listings", type=Path, help="All saved company listing identities")
     parser.add_argument(
         "--corrections",
         type=Path,
@@ -124,4 +158,8 @@ if __name__ == "__main__":
     )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    print(json.dumps(export(args.borsdata_root, args.business, args.corrections, args.output)))
+    print(
+        json.dumps(
+            export(args.borsdata_root, args.business, args.corrections, args.output, args.listings)
+        )
+    )

@@ -1,0 +1,76 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+
+export async function listingFlows(page, project) {
+  const envelope = JSON.parse(await readFile(resolve(project, 'public/data/research.atlas.json'), 'utf8'));
+  const taxonomy = JSON.parse(envelope.taxonomy.content), catalogue = taxonomy.catalogue;
+  const rows = Object.values(catalogue.listings), latest = rows.filter(r => r.source_as_of === catalogue.as_of);
+  const older = rows.filter(r => r.source_as_of !== catalogue.as_of);
+  assert.equal(rows.length, 19140); assert.equal(latest.length, 17593); assert.equal(older.length, 1547);
+  const countries = [...new Set(rows.map(r => r.listing_country))];
+  assert.equal(countries.length, 19); assert.ok(!countries.includes(null));
+  const search = page.getByLabel('Search companies or countries', { exact: true });
+  const country = page.getByLabel('Company listing country', { exact: true });
+  const coverage = page.getByLabel('Company snapshot coverage', { exact: true });
+  const start = performance.now();
+  await page.getByLabel('Observatory', { exact: true }).selectOption('companies');
+  await page.locator('[data-business-ready="true"]').waitFor();
+  assert.equal(Number(await page.locator('[data-listing-count]').getAttribute('data-listing-count')), rows.length);
+  for (const code of countries) {
+    await country.selectOption(code);
+    assert.equal(Number(await page.locator('[data-country-listing-count]').getAttribute('data-country-listing-count')), rows.filter(r => r.listing_country === code).length);
+  }
+  await country.selectOption('US');
+  assert.equal(await page.locator('.company-list [data-listing]').count(), 50);
+  const firstPage = await page.locator('.company-list [data-listing]').evaluateAll(elements => elements.map(e => e.dataset.listing));
+  await page.getByLabel('Next company page', { exact: true }).click();
+  const secondPage = await page.locator('.company-list [data-listing]').evaluateAll(elements => elements.map(e => e.dataset.listing));
+  assert.equal(secondPage.length, 50); assert.ok(secondPage.every(id => !firstPage.includes(id)));
+  await coverage.selectOption('older');
+  assert.equal(Number(await page.locator('[data-country-listing-count]').getAttribute('data-country-listing-count')), older.filter(r => r.listing_country === 'US').length);
+  const oldRow = older.find(r => r.listing_country === 'US' && r.name?.length > 15);
+  assert.ok(oldRow);
+  await page.getByLabel('Filter company listings', { exact: true }).fill(oldRow.name);
+  await page.locator(`[data-listing="${oldRow.id}"]`).click();
+  await page.locator(`[data-listing-detail="${oldRow.id}"]`).waitFor();
+  assert.match(await page.locator('.older-listing-note').innerText(), /2025-06-21[\s\S]*does not establish its listing status/);
+  assert.equal(await page.locator('[data-financial]').count(), 0);
+  await coverage.selectOption('all');
+  await search.fill('a');
+  assert.equal(await page.locator('[data-search-listing]').count(), 20);
+  assert.match(await page.locator('.search-results').innerText(), /Showing 20 of/);
+  const example = rows.find(r => r.name?.toLowerCase().startsWith('aak ') && r.source_as_of === catalogue.as_of) ?? latest.find(r => r.listing_country === 'SE' && r.name?.length > 15 && r.id !== '102');
+  await search.fill(example.name);
+  await page.locator(`[data-search-listing="${example.id}"]`).click();
+  await page.locator(`[data-listing-detail="${example.id}"]`).waitFor();
+  assert.equal(await page.locator('.business-sidebar').getAttribute('data-branch'), taxonomy.classifications[example.id].branch_id);
+  assert.match(await page.locator('.listing-identity').innerText(), new RegExp(example.id));
+  assert.equal(await page.locator('[data-financial]').count(), 0);
+  await page.screenshot({ path: resolve(project, 'test-results/company-directory-entry.png') });
+  // Metadata-only entries survive restart independently of the five rich profiles.
+  await page.reload();
+  await page.locator(`[data-listing-detail="${example.id}"]`).waitFor();
+  await search.fill('Nidhogg Resources');
+  await page.locator('[data-search-listing="548"]').click();
+  await page.locator('[data-classification-status="sector_mismatch"]').waitFor();
+  await page.locator('.classification-details summary').click();
+  assert.match(await page.locator('.classification-details').innerText(), /sector 3, branch 16[\s\S]*sector 7, branch 16/);
+  await page.getByLabel('Observatory', { exact: true }).selectOption('sectors');
+  await page.locator('[data-taxonomy-ready="true"]').waitFor();
+  const branchCounts = await page.locator('[data-branch-listings]').evaluateAll(elements => Object.fromEntries(elements.map(e => [e.dataset.branch, Number(e.dataset.branchListings)])));
+  assert.equal(Object.keys(branchCounts).length, 94);
+  for (const [id, n] of Object.entries(branchCounts)) assert.equal(n, rows.filter(r => taxonomy.classifications[r.id].branch_id === id).length);
+  assert.equal(Object.values(branchCounts).reduce((a, b) => a + b, 0), rows.length);
+  await page.getByLabel('Filter branch coverage', { exact: true }).selectOption('listings');
+  assert.equal(await page.locator('.branch-choice').count(), 94);
+  await coverage.selectOption('older');
+  assert.match(await page.locator('.directory-listing-total').innerText(), /1,547 company listings/);
+  await page.getByLabel('Filter branch coverage', { exact: true }).selectOption('profiles');
+  assert.equal(await page.locator('.branch-choice').count(), 0);
+  await coverage.selectOption('all');
+  await page.getByLabel('Filter branch coverage', { exact: true }).selectOption('all');
+  await search.fill('Holmen'); await search.press('Enter');
+  await page.locator('[data-company="102"][data-business-ready="true"]').waitFor();
+  return { duration_ms: Math.round(performance.now() - start), checks: ['19,140 listings reconcile across all 94 branches and 19 country filters', 'Company pages render at most 50 distinct listings; search is bounded at 20', 'All/latest/older coverage reconciles to 17,593 current and 1,547 older records', 'Directory-only identity and source date persist after reload without financial charts', 'Source sector conflict preserves both IDs and is visibly flagged', 'Older-only branch filters do not inherit current financial-profile counts'] };
+}

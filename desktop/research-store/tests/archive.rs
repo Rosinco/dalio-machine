@@ -312,3 +312,83 @@ fn damaged_saved_release_is_reported_and_other_releases_remain_usable() {
     assert_eq!(list.unreadable, 1);
     assert_eq!(list.releases[0].id, release.id);
 }
+
+#[test]
+fn listing_catalogue_is_hashed_and_survives_archive_restart() {
+    let raw: Value =
+        serde_json::from_str(include_str!("../../tests/fixtures/taxonomy-listings.json")).unwrap();
+    let package = taxonomy_package(raw);
+    let dir = Temp::new();
+    let store = Archive::new(dir.0.clone());
+    let release = store.import(&package.to_string()).unwrap();
+    assert_eq!((release.listing_count, release.company_count), (6, 1));
+    let reopened = Archive::new(dir.0.clone());
+    let actual = reopened.resource(&release.id, "taxonomy").unwrap();
+    let expected: Value =
+        serde_json::from_str(package["taxonomy"]["content"].as_str().unwrap()).unwrap();
+    assert_eq!(actual, expected);
+    assert!(actual["catalogue"]["listings"]["204"]["listing_country"].is_null());
+    assert_eq!(
+        actual["classifications"]["205"]["status"],
+        "sector_mismatch"
+    );
+    let mut damaged = package;
+    damaged["taxonomy"]["content"] = json!(damaged["taxonomy"]["content"]
+        .as_str()
+        .unwrap()
+        .replace("Synthetic Åland 201", "Changed name"));
+    assert!(inspect(&damaged.to_string()).is_err());
+}
+
+#[test]
+fn listing_catalogue_rejects_fabricated_metadata_and_inconsistent_coverage() {
+    let original: Value =
+        serde_json::from_str(include_str!("../../tests/fixtures/taxonomy-listings.json")).unwrap();
+    for (pointer, value) in [
+        ("/catalogue/listings/204/listing_country", json!("SE")),
+        ("/catalogue/listings/201/source_as_of", json!("2026-08-09")),
+        ("/catalogue/snapshots/1/company_count", json!(6)),
+        ("/classifications/205/source_sector_id", json!("5")),
+        ("/catalogue/included_types/0", json!("0")),
+        ("/catalogue/listings/204/listing_date", json!("1799-01-01")),
+        ("/catalogue/listings/204/listing_date", json!("2026-02-30")),
+        ("/version", json!(1)),
+        ("/catalogue/exported_at", json!("2026-02-30T12:00:00Z")),
+        ("/catalogue/exported_at", json!("1999-01-01T00:00:00Z")),
+        ("/catalogue/exported_at", json!("2026-09-10T12:00:00junkZ")),
+        ("/catalogue/exported_at", json!("2026-09-10T24:00:00Z")),
+    ] {
+        let mut raw = original.clone();
+        *raw.pointer_mut(pointer).unwrap() = value;
+        assert!(
+            inspect(&taxonomy_package(raw).to_string()).is_err(),
+            "accepted {pointer}"
+        );
+    }
+    for pointer in ["/catalogue/listings", "/classifications"] {
+        let mut raw = original.clone();
+        raw.pointer_mut(pointer)
+            .unwrap()
+            .as_object_mut()
+            .unwrap()
+            .remove("102");
+        assert!(inspect(&taxonomy_package(raw).to_string()).is_err());
+    }
+}
+
+#[test]
+fn reviewed_directory_only_classification_preserves_source_conflicts_and_detects_drift() {
+    let mut raw: Value =
+        serde_json::from_str(include_str!("../../tests/fixtures/taxonomy-listings.json")).unwrap();
+    raw["classifications"]["205"]["correction"] = json!({"company_id":"205","expected_sector_id":"3","expected_branch_id":"31","branch_id":"21","reason":"Synthetic review","source":"Test filing","reviewed_at":"2026-09-10"});
+    raw["classifications"]["205"]["branch_id"] = json!("21");
+    raw["classifications"]["205"]["sector_id"] = json!("7");
+    raw["classifications"]["205"]["status"] = json!("corrected");
+    assert!(inspect(&taxonomy_package(raw.clone()).to_string()).is_ok());
+    raw["classifications"]["205"]["correction"]["expected_sector_id"] = json!("5");
+    assert!(inspect(&taxonomy_package(raw.clone()).to_string()).is_err());
+    raw["classifications"]["205"]["branch_id"] = json!("31");
+    raw["classifications"]["205"]["sector_id"] = json!("5");
+    raw["classifications"]["205"]["status"] = json!("needs_review");
+    assert!(inspect(&taxonomy_package(raw).to_string()).is_ok());
+}

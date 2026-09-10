@@ -56,23 +56,26 @@ fn dives(v: &Value) -> Result<()> {
     }
     Ok(())
 }
+pub(super) fn export_timestamp(value: &Value) -> bool {
+    timestamp(value)
+        && value.as_str().is_some_and(|s| {
+            let local = s
+                .strip_suffix('Z')
+                .or_else(|| s.strip_suffix("+00:00"))
+                .unwrap();
+            let fraction = &local[19..];
+            s.starts_with("20")
+                && (fraction.is_empty()
+                    || fraction.starts_with('.')
+                        && fraction.len() > 1
+                        && fraction[1..].bytes().all(|b| b.is_ascii_digit()))
+        })
+}
 pub fn validate(raw: &Value, business: Option<&Value>, business_hash: Option<&str>) -> Result<()> {
     check(
-        raw["version"] == 1
+        (raw["version"] == 1 || raw["version"] == 2)
             && day(&raw["as_of"])
-            && timestamp(&raw["exported_at"])
-            && raw["exported_at"].as_str().is_some_and(|s| {
-                let local = s
-                    .strip_suffix('Z')
-                    .or_else(|| s.strip_suffix("+00:00"))
-                    .unwrap();
-                let fraction = &local[19..];
-                s.starts_with("20")
-                    && (fraction.is_empty()
-                        || fraction.starts_with('.')
-                            && fraction.len() > 1
-                            && fraction[1..].bytes().all(|b| b.is_ascii_digit()))
-            }),
+            && export_timestamp(&raw["exported_at"]),
         "Unsupported taxonomy version or inventory date.",
     )?;
     let sectors = object(&raw["sectors"])?;
@@ -202,49 +205,79 @@ pub fn validate(raw: &Value, business: Option<&Value>, business_hash: Option<&st
             && raw["corrections_sha256"].as_str().is_some_and(is_id),
         "Invalid taxonomy notes or correction checksum.",
     )?;
+    let with_catalogue = raw["version"] == 2;
+    if with_catalogue {
+        super::catalogue::validate(&raw["catalogue"], business, raw["as_of"].as_str().unwrap())?;
+    } else {
+        check(
+            raw.get("catalogue").is_none(),
+            "A v1 taxonomy cannot include an unvalidated company catalogue.",
+        )?;
+    }
     let expected_hash = business_hash.map_or(Value::Null, Value::from);
-    let expected_date = business.map_or(Value::Null, |b| b["as_of"].clone());
+    let expected_date = if with_catalogue {
+        raw["catalogue"]["as_of"].clone()
+    } else {
+        business.map_or(Value::Null, |b| b["as_of"].clone())
+    };
     check(
         raw.get("business_sha256") == Some(&expected_hash)
             && raw.get("classification_as_of") == Some(&expected_date),
         "Taxonomy does not match the selected business document.",
     )?;
     let classifications = object(&raw["classifications"])?;
-    let companies = business.and_then(|b| b["companies"].as_object());
+    let companies = if with_catalogue {
+        Some(object(&raw["catalogue"]["listings"])?)
+    } else {
+        business.and_then(|b| b["companies"].as_object())
+    };
     check(
-        classifications.len() <= 300 && classifications.len() == companies.map_or(0, |c| c.len()),
-        "Taxonomy company coverage does not match the business document.",
+        classifications.len() <= if with_catalogue { 100000 } else { 300 }
+            && classifications.len() == companies.map_or(0, |c| c.len()),
+        "Taxonomy company coverage does not match the selected directory.",
     )?;
     for (key, c) in classifications {
-        fields(
-            c,
-            &[
-                "company_id",
-                "source_sector_id",
-                "source_branch_id",
-                "sector_id",
-                "branch_id",
-                "status",
-            ],
-        )?;
+        fields(c, &["company_id", "status"])?;
+        for k in [
+            "source_sector_id",
+            "source_branch_id",
+            "sector_id",
+            "branch_id",
+        ] {
+            check(
+                c.get(k).is_some() && (c[k].is_null() || identifier(&c[k])),
+                "Invalid classification identifier.",
+            )?;
+        }
         check(
             company_id(key)
                 && c["company_id"] == *key
                 && companies.and_then(|c| c.get(key)).is_some_and(|original| {
                     c["source_sector_id"] == original["sector_id"]
                         && c["source_branch_id"] == original["branch_id"]
-                })
-                && branches
-                    .get(c["source_branch_id"].as_str().unwrap())
-                    .is_some_and(|b| b["sector_id"] == c["source_sector_id"]),
-            "Taxonomy original classification does not match the business document.",
+                }),
+            "Taxonomy original classification does not match its source document.",
         )?;
+        let source_branch = c["source_branch_id"].as_str();
+        let source_parent = source_branch.and_then(|id| branches.get(id));
+        if !with_catalogue {
+            check(
+                source_parent.is_some_and(|b| b["sector_id"] == c["source_sector_id"]),
+                "Invalid original branch parent.",
+            )?;
+        }
+        let mut target = source_branch.filter(|id| branches.contains_key(*id));
+        let mut status = if target.is_none() {
+            "unclassified"
+        } else if source_parent.unwrap()["sector_id"] == c["source_sector_id"] {
+            "source"
+        } else {
+            "sector_mismatch"
+        };
         check(
             c.get("correction").is_some(),
             "Missing taxonomy correction state.",
         )?;
-        let mut status = "source";
-        let mut target = c["source_branch_id"].as_str().unwrap();
         let r = &c["correction"];
         if !r.is_null() {
             fields(
@@ -262,9 +295,6 @@ pub fn validate(raw: &Value, business: Option<&Value>, business_hash: Option<&st
                 r["company_id"] == *key
                     && identifier(&r["expected_branch_id"])
                     && identifier(&r["expected_sector_id"])
-                    && branches
-                        .get(r["expected_branch_id"].as_str().unwrap())
-                        .is_some_and(|b| b["sector_id"] == r["expected_sector_id"])
                     && identifier(&r["branch_id"])
                     && branches.contains_key(r["branch_id"].as_str().unwrap())
                     && !r["reason"].as_str().unwrap().trim().is_empty()
@@ -273,21 +303,33 @@ pub fn validate(raw: &Value, business: Option<&Value>, business_hash: Option<&st
                     && r["reviewed_at"].as_str() <= raw["as_of"].as_str(),
                 "Invalid reviewed taxonomy correction.",
             )?;
-            if c["source_branch_id"] == r["branch_id"] {
+            if !with_catalogue {
+                check(
+                    branches
+                        .get(r["expected_branch_id"].as_str().unwrap())
+                        .is_some_and(|b| b["sector_id"] == r["expected_sector_id"]),
+                    "Invalid correction original branch parent.",
+                )?;
+            }
+            if c["source_branch_id"] == r["branch_id"]
+                && source_parent.is_some_and(|b| b["sector_id"] == c["source_sector_id"])
+            {
                 status = "aligned";
             } else if c["source_branch_id"] == r["expected_branch_id"]
                 && c["source_sector_id"] == r["expected_sector_id"]
             {
                 status = "corrected";
-                target = r["branch_id"].as_str().unwrap();
+                target = r["branch_id"].as_str();
             } else {
                 status = "needs_review";
             }
         }
+        let expected_branch = target.map_or(Value::Null, Value::from);
+        let expected_sector = target.map_or(&Value::Null, |id| &branches[id]["sector_id"]);
         check(
             c["status"] == status
-                && c["branch_id"] == target
-                && c["sector_id"] == branches[target]["sector_id"],
+                && c["branch_id"] == expected_branch
+                && &c["sector_id"] == expected_sector,
             "Taxonomy effective classification disagrees with its correction.",
         )?;
     }

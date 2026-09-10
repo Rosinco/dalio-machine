@@ -1,5 +1,6 @@
 //! Validated, immutable local research files. No network or source-database access.
 mod business;
+mod catalogue;
 mod taxonomy;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
@@ -52,6 +53,8 @@ pub struct Release {
     pub sector_count: usize,
     #[serde(default)]
     pub branch_count: usize,
+    #[serde(default)]
+    pub listing_count: usize,
     #[serde(default)]
     pub company_count: usize,
     pub country_count: usize,
@@ -634,6 +637,10 @@ fn validate(text: &str) -> Result<Validated> {
         branch_count: taxonomy
             .as_ref()
             .map_or(0, |v| v["branches"].as_object().unwrap().len()),
+        listing_count: taxonomy
+            .as_ref()
+            .and_then(|v| v["catalogue"]["listings"].as_object())
+            .map_or(0, |v| v.len()),
         company_count: business
             .as_ref()
             .map_or(0, |v| v["companies"].as_object().unwrap().len()),

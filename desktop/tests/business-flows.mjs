@@ -19,7 +19,7 @@ export async function businessFlows(page, project) {
   await selectRelease(current);
   await page.getByLabel('Observatory', { exact: true }).selectOption('sectors');
   await page.locator('[data-business-ready="true"]').waitFor();
-  await page.locator('.country-coverage').getByRole('button', { name: /Sweden/ }).click();
+  await page.getByLabel('Company listing country', { exact: true }).selectOption('SE');
   await page.getByLabel('Branch overview', { exact: true }).click();
   assert.equal(await page.getByLabel('Fundamentals', { exact: true }).count(), 0);
   assert.match(await page.locator('.business-heading').innerText(), /Materials[\s\S]*Forest & Wood Products/);
