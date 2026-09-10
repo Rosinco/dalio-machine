@@ -1,6 +1,7 @@
 node_modules/
 dist/
 src-tauri/target/
+research-store/target/
 public/data/
 test-results/
 .tools/

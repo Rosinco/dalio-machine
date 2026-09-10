@@ -1,0 +1,75 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+
+export async function researchFlows(page, project) {
+  const catalogue = JSON.parse(await readFile(resolve(project, 'public/data/catalog.json'), 'utf8'));
+  const current = catalogue.releases.find(r => r.id === catalogue.default_id);
+  const older = catalogue.releases.find(r => r.id !== current.id);
+  const original = await readFile(resolve(project, 'public', older.package_url.replace(/^\.\//, '')), 'utf8');
+  await page.getByLabel('Search countries').fill('Sweden');
+  await page.getByLabel('Search countries').press('Enter');
+  await page.getByLabel('Fundamentals', { exact: true }).click();
+  await page.locator('[data-country="SE"][data-ready="true"]').waitFor();
+  await page.locator('.category-list button').nth(3).click();
+  await page.locator('[data-score-category="promises"]').waitFor();
+  await page.waitForFunction(() => document.querySelector('.score-change')?.textContent.includes('Unchanged'));
+  assert.match(await page.locator('.score-formula').innerText(), /70\.89/);
+  assert.equal(await page.locator('.score-indicator').count(), 4);
+  assert.match(await page.locator('.contribution-grid').first().innerText(), /25(?:\.0)?%/);
+  await page.screenshot({ path: resolve(project, 'test-results/score-details.png') });
+  await page.getByRole('tab', { name: 'Liquidity', exact: true }).click();
+  await page.locator('[data-liquidity-country="SE"]').waitFor();
+  assert.match(await page.locator('.national-money').innerText(), /3\.16/);
+  assert.match(await page.locator('.national-money').innerText(), /-0\.14/);
+  await page.locator('.national-money summary').click();
+  assert.match(await page.locator('.national-money .source-trace').innerText(), /SCB RIKSBANK MONEY/);
+  await page.screenshot({ path: resolve(project, 'test-results/liquidity-sweden.png') });
+  for (const summary of await page.locator('.liquidity-disclosure > summary').all()) await summary.click();
+  await page.getByLabel('Offshore credit currency').selectOption('EUR');
+  assert.match(await page.locator('.liquidity-panel').innerText(), /FICC is a clearing category/);
+  assert.match(await page.locator('.liquidity-panel').innerText(), /outstanding stock/);
+  await page.getByLabel('Search countries').fill('Germany');
+  await page.getByLabel('Search countries').press('Enter');
+  await page.locator('[data-liquidity-country="DE"]').waitFor();
+  assert.match(await page.locator('.scope-note').innerText(), /whole euro area/);
+  await page.getByLabel('Search countries').fill('Sweden');
+  await page.getByLabel('Search countries').press('Enter');
+  await page.getByLabel('Open data library').click();
+  await page.getByLabel(`Use release ${older.as_of}`, { exact: true }).click();
+  await page.locator(`[data-active-release="${older.id}"]`).waitFor();
+  await page.keyboard.press('Escape');
+  await page.getByText('No liquidity report is included', { exact: false }).waitFor();
+  await page.getByLabel('Open data library').click();
+  await page.getByLabel(`Use release ${current.as_of}`, { exact: true }).click();
+  await page.locator(`[data-active-release="${current.id}"]`).waitFor();
+  await page.keyboard.press('Escape');
+  await page.locator('[data-liquidity-country="SE"]').waitFor();
+  // A failed import must leave both the active release and the archive intact.
+  await page.getByLabel('Open data library').click();
+  const tampered = JSON.parse(original); tampered.fundamentals.content = '{}';
+  await page.getByLabel('Research file', { exact: true }).setInputFiles({ name: 'damaged.atlas.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(tampered)) });
+  await page.getByRole('alert').waitFor();
+  assert.match(await page.getByRole('alert').innerText(), /checksum/);
+  assert.equal(await page.locator('.app').getAttribute('data-active-release'), current.id);
+  assert.equal(await page.getByRole('button', { name: 'Import and use', exact: true }).count(), 0);
+  // Import an actual older research package, preserving its original data and dates.
+  await page.getByLabel('Research file', { exact: true }).setInputFiles({ name: 'previous.atlas.json', mimeType: 'application/json', buffer: Buffer.from(original) });
+  await page.getByRole('button', { name: 'Import and use', exact: true }).click();
+  await page.locator(`[data-active-release="${older.id}"]`).waitFor();
+  await page.locator(`[data-release-id="${older.id}"][data-storage="imported"]`).waitFor();
+  // Reimporting is idempotent, even when the file has a different name.
+  await page.getByLabel('Research file', { exact: true }).setInputFiles({ name: 'duplicate.atlas.json', mimeType: 'application/json', buffer: Buffer.from(original) });
+  await page.getByRole('button', { name: 'Import and use', exact: true }).click();
+  await page.waitForFunction(() => !document.querySelector('.import-preview'));
+  assert.equal(await page.locator('.release-card').count(), 2);
+  await page.screenshot({ path: resolve(project, 'test-results/research-library.png') });
+  await page.reload();
+  await page.locator(`[data-active-release="${older.id}"] [data-country="SE"][data-ready="true"]`).waitFor();
+  await page.getByRole('tab', { name: 'Evidence', exact: true }).click();
+  assert.match(await page.locator('.release-details').innerText(), new RegExp(older.fundamentals_sha256));
+  await page.getByLabel('Open data library').click();
+  await page.locator(`[data-release-id="${older.id}"][data-storage="imported"]`).waitFor();
+  await page.keyboard.press('Escape');
+  return { current, older, original, checks: ['score arithmetic and unchanged comparison', 'Swedish money and SCB source ledger', 'global liquidity panels', 'explicit euro-area scope', 'release switching and missing liquidity', 'damaged import rejection', 'immutable duplicate import', 'import persistence and original source hash'] };
+}

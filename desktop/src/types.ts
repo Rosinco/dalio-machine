@@ -6,9 +6,21 @@ export type Indicator = {
   cadence: string; sources: string[]; scored: boolean; forward: boolean;
 };
 export type Cell = {
-  value: number | null; date: string; source: string; pct: number | null;
+  value: number | null; date: string | null; source: string | null; pct: number | null;
   trend: string | null; uncertainty: string; is_forecast: boolean;
+  lag_value?: number | null; trend_5y?: number | null; se?: number | null;
 };
+
+export type ResearchRelease = {
+  id: string; as_of: string; generated_at: string; fundamentals_sha256: string;
+  liquidity_as_of: string | null; liquidity_sha256: string | null;
+  country_count: number; indicator_count: number;
+  storage: 'included' | 'imported'; base?: string; package_url?: string;
+};
+export type ResearchCatalogue = { version: number; default_id: string; releases: ResearchRelease[] };
+export type ResearchDocument = { source_file: string; sha256: string; content: string };
+export type ResearchPackage = { format: string; schema_version: number; fundamentals: ResearchDocument; liquidity: ResearchDocument | null };
+export type HistoryPanel = Record<string, Record<string, Point[]>>;
 export type Point = { year: number; value: number | null; is_forecast: boolean };
 export type Pressure = {
   rule_id: string; title: string; constraint: string; forced_options: string[];

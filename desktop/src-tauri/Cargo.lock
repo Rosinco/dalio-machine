@@ -71,6 +71,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "atlas-research-store"
+version = "0.2.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "sha2",
+]
+
+[[package]]
 name = "atomic-waker"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1762,8 +1771,10 @@ checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 
 [[package]]
 name = "macro-atlas"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
+ "atlas-research-store",
+ "serde_json",
  "tauri",
  "tauri-build",
 ]

@@ -7,25 +7,27 @@ import { resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
+import { researchFlows } from './research-flows.mjs';
 
 const project = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const executable = process.argv[2] || resolve(project, 'src-tauri/target/x86_64-pc-windows-msvc/release/macro-atlas.exe');
 const resultFolder = resolve(project, 'test-results');
 await mkdir(resultFolder, { recursive: true });
-const server = createServer();
-await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-const port = server.address().port;
-await new Promise(resolve => server.close(resolve));
-// Keep the test browser and its preferences separate from an open Atlas window.
+// Isolate both the WebView preferences and the native research archive.
 const profile = await mkdtemp(resolve(tmpdir(), 'macro-atlas-test-'));
-const app = spawn(executable, [], { stdio: 'ignore', env: { ...process.env, WEBVIEW2_USER_DATA_FOLDER: profile, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port}` } });
-let launchError;
-app.on('error', error => { launchError = error; });
-let browser, page;
+const archive = resolve(profile, 'research');
+let app, browser, page;
 const runtimeErrors = [], externalRequests = [];
-try {
-  console.log(`Windows app started for testing: ${app.pid}`);
+async function startApp() {
+  const server = createServer();
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const port = server.address().port;
+  await new Promise(resolve => server.close(resolve));
+  app = spawn(executable, [], { stdio: 'ignore', env: { ...process.env, ATLAS_RESEARCH_DIR: archive, WEBVIEW2_USER_DATA_FOLDER: profile, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port}` } });
+  let launchError;
+  app.on('error', error => { launchError = error; });
   const deadline = Date.now() + 25000;
+  browser = undefined;
   while (!browser && Date.now() < deadline) {
     if (launchError) throw launchError;
     if (app.exitCode !== null) throw new Error(`App exited: ${app.exitCode}`);
@@ -39,10 +41,46 @@ try {
     if (/^https?:/.test(request.url()) && !/^https?:\/\/(tauri|ipc)\.localhost([/:]|$)/.test(request.url())) externalRequests.push(request.url());
   });
   await page.waitForURL('http://tauri.localhost/');
+  return app.pid;
+}
+async function stopApp() {
+  await browser?.close().catch(() => {});
+  browser = undefined;
+  if (app && app.exitCode === null) {
+    const stopped = new Promise(resolve => app.once('exit', resolve));
+    app.kill();
+    await Promise.race([stopped, new Promise((_, reject) => setTimeout(() => reject(new Error('Test app did not exit')), 10000))]);
+  }
+}
+try {
+  console.log(`Windows app started for testing: ${await startApp()}`);
   await page.evaluate(() => localStorage.clear());
   await page.reload();
   const expression = await readFile(resolve(project, 'tests/native-smoke.js'), 'utf8');
   const report = await page.evaluate(expression);
+  const research = await researchFlows(page, project);
+  report.checks.push(...research.checks);
+  assert.equal(await readFile(resolve(archive, `${research.older.id}.atlas.json`), 'utf8'), research.original);
+  const firstPid = app.pid;
+  await stopApp();
+  console.log(`Windows app restarted for persistence testing: ${await startApp()}`);
+  assert.notEqual(app.pid, firstPid);
+  await page.locator(`[data-active-release="${research.older.id}"] [data-country="SE"][data-ready="true"]`).waitFor();
+  await page.getByLabel('Open data library').click();
+  await page.locator(`[data-release-id="${research.older.id}"][data-storage="imported"]`).waitFor();
+  report.checks.push('Imported package survives native process restart, byte-for-byte');
+  await page.getByLabel(`Use release ${research.current.as_of}`, { exact: true }).click();
+  await page.locator(`[data-active-release="${research.current.id}"]`).waitFor();
+  await page.getByRole('button', { name: 'Save a copy of active release', exact: true }).click();
+  await page.waitForFunction(() => document.querySelector('.library-message')?.textContent.startsWith('Saved to '));
+  report.researchExport = (await page.locator('.library-message').innerText()).replace(/^Saved to /, '').trim();
+  const exported = JSON.parse(await readFile(report.researchExport, 'utf8'));
+  assert.equal(exported.fundamentals.sha256, research.current.fundamentals_sha256);
+  assert.equal(exported.liquidity.sha256, research.current.liquidity_sha256);
+  report.checks.push('Native portable research export to Downloads');
+  await page.keyboard.press('Escape');
+  await page.getByRole('tab', { name: 'Overview', exact: true }).click();
+  await page.locator('[data-country="SE"][data-ready="true"]').waitFor();
   await page.getByLabel('Export selected history as CSV').click();
   await page.waitForFunction(() => document.querySelector('.toast')?.textContent.startsWith('Saved to '));
   const exportPath = (await page.locator('.toast').innerText()).replace(/^Saved to /, '').trim();
@@ -65,8 +103,7 @@ try {
   console.error(error);
   process.exitCode = 1;
 } finally {
-  await browser?.close().catch(() => {});
-  if (app.exitCode === null) app.kill();
+  await stopApp().catch(error => console.error(error));
   await new Promise(resolve => setTimeout(resolve, 500));
   await rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }).catch(() => console.warn(`Test profile still in use: ${profile}`));
 }

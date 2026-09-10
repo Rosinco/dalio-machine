@@ -20,7 +20,7 @@ export function Chart({ option, height = 230, label }: { option: EChartsCoreOpti
     observer.observe(element.current);
     return () => { observer.disconnect(); chart.dispose(); instance.current = null; };
   }, []);
-  useEffect(() => { instance.current?.setOption({ animation: false, textStyle: { fontFamily: 'Segoe UI, sans-serif' }, ...option }, true); }, [option]);
+  useEffect(() => { instance.current?.setOption({ animation: false, textStyle: { fontFamily: 'Segoe UI, sans-serif' }, ...option, tooltip: { ...(typeof option.tooltip === 'object' && option.tooltip !== null ? option.tooltip : {}), renderMode: 'richText' } }, true); }, [option]);
   return <div ref={element} role="img" aria-label={label} style={{ height, width: '100%' }} />;
 }
 

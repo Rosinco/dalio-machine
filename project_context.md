@@ -12,9 +12,12 @@ The framework is treated as a descriptive lens, not a predictive oracle. The pro
 
 The `desktop/` presentation target (ADR 0021, 2026-09-10) adds **Macro Atlas**:
 an offline Windows Tauri/React/MapLibre viewer with ECharts and React Flow. It reads
-validated, bundled fundamentals JSON exports, never the source database. It covers
-the existing country panel, current categories, annual histories/forecasts and goods
-trade; history is latest-vintage, not point-in-time replay. Sector/company/asset
+validated bundled or locally imported research packages, never the source database.
+Version 0.2 adds an immutable release library, category calculation and change
+drilldowns, and the saved liquidity diagnostics (national/currency-area broad money,
+offshore credit, US MMF/repo, coverage and source ledger). It covers the existing
+country panel, categories, annual histories/forecasts and goods trade; history uses
+the selected vintage, not point-in-time replay. Sector/company/asset
 layers and DuckDB queries remain future slices. Build, refresh and test instructions:
 `desktop/README.md`. Generated data and binaries are gitignored.
 

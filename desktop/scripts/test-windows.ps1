@@ -25,7 +25,7 @@ $runner.StartInfo.RedirectStandardError = $true
 $null = $runner.Start()
 $stdout = $runner.StandardOutput.ReadToEndAsync()
 $stderr = $runner.StandardError.ReadToEndAsync()
-if (-not $runner.WaitForExit(90000)) { $runner.Kill(); throw 'Native test exceeded 90 seconds.' }
+if (-not $runner.WaitForExit(150000)) { $runner.Kill(); throw 'Native test exceeded 150 seconds.' }
 Write-Output $stdout.GetAwaiter().GetResult()
 Write-Output $stderr.GetAwaiter().GetResult()
 exit $runner.ExitCode
