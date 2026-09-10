@@ -15,7 +15,8 @@
 
 ## Completed checkpoint
 
-Engine implementation through commit `32751f5` is integrated on `main`.
+The collection checkpoint and handoff were pushed on `main` at `548aa41`;
+the separate desktop branch was pushed at `3d2f8dc`.
 The latest batch collected and verified 361 official country/source-series
 histories across all 19 saved listing countries: 19 source series per country,
 18 distinct metrics, and 15,616 batch observations. Nine countries previously
@@ -43,7 +44,47 @@ Verified live database totals:
 The batch added 7,343 net current scalar observations. Every earlier immutable
 row and every unrelated current observation was preserved. Combined staging
 and live audits passed integrity/foreign-key checks; offline replay created
-zero releases. All **1,307 tests passed**, and Ruff is clean.
+zero releases. The collection checkpoint passed all **1,307 tests**.
+
+## Country assessment layer
+
+Commit `9a8e1e2`, integrated on `main`, implements ADR 0030 and the user's
+authorized analysis pivot. A read-only consumer
+now builds 19 country profiles from the retained 361 histories and 15,616
+observations. Each profile has five IMF baseline indicators for 2025, the
+retained 2026–2031 path, three dated structural indicators, descriptive findings
+and conditional scenarios. All 19 have the selected baseline and projection
+cells; this is coverage of the defined profile, not completeness of macro
+research or predictive confidence.
+
+The release contains **73 conditional scenarios and 748 source-cell citations**,
+including seven original Swedish debt-office values. Cases cover weaker demand,
+tighter funding, stronger activity and energy-import pressure where supported
+by recent historical exposure. Each names assumptions, transmission channels,
+monitoring signposts, invalidating evidence and required company checks.
+Revenue/customer geography, plants, costs, currencies, debt maturities, interest
+terms and hedges must be verified before drawing sector or company conclusions.
+
+IMF baseline rows are estimate/outturn; projection status uses the documented
+calendar convention because native per-point actual/estimate cutoffs are not
+supplied by this DataMapper collection. Missing years stay missing. WB context
+retains its historical year. Swedish central-government currency amounts and
+interest-rate refixing measures remain separate from general-government GDP
+ratios and principal maturity. No probabilities, numerical stress forecasts,
+composite scores or company verdicts were created.
+
+Assessment date: **2026-09-10**. Exact known-at cutoff:
+**2026-09-10T21:10:00+00:00**. Final snapshot:
+`b2524c09385af9682a462be968e0eb20ccd5e5917e0e73d43b06949f93fd5144`.
+Open its `index.md` for the country comparison and links to all 19 profiles.
+
+Validation: **1,365 integrated tests passed**; all **58 assessment tests**
+also passed after the final metadata wording correction. Ruff and diff checks
+are clean. The final live audit reconciled all 748 citations with retained
+source cells and passed SQLite integrity/foreign-key checks. An exact repeat
+from canonical `main` preserved database, 775 protected source files and all
+21 output files byte-for-byte, including modification times. Validation logs,
+receipts and reproducible audit scripts are saved alongside the snapshots.
 
 ## Durable local evidence
 
@@ -64,6 +105,11 @@ them together:
 - `data/snapshots/company-country-first-hand-sources-2026-09-10.md`: discovery
   backlog, not proof that those national feeds have been ingested
 - `data/snapshots/refinancing_2026-09-10_497a167a1895.{md,json}`
+- `data/snapshots/country_assessments/LATEST.json`: pointer to the complete
+  immutable assessment directory with `index.md`, `snapshot.json` and 19
+  `countries/<code>.md` reports
+- `data/snapshots/country_assessments/validation/`: source-cell audit,
+  deterministic read-only rerun receipt, audit scripts and integrated test log
 
 The older country v1 bundle is superseded by v2; do not promote it. Source
 bytes and publication/reference/acquisition dates are retained separately.
@@ -79,21 +125,16 @@ and native-debt evidence has not yet been exported into the desktop pack.
 Standard balance-sheet tables work; detailed physical-asset inventories and
 map markers are future work.
 
-## User-authorized continuation
+## Next development step
 
-After committing, pushing and completing this handoff, continue from collection
-into **clear country assessments and scenarios that can later support sector
-and company analysis**. Start from the verified numeric evidence already
-available for the 19 listing countries. Record this analysis pivot in a new ADR
-without declaring the remaining collection packages complete.
-
-Each assessment should separate reported data/estimates, publisher forecasts,
-derived arithmetic, Observatory interpretation and conditional scenarios. Bind
-every numeric conclusion to exact releases, periods and source artifacts.
-State 1–5-year horizons, transmission mechanisms, observable signposts,
-invalidators, evidence gaps and limits on confidence. Sector/company channels
-are conditional research hypotheses until company exposures are verified.
-Avoid invented probabilities, composite scores and automatic buy/sell verdicts.
+Deepen the specific national evidence needed to test the scenario signposts:
+recent activity/orders, credit conditions, debt maturities and refinancing
+costs, and sector-relevant energy exposure. Prefer the statistical office,
+central bank and debt office for each country, retain their own scopes, and
+join actual company exposures when available. A later desktop export can
+present the country profiles and scenarios in Macro Atlas's sidebar. The first
+assessment layer is complete; broader national inputs, numerical stress models
+and full sector/company assessment remain future work.
 
 The user explicitly prefers **first-hand sources whenever available**. This
 is recorded in `CLAUDE.md`; official WB/IMF harmonized baselines retain their
@@ -104,7 +145,7 @@ The ranking population and existing scoring methodology are unchanged.
 Twenty institutional report drafts remain unverified; communication content
 remains outside the acquired evidence. Numeric analysis can proceed without
 inventing report reviews or communications clearance. See ADRs 0004, 0017,
-0028 and 0029, and `project_context.md` for the current architecture.
+0028–0030, and `project_context.md` for the current architecture.
 
 ## Working commands
 
@@ -113,8 +154,10 @@ source .venv/bin/activate
 pytest -q
 ruff check src tests
 python -m dalio.storage.inventory --db data/dalio.db --json
+python -m dalio.pipelines.build_country_assessments --db data/dalio.db --as-of 2026-09-10 --known-at 2026-09-10T21:10:00+00:00
 ```
 
-Use an isolated feature worktree for the assessment slice, the canonical venv,
-and `PYTHONPATH=src` when running its code. Tests use mocked sources. The new
-assessment consumer should read the database without changing raw evidence.
+Assessment worktree: `/home/rosinco/workspace/dalio-country-assessments`, branch
+`feat/country-assessments`. Use the canonical venv and `PYTHONPATH=src` in a
+feature worktree. Tests use mocked sources; actual assessment builds use
+retained local bytes and open the source database read-only.

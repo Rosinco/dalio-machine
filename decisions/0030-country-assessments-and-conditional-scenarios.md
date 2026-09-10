@@ -111,3 +111,25 @@ tests cover historical selection, source corruption, forecast gaps, stale
 structural data, scenario horizons, native debt scope, citation identity and
 atomic publication. The integrated suite and a source-to-output live audit
 must pass before the completed assessment slice is committed and handed off.
+
+### Verified checkpoint — 2026-09-10
+
+Implementation `9a8e1e2` is integrated on `main`. The integrated suite passed
+**1,365 tests**; the final 58 assessment tests also passed after the metadata
+wording correction. Ruff and diff checks are clean.
+
+At known-at `2026-09-10T21:10:00+00:00`, the canonical export covers 19 countries,
+361 histories and 15,616 observations. Its **748 citations** reconcile to the
+source cells, including seven original Swedish debt-office values, and support
+**73 conditional scenarios**. SQLite integrity and foreign-key checks pass.
+An exact repeat preserves database, 775 protected source files and 21 immutable
+output files in bytes, size and modification time.
+
+Published snapshot:
+`b2524c09385af9682a462be968e0eb20ccd5e5917e0e73d43b06949f93fd5144`.
+Its index and country reports live under `data/snapshots/country_assessments/`;
+audit/reproducibility receipts, scripts and full test logs are retained in the
+sibling `validation/` directory. The source database and desktop bundle are
+unchanged. Snapshot identity includes protected source locations, so a build
+from another worktree can have a different hash despite identical country
+findings and citations; repeatability is verified within the canonical location.
