@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "manifest_id": "company_listing_country_acquisition_v1",
+  "evaluated_on": "2026-09-10",
+  "definition": "Acquisition universe from saved eligible Börsdata listings; listing country does not establish issuer domicile, asset location, or economic exposure.",
+  "selection": "Latest saved row per instrument ID across snapshots 2025-06-21 and 2026-08-10; instrument_type in (0,1,3,8,9,10). Not issuer deduplication.",
+  "scoring_population_change": false,
+  "source": {
+    "path": "/home/rosinco/workspace/dalio-atlas-desktop/desktop/public/data/taxonomy.json",
+    "sha256": "cc54a95110c5ab068434fdab8a548082ee26b48b67fbe2cde5ec330b578b37ff",
+    "bytes": 8260672,
+    "as_of": "2026-08-10",
+    "exported_at": "2026-09-10T15:10:54.275440+00:00",
+    "listing_count": 19140
+  },
+  "countries": [
+    {
+      "listing_iso2": "BE",
+      "country": "BE",
+      "iso3": "BEL",
+      "name": "Belgium",
+      "listing_count": 115
+    },
+    {
+      "listing_iso2": "CA",
+      "country": "CA",
+      "iso3": "CAN",
+      "name": "Canada",
+      "listing_count": 2321
+    },
+    {
+      "listing_iso2": "CH",
+      "country": "CH",
+      "iso3": "CHE",
+      "name": "Switzerland",
+      "listing_count": 223
+    },
+    {
+      "listing_iso2": "DE",
+      "country": "DE",
+      "iso3": "DEU",
+      "name": "Germany",
+      "listing_count": 6340
+    },
+    {
+      "listing_iso2": "DK",
+      "country": "DK",
+      "iso3": "DNK",
+      "name": "Denmark",
+      "listing_count": 166
+    },
+    {
+      "listing_iso2": "EE",
+      "country": "EE",
+      "iso3": "EST",
+      "name": "Estonia",
+      "listing_count": 22
+    },
+    {
+      "listing_iso2": "ES",
+      "country": "ES",
+      "iso3": "ESP",
+      "name": "Spain",
+      "listing_count": 170
+    },
+    {
+      "listing_iso2": "FI",
+      "country": "FI",
+      "iso3": "FIN",
+      "name": "Finland",
+      "listing_count": 199
+    },
+    {
+      "listing_iso2": "FR",
+      "country": "FR",
+      "iso3": "FRA",
+      "name": "France",
+      "listing_count": 618
+    },
+    {
+      "listing_iso2": "GB",
+      "country": "UK",
+      "iso3": "GBR",
+      "name": "United Kingdom",
+      "listing_count": 520
+    },
+    {
+      "listing_iso2": "IT",
+      "country": "IT",
+      "iso3": "ITA",
+      "name": "Italy",
+      "listing_count": 108
+    },
+    {
+      "listing_iso2": "LT",
+      "country": "LT",
+      "iso3": "LTU",
+      "name": "Lithuania",
+      "listing_count": 23
+    },
+    {
+      "listing_iso2": "LV",
+      "country": "LV",
+      "iso3": "LVA",
+      "name": "Latvia",
+      "listing_count": 9
+    },
+    {
+      "listing_iso2": "NL",
+      "country": "NL",
+      "iso3": "NLD",
+      "name": "Netherlands",
+      "listing_count": 106
+    },
+    {
+      "listing_iso2": "NO",
+      "country": "NO",
+      "iso3": "NOR",
+      "name": "Norway",
+      "listing_count": 334
+    },
+    {
+      "listing_iso2": "PL",
+      "country": "PL",
+      "iso3": "POL",
+      "name": "Poland",
+      "listing_count": 436
+    },
+    {
+      "listing_iso2": "PT",
+      "country": "PT",
+      "iso3": "PRT",
+      "name": "Portugal",
+      "listing_count": 35
+    },
+    {
+      "listing_iso2": "SE",
+      "country": "SE",
+      "iso3": "SWE",
+      "name": "Sweden",
+      "listing_count": 1050
+    },
+    {
+      "listing_iso2": "US",
+      "country": "US",
+      "iso3": "USA",
+      "name": "United States",
+      "listing_count": 6345
+    }
+  ]
+}
