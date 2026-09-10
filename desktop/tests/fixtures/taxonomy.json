@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "as_of": "2026-09-10",
+  "exported_at": "2026-09-10T12:00:00Z",
+  "business_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "classification_as_of": "2021-01-01",
+  "sectors": {
+    "5": {
+      "id": "5",
+      "name_sv": "Industri",
+      "name_en": "Industrials",
+      "slug": "industri"
+    },
+    "7": {
+      "id": "7",
+      "name_sv": "Material",
+      "name_en": "Materials",
+      "slug": "material"
+    }
+  },
+  "branches": {
+    "21": {
+      "id": "21",
+      "sector_id": "7",
+      "name_sv": "Skogsbolag",
+      "name_en": "Forest & Wood Products",
+      "study_path": "studies/sectors/material/skogsbolag",
+      "study_status": "graduated",
+      "corpus_status": "none",
+      "overview": {
+        "path": "studies/sectors/material/skogsbolag/README.md",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "bytes": 100
+      },
+      "deep_dives": [],
+      "shared_study_ids": [
+        "shared"
+      ]
+    },
+    "31": {
+      "id": "31",
+      "sector_id": "5",
+      "name_sv": "Byggmaterial",
+      "name_en": "Construction Materials",
+      "study_path": "studies/sectors/industri/byggmaterial",
+      "study_status": "scaffold",
+      "corpus_status": "none",
+      "overview": {
+        "path": "studies/sectors/industri/byggmaterial/README.md",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "bytes": 100
+      },
+      "deep_dives": [],
+      "shared_study_ids": [
+        "shared"
+      ]
+    }
+  },
+  "classifications": {
+    "102": {
+      "company_id": "102",
+      "source_sector_id": "7",
+      "source_branch_id": "21",
+      "sector_id": "7",
+      "branch_id": "21",
+      "status": "source",
+      "correction": null
+    }
+  },
+  "shared_studies": {
+    "shared": {
+      "id": "shared",
+      "path": "material/shared",
+      "branch_ids": [
+        "21",
+        "31"
+      ],
+      "overview": {
+        "path": "studies/sectors/material/shared/WORKFLOW.md",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "bytes": 100
+      },
+      "deep_dives": [
+        {
+          "folder": "studies/sectors/material/shared/deep_dives/example",
+          "label": "example",
+          "documents": [
+            {
+              "path": "studies/sectors/material/shared/deep_dives/example/deep_dive.md",
+              "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "bytes": 100
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "unmapped_deep_dives": [],
+  "sources": [
+    {
+      "path": "taxonomy.csv",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "bytes": 100
+    }
+  ],
+  "corrections_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "notes": [
+    "Synthetic coverage fixture; no research judgments."
+  ]
+}

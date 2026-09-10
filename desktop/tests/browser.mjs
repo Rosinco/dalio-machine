@@ -3,6 +3,7 @@ import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { researchFlows } from './research-flows.mjs';
 import { businessFlows } from './business-flows.mjs';
+import { taxonomyFlows } from './taxonomy-flows.mjs';
 
 const base = process.env.ATLAS_URL || 'http://127.0.0.1:1420';
 await mkdir('test-results', { recursive: true });
@@ -94,6 +95,7 @@ assert.match(download.suggestedFilename(), /Macro-Atlas-SE-gov_debt_pct_gdp.csv/
 await download.saveAs('test-results/history-export.csv');
 const research = await researchFlows(page, process.cwd());
 const business = await businessFlows(page, process.cwd());
+const taxonomy = await taxonomyFlows(page, process.cwd());
 await page.setViewportSize({ width: 1100, height: 760 });
 await page.screenshot({ path: 'test-results/company-compact.png' });
 assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
@@ -108,6 +110,6 @@ await page.screenshot({ path: 'test-results/compact.png' });
 assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
 assert.deepEqual(external, [], 'The offline application must not request any external resources');
 assert.deepEqual(errors, [], 'The browser must not report runtime errors');
-await writeFile('test-results/browser-report.json', JSON.stringify({ timing, externalRequests: external, runtimeErrors: errors, checks: ['native content security policy', 'initial Sweden', 'map click', 'comparison', 'category change', 'history mode/year', 'indicator evidence', 'trade denominator', 'country search', 'lazy flow diagram', 'evidence manifest', 'library', 'CSV export', 'compact viewport'] }, null, 2));
-console.log(JSON.stringify({ status: 'PASS', timing, researchChecks: research.checks, businessChecks: business.checks, externalRequests: external.length, runtimeErrors: errors.length }));
+await writeFile('test-results/browser-report.json', JSON.stringify({ timing, externalRequests: external, runtimeErrors: errors, checks: ['native content security policy', 'initial Sweden', 'map click', 'comparison', 'category change', 'history mode/year', 'indicator evidence', 'trade denominator', 'country search', 'lazy flow diagram', 'evidence manifest', 'library', 'CSV export', 'compact viewport', ...research.checks, ...business.checks, ...taxonomy.checks] }, null, 2));
+console.log(JSON.stringify({ status: 'PASS', timing, researchChecks: research.checks, businessChecks: business.checks, taxonomyChecks: taxonomy.checks, externalRequests: external.length, runtimeErrors: errors.length }));
 await browser.close();

@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { researchFlows } from './research-flows.mjs';
 import { businessFlows } from './business-flows.mjs';
+import { taxonomyFlows } from './taxonomy-flows.mjs';
 
 const project = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const executable = process.argv[2] || resolve(project, 'src-tauri/target/x86_64-pc-windows-msvc/release/macro-atlas.exe');
@@ -65,6 +66,8 @@ try {
   const business = await businessFlows(page, project);
   report.checks.push(...business.checks);
   assert.equal(await readFile(resolve(archive, `${business.current.id}.atlas.json`), 'utf8'), business.original);
+  const taxonomy = await taxonomyFlows(page, project);
+  report.checks.push(...taxonomy.checks);
   const firstPid = app.pid;
   await stopApp();
   console.log(`Windows app restarted for persistence testing: ${await startApp()}`);
@@ -75,7 +78,8 @@ try {
   await page.getByLabel('Open data library').click();
   await page.locator(`[data-release-id="${research.older.id}"][data-storage="imported"]`).waitFor();
   await page.locator(`[data-release-id="${research.current.id}"][data-storage="imported"]`).waitFor();
-  report.checks.push('V1 and V2 imported packages survive native process restart, byte-for-byte');
+  assert.equal(await readFile(resolve(archive, `${taxonomy.legacyId}.atlas.json`), 'utf8'), taxonomy.legacyText);
+  report.checks.push('V1, V2 and V3 imported packages survive native process restart, byte-for-byte');
   await page.locator(`[data-active-release="${research.current.id}"]`).waitFor();
   await page.getByRole('button', { name: 'Save a copy of active release', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('.library-message')?.textContent.startsWith('Saved to '));
@@ -84,6 +88,7 @@ try {
   assert.equal(exported.fundamentals.sha256, research.current.fundamentals_sha256);
   assert.equal(exported.liquidity.sha256, research.current.liquidity_sha256);
   assert.equal(exported.business.sha256, research.current.business_sha256);
+  assert.equal(exported.taxonomy.sha256, research.current.taxonomy_sha256);
   report.checks.push('Native portable research export to Downloads');
   await page.keyboard.press('Escape');
   await page.getByRole('tab', { name: 'Overview', exact: true }).click();

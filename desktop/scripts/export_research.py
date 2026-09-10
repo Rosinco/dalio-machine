@@ -23,7 +23,10 @@ def document(path: Path) -> dict:
 
 
 def package(
-    fundamentals: Path, liquidity: Path | None = None, business: Path | None = None
+    fundamentals: Path,
+    liquidity: Path | None = None,
+    business: Path | None = None,
+    taxonomy: Path | None = None,
 ) -> tuple[dict, dict]:
     fund = document(fundamentals)
     raw = json.loads(fund["content"])
@@ -39,12 +42,23 @@ def package(
     company_raw = json.loads(company["content"]) if company else None
     if company_raw and company_raw.get("version") != 1:
         raise ValueError("Unsupported business research format")
-    version = 2 if company else 1
+    directory = document(taxonomy) if taxonomy else None
+    directory_raw = json.loads(directory["content"]) if directory else None
+    if directory_raw and (
+        directory_raw.get("version") != 1
+        or directory_raw.get("business_sha256") != (company["sha256"] if company else None)
+        or directory_raw.get("classification_as_of")
+        != (company_raw["as_of"] if company_raw else None)
+    ):
+        raise ValueError("Taxonomy does not match the selected business document")
+    version = 3 if directory else 2 if company else 1
     identity = (
         f"macro-atlas-research-v{version}\n{fund['sha256']}\n{liquid['sha256'] if liquid else ''}"
     )
-    if version == 2:
-        identity += f"\n{company['sha256']}"
+    if version >= 2:
+        identity += f"\n{company['sha256'] if company else ''}"
+    if version >= 3:
+        identity += f"\n{directory['sha256']}"
     release = {
         "id": hashlib.sha256(identity.encode()).hexdigest(),
         "as_of": raw["as_of"],
@@ -54,6 +68,10 @@ def package(
         "liquidity_sha256": liquid["sha256"] if liquid else None,
         "business_as_of": company_raw["as_of"] if company_raw else None,
         "business_sha256": company["sha256"] if company else None,
+        "taxonomy_as_of": directory_raw["as_of"] if directory_raw else None,
+        "taxonomy_sha256": directory["sha256"] if directory else None,
+        "sector_count": len(directory_raw["sectors"]) if directory_raw else 0,
+        "branch_count": len(directory_raw["branches"]) if directory_raw else 0,
         "company_count": len(company_raw["companies"]) if company_raw else 0,
         "country_count": len(raw["countries"]),
         "indicator_count": len(raw["indicators"]),
@@ -66,6 +84,8 @@ def package(
     }
     if company:
         payload["business"] = company
+    if directory:
+        payload["taxonomy"] = directory
     return payload, release
 
 
@@ -82,16 +102,26 @@ def bundle(
     previous: list[Path],
     output: Path,
     business: Path | None = None,
+    taxonomy: Path | None = None,
 ) -> None:
     catalogue = {"version": 1, "default_id": "", "releases": []}
     for position, source in enumerate([fundamentals, *previous]):
         selected_liquidity = liquidity if position == 0 else None
-        payload, release = package(source, selected_liquidity, business if position == 0 else None)
+        payload, release = package(
+            source,
+            selected_liquidity,
+            business if position == 0 else None,
+            taxonomy if position == 0 else None,
+        )
         destination = output if position == 0 else output / "releases" / release["id"]
         export(source, destination)
         (destination / "research.atlas.json").write_text(encode(payload), encoding="utf-8")
         if selected_liquidity:
             (destination / "liquidity.json").write_bytes(selected_liquidity.read_bytes())
+        if payload.get("taxonomy"):
+            (destination / "taxonomy.json").write_text(
+                payload["taxonomy"]["content"], encoding="utf-8"
+            )
         if payload.get("business"):
             raw = json.loads(payload["business"]["content"])
             (destination / "business-index.json").write_text(
@@ -132,6 +162,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--business", type=Path, help="Selected company and branch research exported from Börsdata"
     )
+    parser.add_argument(
+        "--taxonomy", type=Path, help="Saved sector/branch directory bound to the business export"
+    )
     destination = parser.add_mutually_exclusive_group(required=True)
     destination.add_argument("--output", type=Path, help="Write one importable .atlas.json file")
     destination.add_argument(
@@ -140,9 +173,16 @@ if __name__ == "__main__":
     parser.add_argument("--previous", type=Path, action="append", default=[])
     args = parser.parse_args()
     if args.bundle:
-        bundle(args.fundamentals, args.liquidity, args.previous, args.bundle, args.business)
+        bundle(
+            args.fundamentals,
+            args.liquidity,
+            args.previous,
+            args.bundle,
+            args.business,
+            args.taxonomy,
+        )
     else:
-        payload, release = package(args.fundamentals, args.liquidity, args.business)
+        payload, release = package(args.fundamentals, args.liquidity, args.business, args.taxonomy)
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(encode(payload), encoding="utf-8")
         print(json.dumps(release, indent=2))

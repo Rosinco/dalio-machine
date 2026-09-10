@@ -1,5 +1,6 @@
 //! Validated, immutable local research files. No network or source-database access.
 mod business;
+mod taxonomy;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 use sha2::{Digest, Sha256};
@@ -33,6 +34,7 @@ struct Package {
     fundamentals: Document,
     liquidity: Option<Document>,
     business: Option<Document>,
+    taxonomy: Option<Document>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Release {
@@ -44,6 +46,12 @@ pub struct Release {
     pub liquidity_sha256: Option<String>,
     pub business_as_of: Option<String>,
     pub business_sha256: Option<String>,
+    pub taxonomy_as_of: Option<String>,
+    pub taxonomy_sha256: Option<String>,
+    #[serde(default)]
+    pub sector_count: usize,
+    #[serde(default)]
+    pub branch_count: usize,
     #[serde(default)]
     pub company_count: usize,
     pub country_count: usize,
@@ -59,6 +67,7 @@ struct Validated {
     fundamentals: Value,
     liquidity: Option<Value>,
     business: Option<Value>,
+    taxonomy: Option<Value>,
     release: Release,
 }
 
@@ -568,8 +577,9 @@ fn validate(text: &str) -> Result<Validated> {
         .map_err(|_| "Choose a Macro Atlas research file (.atlas.json).".to_string())?;
     check(
         package.format == "macro-atlas-research"
-            && (1..=2).contains(&package.schema_version)
-            && (package.schema_version != 1 || package.business.is_none()),
+            && (1..=3).contains(&package.schema_version)
+            && (package.schema_version != 1 || package.business.is_none())
+            && (package.schema_version >= 3 || package.taxonomy.is_none()),
         "This research package requires a different Atlas version.",
     )?;
     let fundamentals = document(&package.fundamentals)?;
@@ -584,14 +594,22 @@ fn validate(text: &str) -> Result<Validated> {
         business::validate(raw)?;
     }
     let business_hash = package.business.as_ref().map(|d| d.sha256.clone());
+    let taxonomy = package.taxonomy.as_ref().map(document).transpose()?;
+    if let Some(raw) = &taxonomy {
+        taxonomy::validate(raw, business.as_ref(), business_hash.as_deref())?;
+    }
+    let taxonomy_hash = package.taxonomy.as_ref().map(|d| d.sha256.clone());
     let mut identity = format!(
         "macro-atlas-research-v{}\n{}\n{}",
         package.schema_version,
         package.fundamentals.sha256,
         liquidity_hash.as_deref().unwrap_or("")
     );
-    if package.schema_version == 2 {
+    if package.schema_version >= 2 {
         identity.push_str(&format!("\n{}", business_hash.as_deref().unwrap_or("")));
+    }
+    if package.schema_version >= 3 {
+        identity.push_str(&format!("\n{}", taxonomy_hash.as_deref().unwrap_or("")));
     }
     let release = Release {
         id: digest(identity.as_bytes()),
@@ -606,6 +624,16 @@ fn validate(text: &str) -> Result<Validated> {
             .as_ref()
             .map(|v| v["as_of"].as_str().unwrap().into()),
         business_sha256: business_hash,
+        taxonomy_as_of: taxonomy
+            .as_ref()
+            .map(|v| v["as_of"].as_str().unwrap().into()),
+        taxonomy_sha256: taxonomy_hash,
+        sector_count: taxonomy
+            .as_ref()
+            .map_or(0, |v| v["sectors"].as_object().unwrap().len()),
+        branch_count: taxonomy
+            .as_ref()
+            .map_or(0, |v| v["branches"].as_object().unwrap().len()),
         company_count: business
             .as_ref()
             .map_or(0, |v| v["companies"].as_object().unwrap().len()),
@@ -617,6 +645,7 @@ fn validate(text: &str) -> Result<Validated> {
         fundamentals,
         liquidity,
         business,
+        taxonomy,
         release,
     })
 }
@@ -736,6 +765,7 @@ impl Archive {
                     .collect(),
             )),
             "liquidity" => Ok(validated.liquidity.unwrap_or(Value::Null)),
+            "taxonomy" => Ok(validated.taxonomy.unwrap_or(Value::Null)),
             "business-index" => Ok(validated
                 .business
                 .as_ref()

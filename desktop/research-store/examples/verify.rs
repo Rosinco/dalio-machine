@@ -29,6 +29,14 @@ fn main() {
             store.resource(&release.id, "liquidity").unwrap(),
             expected_liquidity
         );
+        let expected_taxonomy: Value = package["taxonomy"]["content"]
+            .as_str()
+            .map(|s| serde_json::from_str(s).unwrap())
+            .unwrap_or(Value::Null);
+        assert_eq!(
+            store.resource(&release.id, "taxonomy").unwrap(),
+            expected_taxonomy
+        );
         if let Some(content) = package["business"]["content"].as_str() {
             let business: Value = serde_json::from_str(content).unwrap();
             for (id, company) in business["companies"].as_object().unwrap() {

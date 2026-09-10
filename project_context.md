@@ -27,6 +27,14 @@ Archived May 2026 prose and Dalio macro context retain separate dates; no new
 investment verdict or sector forecast is calculated. V2 portable packages include
 the business-document hash and expose catalogue/company resources lazily; v1
 packages and identities remain supported. Map colours show listing coverage.
+Version 0.4 (ADR 0023) uses the saved Börsdata bilingual taxonomy as the default:
+10 sectors and 94 branches with searchable navigation, 17 branches marked as studied,
+and an inventory of 89 saved deep-dive folders. Research status, document inventory
+and the five profiles readable in Atlas remain separate. Branch selection scopes map
+coverage and content. A separate reviewed correction overlay preserves source IDs,
+reason/evidence/date and flags later source drift. The v3 package hashes an optional
+taxonomy document and binds its classifications to the exact business export;
+v1/v2 identities and company views remain usable.
 The user's later-stage request is recorded in ADR 0022: extend the deep-dive funnel
 with balance-sheet analysis and a sourced physical-resource inventory (locations,
 what each asset is, ownership/lease/JV status and reporting dates) for map markers
@@ -445,6 +453,7 @@ semantically reviewed.
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
+| 2026-09-10 | **ADR 0023** — use Börsdata sector/branch IDs and bilingual labels as Atlas defaults, with separately reviewed corrections | Reuse the maintained 10-sector/94-branch division, keep source assignments, and distinguish branch studies, saved dossiers and profiles available offline. V3 packages bind the directory to the selected business export; old packages cannot inherit newer taxonomy. See `decisions/0023-borsdata-taxonomy-directory.md`. |
 | 2026-09-09 | **ADR 0020** — fix the sovereign-refinancing evidence denominator and record a source-ready checkpoint | Forty-eight logical streams bound the package. Strict Eurostat/ECB adapters cover 31 harmonized scalar partitions, while 17 national-native streams remain planned. EA21 is a comparator, scopes stay distinct, and no pipeline, database ingestion, indicator or conclusion is claimed. See `decisions/0020-sovereign-refinancing-evidence-denominator.md`. |
 | 2026-09-09 | **ADR 0019** — add a closed 2025 RBA monetary-policy media-conference cohort and complete the bounded 16-event Riksbank-plus-RBA package | Inline RBA transcript pages, externally hosted video and exact caption tracks are different representations. The first-party denominator supports 8/8 transcript-page and 8/8 officially linked external-video locators, while captions remain 0/8 verified; slides are not claimed and MP3 audio is outside Version 1. No content or database write is authorized, and debt maturity/refinancing is next. See `decisions/0019-rba-2025-communication-metadata-inventory.md`. |
 | 2026-09-09 | **ADR 0018** — add a closed 2025 Riksbank monetary-policy press-conference cohort and make the checked metadata publisher multi-cohort | Replay pages, slides, transcripts and captions are different representations. The first-party denominator supports 8/8 exact replay pages and 8/8 official Swedish slide PDFs, while transcripts and exact captions remain 0/8 verified. Qualified nondefault aliases preserve BoE's established latest outputs, and no content or database write is authorized. See `decisions/0018-riksbank-2025-communication-metadata-inventory.md`. |

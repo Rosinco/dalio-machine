@@ -22,7 +22,7 @@ export async function businessFlows(page, project) {
   await page.locator('.country-coverage').getByRole('button', { name: /Sweden/ }).click();
   await page.getByLabel('Branch overview', { exact: true }).click();
   assert.equal(await page.getByLabel('Fundamentals', { exact: true }).count(), 0);
-  assert.match(await page.locator('.business-heading').innerText(), /Materials[\s\S]*Forestry/);
+  assert.match(await page.locator('.business-heading').innerText(), /Materials[\s\S]*Forest & Wood Products/);
   await page.screenshot({ path: resolve(project, 'test-results/forestry.png') });
   await page.getByLabel('Open Holmen', { exact: true }).click();
   await page.locator('[data-company="102"][data-business-ready="true"]').waitFor();
@@ -81,5 +81,5 @@ export async function businessFlows(page, project) {
   await page.locator(`[data-active-release="${current.id}"] [data-company="102"][data-business-ready="true"]`).waitFor();
   assert.match(await page.locator('[data-financial="revenues"]').innerText(), new RegExp(number(holmen.annual.at(-1).values.revenues)));
   assert.equal(await page.getByLabel('Observatory', { exact: true }).inputValue(), 'companies');
-  return { current, original, checks: ['Contextual observatory menus and Sweden → forestry → Holmen', 'Annual and quarterly financial periods', 'Annual-only return proxy and matching peer ratios', 'Neutral coverage and comparison colours', 'Dated archived deep dive', 'Company search and Finnish macro coverage gap', 'Old releases cannot show newer business data', 'Damaged company document rejected', 'V2 company import and selected observatory persist after reload'] };
+  return { current, original, checks: ['Contextual observatory menus and Sweden → forestry → Holmen', 'Annual and quarterly financial periods', 'Annual-only return proxy and matching peer ratios', 'Neutral coverage and comparison colours', 'Dated archived deep dive', 'Company search and Finnish macro coverage gap', 'Old releases cannot show newer business data', 'Damaged company document rejected', 'V3 company import and selected observatory persist after reload'] };
 }

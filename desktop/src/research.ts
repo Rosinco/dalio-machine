@@ -1,6 +1,7 @@
 import type { AtlasIndex, Country, HistoryPanel, ResearchCatalogue, ResearchDocument, ResearchPackage, ResearchRelease } from './types';
 import type { LiquidityReport } from './liquidity';
 import { businessIndex, validateBusiness, type BusinessDocument } from './business';
+import { validateTaxonomy, type Taxonomy } from './taxonomy';
 
 export const MAX_PACKAGE_BYTES = 32 * 1024 * 1024;
 const native = () => '__TAURI_INTERNALS__' in window;
@@ -98,11 +99,11 @@ function validateLiquidity(raw: any) {
   for (const row of list(raw.repo.volume_context)) { strings(row, ['title','unit','measure_kind']); optionalText(row, ['latest_date','status']); measures(row, ['latest_value']); }
 }
 
-export async function decodePackage(text: string): Promise<{ payload: ResearchPackage; release: ResearchRelease; fundamentals: AtlasIndex; liquidity: LiquidityReport | null; business: BusinessDocument | null }> {
+export async function decodePackage(text: string): Promise<{ payload: ResearchPackage; release: ResearchRelease; fundamentals: AtlasIndex; liquidity: LiquidityReport | null; business: BusinessDocument | null; taxonomy: Taxonomy | null }> {
   requireField(new TextEncoder().encode(text).length <= MAX_PACKAGE_BYTES, 'Research files must be smaller than 32 MB.');
   let payload: ResearchPackage;
   try { payload = JSON.parse(text); } catch { throw new Error('Choose a valid Macro Atlas research file (.atlas.json).'); }
-  requireField(payload?.format === 'macro-atlas-research' && [1, 2].includes(payload.schema_version) && (payload.schema_version !== 1 || !payload.business), 'This research package requires a different Atlas version.');
+  requireField(payload?.format === 'macro-atlas-research' && [1, 2, 3].includes(payload.schema_version) && (payload.schema_version !== 1 || !payload.business) && (payload.schema_version >= 3 || !payload.taxonomy), 'This research package requires a different Atlas version.');
   const read = async (doc: ResearchDocument) => {
     requireField(doc && typeof doc.content === 'string' && typeof doc.source_file === 'string' && !/[\\/]/.test(doc.source_file), 'The source document is invalid.');
     requireField(/^[a-f0-9]{64}$/.test(doc.sha256) && await digest(doc.content) === doc.sha256, "The research file’s checksum does not match its contents.");
@@ -113,15 +114,18 @@ export async function decodePackage(text: string): Promise<{ payload: ResearchPa
   if (liquidity) validateLiquidity(liquidity);
   const business = payload.business ? await read(payload.business) as BusinessDocument : null;
   if (business) validateBusiness(business);
-  const identity = `macro-atlas-research-v${payload.schema_version}\n${payload.fundamentals.sha256}\n${payload.liquidity?.sha256 ?? ''}${payload.schema_version === 2 ? `\n${payload.business?.sha256 ?? ''}` : ''}`;
+  const taxonomy = payload.taxonomy ? await read(payload.taxonomy) as Taxonomy : null;
+  if (payload.taxonomy) validateTaxonomy(taxonomy, business, payload.business?.sha256 ?? null);
+  const identity = `macro-atlas-research-v${payload.schema_version}\n${payload.fundamentals.sha256}\n${payload.liquidity?.sha256 ?? ''}${payload.schema_version >= 2 ? `\n${payload.business?.sha256 ?? ''}` : ''}${payload.schema_version >= 3 ? `\n${payload.taxonomy?.sha256 ?? ''}` : ''}`;
   const release: ResearchRelease = {
     id: await digest(identity),
     as_of: fundamentals.as_of, generated_at: fundamentals.generated_at, fundamentals_sha256: payload.fundamentals.sha256,
     liquidity_as_of: liquidity?.as_of ?? null, liquidity_sha256: payload.liquidity?.sha256 ?? null,
     business_as_of: business?.as_of ?? null, business_sha256: payload.business?.sha256 ?? null, company_count: business ? Object.keys(business.companies).length : 0,
+    taxonomy_as_of: taxonomy?.as_of ?? null, taxonomy_sha256: payload.taxonomy?.sha256 ?? null, sector_count: taxonomy ? Object.keys(taxonomy.sectors).length : 0, branch_count: taxonomy ? Object.keys(taxonomy.branches).length : 0,
     country_count: Object.keys(fundamentals.countries).length, indicator_count: fundamentals.indicators.length, storage: 'imported',
   };
-  return { payload, release, fundamentals, liquidity, business };
+  return { payload, release, fundamentals, liquidity, business, taxonomy };
 }
 
 function database(): Promise<IDBDatabase> {
@@ -166,8 +170,9 @@ export async function packageText(release: ResearchRelease): Promise<string> {
   const saved = await browserRead(release.id); if (!saved) throw new Error('This saved research file is unavailable.'); return saved.text;
 }
 export async function resource<T>(release: ResearchRelease, key: string, signal?: AbortSignal): Promise<T> {
-  requireField(['index', 'history', 'liquidity', 'business-index', 'business-research'].includes(key) || /^country:[A-Z]{2}$/.test(key) || /^company:[1-9][0-9]{0,9}$/.test(key), 'Unknown research resource.');
+  requireField(['index', 'history', 'liquidity', 'business-index', 'business-research', 'taxonomy'].includes(key) || /^country:[A-Z]{2}$/.test(key) || /^company:[1-9][0-9]{0,9}$/.test(key), 'Unknown research resource.');
   if (release.storage === 'included') {
+    if (key === 'taxonomy' && !release.taxonomy_sha256) return null as T;
     if (key === 'liquidity' && !release.liquidity_sha256) return null as T;
     if ((key.startsWith('business-') || key.startsWith('company:')) && !release.business_sha256) return null as T;
     const file = key.startsWith('country:') ? `countries/${key.slice(8)}.json` : key.startsWith('company:') ? `companies/${key.slice(8)}.json` : `${key}.json`;
@@ -176,6 +181,7 @@ export async function resource<T>(release: ResearchRelease, key: string, signal?
   if (native()) return invoke<T>('research_resource', { id: release.id, resource: key });
   const decoded = await decodePackage(await packageText(release));
   if (key === 'liquidity') return decoded.liquidity as T;
+  if (key === 'taxonomy') return decoded.taxonomy as T;
   if (key === 'business-index') return (decoded.business ? businessIndex(decoded.business) : null) as T;
   if (key === 'business-research') return (decoded.business?.research ?? null) as T;
   if (key.startsWith('company:')) return (decoded.business?.companies[key.slice(8)] ?? null) as T;

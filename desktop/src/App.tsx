@@ -12,9 +12,11 @@ import LiquidityPanel from './LiquidityPanel';
 import BusinessWorkspace, { BusinessSearch } from './BusinessWorkspace';
 import type { BusinessIndex, Observatory } from './business';
 import { useReleaseResource } from './useResearchResource';
+import { companyBranch, type Taxonomy } from './taxonomy';
 import './style.css';
 import './research.css';
 import './business.css';
+import './taxonomy.css';
 
 const PressureFlow = lazy(() => import('./PressureFlow'));
 const modes = [{ id: 'fundamentals', label: 'Fundamentals', icon: Globe2 }, { id: 'history', label: 'History & outlook', icon: TrendingUp }, { id: 'trade', label: 'Trade connections', icon: Share2 }] as const;
@@ -38,6 +40,7 @@ export default function App() {
   const [mode, setMode] = useState<Mode>('fundamentals');
   const [observatory, setObservatory] = useState<Observatory>(['macro', 'sectors', 'companies'].includes(preferences.observatory) ? preferences.observatory : 'macro');
   const [companyId, setCompanyId] = useState<string>(/^[1-9][0-9]{0,9}$/.test(preferences.companyId ?? '') ? preferences.companyId : '102');
+  const [branchId, setBranchId] = useState<string>(/^[1-9][0-9]{0,9}$/.test(preferences.branchId ?? '') ? preferences.branchId : '21');
   const [category, setCategory] = useState<Category>('production');
   const [metric, setMetric] = useState('gov_debt_pct_gdp');
   const [compare, setCompare] = useState<string>('');
@@ -60,6 +63,11 @@ export default function App() {
   const prior = useReleaseResource<AtlasIndex>(priorRelease, 'index');
   const country = detail.country;
   const business = useReleaseResource<BusinessIndex>(release, 'business-index', observatory !== 'macro');
+  const taxonomy = useReleaseResource<Taxonomy>(release, 'taxonomy', observatory !== 'macro');
+  useEffect(() => {
+    const selected = business.data?.companies[companyId];
+    if (observatory === 'companies' && selected && taxonomy.ready) setBranchId(companyBranch(selected, taxonomy.data));
+  }, [observatory, companyId, business.data, taxonomy.data, taxonomy.ready]);
 
   const openRelease = async (next: ResearchRelease) => {
     const sequence = ++switchSequence.current;
@@ -90,7 +98,7 @@ export default function App() {
     }).catch(e => { if (!cancelled) setError(String(e)); });
     return () => { cancelled = true; switchSequence.current++; };
   }, []);
-  useEffect(() => { try { localStorage.setItem('atlas.preferences', JSON.stringify({ code, observatory, companyId })); } catch { /* View still works without persistent settings. */ } }, [code, observatory, companyId]);
+  useEffect(() => { try { localStorage.setItem('atlas.preferences', JSON.stringify({ code, observatory, companyId, branchId })); } catch { /* View still works without persistent settings. */ } }, [code, observatory, companyId, branchId]);
   useEffect(() => { setPressureIndex(0); }, [code]);
   useEffect(() => { if (compare === code) setCompare(''); }, [compare, code]);
   useEffect(() => { document.querySelector('.sidebar-content')?.scrollTo({ top: 0 }); }, [code, tab]);
@@ -140,7 +148,7 @@ export default function App() {
   }, [countries, mode, category, histories, metric, year, historyRange, meta, directionLabel, rows, code, country]);
 
   const selectCountry = (next: string, name = '') => { setCode(next); setUnknownName(name); setQuery(''); setSearchOpen(false); };
-  const selectCompany = (id: string) => { const company = business.data?.companies[id]; if (!company) return; setCompanyId(id); selectCountry(company.listing_country, business.data?.countries[company.listing_country]); setObservatory('companies'); };
+  const selectCompany = (id: string) => { const company = business.data?.companies[id]; if (!company) return; setCompanyId(id); setBranchId(companyBranch(company, taxonomy.data)); selectCountry(company.listing_country, business.data?.countries[company.listing_country]); setObservatory('companies'); };
   const changeMode = (next: Mode) => { setMode(next); setTab(next === 'trade' ? 'trade' : 'overview'); };
   const exportHistory = async () => {
     if (!country?.history || !meta) return;
@@ -176,7 +184,7 @@ export default function App() {
       <button className="header-icon" aria-label="Open data library" onClick={() => setLibraryOpen(true)}><BookOpen size={19} /></button>
     </header>
     {observatory === 'macro' ? <div className="workspace">
-      <nav className="rail" aria-label="Map modes"><div className="rail-label">EXPLORE</div>{modes.map(m => <button key={m.id} className={mode === m.id ? 'active' : ''} aria-label={m.label} aria-pressed={mode === m.id} onClick={() => changeMode(m.id)}><m.icon size={21} strokeWidth={1.5} /><span>{m.id === 'fundamentals' ? 'World' : m.id === 'history' ? 'History' : 'Trade'}</span></button>)}<div className="rail-spacer" /><button onClick={() => setLibraryOpen(true)} aria-label="About this release"><Layers3 size={20} strokeWidth={1.5} /><span>Library</span></button><span className="rail-version">V0.3.0</span></nav>
+      <nav className="rail" aria-label="Map modes"><div className="rail-label">EXPLORE</div>{modes.map(m => <button key={m.id} className={mode === m.id ? 'active' : ''} aria-label={m.label} aria-pressed={mode === m.id} onClick={() => changeMode(m.id)}><m.icon size={21} strokeWidth={1.5} /><span>{m.id === 'fundamentals' ? 'World' : m.id === 'history' ? 'History' : 'Trade'}</span></button>)}<div className="rail-spacer" /><button onClick={() => setLibraryOpen(true)} aria-label="About this release"><Layers3 size={20} strokeWidth={1.5} /><span>Library</span></button><span className="rail-version">V0.4.0</span></nav>
       <main className="map-panel">
         <div className="map-heading"><div><div className="eyebrow">THE WORLD, IN CONTEXT</div><h1>{mode === 'fundamentals' ? 'World fundamentals' : mode === 'history' ? 'History & outlook' : 'Trade connections'}</h1><p>{mode === 'fundamentals' ? 'Explore the forces shaping each economy.' : mode === 'history' ? 'Follow the data through time, from one saved release.' : `Where ${country?.name ?? 'an economy'} sells its goods.`}</p></div><span className="coverage-pill">{countries.filter(([, c]) => c.on_map).length} countries <span>+ {countries.filter(([, c]) => !c.on_map).map(([, c]) => c.name).join(", ")}</span></span></div>
         <div className="map-filter"><span>{mode === 'fundamentals' ? 'COLOUR BY' : mode === 'history' ? 'INDICATOR' : 'MEASURE'}</span>{mode === 'fundamentals' ? <select aria-label="Map category" value={category} onChange={e => setCategory(e.target.value as Category)}>{index.categories.map(k => <option value={k} key={k}>{categories[k].label}</option>)}</select> : mode === 'history' ? <select aria-label="Map historical indicator" value={metric} onChange={e => setMetric(e.target.value)}>{index.indicators.map(i => <option key={i.name} value={i.name}>{i.name === 'gdp_growth_fwd5' ? 'GDP growth · annual' : i.label}</option>)}</select> : <strong>Share of selected country’s goods exports</strong>}<ChevronDown size={14} /></div>
@@ -229,7 +237,7 @@ export default function App() {
           </div>
         </>}
       </aside>
-    </div> : <BusinessWorkspace key={release.id} observatory={observatory} index={business.data} ready={business.ready} error={business.error} macro={index} release={release} code={code} selectedName={unknownName} companyId={companyId} onCountry={selectCountry} onCompany={selectCompany} onMacro={() => { setObservatory('macro'); changeMode('fundamentals'); }} onSector={() => setObservatory('sectors')} onLibrary={() => setLibraryOpen(true)} />}
+    </div> : <BusinessWorkspace key={release.id} observatory={observatory} index={business.data} taxonomy={taxonomy.data} ready={business.ready && taxonomy.ready} error={business.error || taxonomy.error} macro={index} release={release} code={code} selectedName={unknownName} companyId={companyId} branchId={branchId} onBranch={setBranchId} onCountry={selectCountry} onCompany={selectCompany} onMacro={() => { setObservatory('macro'); changeMode('fundamentals'); }} onSector={() => { if (observatory === 'companies' && business.data?.companies[companyId]) setBranchId(companyBranch(business.data.companies[companyId], taxonomy.data)); setObservatory('sectors'); }} onLibrary={() => setLibraryOpen(true)} />}
     {message && <div className="toast" role="status"><Check size={16} />{message}<button aria-label="Dismiss message" onClick={() => setMessage('')}><X size={14} /></button></div>}
     {libraryOpen && <ResearchLibrary releases={releases} active={release} unreadable={unreadable} onUse={openRelease} onImported={refreshLibrary} onClose={() => setLibraryOpen(false)} />}
   </div>;

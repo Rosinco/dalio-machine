@@ -92,7 +92,7 @@ fn tampered_payload_cannot_change_the_archive() {
 #[test]
 fn schema_validation_rejects_unsupported_and_invalid_scored_data() {
     let mut bad: Value = serde_json::from_str(&fixture()).unwrap();
-    bad["schema_version"] = json!(3);
+    bad["schema_version"] = json!(4);
     assert!(inspect(&bad.to_string()).is_err());
     bad["schema_version"] = json!(1);
     let mut raw: Value =
@@ -110,6 +110,114 @@ fn business_package(raw: &Value) -> Value {
     package["schema_version"] = json!(2);
     package["business"] = json!({"source_file":"business.json", "sha256":atlas_research_store::digest(content.as_bytes()), "content":content});
     package
+}
+
+fn taxonomy_package(mut directory: Value) -> Value {
+    let business: Value =
+        serde_json::from_str(include_str!("../../tests/fixtures/business.json")).unwrap();
+    let mut package = business_package(&business);
+    directory["business_sha256"] = package["business"]["sha256"].clone();
+    let content = directory.to_string();
+    package["schema_version"] = json!(3);
+    package["taxonomy"] = json!({"source_file":"taxonomy.json", "sha256":atlas_research_store::digest(content.as_bytes()), "content":content});
+    package
+}
+
+#[test]
+fn taxonomy_v3_identity_and_exact_resource_survive_restart() {
+    let directory: Value =
+        serde_json::from_str(include_str!("../../tests/fixtures/taxonomy.json")).unwrap();
+    let package = taxonomy_package(directory);
+    let dir = Temp::new();
+    let store = Archive::new(dir.0.clone());
+    let release = store.import(&package.to_string()).unwrap();
+    let expected = format!(
+        "macro-atlas-research-v3\n{}\n\n{}\n{}",
+        package["fundamentals"]["sha256"].as_str().unwrap(),
+        package["business"]["sha256"].as_str().unwrap(),
+        package["taxonomy"]["sha256"].as_str().unwrap()
+    );
+    assert_eq!(
+        release.id,
+        atlas_research_store::digest(expected.as_bytes())
+    );
+    assert_eq!((release.sector_count, release.branch_count), (2, 2));
+    let reopened = Archive::new(dir.0.clone());
+    let expected: Value =
+        serde_json::from_str(package["taxonomy"]["content"].as_str().unwrap()).unwrap();
+    assert_eq!(
+        reopened.resource(&release.id, "taxonomy").unwrap(),
+        expected
+    );
+    let legacy = reopened.import(&fixture()).unwrap();
+    assert!(reopened.resource(&legacy.id, "taxonomy").unwrap().is_null());
+    let mut old = package.clone();
+    old.as_object_mut().unwrap().remove("taxonomy");
+    old["schema_version"] = json!(2);
+    let v2 = reopened.import(&old.to_string()).unwrap();
+    assert!(reopened.resource(&v2.id, "taxonomy").unwrap().is_null());
+}
+
+#[test]
+fn taxonomy_rejects_unhashed_legacy_content_and_invalid_classification() {
+    let mut directory: Value =
+        serde_json::from_str(include_str!("../../tests/fixtures/taxonomy.json")).unwrap();
+    let mut package = taxonomy_package(directory.clone());
+    package["schema_version"] = json!(2);
+    assert!(inspect(&package.to_string()).is_err());
+    directory["classifications"]["102"]["branch_id"] = json!("31");
+    assert!(inspect(&taxonomy_package(directory.clone()).to_string()).is_err());
+    directory["classifications"]["102"]["sector_id"] = json!("5");
+    directory["classifications"]["102"]["status"] = json!("corrected");
+    directory["classifications"]["102"]["correction"] = json!({"company_id":"102","expected_sector_id":"7","expected_branch_id":"21","branch_id":"31","reason":"Synthetic review","source":"test source","reviewed_at":"2021-01-01"});
+    assert!(inspect(&taxonomy_package(directory.clone()).to_string()).is_ok());
+    directory["classifications"]["102"]["correction"]["expected_branch_id"] = json!("31");
+    directory["classifications"]["102"]["correction"]["expected_sector_id"] = json!("5");
+    assert!(inspect(&taxonomy_package(directory.clone()).to_string()).is_err());
+    directory["classifications"]["102"]["status"] = json!("needs_review");
+    directory["classifications"]["102"]["branch_id"] = json!("21");
+    directory["classifications"]["102"]["sector_id"] = json!("7");
+    // Source already agrees with the saved target, so this is "aligned", not a stale override.
+    directory["classifications"]["102"]["correction"]["branch_id"] = json!("21");
+    assert!(inspect(&taxonomy_package(directory.clone()).to_string()).is_err());
+    directory["classifications"]["102"]["status"] = json!("aligned");
+    assert!(inspect(&taxonomy_package(directory).to_string()).is_ok());
+}
+
+#[test]
+fn taxonomy_metadata_types_and_timestamps_match_browser_validation() {
+    let directory: Value =
+        serde_json::from_str(include_str!("../../tests/fixtures/taxonomy.json")).unwrap();
+    let mut wrong_members = directory.clone();
+    wrong_members["shared_studies"]["shared"]["branch_ids"] = json!([21, 31]);
+    assert!(inspect(&taxonomy_package(wrong_members).to_string()).is_err());
+    for timestamp in [
+        "2026-02-30T12:00:00Z",
+        "2026-09-10T24:00:00Z",
+        "1999-01-01T00:00:00Z",
+        "2026-09-10T12:00:00junkZ",
+    ] {
+        let mut raw = directory.clone();
+        raw["exported_at"] = json!(timestamp);
+        assert!(inspect(&taxonomy_package(raw).to_string()).is_err());
+    }
+    let mut standalone = directory;
+    standalone["business_sha256"] = Value::Null;
+    standalone["classification_as_of"] = Value::Null;
+    standalone["classifications"] = json!({});
+    for missing in [false, true] {
+        if missing {
+            standalone
+                .as_object_mut()
+                .unwrap()
+                .remove("business_sha256");
+        }
+        let content = standalone.to_string();
+        let mut package: Value = serde_json::from_str(&fixture()).unwrap();
+        package["schema_version"] = json!(3);
+        package["taxonomy"] = json!({"source_file":"taxonomy.json", "sha256":atlas_research_store::digest(content.as_bytes()), "content":content});
+        assert_eq!(inspect(&package.to_string()).is_ok(), !missing);
+    }
 }
 
 #[test]

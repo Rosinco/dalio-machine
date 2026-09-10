@@ -27,3 +27,4 @@ always-loaded state lives in `project_context.md` (Decision Log has one line per
 | [0020](0020-sovereign-refinancing-evidence-denominator.md) | Fixed 48-stream sovereign-refinancing denominator with 31 harmonized scalar partitions source-ready and 17 national-native streams still planned | 2026-09-09 |
 | [0021](0021-offline-desktop-atlas.md) | Offline Tauri/MapLibre desktop viewer for existing fundamentals, history and trade snapshots | 2026-09-10 |
 | [0022](0022-sector-and-company-observatories.md) | Contextual observatories, selective Börsdata forestry export, dated company research and v2 offline packages; later balance-sheet/physical-asset funnel | 2026-09-10 |
+| [0023](0023-borsdata-taxonomy-directory.md) | Full bilingual Börsdata directory, separate research coverage and reviewed classification corrections, v3 offline packages | 2026-09-10 |

@@ -6,12 +6,26 @@ requires no terminal, Python environment, WSL, account or network connection.
 Windows WebView2 must be installed; it is present on Adam's PC. The Tauri installer
 configuration can also bundle its offline installer when distributing to another PC.
 
-## Version 0.3.0
+## Version 0.4.0
 
 Use the **Observatory** selector beside ATLAS to switch between **Macro**,
 **Sectors & branches**, and **Companies**. Each has its own Explore views.
-Start with **Sectors & branches → Sweden → Forestry → Holmen**. Country and
-company selections carry across observatories and persist when the app reopens.
+Start with **Sectors & branches → Browse → Forest & Wood Products → Holmen**.
+Country, branch and company selections carry across observatories and persist
+when the app reopens.
+
+- The saved Börsdata hierarchy includes **10 sectors and 94 branches**. Search in
+  English or Swedish, filter by sector, or show branches with completed studies,
+  saved company deep dives, or profiles included in Atlas.
+- The **2026-09-10** inventory records **17 branches with completed branch studies**
+  and **89 saved company deep-dive folders**. Shared bank and beverage studies count
+  once in global dossier totals. Document existence does not establish completion,
+  freshness or investment quality. Other project studies are inventoried with source
+  paths and hashes; the selected five-company slice remains the readable content.
+- Börsdata assignments are the default. Company classification details preserve the
+  original sector/branch IDs and any separately reviewed correction. An unfinished
+  branch shows its own coverage and cannot inherit forestry companies or conclusions.
+  Older research packages keep their original views and explicitly lack the new directory.
 
 - Five companies: Holmen, SCA, Billerud, Stora Enso and UPM, one canonical listing
   each. The included Börsdata snapshot is **2026-08-10**: 100 annual reports
@@ -92,7 +106,7 @@ sector forecasts are later slices; no company sites or forecasts are fabricated.
 ## Data flow and scale
 
 The canonical Python pipelines remain authoritative. `export_research.py` wraps the
-exact UTF-8 fundamentals, optional liquidity and optional business JSON with their SHA-256 hashes. Its
+exact UTF-8 fundamentals, optional liquidity, business and taxonomy JSON with their SHA-256 hashes. Its
 bundle mode also uses `export_snapshot.py`, which validates
 with Dalio's existing parser and creates a compact index, individual country files,
 and a history-map file. Startup loads summaries; selecting a country loads only its
@@ -110,6 +124,12 @@ Only the selected company's full history is sent to the view. The cohort and
 dated, qualitative segment/driver notes are explicit in the exporter, not a new
 statistical classifier or competitor database.
 
+`export_taxonomy.py` reads the maintained bilingual crosswalk, branch-study status,
+and deep-dive file inventory without opening financial Parquet or making requests.
+Its directory is about 67 kB in this release; branch navigation does not bulk-load
+the underlying research corpus. Numeric source IDs join records independently of
+display labels. Taxonomy assignments bind to the exact business document hash.
+
 Native imported packages live in
 `%LOCALAPPDATA%\local.research.macro-atlas\research-v1\<package-id>.atlas.json`,
 outside the executable's version directory. Version 1 packages keep their original
@@ -117,6 +137,9 @@ two-document identity. Version 2 adds the business-document hash; its identity i
 SHA-256 of `macro-atlas-research-v2\n<fundamentals-hash>\n<liquidity-hash-or-empty>\n<business-hash-or-empty>`.
 Duplicate imports are idempotent. A v1 envelope containing a business document is
 rejected, preventing that document from being omitted from identity checks.
+Version 3 adds the optional taxonomy document: its identity is SHA-256 of
+`macro-atlas-research-v3\n<fundamentals-hash>\n<liquidity-hash-or-empty>\n<business-hash-or-empty>\n<taxonomy-hash-or-empty>`.
+V1/v2 IDs are unchanged; their envelopes cannot contain an unhashed taxonomy.
 The Rust `research-store` crate checks
 format, bounds, required renderable fields and checksums before publishing a complete
 file with a non-overwriting hard link. It only exposes fixed resource names and
@@ -134,6 +157,31 @@ Large Börsdata Parquet tables are not included in the application. A future bou
 query layer can support wider company universes using DuckDB or existing Python
 adapters. Do not load the 101-million-row screener file into the webview.
 
+## Reviewed classification corrections
+
+`research/classification-corrections.json` starts empty. After reviewing a company,
+add a record to its `corrections` array with these fields:
+
+| Field | Meaning |
+|---|---|
+| `company_id` | Börsdata instrument ID, as a string |
+| `expected_sector_id`, `expected_branch_id` | Source assignment that the review examined |
+| `branch_id` | Reviewed destination branch; its parent supplies the effective sector |
+| `reason`, `source` | Rationale and supporting evidence reference |
+| `reviewed_at` | Review date, `YYYY-MM-DD` |
+
+Re-export the directory and research package, then import it into Atlas. There is
+no in-app correction editor in 0.4. All corrected companies must be present in the
+selected business export. Unknown IDs, duplicate corrections and missing review
+evidence are rejected. Source files and archived research are never rewritten.
+
+If a later source assignment differs from the expected original, the saved correction
+remains visible as `needs_review` and the source assignment is used. If the source
+now equals the reviewed destination, it is `aligned`. Corrections do not rewrite
+segment tags or historical peer-study membership. Label edits in the maintained
+source crosswalk cannot change numeric identity. Keep the overlay under version
+control so its review history remains available.
+
 ## Build and refresh
 
 From this `desktop/` folder:
@@ -146,11 +194,16 @@ PYTHONDONTWRITEBYTECODE=1 python scripts/export_business.py \
   --snapshot 2026-08-10 \
   --output /tmp/atlas-business-2026-08-10.json
 source /home/rosinco/workspace/dalio-machine/.venv/bin/activate
+python scripts/export_taxonomy.py \
+  --borsdata-root /mnt/c/Users/Adamb/borsdata_project/GitClone/Modern-Borsdata-Client \
+  --business /tmp/atlas-business-2026-08-10.json \
+  --output /tmp/atlas-taxonomy-2026-09-10.json
 python scripts/export_research.py \
   --fundamentals /home/rosinco/workspace/dalio-machine/data/snapshots/fundamentals_latest.json \
   --liquidity /home/rosinco/workspace/dalio-machine/data/snapshots/liquidity_latest.json \
   --previous /home/rosinco/workspace/dalio-machine/data/snapshots/fundamentals_2026-08-24.json \
   --business /tmp/atlas-business-2026-08-10.json \
+  --taxonomy /tmp/atlas-taxonomy-2026-09-10.json \
   --bundle public/data
 python scripts/verify_pack.py \
   --source /home/rosinco/workspace/dalio-machine/data/snapshots/fundamentals_latest.json
@@ -206,13 +259,15 @@ equal observations and unscored quantities), zero/missing scores, historical gap
 single-vintage trade, overlapping aggregates and trade denominators.
 It also checks score arithmetic and comparison eligibility, import checksums and
 validation, liquidity geography and gaps, business-document identity and company
-chart gaps. `python -m pytest tests/test_export_business.py` (from `desktop/`, with
+chart gaps, taxonomy search, shared-study counts, source binding and corrections.
+`python -m pytest tests/test_export_business.py tests/test_export_taxonomy.py` (from `desktop/`, with
 the Dalio venv activated) checks FX division, zero/missing values, denominator and
-quarterly-return rules, period validation and common-year catalogue projection.
+quarterly-return rules, period validation, common-year catalogue projection,
+taxonomy identity, correction drift and deduplicated document inventories.
 The standalone Rust archive has filesystem
 tests runnable with `cargo test --manifest-path research-store/Cargo.toml`.
 `cargo run --manifest-path research-store/Cargo.toml --example verify -- FILE...`
-validates real exported packages and checks exact country/liquidity/company round
+validates real exported packages and checks exact country/liquidity/company/taxonomy round
 trips and parity with the Python-generated company catalogue.
 `scripts/verify_pack.py` checks every exported country against the original snapshot
 and verifies map coverage. `npm run test:browser` runs Playwright against
@@ -224,8 +279,10 @@ native WebView2 map, charts, comparison and modes, audits startup requests, and
 captures a screenshot. It also exports one history CSV to Downloads and verifies
 its contents, imports a real older package, rejects damaged input, checks duplicate
 imports, exercises all three observatories and the five-company slice, imports a
-v2 business package, restarts the executable to verify selected-company persistence,
-and exports a portable research file containing all three source documents.
+v2 business and v3 taxonomy packages, exercises all 94 branches and research filters,
+and verifies that unrelated or older releases cannot inherit forestry content.
+It restarts the executable to verify selected-company persistence and exports a
+portable research file containing all four source documents.
 It uses an isolated WebView profile and temporary native archive
 (`ATLAS_RESEARCH_DIR`, a development/test override) and closes its own processes.
 Pass `-Executable` to check an installed copy. The test never disables the PC's
