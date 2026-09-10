@@ -14,10 +14,12 @@ from dataclasses import asdict
 from datetime import UTC
 from pathlib import Path
 
+import pandas as pd
 from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session
 
 from dalio.data_sources.company_country_macro import (
+    COLUMNS,
     METHOD,
     archive,
     canonical,
@@ -30,10 +32,80 @@ from dalio.storage.releases import (
     ProjectionScope,
     ReleaseArtifactMeta,
     ReleaseMeta,
+    _canonicalize,
+    _content_hash,
+    _stored_release_artifacts,
     ingest_release_snapshot,
     latest_release,
     make_partition_key,
 )
+
+
+def _native_evidence(item):
+    frame, report = item["frame"], item["report"]
+    native = canonical(dict(method=METHOD, country=report["country"],
+        indicator=report["indicator"], publisher_metadata=report["publisher_metadata"],
+        source_response_sha256=[ref["sha256"] for ref in item["refs"]],
+        observations=[{**row, "date": row["date"].isoformat()}
+                      for row in frame.to_dict("records")]))
+    provenance = canonical(dict(method=METHOD, country=report["country"],
+                               series_id=item["series_id"], **report["missingness"]))
+    return native, provenance
+
+
+def _verify_prior_release(session, previous, *, bundle_cache):
+    """Restore the stored rows before the generic store can deduplicate a retry.
+
+    Legacy releases retain their own evidence contracts. Country v2 releases
+    additionally require the exact artifact set and observations derived from
+    their own retained capture, whose pagination may differ from today's batch.
+    """
+    rows = session.execute(select(*(getattr(ReleaseObservation, column) for column in COLUMNS))
+        .where(ReleaseObservation.release_id == previous.id)).all()
+    restored = _canonicalize(pd.DataFrame(rows, columns=COLUMNS))
+    if len(restored) != previous.row_count or _content_hash(restored) != previous.content_sha256:
+        raise ValueError(f"Stored prior release {previous.id} scalar integrity failure")
+    stored = _stored_release_artifacts(session, previous.id)
+    if not (previous.vintage_label or "").startswith(METHOD + ":"):
+        return
+    if "acquisition_bundle" not in stored:
+        raise ValueError("Stored prior acquisition is missing required artifact roles")
+    bundle_artifact = stored["acquisition_bundle"]
+    key = (bundle_artifact.artifact_path, bundle_artifact.artifact_sha256)
+    if key not in bundle_cache:
+        prior_batch = load_bundle(Path(bundle_artifact.artifact_path))
+        bundle_cache[key] = {
+            make_partition_key(item["sources"][0], item["series_id"],
+                               item["report"]["country"], item["report"]["indicator"]):
+                (prior_batch, item) for item in prior_batch["ready"]}
+    if previous.partition_key not in bundle_cache[key]:
+        raise ValueError("Stored prior release is absent from its acquisition bundle")
+    prior_batch, item = bundle_cache[key][previous.partition_key]
+    if _content_hash(_canonicalize(item["frame"])) != previous.content_sha256:
+        raise ValueError(f"Stored prior release {previous.id} native scalar integrity failure")
+    expected = {"native_series_payload", "missingness_ledger", "acquisition_bundle",
+                "publisher_metadata"}
+    expected.update(f"source_response_{index:03d}" for index in range(1, len(item["refs"])))
+    if set(stored) != expected:
+        raise ValueError("Stored prior acquisition has unexpected or missing artifact roles")
+    native, provenance = _native_evidence(item)
+    for artifact in stored.values():
+        if (artifact.native_payload_sha256 != digest(native)
+                or artifact.missing_provenance_sha256 != digest(provenance)
+                or artifact.provenance_json != provenance.decode()):
+            raise ValueError("Stored prior native/missingness evidence differs from source bytes")
+    for index, ref in enumerate(item["refs"]):
+        role = "publisher_metadata" if index == 0 else f"source_response_{index:03d}"
+        if stored[role].artifact_sha256 != ref["sha256"]:
+            raise ValueError("Stored prior artifact does not match its acquisition bundle")
+    if (previous.available_at.replace(tzinfo=UTC) != prior_batch["retrieved_at"]
+            or previous.retrieved_at.replace(tzinfo=UTC) != prior_batch["retrieved_at"]
+            or previous.published_at is not None
+            or previous.source_url != item["source_url"]
+            or previous.source_family != item["sources"][0]
+            or previous.vintage_label != METHOD + ":" + digest(
+                canonical(item["report"]["publisher_metadata"]))):
+        raise ValueError("Stored prior release metadata differs from its acquisition bundle")
 
 
 def ingest_bundle(path: Path, *, engine: Engine) -> dict:
@@ -43,13 +115,7 @@ def ingest_bundle(path: Path, *, engine: Engine) -> dict:
     prepared = []
     for item in batch["ready"]:
         frame, report = item["frame"], item["report"]
-        native = canonical(dict(method=METHOD, country=report["country"],
-            indicator=report["indicator"], publisher_metadata=report["publisher_metadata"],
-            source_response_sha256=[ref["sha256"] for ref in item["refs"]],
-            observations=[{**row, "date": row["date"].isoformat()}
-                          for row in frame.to_dict("records")]))
-        provenance = canonical(dict(method=METHOD, country=report["country"],
-                                   series_id=item["series_id"], **report["missingness"]))
+        native, provenance = _native_evidence(item)
         evidence = [("native_series_payload", archive(native, artifact_root), digest(native)),
                     ("missingness_ledger", archive(provenance, artifact_root), digest(provenance)),
                     ("acquisition_bundle", batch["bundle_path"], batch["bundle_sha256"])]
@@ -73,11 +139,14 @@ def ingest_bundle(path: Path, *, engine: Engine) -> dict:
         return {**batch["summary"], "created_releases": 0, "releases": []}
     init_db(engine)
     results = []
+    bundle_cache = {}
     with (engine.begin() as connection,
           Session(bind=connection, expire_on_commit=False,
                   join_transaction_mode="rollback_only") as session):
         for frame, meta in prepared:
             previous = latest_release(session, meta.partition_key)
+            if previous:
+                _verify_prior_release(session, previous, bundle_cache=bundle_cache)
             if previous and previous.available_at.replace(tzinfo=UTC) > meta.available_at:
                 raise ValueError(f"Retrograde country acquisition: {meta.partition_key}")
             old_dates = set(session.scalars(select(Observation.date).where(

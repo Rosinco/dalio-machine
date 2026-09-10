@@ -1,7 +1,7 @@
 """Official-source country acquisition must stay outside the scoring universe."""
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from unittest.mock import Mock
 
 import pytest
@@ -21,7 +21,13 @@ from dalio.data_sources.company_country_macro import (
 from dalio.data_sources.imf_datamapper import IMF_FUNDAMENTALS
 from dalio.data_sources.worldbank import WB_FUNDAMENTALS
 from dalio.pipelines.fetch_company_country_macro import ingest_bundle
-from dalio.storage.db import DataRelease, Observation, make_engine
+from dalio.storage.db import (
+    DataRelease,
+    DataReleaseArtifact,
+    Observation,
+    ReleaseObservation,
+    make_engine,
+)
 
 NOW = datetime(2026, 9, 10, 19, tzinfo=UTC)
 SPEC = WB_FUNDAMENTALS[1]
@@ -273,3 +279,97 @@ def test_known_http_update_cannot_postdate_source_receipt(tmp_path):
     altered = archive(canonical(payload), tmp_path / "altered")
     with pytest.raises(ValueError, match="publisher update"):
         load_bundle(altered)
+
+
+def test_same_date_extra_imf_source_row_fails_prior_integrity(tmp_path):
+    spec = IMF_FUNDAMENTALS[0]
+    metadata = {"indicators": {spec.imf_code: {"dataset": "WEO", "source": "WEO April 2026"}}}
+    values = {"values": {spec.imf_code: {"BEL": {"2025": 1.0, "2026": 2.0}}}}
+    client = Mock()
+    def response(url, **kwargs):
+        payload = metadata if url.endswith("/indicators") else values
+        return Mock(status_code=200, content=json.dumps(payload).encode(), headers={},
+                    url=url, history=[])
+    client.get.side_effect = response
+    path = collect_bundle(artifact_dir=tmp_path, countries=("BE",), families=("imf",),
+                          indicators=(spec.indicator,), client=client, clock=lambda: NOW)
+    engine = make_engine(tmp_path / "corrupt.db")
+    ingest_bundle(path, engine=engine)
+    with Session(engine) as session:
+        release = session.scalar(select(DataRelease))
+        from datetime import date
+        session.add(ReleaseObservation(release_id=release.id, country="BE",
+            indicator=spec.indicator, date=date(2026, 12, 31), value=999,
+            source="IMF_WEO", series_id=spec.imf_code, status="estimate_or_outturn"))
+        session.commit()
+    with pytest.raises(ValueError, match="prior release.*integrity"):
+        ingest_bundle(path, engine=engine)
+    with Session(engine) as session:
+        assert session.scalar(select(func.count()).select_from(DataRelease)) == 1
+        assert session.scalar(select(func.count()).select_from(Observation)) == 2
+
+
+def test_extra_artifact_role_fails_prior_v2_integrity(tmp_path):
+    path = bundle(tmp_path)
+    engine = make_engine(tmp_path / "corrupt.db")
+    ingest_bundle(path, engine=engine)
+    with Session(engine) as session:
+        existing = session.scalars(select(DataReleaseArtifact)).first()
+        fields = {column: getattr(existing, column) for column in (
+            "release_id", "artifact_sha256", "artifact_path", "native_payload_sha256",
+            "missing_provenance_sha256", "provenance_json")}
+        session.add(DataReleaseArtifact(role="unexpected_extra", **fields))
+        session.commit()
+    with pytest.raises(ValueError, match="artifact roles"):
+        ingest_bundle(path, engine=engine)
+
+
+def test_prior_hash_corruption_fails_even_when_row_count_matches(tmp_path, monkeypatch):
+    import dalio.storage.releases as releases
+    path = bundle(tmp_path)
+    engine = make_engine(tmp_path / "corrupt.db")
+    # Seed a bad claimed digest at initial insertion, preserving all immutable guards.
+    original = releases._content_hash
+    monkeypatch.setattr(releases, "_content_hash", lambda frame: "0" * 64)
+    ingest_bundle(path, engine=engine)
+    monkeypatch.setattr(releases, "_content_hash", original)
+    with pytest.raises(ValueError, match="scalar integrity"):
+        ingest_bundle(path, engine=engine)
+
+
+def test_legacy_release_does_not_require_new_artifact_contract(tmp_path):
+    from dalio.storage.db import init_db
+    from dalio.storage.releases import (
+        ProjectionScope,
+        ReleaseMeta,
+        ingest_release_snapshot,
+        make_partition_key,
+    )
+    path = bundle(tmp_path)
+    frame = load_bundle(path)["ready"][0]["frame"].copy()
+    frame["status"] = "observed"
+    engine = make_engine(tmp_path / "legacy.db")
+    init_db(engine)
+    with Session(engine) as session:
+        ingest_release_snapshot(session, frame, ReleaseMeta(
+            partition_key=make_partition_key("WORLD_BANK", SPEC.wb_code, "BE", SPEC.indicator),
+            source_family="WORLD_BANK", retrieved_at=NOW - timedelta(days=1),
+            available_at=NOW - timedelta(days=1),
+            projection=ProjectionScope("BE", SPEC.indicator, ("WORLD_BANK",))))
+    assert ingest_bundle(path, engine=engine)["created_releases"] == 1
+
+
+def test_later_refresh_rejects_self_consistent_but_wrong_prior_derived_evidence(tmp_path, monkeypatch):
+    import dalio.pipelines.fetch_company_country_macro as pipeline
+    path = bundle(tmp_path)
+    engine = make_engine(tmp_path / "corrupt.db")
+    original = pipeline._native_evidence
+    monkeypatch.setattr(pipeline, "_native_evidence", lambda item:
+                        (canonical({"wrong": "native"}), canonical({"wrong": "missingness"})))
+    ingest_bundle(path, engine=engine)
+    monkeypatch.setattr(pipeline, "_native_evidence", original)
+    later = collect_bundle(artifact_dir=tmp_path / "later", countries=("BE",),
+        families=("wb",), indicators=(SPEC.indicator,), client=fake_client(),
+        clock=lambda: NOW + timedelta(days=1))
+    with pytest.raises(ValueError, match="native/missingness"):
+        ingest_bundle(later, engine=engine)
