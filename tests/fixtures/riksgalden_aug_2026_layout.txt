@@ -1,0 +1,370 @@
+                                                                                   Sweden's
+                                                                                     Central
+                                                                                 Government
+                                                                                       Debt
+                                                                                                                    31 August 2026
+CENTRAL GOVERNMENT DEBT
+                                                                                   Change from previous month               Outstanding amount, SEK
+
+A. Nominal amount, incl. assets under management                                        -61 814 288 990                    1 155 799 671 396
+
+Accrued inflation compensation (uplifting amount)                                              627 629 909                        45 544 764 005
+Exchange rate effect                                                                            41 720 481                           646 830 233
+
+
+B. Nominal uplifted amount at current exchange rate incl.
+assets under management                                                                  -61 144 938 600                   1 201 991 265 635
+
+Assets under management, current exchange rate                                              46 132 892 099                       47 567 606 569
+
+
+Official measure of the central government's gross debt:
+
+C. CENTRAL GOVERNMENT DEBT                                                          -15 012 046 501                  1 249 558 872 203
+
+
+CENTRAL GOVERNMENT DEBT INCLUDING ON-LENDING AND ASSETS UNDER MANAGEMENT
+                                                                                   Change from previous month               Outstanding amount, SEK
+
+On-lendning                                                                                   -108 244 529                       -11 839 155 223
+Assets under management                                                                    -46 132 892 099                       -47 567 606 569
+
+D. CENTRAL GOVERNMENT DEBT INCLUDING
+ON-LENDING AND ASSETS UNDER MANAGEMENT                                                 -61 253 183 129                    1 190 152 110 411
+
+
+
+
+The Central government debt is calculated as the value of outstanding debt instruments, mainly bonds and treasury bills, at the reporting
+date, calculated in accordance with established principles, see below. Within the framework of debt management are also certain assets.
+There are funds temporarily invested in the money market until they are used to pay expenses in the state budget or maturing loans. The
+assets mean that the actual liability is less than the sum of outstanding debt instruments. This report presents both the liabilities and assets
+since our aim is to achieve a fair and transparent reporting of government indebtedness.
+   Nominal (face value) amount (in A above) is the sum of the amounts that the Debt Office is committed to paying when a debt
+instrument matures and receives at maturity if it is an asset. The amount is reported in SEK at the exchange rate at the time of borrowing.
+The next step in the calculation of public debt (in B above) is to report the nominal amounts at the current exchange rate and add the
+accrued inflation compensation for outstanding inflation-linked government bonds (this measure is called the uplifted amount at current
+exchange rate). These measures show the government debt when assets under management is taken into account.
+   The official measure of government debt (in C above) is defined based on principles laid down at EU level. It accounts for the Central
+government gross debt, without regard to the assets. To obtain this measurement, we add the financial assets to measure B.
+   The Debt Office also reports "Central government debt including on-lending and assets under management" (under D above). This
+includes not only the assets under management but also certain other financial assets, namely on-lending to the Riksbank and foreign
+states. This measure is used in the management of government debt in accordance with guidelines adopted by the government and in our
+internal risk management. On-lending is a government claim, but not in the same manner as assets under management available for
+payment of government spending.
+   Liabilities are reported with a positive sign and assets with a negative. Change refers to a change of the nominal amount from the
+previous month. The account is based on business day. However, note that issue date and maturity date refer to settlement date.
+
+
+
+                                                                        1
+CAPITAL MARKET
+
+Government bonds
+Bond                              Date of Issue   Time to                                                            Change       Nominal amount, SEK
+                                                  Refixing
+SGB 1059 1.0% 12 Nov 26           2015-05-22          0,2                                                                    0      96 414 000 000
+SGB 1060 0.75% 12 May 28          2017-01-27          1,7                                                        4 250 000 000     108 263 000 000
+SGB 1061 0.75% 12 Nov 29          2018-06-01          3,2                                                                    0      90 339 000 000
+SGB 1062 0.125% 12 May 31         2020-03-27          4,7                                                        3 000 000 000      89 140 000 000
+SGB 1056 2.25% 1 Jun 32           2012-03-20          5,7                                                                    0      54 097 000 000
+SGB 1065 1.75% 11 Nov 33          2022-05-06          7,2                                                                    0      63 960 000 000
+SGB 1066 2.25% 11 May 35          2024-02-02          8,7                                                                    0      88 750 000 000
+SGB 1067 2.5% 15 Oct 36           2025-06-09         10,1                                                       12 000 000 000      86 800 000 000
+SGB 1068 2,75% 09 Feb 37          2026-03-18         10,4                                                                    0      23 000 000 000
+SGB 1053 3.5% 30 Mar 39           2009-03-30         12,6                                                                    0      47 466 450 000
+SGB 1063 0.5% 24 Nov 45           2020-11-24         19,2                                                          750 000 000      19 722 000 000
+SGB 1064 1.375% 23 Jun 71         2021-06-23         44,8                                                                    0      11 000 000 000
+                                                      6,5                                                      20 000 000 000     778 951 450 000
+
+
+
+
+Inflation-linked bonds
+Bond                              Date of Issue   Time to    Inflation compensation     Including inflation          Change       Nominal amount, SEK
+                                                  Refixing                                  compensation
+SGB IL 3113 0.125% 1 Dec 27       2017-02-06        1,2         9 453 784 429           38 470 784 429                       0  29 017 000 000
+SGB IL 3103 3.5% 1 Dec 28         1998-06-26        2,2               720 675                1 720 675                       0       1 000 000
+SGB IL 3104 3.5% 1 Dec 28         1999-04-22        2,2        18 089 131 004           46 085 421 004                       0  27 996 290 000
+SGB IL 3114 0.125% 1 Jun 30       2020-02-10        3,7         5 454 249 441           26 942 249 441                       0  21 488 000 000
+SGB IL 3111 0.125% 1 Jun 32       2015-04-30        5,7         9 327 413 022           35 442 913 022                       0  26 115 500 000
+SGB IL 3116 0.75% 1 Jun 36        2025-02-24        9,7           117 341 967            9 922 341 967             500 000 000   9 805 000 000
+SGB IL 3115 0.125% 1 Jun 39       2021-09-06       12,7         3 102 123 468           16 268 623 468             250 000 000  13 166 500 000
+                                                    4,4       45 544 764 005          173 134 054 005             750 000 000 127 589 290 000
+
+
+
+
+Green bonds
+Bond                              Date of Issue   Time to                                                            Change       Nominal amount, SEK
+                                                  Refixing
+EUB G SEK 0.125% 9 Sep 30         2020-09-09          4,0                                                                     0    20 000 000 000
+                                                      4,0                                                                     0   20 000 000 000
+
+
+
+
+Public bonds in foreign currencies
+Bond                              Date of Issue   Time to Foreign currencies Current exchange rate                   Change       Nominal amount, SEK
+                                                  Refixing
+EUB USD 3.375% 28 Jan 28         2025-10-28       1,4        2 000 000 000         19 192 560 000                          0       18 830 600 000
+ESB EUR 9.405% 28 Dec 26         1996-04-09       0,3           33 205 918            370 106 229                          0          295 090 240
+EUB EUR 2.0% 26 Jun 28           2025-06-26       1,8        2 000 000 000         22 291 582 660                          0       21 873 951 160
+EUB EUR 2.75% 18 Jun 29          2026-06-18       2,8        2 000 000 000         22 291 582 660                          0       21 928 724 460
+                                                  2,0                             64 145 831 549                           0      62 928 365 860
+
+
+
+
+Private placements in foreign currencies etc.
+Instrument                                        Time to    Inflation compensation Current exchange rate            Change       Nominal amount, SEK
+                                                  Refixing                          incl. infl. compensation
+
+
+
+
+Sum: Capital market                                                                                    20 750 000 000             989 469 105 860
+
+
+
+
+                                                                   2
+MONEY MARKET
+
+T-bills
+T-bill                              Issue date             Time to                                                      Change       Nominal amount, SEK
+                                                           Refixing
+STB 19 Aug 26                     2026-05-04                   -                                                 -30 000 000 000                    0
+STB 16 Sep 26                     2025-09-05                 0,0                                                  -2 240 000 000       40 260 000 000
+STB 21 Oct 26                     2026-07-09                 0,1                                                               0        7 500 000 000
+STB 18 Nov 26                     2026-08-06                 0,2                                                   7 500 000 000        7 500 000 000
+STB 16 Dec 26                     2025-12-12                 0,3                                                               0       35 000 000 000
+STB 17 Mar 27                     2026-03-06                 0,5                                                  12 500 000 000       43 100 000 000
+STB 16 Jun 27                     2026-06-11                 0,8                                                  12 500 000 000       32 500 000 000
+                                                             0,4                                                    260 000 000      165 860 000 000
+
+
+Liquidity management instruments
+Instrument                                                              Gross debt, SEK                                 Change       Nominal amount, SEK
+     Commercial paper, foreign currencies                              16 012 426 096                        -52 542 820 000           16 012 426 096
+Commercial paper, foreign currencies                                  16 012 426 096                        -52 542 820 000           16 012 426 096
+     Bank accounts, SEK                                                             0                                777 152                  -92 156
+     Deposits, SEK                                                     31 443 026 287                         25 527 026 287           31 443 026 287
+     Bank accounts, foreign currencies                                        422 777                             -1 757 255               -3 798 818
+     Interim post, bank accounts, SEK                                               0                               -777 152                   91 950
+     Interim post, bank accounts, foreign currencies                         -422 759                              4 133 160                2 824 985
+     Interim post, accounts in the Riksbank                                         0                        -19 679 075 614           -9 721 493 233
+Deposits, accounts                                                    31 443 026 304                          5 850 326 578           21 720 559 016
+     Repos, Government bonds                                                        0                            -28 013 889                        0
+Repos, Swedish government papers                                                    0                           -28 013 889                         0
+     Repos, other securities triparty                                               0                        -20 000 000 000          -20 000 000 000
+     Repos, other securities simple                                                 0                        -15 201 448 793          -15 201 448 793
+Repos, other securities                                                             0                       -35 201 448 793          -35 201 448 793
+     Mortage bonds, holdings                                                        0                           -200 000 000             -200 000 000
+     Government securities, holdings of other states                                0                         -1 096 336 668           -1 096 336 668
+Securities holdings                                                                 0                        -1 296 336 668           -1 296 336 668
+                                                                      47 455 452 400                        -83 218 292 772            1 235 199 651
+
+
+
+
+Note: Balances in bank accounts are recorded using settlement date accounting. The adjusting entry contains amounts on the way to or from the bank
+account that have not yet been paid and are therefore in a clearing account for the Debt Office’s accounting purposes. The sum of the balance in the
+bank account and the adjusting entry determines whether a bank account balance is classified as a liability or an asset.
+
+
+
+Collateral
+Instrument                                                              Gross debt, SEK                                 Change       Nominal amount, SEK
+Margins, Futures                                                                    0                               2 288 627              -67 426 393
+Credit Support Annex to ISDA, SEK                                         475 000 000                             363 100 000              475 000 000
+Credit Support Annex to ISDA, foreign currencies                           71 890 354                              49 096 951             -978 154 647
+Margins, CCP                                                               18 041 521                             -20 481 796             -193 598 439
+                                                                         564 931 875                             394 003 781             -764 179 479
+
+
+Note: Balances in bank accounts are recorded using settlement date accounting. The adjusting entry contains amounts on the way to or from the bank
+account that have not yet been paid and are therefore in a clearing account for the Debt Office’s accounting purposes. The sum of the balance in the
+bank account and the adjusting entry determines whether a bank account balance is classified as a liability or an asset.
+
+
+
+
+Sum: Money market                                                                                         -82 564 288 990         166 331 020 172
+
+
+
+
+ALL MARKETS INCL. ASSETS UNDER MANAGEMENT                                                                       Change           Nominal amount
+Sum of nominal amounts. Under A on page 1.                                                             -61 814 288 990           1 155 799 671 396
+
+
+                                                                             3
+APPENDIX
+
+ Different debt classes, including on-lending and assets under management
+Debt class                                              Nominal amount     Current exchange rate and              Average Time            Share
+                                                                                     uplifting amount                to Refixing
+Nominal krona debt                                 1 037 471 751 647          1 037 471 751 647                          5,58           87,2
+Inflation-linked debt                                127 589 290 000            173 134 054 005                          4,39           14,5
+Foreign currency debt                                -21 100 525 474            -20 453 695 241                          1,28            -1,7
+                                                  1 143 960 516 173          1 190 152 110 411                           5,05          100,0
+
+
+
+Nominal SEK debt, including assets under management
+Instrument                                                                                                                Nominal amount, SEK
+Government bonds                                                                                                           778 951 450 000
+T-bills                                                                                                                    165 860 000 000
+Foreign exchange forwards, SEK                                                                                             109 377 842 317
+Green bonds                                                                                                                 20 000 000 000
+Collateral                                                                                                                     281 401 561
+Liquidity management                                                                                                       -36 998 942 232
+                                                                                                                        1 037 471 751 647
+
+
+
+
+Inflation-linked SEK debt
+Instrument                                                      Nominal amount, SEK Inflation compensation, SEK       Inflation-linked debt, SEK
+Inflation-linked bonds                                              127 589 290 000              45 544 764 005            173 134 054 005
+                                                                   127 589 290 000              45 544 764 005            173 134 054 005
+
+
+
+
+Foreign currency debt, incl. on-lendning and money market assets
+Instrument                                                         Nominal amount, SEK Exchange rate effects, SEK       Foreign curr. debt, SEK
+Public bonds, foreign currencies                                     62 928 365 860               1 217 465 689             64 145 831 549
+Liquidity management                                                 38 234 141 882                 217 864 374             38 452 006 256
+Other foreign currency debt                                                -454 635                   9 054 863                  8 600 227
+Collateral                                                           -1 045 581 040                           0             -1 045 581 040
+On-lending                                                          -11 839 155 223                           0            -11 839 155 223
+Foreign exchange forwards, SEK                                     -109 377 842 317                -797 554 692           -110 175 397 009
+                                                                   -21 100 525 474                 646 830 233            -20 453 695 241
+
+
+
+
+Foreign currency debt excluding on-lending                            -9 261 370 251              646 830 233                -8 614 540 017
+
+
+
+
+Swaps, nominal amount
+Maturity year                                                        Interest rate swaps Cross currency swaps between SEK Interest rate swaps
+                                                                                  in SEK    and foreign currencies, SEK             total, SEK
+2026                                                                     750 000 000                            0              750 000 000
+2027                                                                   1 800 000 000                            0            1 800 000 000
+2028                                                                   1 535 000 000                            0            1 535 000 000
+2029                                                                   3 050 000 000                            0            3 050 000 000
+2030                                                                   1 700 000 000                            0            1 700 000 000
+2032                                                                   2 100 000 000                            0            2 100 000 000
+2033                                                                     300 000 000                            0              300 000 000
+2034                                                                     100 000 000                            0              100 000 000
+                                                                     11 335 000 000                             0          11 335 000 000
+
+
+
+
+Debt and assets in liquidity management and payments of collateral
+Instrument                                               Nominal amount              Gross debt                Assets    Current exchange rate
+Commercial paper, foreign currencies                    16 012 426 096       16 012 426 096                       0                      0
+Deposits, accounts                                      21 720 559 016       31 443 026 304          -9 722 467 288         -9 722 467 288
+Repos, other securities                                -35 201 448 793                    0         -35 201 448 793        -35 201 448 793
+Securities holdings                                     -1 296 336 668                    0          -1 296 336 668         -1 314 579 133
+Margins, Futures                                           -67 426 393                    0             -67 426 393            -67 426 393
+Credit Support Annex to ISDA                              -503 154 647          546 890 354          -1 050 045 001         -1 050 045 001
+Margins, CCP                                              -193 598 439           18 041 521            -211 639 960           -211 639 960
+                                                          471 020 172       48 020 384 275         -47 549 364 104        -47 567 606 569
+
+
+
+
+                                                            4
+AVERAGE TIME TO REFIXING AS MEASURED IN RISK MANAGEMENT
+
+
+The government decides on guidelines for central government debt maturity and the distribution between types of debt: Nominal krona
+debt, Inflation-linked debt and Foreign currency Debt.
+    The measure of debt used in risk managment is the central government's uplifted amount at current exchange rate including claims in
+on-lending and assets under management. Positions taken with derivatives to actively manage exposure in the debt is not included.
+Derivative transactions affecting the allocation between different debt classes is on the other hand included.
+    The maturity is measured with Average Time to Refixing. The table shows the debt measure used in risk management as a monthly
+average.
+
+
+
+
+Average Time to Refixing in the Debt Office's risk management, monthly average
+                                                                                                      Debt measure          Average Time to Refixing
+                                                                                                   risk management                 monthly average
+Nominal krona debt                                                                           1 025 310 845 043                                4,99
+Inflation-linked debt                                                                          172 384 361 973                                4,41
+Foreign currency debt                                                                           13 431 232 928                                0,06
+                                                                                            1 211 126 439 943                                 4,85
+
+
+
+Average Time to Refixing, year, monthly average
+
+The maturity targets (Time to Refixing) are from 2025:
+Central government debt, within the interval: 3,5-6 years
+
+
+
+
+     Government debt, years                                                    Nominal SEK debt, years
+     Higher target, years                                                      Inflation-linked debt, years
+     Lower target, years
+                      Central government debt                                        Nominal and inflation-linked krona debt
+                                                                           9
+
+  6,0
+                                                                           8
+
+  5,5                                                                      7
+
+  5,0                                                                      6
+
+                                                                           5
+  4,5
+
+                                                                           4
+  4,0
+                                                                           3
+  3,5
+                                                                           2
+      2010              2015              2020               2025          2010                  2015                2020          2025
+
+
+Foreign currency exposure: Central government debt’s foreign currency exposure is to be gradually phased out with the
+guideline value being zero as of 2027
+
+     Foreign currency debt at actual exchange rate, SEK bn
+
+
+                        Foreign currency debt
+
+
+  200
+
+
+
+  150
+
+
+
+  100
+
+
+
+    50
+
+
+
+     0
+     2010               2015              2020               2025
+
+                                                                    10
+
