@@ -17,6 +17,9 @@
 
 The collection checkpoint and handoff were pushed on `main` at `548aa41`;
 the separate desktop branch was pushed at `3d2f8dc`.
+The completed country-assessment release and its handoff were pushed on `main`
+and `feat/country-assessments` at `22c4b30`. Both branches and the desktop branch
+were verified clean and synchronized before this documentation update.
 The latest batch collected and verified 361 official country/source-series
 histories across all 19 saved listing countries: 19 source series per country,
 18 distinct metrics, and 15,616 batch observations. Nine countries previously
@@ -127,14 +130,38 @@ map markers are future work.
 
 ## Next development step
 
-Deepen the specific national evidence needed to test the scenario signposts:
-recent activity/orders, credit conditions, debt maturities and refinancing
-costs, and sector-relevant energy exposure. Prefer the statistical office,
-central bank and debt office for each country, retain their own scopes, and
-join actual company exposures when available. A later desktop export can
-present the country profiles and scenarios in Macro Atlas's sidebar. The first
-assessment layer is complete; broader national inputs, numerical stress models
-and full sector/company assessment remain future work.
+Recommended next slice, still planned: **a Sweden scenario-monitoring report**.
+Connect a small, fixed set of existing scenario signposts to dated evidence on
+real activity/orders, credit and interest rates, and government funding.
+
+1. Audit the whole retained database and source artifacts before collecting
+   more. An indicator outside the current assessment input set may already be
+   stored elsewhere. Record exact series, definitions, frequency, history,
+   freshness and release/artifact coverage; distinguish an unused series from
+   a missing or unsuitable one.
+2. Connect eligible existing evidence, then acquire only the specific gaps
+   needed for the pilot, preferring SCB, Riksbank and Riksgälden originals.
+   Preserve publication, reference and availability clocks and source-native
+   definitions. Unavailable signposts remain explicit gaps.
+3. Produce one offline Sweden table and accompanying JSON: latest value and
+   reference period, comparable historical change, source and freshness,
+   linked scenario, observed developments and evidence that challenges its
+   assumptions. Define comparison rules before interpreting the results.
+   Compare releases at exact known-at cutoffs where the ledger supports it.
+
+The pilot is complete when every selected signpost has reproducible source
+lineage or a named gap, and the Sweden report clearly distinguishes observations
+from scenario interpretation. Monthly or quarterly growth is not a direct
+annual forecast error; government yields are not company borrowing costs, and
+refixing is not principal maturity. Do not convert the monitoring table into
+mechanical probabilities or causal verdicts.
+
+After validating the pilot, extend the same approach to the other 18 countries
+and deepen energy, sector and company evidence as needed. Company implications
+still require actual revenue, asset, cost and financing exposures. A later
+desktop export can present the profiles and monitoring in Macro Atlas's
+sidebar. This handoff update plans the next slice; it does not claim that the
+monitoring layer or a new desktop bundle has been built.
 
 The user explicitly prefers **first-hand sources whenever available**. This
 is recorded in `CLAUDE.md`; official WB/IMF harmonized baselines retain their
