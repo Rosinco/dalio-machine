@@ -2,6 +2,27 @@
 
 One auditable, point-in-time account of the world economy, growing from a macro-cycle dashboard built on Ray Dalio's economic-machine framework. It tracks cycles and fundamentals today and is expanding into institutional reports, sovereign debt, large-allocator positions, capital flows, commodity pressure and monetary liquidity for a SEK-based household investor. It is a decision-support tool, **not** a market-timing signal generator.
 
+## Country assessments
+
+The country-assessment consumer turns verified local evidence into readable
+profiles for the 19 saved listing countries: a prior-year IMF estimate/outturn,
+the retained current-year plus five-year publisher path, historical structural
+context and explicitly conditional scenarios. Each case states assumptions,
+transmission mechanisms, signposts, invalidators and company-exposure checks.
+Available original Swedish debt-office facts retain their own scope and units.
+
+```bash
+python -m dalio.pipelines.build_country_assessments --db data/dalio.db --as-of 2026-09-10
+```
+
+Outputs are offline JSON and Markdown under
+`data/snapshots/country_assessments/<snapshot-sha256>/`; `LATEST.json` points to
+the complete published directory. The source database is read-only. Publisher
+forecasts, descriptive arithmetic and Observatory hypotheses remain distinct;
+there are no calibrated probabilities, composite risk scores or company
+verdicts. These files are not yet bundled into Macro Atlas. See ADR 0030 and
+`HANDOFF.md` for the current checkpoint.
+
 ## What it does
 
 For 8 economies (US, CN, EU, UK, JP, SE, IN, BR), it pulls macro indicators from FRED, BIS, Riksbank, IMF, OECD, SCB and World Bank, then classifies cycle stage with rule-based logic. The World Fundamentals Map extends coverage to 22 players. Numeric pipelines preserve complete source snapshots in an append-only release ledger beside the compatible latest-value table, enabling honest “what was known then?” queries from the ledger cutover onward.

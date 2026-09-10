@@ -846,3 +846,29 @@ Retain these together:
 - `snapshots/company-country-macro-2026-09-10-summary.{md,json}`: geographic coverage and common-period macro comparison.
 - `snapshots/sweden-native-debt-2026-09-10.{md,json}`: source-attributed debt composition, selected security maturity schedule and separately labelled financing forecasts.
 - `snapshots/company-country-first-hand-sources-2026-09-10.md`: national-source discovery backlog; identified endpoints are not a claim of ingested national series.
+
+### Read-only country assessments (ADR 0030)
+
+`python -m dalio.pipelines.build_country_assessments --db data/dalio.db`
+selects the latest eligible complete source releases at the exact `--known-at`
+cutoff, validates their raw/derived artifacts and immutable rows, and writes
+`data/snapshots/country_assessments/<snapshot-sha256>/snapshot.json`, `index.md`
+and `countries/<code>.md`. `--as-of` sets the assessment date; `--countries`
+optionally selects listing countries (GB maps to UK). Timezone-aware cutoffs,
+source status, missingness, original dates and native debt scopes are retained.
+
+The JSON includes the complete selected source evidence and its digest,
+point-level citations, methodology and implementation hashes, country profiles,
+coverage gaps and conditional scenario records. The directory is immutable;
+`LATEST.json` is replaced only after all files are successfully published.
+Repeating identical inputs/cutoffs and implementation reproduces the same
+snapshot. Outputs cannot overwrite the database or retained source evidence.
+
+Five IMF metrics provide the comparable estimate/outturn and publisher path;
+old-age dependency, net energy imports and R&D are historical WB context.
+Original Swedish debt-office facts remain separate national evidence. Cases
+name their assumptions, mechanisms, monitoring signposts, invalidators and
+required company exposures. They are Observatory hypotheses with no calibrated
+probabilities, numerical stress forecast or company verdict. The source
+SQLite database is opened read-only and these exports are gitignored local
+artifacts, separate from Macro Atlas's bundled data.
