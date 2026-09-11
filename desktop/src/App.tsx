@@ -11,6 +11,8 @@ import type { LiquidityReport } from './liquidity';
 import ResearchLibrary from './ResearchLibrary';
 import ScoreDetails from './ScoreDetails';
 import LiquidityPanel from './LiquidityPanel';
+import CountryEvidencePanel, { useEvidenceIndex } from './CountryEvidencePanel';
+import { evidenceCode } from './countryEvidence';
 import BusinessWorkspace, { BusinessSearch } from './BusinessWorkspace';
 import type { BusinessIndex, Observatory } from './business';
 import { useReleaseResource } from './useResearchResource';
@@ -33,6 +35,7 @@ function useCountry(code: string, index: AtlasIndex | null, release: ResearchRel
 }
 
 export default function App() {
+  const evidence = useEvidenceIndex();
   const [index, setIndex] = useState<AtlasIndex | null>(null);
   const [error, setError] = useState('');
   const [releases, setReleases] = useState<ResearchRelease[]>([]);
@@ -117,7 +120,13 @@ export default function App() {
   }, []);
 
   const countries = useMemo(() => Object.entries(index?.countries ?? {}).sort((a, b) => a[1].name.localeCompare(b[1].name)), [index]);
-  const names = useMemo(() => Object.fromEntries(countries.map(([k, c]) => [k, c.name])), [countries]);
+  const searchableCountries = useMemo(() => {
+    const merged = new Map(countries.map(([k, c]) => [k, { name: c.name, iso3: c.iso3, note: c.on_map ? c.currency : 'Aggregate' }]));
+    for (const [k, c] of Object.entries(evidence.data?.countries ?? {})) if (!merged.has(k)) merged.set(k, { name: c.name, iso3: c.listing_iso2, note: 'Country assessment' });
+    return [...merged].sort((a, b) => a[1].name.localeCompare(b[1].name));
+  }, [countries, evidence.data]);
+  const names = useMemo(() => Object.fromEntries(searchableCountries.map(([k, c]) => [k, c.name])), [searchableCountries]);
+  const evidenceEntry = evidence.data?.countries[evidenceCode(code)];
   const meta = index?.indicators.find(i => i.name === metric);
   const rows = useMemo(() => latestTrade(index?.trade ?? [], code), [index, code]);
   const slices = useMemo(() => tradeSlices(rows, index?.countries ?? {}), [rows, index]);
@@ -177,20 +186,20 @@ export default function App() {
   const cell = country?.indicators[metric];
   const points = country?.history?.[metric] ?? [];
   const totalIndicators = country ? Object.values(country.indicators).filter(c => finite(c.value)).length : 0;
-  const matches = countries.filter(([k, c]) => `${c.name} ${k} ${c.iso3}`.toLowerCase().includes(query.toLowerCase()));
+  const matches = searchableCountries.filter(([k, c]) => `${c.name} ${k} ${k === 'UK' ? 'GB' : ''} ${c.iso3}`.toLowerCase().includes(query.toLowerCase()));
   const pressure = country?.pressures[pressureIndex];
 
   return <div className="app" data-active-release={release.id} data-active-observatory={observatory}>
     <header className="topbar">
       <div className="brand"><div className="brand-mark"><Compass size={25} strokeWidth={1.3} /></div><div><strong>ATLAS<span> / </span></strong><select className="observatory-select" aria-label="Observatory" value={observatory} onChange={e => { setObservatory(e.target.value as Observatory); setSearchOpen(false); setQuery(''); }}><option value="macro">Macro observatory</option><option value="sectors">Sectors & branches</option><option value="companies">Company observatory</option></select></div></div>
-      {observatory === 'macro' ? <div className="search" ref={searchRef}><Search size={16} /><input aria-label="Search countries" placeholder="Find a country…" value={query} onFocus={() => setSearchOpen(true)} onChange={e => { setQuery(e.target.value); setSearchOpen(true); }} onKeyDown={e => { if (e.key === 'Enter' && matches[0]) selectCountry(matches[0][0]); }} /><span className="search-hint">{countries.length} economies</span>
-        {searchOpen && <div className="search-results">{matches.map(([k, c]) => <button key={k} onClick={() => selectCountry(k)}><span className="country-code">{k}</span>{c.name}<span className="result-note">{c.on_map ? c.currency : 'Aggregate'}</span></button>)}{!matches.length && <p>No matching country in this data release.</p>}</div>}
+      {observatory === 'macro' ? <div className="search" ref={searchRef}><Search size={16} /><input aria-label="Search countries" placeholder="Find a country…" value={query} onFocus={() => setSearchOpen(true)} onChange={e => { setQuery(e.target.value); setSearchOpen(true); }} onKeyDown={e => { if (e.key === 'Enter' && matches[0]) selectCountry(matches[0][0]); }} /><span className="search-hint">{searchableCountries.length} economies</span>
+        {searchOpen && <div className="search-results">{matches.map(([k, c]) => <button key={k} onClick={() => selectCountry(k)}><span className="country-code">{k}</span>{c.name}<span className="result-note">{c.note}</span></button>)}{!matches.length && <p>No matching country in the saved coverage.</p>}</div>}
       </div> : <BusinessSearch index={business.data} taxonomy={taxonomy.data} financial={financial.data} onCompany={selectCompany} onCountry={selectCountry} />}
       <div className="release"><span className="status-dot" />Offline ready <span className="release-divider">|</span><button className="release-picker" aria-label="Choose research release" onClick={() => setLibraryOpen(true)}>Data release {index.as_of}<ChevronDown size={12} /></button></div>
       <button className="header-icon" aria-label="Open data library" onClick={() => setLibraryOpen(true)}><BookOpen size={19} /></button>
     </header>
     {observatory === 'macro' ? <div className="workspace">
-      <nav className="rail" aria-label="Map modes"><div className="rail-label">EXPLORE</div>{modes.map(m => <button key={m.id} className={mode === m.id ? 'active' : ''} aria-label={m.label} aria-pressed={mode === m.id} onClick={() => changeMode(m.id)}><m.icon size={21} strokeWidth={1.5} /><span>{m.id === 'fundamentals' ? 'World' : m.id === 'history' ? 'History' : 'Trade'}</span></button>)}<div className="rail-spacer" /><button onClick={() => setLibraryOpen(true)} aria-label="About this release"><Layers3 size={20} strokeWidth={1.5} /><span>Library</span></button><span className="rail-version">V0.8.0</span></nav>
+      <nav className="rail" aria-label="Map modes"><div className="rail-label">EXPLORE</div>{modes.map(m => <button key={m.id} className={mode === m.id ? 'active' : ''} aria-label={m.label} aria-pressed={mode === m.id} onClick={() => changeMode(m.id)}><m.icon size={21} strokeWidth={1.5} /><span>{m.id === 'fundamentals' ? 'World' : m.id === 'history' ? 'History' : 'Trade'}</span></button>)}<div className="rail-spacer" /><button onClick={() => setLibraryOpen(true)} aria-label="About this release"><Layers3 size={20} strokeWidth={1.5} /><span>Library</span></button><span className="rail-version">V0.9.0</span></nav>
       <main className="map-panel">
         <div className="map-heading"><div><div className="eyebrow">THE WORLD, IN CONTEXT</div><h1>{mode === 'fundamentals' ? 'World fundamentals' : mode === 'history' ? 'History & outlook' : 'Trade connections'}</h1><p>{mode === 'fundamentals' ? 'Explore the forces shaping each economy.' : mode === 'history' ? 'Follow the data through time, from one saved release.' : `Where ${country?.name ?? 'an economy'} sells its goods.`}</p></div><span className="coverage-pill">{countries.filter(([, c]) => c.on_map).length} countries <span>+ {countries.filter(([, c]) => !c.on_map).map(([, c]) => c.name).join(", ")}</span></span></div>
         <div className="map-filter"><span>{mode === 'fundamentals' ? 'COLOUR BY' : mode === 'history' ? 'INDICATOR' : 'MEASURE'}</span>{mode === 'fundamentals' ? <select aria-label="Map category" value={category} onChange={e => setCategory(e.target.value as Category)}>{index.categories.map(k => <option value={k} key={k}>{categories[k].label}</option>)}</select> : mode === 'history' ? <select aria-label="Map historical indicator" value={metric} onChange={e => setMetric(e.target.value)}>{index.indicators.map(i => <option key={i.name} value={i.name}>{i.name === 'gdp_growth_fwd5' ? 'GDP growth · annual' : i.label}</option>)}</select> : <strong>Share of selected country’s goods exports</strong>}<ChevronDown size={14} /></div>
@@ -205,12 +214,14 @@ export default function App() {
         </div>
       </main>
       <aside className="sidebar" aria-label="Country details" data-country={code} data-ready={detail.ready}>
-        {!country ? <div className="uncovered"><span className="country-badge">{code}</span><h2>{unknownName || code}</h2><p>This country has no data in the current release.</p><p>The map is global; research coverage grows as countries are added to Dalio.</p><button className="primary" onClick={() => selectCountry('SE')}>Explore Sweden <ArrowRight size={15} /></button></div> : <>
+        {!country && evidenceEntry ? <><div className="country-header"><div className="country-badge">{evidenceCode(code)}</div><div><div className="eyebrow">COUNTRY ASSESSMENT</div><h2>{evidenceEntry.name}</h2><p>Annual evidence{evidenceEntry.signals > 0 && ' · current monitoring'} · separate saved pack</p></div></div><div className="sidebar-content"><CountryEvidencePanel index={evidence.data} error={evidence.error} code={code} /></div></> : !country ? <div className="uncovered"><span className="country-badge">{code}</span><h2>{unknownName || code}</h2><p>This country has no data in the current release.</p><p>The map is global; research coverage grows as countries are added to Dalio.</p><button className="primary" onClick={() => selectCountry('SE')}>Explore Sweden <ArrowRight size={15} /></button></div> : <>
           <div className="country-header"><div className="country-badge">{code === 'SE' ? <span className="swedish-flag" /> : code}</div><div><div className="eyebrow">{country.on_map ? 'COUNTRY PROFILE' : 'REGIONAL AGGREGATE'}</div><h2>{country.name}</h2><p>{country.currency || 'Multiple currencies'} <span>·</span> {totalIndicators} indicators available</p></div></div>
-          <div className="compare-row"><span>COMPARE WITH</span><select aria-label="Comparison country" value={compare} onChange={e => setCompare(e.target.value)}><option value="">Add a comparison</option>{countries.filter(([k]) => k !== code).map(([k, c]) => <option value={k} key={k}>{c.name}</option>)}</select></div>
-          <div className="tabs" role="tablist">{[['overview', 'Overview'], ['indicators', 'Indicators'], ['liquidity', 'Liquidity'], ['trade', 'Trade'], ['evidence', 'Evidence']].map(([k, label]) => <button key={k} role="tab" aria-selected={tab === k || tab === 'score' && k === 'overview'} onClick={() => setTab(k)}>{label}</button>)}</div>
+          {tab !== 'assessments' && <div className="compare-row"><span>COMPARE WITH</span><select aria-label="Comparison country" value={compare} onChange={e => setCompare(e.target.value)}><option value="">Add a comparison</option>{countries.filter(([k]) => k !== code).map(([k, c]) => <option value={k} key={k}>{c.name}</option>)}</select></div>}
+          <div className="tabs" role="tablist">{[['overview', 'Overview'], ['assessments', 'Assessments'], ['indicators', 'Indicators'], ['liquidity', 'Liquidity'], ['trade', 'Trade'], ['evidence', 'Evidence']].map(([k, label]) => <button key={k} role="tab" aria-selected={tab === k || tab === 'score' && k === 'overview'} onClick={() => setTab(k)}>{label}</button>)}</div>
           <div className="sidebar-content">
+            {tab === 'assessments' && <CountryEvidencePanel index={evidence.data} error={evidence.error} code={code} />}
             {tab === 'overview' && <>
+              {evidenceEntry && <button className="ce-callout" onClick={() => setTab('assessments')}><span><strong>Country assessment & monitoring</strong><small>Annual {evidenceEntry.assessment_as_of}{evidenceEntry.monitoring_as_of && ` · Monitoring ${evidenceEntry.monitoring_as_of}`} · separate evidence pack</small></span><ArrowRight size={16} /></button>}
               {mode !== 'history' && <section><div className="section-title"><h3>Fundamentals at a glance</h3><span className="micro">0–100</span></div><p className="section-note">Category scores · snapshot {index.as_of}</p><Radar country={country} comparison={other.country} index={index} /><CountryKey country={country.name} comparison={other.country?.name} /><p className="chart-caption">Inner red rings: weaker · middle yellow: mixed · outer green: stronger.</p>
                 <div className="category-list">{index.categories.map(k => { const s = country.categories[k]; const q = quintile(s?.score); return <button key={k} className={category === k && mode === 'fundamentals' ? 'selected' : ''} onClick={() => { setCategory(k); setMode('fundamentals'); setTab('score'); }}><span>{categories[k].label}<small>{s?.n_available ?? 0}/{s?.n_total ?? 0} indicators</small></span><div className="mini-track"><i style={{ width: `${s?.score ?? 0}%`, background: q === null ? missingColor : assessmentPalette[q] }} /></div><strong>{finite(s?.score) ? format(s.score, 0) : '—'}</strong></button>; })}</div><p className="chart-caption">Select a category to see its calculation and changes since the previous release.</p>
               </section>}

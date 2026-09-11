@@ -56,7 +56,28 @@ export async function businessFlows(page, project) {
   assert.match(await page.locator('.business-content').innerText(), /No Finland country profile/);
   await page.getByRole('button', { name: 'Open Finland in Macro', exact: true }).click();
   assert.equal(await page.locator('.sidebar').getAttribute('data-country'), 'FI');
+  await page.locator('[data-country-evidence="FI"][data-evidence-ready="true"]').waitFor();
+  assert.match(await page.locator('.sidebar').innerText(), /Finland · assessment & monitoring/);
+  assert.equal(await page.locator('.sidebar [data-signal]').count(), 4);
+  await page.locator('[data-map-ready="true"]').waitFor();
+  await page.waitForTimeout(800);
+  assert.equal(await page.locator('.map-error').count(), 0);
+  await page.screenshot({ path: resolve(project, 'test-results/finland-macro-map.png') });
+  // Keep the uncovered-country case with a real map country absent from both
+  // independent country evidence and legacy fundamentals. Exercise reopening a
+  // persisted selection; neither a company nor another country's data may leak in.
+  const evidence = JSON.parse(await readFile(resolve(project, 'public/data/country-evidence/index.json'), 'utf8'));
+  const world = JSON.parse(await readFile(resolve(project, 'public/maps/world.geojson'), 'utf8'));
+  assert.ok(world.features.some(f => f.properties.code === 'DZ'));
+  assert.equal(evidence.countries.DZ, undefined);
+  await page.evaluate(() => {
+    const preferences = JSON.parse(localStorage.getItem('atlas.preferences') ?? '{}');
+    localStorage.setItem('atlas.preferences', JSON.stringify({ ...preferences, code: 'DZ', observatory: 'macro' }));
+  });
+  await page.reload();
+  await page.locator('[data-country="DZ"] .uncovered').waitFor();
   assert.match(await page.locator('.sidebar').innerText(), /no data in the current release/);
+  assert.equal(await page.locator('[data-country-evidence]').count(), 0);
   await page.getByLabel('Search countries').fill('Sweden');
   await page.getByLabel('Search countries').press('Enter');
   await page.getByLabel('Observatory', { exact: true }).selectOption('companies');
@@ -81,5 +102,5 @@ export async function businessFlows(page, project) {
   await page.locator(`[data-active-release="${current.id}"] [data-company="102"][data-business-ready="true"]`).waitFor();
   assert.match(await page.locator('[data-financial="revenues"]').innerText(), new RegExp(number(holmen.annual.at(-1).values.revenues)));
   assert.equal(await page.getByLabel('Observatory', { exact: true }).inputValue(), 'companies');
-  return { current, original, checks: ['Contextual observatory menus and Sweden → forestry → Holmen', 'Annual and quarterly financial periods', 'Annual-only return proxy and matching peer ratios', 'Neutral coverage and comparison colours', 'Dated archived deep dive', 'Company search and Finnish macro coverage gap', 'Old releases cannot show newer business data', 'Damaged company document rejected', 'V3 company import and selected observatory persist after reload'] };
+  return { current, original, checks: ['Contextual observatory menus and Sweden → forestry → Holmen', 'Annual and quarterly financial periods', 'Annual-only return proxy and matching peer ratios', 'Neutral coverage and comparison colours', 'Dated archived deep dive', 'Company opens Finland independent macro evidence and map', 'Uncovered Algeria selection stays empty after reopening', 'Old releases cannot show newer business data', 'Damaged company document rejected', 'V3 company import and selected observatory persist after reload'] };
 }

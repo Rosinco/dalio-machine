@@ -1,4 +1,4 @@
-param([string]$Executable)
+param([string]$Executable, [switch]$FinancialOnly, [switch]$CompressedCdp)
 $ErrorActionPreference = 'Stop'
 $project = Split-Path (Split-Path $PSCommandPath -Parent) -Parent
 if (-not $Executable) { $Executable = Join-Path $project 'src-tauri\target\x86_64-pc-windows-msvc\release\macro-atlas.exe' }
@@ -18,8 +18,11 @@ $bootstrap = "import(require('url').pathToFileURL(process.argv[1]).href)"
 $runner = New-Object System.Diagnostics.Process
 $runner.StartInfo.FileName = $node
 $runner.StartInfo.Arguments = '--eval "' + $bootstrap + '" "' + $test + '" "' + $Executable + '"'
+if ($FinancialOnly) { $runner.StartInfo.Arguments += ' --financial-only' }
+if ($CompressedCdp) { $runner.StartInfo.Arguments += ' --compressed-cdp' }
 $runner.StartInfo.UseShellExecute = $false
 $runner.StartInfo.EnvironmentVariables['NODE_UNC_HOST_ALLOWLIST'] = 'wsl.localhost'
+$runner.StartInfo.EnvironmentVariables['DEBUG'] = 'pw:browser'
 $runner.StartInfo.RedirectStandardOutput = $true
 $runner.StartInfo.RedirectStandardError = $true
 $null = $runner.Start()

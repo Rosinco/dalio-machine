@@ -6,7 +6,40 @@ requires no terminal, Python environment, WSL, account or network connection.
 Windows WebView2 must be installed; it is present on Adam's PC. The Tauri installer
 configuration can also bundle its offline installer when distributing to another PC.
 
-## Version 0.8.0
+## Version 0.9.0
+
+
+**Macro → Assessments** opens the verified country evidence alongside the older
+fundamentals, liquidity and company research. All **19 listing countries** have
+annual assessments and native annual histories. **Sweden, Norway, Denmark, Finland,
+United States, Germany and Canada** have 29 monitoring topics: 28 source-bound
+signals and the documented US corporate new-loan-rate gap. Search includes
+countries without an older scored profile, including Finland, Norway and Belgium.
+`GB` listing identities resolve to the `UK` macro profile.
+
+- Signal cards show the original latest reference period, value, unit and exact
+  comparison window. Open a signal for its saved history, scope, freshness rule,
+  scenario checks and source references. Blue/purple identify data series; a rising
+  or falling rate is not automatically good or bad and says nothing by itself
+  about credit availability. Industry scopes, currencies and rate instruments
+  differ by country; the app does not rank these signals.
+- Annual charts separate historical IMF estimates/outturns from forecasts using
+  the collector's calendar convention. Missing years remain gaps. The baseline
+  and 2026–2031 path, dated demographics/energy/R&D, conditional scenarios and
+  required company exposure checks are inspectable. There are no scenario
+  probabilities, GDP nowcasts or automatic company headwind/tailwind verdicts.
+- Sweden's original debt-office context separates observed reference dates and
+  monthly means from funding-plan forecasts. Refixing is not principal maturity;
+  central-government amounts are separate from IMF general-government ratios.
+- This **independent offline country-evidence pack** keeps its own visible UTC
+  assessment and known-at dates. Changing a saved fundamentals/research release
+  never changes those dates or its source identity. Newly covered countries are
+  searchable but do not inherit old score values or map colours.
+- Original source URLs, native series and locations, acquisition/availability
+  clocks, publisher update precision, native provisional flags, artifact hashes and explicit gaps are
+  bundled with the values. Publisher websites require internet; the original
+  response binaries remain in the macro project's archive. Loading the app or
+  opening sources does not contact a publisher.
 
 Use the **Observatory** selector beside ATLAS to switch between **Macro**,
 **Sectors & branches**, and **Companies**. Each has its own Explore views.
@@ -100,8 +133,9 @@ when the app reopens.
 - May 2026 branch research, the archived Holmen deep dive and source register are
   readable offline. Dates and original financial anchors remain visible. Financial
   refreshes do not refresh old prices, segment descriptions or investment verdicts.
-- Dated Dalio observations sit beside qualitative research questions. Finland has
-  no macro country profile in the included release; Sweden is never substituted.
+- Dated Dalio observations sit beside qualitative research questions. The older
+  fundamentals release has no Finland score profile; the independent country
+  evidence pack now includes Finland's assessment and monitoring. Sweden is never substituted.
   No new branch forecast or company headwind/tailwind assessment is calculated.
 - The map shows **Börsdata listing-country counts**, with explicit limits. The
   next physical-asset stage will extend the deep-dive funnel with balance-sheet
@@ -400,10 +434,43 @@ It uses an isolated WebView profile and temporary native archive
 (`ATLAS_RESEARCH_DIR` and `ATLAS_FINANCIALS_DIR`, development/test overrides) and closes its own processes.
 Pass `-Executable` to check an installed copy. The test never disables the PC's
 network connection or closes other applications.
-The test copies the companion into local Windows storage and uses CDP to select
-its local file for imports above Playwright's 50 MiB transferred-file cap.
+The test copies the companion into local Windows storage. Windows Node and WebView
+share that filesystem, so `connectOverCDP({ isLocal: true })` and Playwright's public
+file-input API select the full local file without transferring a second buffer or
+opening a separate file-selection debugger session.
 It needs Playwright's installed JavaScript dependencies and a Windows Node runtime;
 the helper can use the Node runtime in an existing VS Code installation.
+
+Use `scripts/test-windows.ps1 -FinancialOnly` for a focused native reproduction.
+It uses the included default research release and full 110 MB financial companion,
+checks malformed input rejection, byte-identical export/import, reload and process
+restart, and skips unrelated directory/branch loops. `-Executable` can select a
+particular built or installed binary. The focused run does not replace the full
+native suite; both retain the 300-second runner limit.
+
+The native runner uses Playwright's public custom CDP transport with the test-only `ws`
+dependency, explicitly declines WebSocket compression, and requires the negotiated
+extensions to be empty. Add `-CompressedCdp` to either scope to reproduce the earlier
+stock Playwright connection. The focused uncompressed run passed full financial
+import, reload and process restart on the unchanged application binary. The full
+native suite remains subject to its separate verification receipt. This
+compares two debugger clients as well as compression settings; a passing run alone
+would not establish the cause of earlier malformed protocol messages.
+
+Native tests write UTC event timelines and diagnostic receipts to
+`test-results/windows-native-events-*.jsonl` and
+`test-results/windows-native-diagnostics-*.json`. These record runtime versions,
+process/WebView lifecycle, observed import progress and available heap readings at
+deciles. Displayed 100% is rounded UI progress, not independent proof that validation
+finished. Financial file hashes and the success/restart assertions provide that
+verification. Failed runs preserve their isolated temporary profile and upload
+files for inspection; successful runs remove that temporary profile.
+
+The runner enables only `pw:browser` transport diagnostics. Protocol payloads are
+redacted before logging; malformed-message receipts retain bounded envelope
+metadata, length, digest and parser position, plus WebSocket close/error reasons.
+Earlier failures remain recorded separately from successful runs. Final native
+verification and installation status belong in the current handoff.
 
 The browser runner uses `/opt/google/chrome/chrome`; this is a development test
 dependency, not a requirement for the Windows application. Measured timings refer
@@ -415,3 +482,45 @@ generated release notices for the installed dependency versions and license text
 
 The application does not publish the underlying research data or give it a new
 license. Its data source terms remain separate from its software dependencies.
+
+## Rebuilding the independent country evidence pack
+
+From `desktop/`, activate the canonical macro project's Python environment, then
+export one verified 19-country assessment snapshot plus every monitoring snapshot
+to include. `--monitoring` is repeatable and order-independent. Paths below are
+examples; use immutable reviewed `snapshot.json` files from the macro archive.
+
+```bash
+python scripts/export_country_evidence.py \
+  --assessment /path/to/country_assessments/SNAPSHOT/snapshot.json \
+  --monitoring /path/to/nordic_monitoring/SNAPSHOT/snapshot.json \
+  --monitoring /path/to/national_monitoring/SNAPSHOT/snapshot.json
+python scripts/export_country_evidence.py --verify
+python -m pytest tests/test_country_evidence.py
+npm test
+npm run build
+npm run test:browser -- --evidence-only
+```
+
+The exporter reads no database and makes no network requests. It checks source
+snapshot identities and citation references, retains native histories and gap
+artifacts, selects the newest **whole country monitoring profile**, and refuses
+same-cutoff conflicts. A missing signal in a newer profile cannot fall back to an
+older capture. Annual profiles use the newest verified base or embedded assessment
+parent and retain that parent's own hash, methodology, citations and cutoff.
+
+`public/data/country-evidence/index.json` points at immutable hashed per-country
+files. The index is replaced only after complete files have been written; repeating
+an unchanged export preserves bytes and modification times. Frontend checks verify
+both index and country hashes before display. Only a small catalogue loads at
+startup; full country files load on demand with a five-country memory cache. The
+active 19-country/seven-monitoring-country pack is about 13 MB total. Original response binaries are
+not duplicated in the executable.
+
+This pack does not modify the research `.atlas.json` contract or the financial
+SQLite companion. It is bundled by Vite/Tauri at build time and is not currently a
+user-importable pack. Rebuild/install the application to refresh this evidence.
+`tests/country-evidence-flows.mjs` is shared with the browser/native test runners;
+it covers native values/windows, missing monitoring, countries without scores,
+GB/UK identity, independent dates across research-release changes and compact
+layout. ADR 0034 records the contract.

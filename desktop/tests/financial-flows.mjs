@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 
@@ -11,7 +11,7 @@ async function financialRead(page, operation, args) {
     return response.json();
   }, { operation, args });
 }
-export async function financialFlows(page, project, { native = false, archive } = {}) {
+export async function financialFlows(page, project, { native = false, archive, diagnostic } = {}) {
   const envelope = JSON.parse(await readFile(resolve(project, 'public/data/research.atlas.json'), 'utf8'));
   const taxonomy = JSON.parse(envelope.taxonomy.content);
   const index = await financialRead(page, 'index', { taxonomy: envelope.taxonomy.sha256 });
@@ -102,23 +102,73 @@ export async function financialFlows(page, project, { native = false, archive } 
   assert.match(await page.locator('[data-market-library]').innerText(), /16,895[\s\S]*159,486/);
   let exportedPath;
   if (native) {
+    diagnostic?.({ stage: 'financial_export_started', pack: index.id, bytes: index.bytes, taxonomy: index.taxonomy_sha256 });
     await page.getByRole('button', { name: 'Save financial history pack', exact: true }).click();
     await library.locator('.library-message').waitFor();
     exportedPath = (await library.locator('.library-message').innerText()).replace(/^Saved /, '');
+    assert.equal((await stat(exportedPath)).size, index.bytes);
+    diagnostic?.({ stage: 'financial_export_completed', bytes: index.bytes });
     const input = page.getByLabel('Financial history file', { exact: true });
     await input.setInputFiles({ name: 'invalid.sqlite', mimeType: 'application/octet-stream', buffer: Buffer.from('junk') });
     await library.getByRole('alert').waitFor();
     assert.equal(await library.getAttribute('data-library-financial-pack'), index.id);
-    // CDP attaches to an existing local WebView. Playwright treats that as a remote
-    // browser and caps transferred buffers at 50 MiB; select the actual Windows
-    // file through the native DOM path instead of transferring a second copy.
-    const cdp = await page.context().newCDPSession(page);
+    diagnostic?.({ stage: 'invalid_financial_import_rejected' });
+    const prefix = 'ATLAS_FINANCIAL_DIAGNOSTIC ';
+    const onConsole = message => {
+      if (!message.text().startsWith(prefix)) return;
+      try { diagnostic?.(JSON.parse(message.text().slice(prefix.length))); } catch { /* Preserve importer behavior if logging fails. */ }
+    };
+    if (diagnostic) {
+      page.on('console', onConsole);
+      await page.evaluate(prefix => {
+        const library = document.querySelector('[aria-label="Company financial history library"]');
+        let previous = -1, previousStage = '';
+        const log = (stage, detail = {}) => {
+          const memory = performance.memory;
+          const heap = memory && (detail.percent === undefined || detail.percent % 10 === 0) ? { usedJSHeapSize: memory.usedJSHeapSize, totalJSHeapSize: memory.totalJSHeapSize, jsHeapSizeLimit: memory.jsHeapSizeLimit } : undefined;
+          console.debug(prefix + JSON.stringify({ stage, observed_at: new Date().toISOString(), ...detail, heap }));
+        };
+        // Observe only rendered progress; Tauri's fixed invoke descriptor and
+        // importer remain untouched. The UI rounds percentages, so 100% is a
+        // displayed validation phase, not proof that the last chunk was copied.
+        const observe = () => {
+          const progress = library.querySelector('progress[aria-label="Financial import progress"]');
+          if (progress && progress.value !== previous) {
+            previous = progress.value;
+            log('financial_ui_copy_progress', { percent: previous });
+          }
+          const message = library.querySelector('.library-message')?.textContent ?? '';
+          const error = library.querySelector('[role="alert"]')?.textContent ?? '';
+          const stage = message.includes('Financial history saved ·') ? 'financial_ui_import_completed' : error ? 'financial_ui_import_error' : previous >= 100 ? 'financial_ui_validation_visible' : progress ? 'financial_ui_copy_visible' : '';
+          if (stage && stage !== previousStage) {
+            previousStage = stage;
+            log(stage, error ? { message: error } : {});
+          }
+        };
+        const selected = event => {
+          if (event.target.matches('input[aria-label="Financial history file"]')) log('financial_dom_file_selected', { bytes: event.target.files?.[0]?.size ?? null });
+        };
+        const observer = new MutationObserver(observe);
+        observer.observe(library, { subtree: true, childList: true, attributes: true, attributeFilter: ['value'] });
+        library.addEventListener('change', selected);
+        window.__atlasRestoreFinancialDiagnostic = () => { observer.disconnect(); library.removeEventListener('change', selected); delete window.__atlasRestoreFinancialDiagnostic; };
+      }, prefix);
+    }
+    // Native runner declares isLocal:true because Node and WebView share the
+    // Windows filesystem. Select the complete file by path using Playwright's
+    // public API; no transferred buffer or second manual CDP session is needed.
     try {
-      const { root } = await cdp.send('DOM.getDocument');
-      const { nodeId } = await cdp.send('DOM.querySelector', { nodeId: root.nodeId, selector: 'input[aria-label="Financial history file"]' });
-      await cdp.send('DOM.setFileInputFiles', { nodeId, files: [exportedPath] });
-    } finally { await cdp.detach(); }
-    await library.getByText(/Financial history saved ·/).waitFor({ timeout: 120000 });
+      diagnostic?.({ stage: 'financial_native_file_selection_started', bytes: index.bytes, selectionMethod: 'playwright_local_path' });
+      await input.setInputFiles(exportedPath);
+      diagnostic?.({ stage: 'financial_native_file_selection_completed' });
+      await library.getByText(/Financial history saved ·/).waitFor({ timeout: 120000 });
+      diagnostic?.({ stage: 'financial_import_success_message' });
+    } finally {
+      if (diagnostic) {
+        await page.evaluate(() => window.__atlasRestoreFinancialDiagnostic?.()).catch(() => {});
+        page.off('console', onConsole);
+      }
+    }
     assert.equal(createHash('sha256').update(await readFile(resolve(archive, 'financial-packs', `${index.id}.sqlite`))).digest('hex'), index.id);
   } else {
     const download = page.waitForEvent('download');

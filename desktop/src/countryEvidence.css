@@ -1,0 +1,45 @@
+.ce-panel { font-size: 12px; line-height: 1.6; color: #40505b; }
+.ce-panel h3 { color: #243f50; font-size: 16px; margin: 0 0 12px; }
+.ce-panel h4 { font-size: 12px; color: #354f61; margin: 16px 0 6px; }
+.ce-panel p { margin: 8px 0; }
+.ce-intro { background: #eaf1f5; padding: 18px; border: 1px solid #dce6ec; border-radius: 12px; margin: 4px 0 23px; }
+.ce-intro h3 { margin: 8px 0; }
+.ce-dates { color: #647681; font-size: 10px; overflow-wrap: anywhere; }
+.ce-neutral { color: #526d81; background: #edf2f5; font-size: 10px; border-radius: 5px; padding: 3px 7px; white-space: nowrap; }
+.ce-panel .section-title h3 { display: flex; gap: 7px; align-items: center; }
+.ce-signals { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ce-signals > button { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; text-align: left; border: 1px solid #d9e2e7; background: #f7f9fa; border-radius: 9px; padding: 11px; color: #455b6d; gap: 5px; }
+.ce-signals > button.selected { border-color: #5481a3; box-shadow: inset 0 0 0 1px #5481a3; background: #edf3f7; }
+.ce-signals > button > span { font-size: 11px; line-height: 1.45; }
+.ce-signals > button > strong { font-size: 17px; color: #2d5676; }
+.ce-signals small { font-size: 10px; line-height: 1.45; }
+.ce-change { display: flex; gap: 4px; align-items: center; font-size: 11px; color: #435f76; }
+.ce-signal-detail { margin-top: 20px; }
+.ce-panel details { border-top: 1px solid #dfe6e9; padding: 12px 0; }
+.ce-panel summary { cursor: pointer; color: #365a74; font-size: 12px; font-weight: 600; }
+.ce-panel summary small { display: block; margin-left: 15px; font-weight: 400; color: #76828b; }
+.ce-panel ul, .ce-panel ol { padding-left: 18px; }
+.ce-panel li { margin: 7px 0; }
+.ce-history-toolbar { display: flex; justify-content: space-between; gap: 10px; align-items: center; font-size: 10px; margin-top: 12px; }
+.ce-history-toolbar select { padding: 5px; max-width: 155px; font-size: 11px; color: #405e75; border: 1px solid #d6e0e6; border-radius: 5px; background: #f9fbfb; }
+.ce-link { display: inline-flex; align-items: center; gap: 5px; color: #315f89; background: transparent; border: none; text-decoration: underline; text-underline-offset: 3px; padding: 5px 0; font-size: 11px; cursor: pointer; }
+.ce-source-group { margin-top: 8px; }
+.ce-source { background: #f0f4f6; padding: 12px; margin: 8px 0; border-radius: 7px; overflow-wrap: anywhere; }
+.ce-source dl { display: grid; grid-template-columns: 110px minmax(0,1fr); gap: 5px 8px; font-size: 10px; }
+.ce-source dt { color: #6d7c86; }.ce-source dd { margin: 0; }
+.ce-url { font-size: 10px; overflow-wrap: anywhere; color: #657989; }
+.ce-panel pre { max-height: 330px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 10px; background: #e8eef2; padding: 9px; }
+.ce-table-scroll { max-width: 100%; overflow: auto; max-height: 370px; margin-top: 12px; }
+.ce-panel table { border-collapse: collapse; width: 100%; font-size: 10px; }
+.ce-panel td,.ce-panel th { border-bottom: 1px solid #dce4e8; padding: 8px; text-align: left; vertical-align: top; }
+.ce-panel th { background: #edf2f5; color: #3d596d; }.ce-panel td { min-width: 83px; }
+.ce-path table { min-width: 710px; }
+.ce-structural > div,.ce-native { padding: 11px 0; border-bottom: 1px solid #e1e7ea; }
+.ce-structural span,.ce-native > span { display: block; font-size: 11px; }
+.ce-structural strong,.ce-native > strong { display: block; color: #345e7d; font-size: 14px; }
+.ce-structural small,.ce-native > small { color: #74818a; font-size: 10px; }
+.ce-gap { background: #f0f3f4; border-left: 3px solid #95a7b2; padding: 12px; margin: 15px 0; }
+.ce-pathway { border-left: 2px solid #bdcedb; margin-left: 4px; }
+.ce-callout { width: 100%; border: 1px solid #cedfe9; background: #ebf3f8; color: #345f7c; border-radius: 8px; text-align: left; padding: 12px; margin-bottom: 20px; font-size: 12px; }
+.ce-callout small { display: block; margin-top: 4px; color: #637c8e; font-size: 10px; }
+.tabs { overflow-x: auto; }.tabs button { white-space: nowrap; }

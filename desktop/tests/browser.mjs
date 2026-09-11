@@ -7,6 +7,7 @@ import { researchFlows } from './research-flows.mjs';
 import { businessFlows } from './business-flows.mjs';
 import { taxonomyFlows } from './taxonomy-flows.mjs';
 import { listingFlows } from './listing-flows.mjs';
+import { countryEvidenceFlows } from './country-evidence-flows.mjs';
 
 const base = process.env.ATLAS_URL || 'http://127.0.0.1:1420';
 await mkdir('test-results', { recursive: true });
@@ -32,6 +33,11 @@ const start = performance.now();
 await page.goto(base);
 await page.locator('[data-country="SE"][data-ready="true"]').waitFor();
 await page.locator('[data-map-ready="true"]').waitFor();
+if (process.argv.includes('--evidence-only')) {
+  console.log(JSON.stringify(await countryEvidenceFlows(page, process.cwd())));
+  assert.deepEqual(external, []); assert.deepEqual(errors, []);
+  await browser.close(); process.exit(0);
+}
 if (process.argv.includes('--comparison-only')) {
   console.log(JSON.stringify(await comparisonFlows(page, process.cwd())));
   assert.deepEqual(external, []); assert.deepEqual(errors, []);
@@ -110,6 +116,8 @@ const download = await downloadPromise;
 assert.match(download.suggestedFilename(), /Macro-Atlas-SE-gov_debt_pct_gdp.csv/);
 await download.saveAs('test-results/history-export.csv');
 const research = await researchFlows(page, process.cwd());
+const countryEvidence = await countryEvidenceFlows(page, process.cwd());
+research.checks.push(...countryEvidence.checks);
 const business = await businessFlows(page, process.cwd());
 const taxonomy = await taxonomyFlows(page, process.cwd());
 const listings = await listingFlows(page, process.cwd());
