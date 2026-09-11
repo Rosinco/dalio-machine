@@ -107,6 +107,28 @@ DE · FR · IT · ES · NL (all `eu_member`, `currency_union`) · CA · RU (`san
 
 ## Indicator Catalogue
 
+### Nordic scenario monitoring (ADR 0032)
+
+`src/dalio/nordic_monitoring/` adds a separate immutable twelve-input supplement
+for NO, DK and FI and a read-only four-country consumer alongside the unchanged
+Sweden v1 contract. The common indicators are `industrial_production`,
+`corporate_new_lending_rate`, `policy_rate` and `yield_10y`; Sweden's
+`industrial_orders` remains supplemental. Pure source adapters retain native
+industry coverage, loan definitions, currencies, units, adjustment and policy
+instruments. Daily rates use the actual 90-day anchor; monthly rates/yields
+use an exact three-month difference. Index momentum requires six complete
+adjusted months. Finland's ECB rate is explicitly shared euro-area policy.
+
+Every signal links to existing country-scenario assumptions and challenging
+evidence, with source dates and freshness. Native definitions differ and are
+not turned into a country ranking, composite score, forecast revision or
+company verdict. `fetch_nordic_monitoring` records complete original responses
+and honest acquisition clocks; `build_nordic_monitoring` publishes an immutable
+offline comparison and linked country/context reports. It leaves the scalar
+database, scoring universe and Macro Atlas's bundled data unchanged. The
+pre-collection inventory checks 57 original annual histories/2,603 observations
+and 309 source bindings before identifying the monthly/daily collection gaps.
+
 ### Sweden scenario-monitoring pilot (ADR 0031)
 
 These observations live in immutable source supplements and monitoring exports;

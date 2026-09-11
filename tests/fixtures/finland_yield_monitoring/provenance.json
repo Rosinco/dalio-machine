@@ -1,0 +1,8 @@
+{
+  "fixture_encoding": "gzip, mtime=0; decompress to recover exact original HTML bytes",
+  "original_sha256": "c1f47ec73bbe22cf9140ca3f375a5caafa603aad5c82273924b0bfd00c0d9bb6",
+  "provenance": "Original public report response retained in canonical nordic_monitoring/discovery with HTTP receipt fi_benchmark_page. Fixture publication date is not an acquisition clock.",
+  "report_updated_date": "2026-09-10",
+  "scope": "Default displayed current-year daily rows. The ten-year column is parsed; other security columns remain source bytes only.",
+  "source_url": "https://reports.suomenpankki.fi/WebForms/ReportViewerPage.aspx?report=%2Ftilastot%2Farvopaperimarkkinat%2Fvelkapaperit%2Fviitelainojen_korot_v2_en"
+}

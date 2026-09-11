@@ -896,3 +896,25 @@ checks and validation logs. SCB's dataset-update timestamp is preserved
 separately from publication and retrieval. The MIR definition PDF was reviewed
 through an official browser extraction but is not retained as local PDF bytes;
 the discovery receipt records this limitation and its exact documentation URL.
+
+### Nordic monitoring supplements (ADR 0032)
+
+`artifacts/nordic_monitoring/responses/<sha256>.bin` preserves original responses
+for twelve selected Norway/Denmark/Finland country-signals. Complete immutable
+`bundles/<sha256>.json` records bind the fixed source definitions, GET/POST
+requests, HTTP outcomes, hashes and exact receipt/completion clocks. The newest
+eligible whole batch supplies facts; failed signals stay explicit gaps. Source
+discovery files are separate from these authoritative acquisition bundles.
+
+`snapshots/nordic_monitoring/<snapshot-sha256>/` contains `snapshot.json`,
+`index.md`, four country monitoring reports, and four annual country-assessment
+reports under `context/`. The consumer restores Sweden from its existing
+eligible supplement and all four annual profiles at the same known-at instant.
+Original source clocks are retained even when the capture dates differ. Data
+remain in supplements, not in new scalar database rows. Preserve these local,
+gitignored artifacts together with the database and Swedish source evidence.
+
+The `validation/` directory retains the pre-collection inventory and reusable
+source/replay audits. `LATEST.json` points only to a complete immutable report
+set. National industry aggregates, loan populations, fee treatment, currencies,
+policy instruments and yield frequencies are not silently harmonized.

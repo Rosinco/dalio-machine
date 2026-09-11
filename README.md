@@ -43,6 +43,23 @@ write to the source database. The offline consumer writes `SE.md` and
 for exact historical selection and `--no-latest` to review an export before
 publishing its pointer. See ADR 0031 and `HANDOFF.md` for the verified checkpoint.
 
+The **Nordic monitoring comparison** extends this to Norway, Denmark and
+Finland. Four common topics retain their national definitions, observation
+periods and currencies; Sweden's orders remain supplemental. Each country
+report connects the dated signals to its annual assessment and conditional
+scenarios. Original loan-rate definitions and monthly/daily yield histories
+remain distinct; the comparison does not rank countries.
+
+```bash
+python -m dalio.pipelines.fetch_nordic_monitoring --artifact-root data/artifacts/nordic_monitoring
+python -m dalio.pipelines.build_nordic_monitoring --db data/dalio.db
+```
+
+The complete offline report set is under
+`data/snapshots/nordic_monitoring/<hash>/`: open `index.md` for the comparison,
+then a country page and its linked annual context. The source database and
+desktop bundle are unchanged. See ADR 0032 for capture, scope and replay rules.
+
 For 8 economies (US, CN, EU, UK, JP, SE, IN, BR), it pulls macro indicators from FRED, BIS, Riksbank, IMF, OECD, SCB and World Bank, then classifies cycle stage with rule-based logic. The World Fundamentals Map extends coverage to 22 players. Numeric pipelines preserve complete source snapshots in an append-only release ledger beside the compatible latest-value table, enabling honest “what was known then?” queries from the ledger cutover onward.
 
 The raw evidence layer now also preserves facts that should not be flattened into one score:

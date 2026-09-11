@@ -1,0 +1,9 @@
+Original publisher responses captured 2026-09-10 UTC (2026-09-11 in Stockholm). Exact HTTP receipts are retained under canonical data/artifacts/nordic_monitoring/discovery. These fixture bytes are unmodified; tests use no HTTP.
+
+- industry_metadata.bin SHA256 aecb371f21a01bbd91667110d6d68f41fdd873de1985883a38534d17890b76f6
+- industry_data.bin SHA256 ead1ef2e6ed44a58e7510f1d05a1e154174a1dacce2e4a0e5b7cd62900af329c
+- lending_metadata.bin SHA256 1f995b4a30ef171dd7f74fb738e2d3b07933fd3404788fd28d1f01b36709bf80
+- lending_data.bin SHA256 21c29586e7c77722846be8d4a5f5feaf1f50aa2e8a4e44065f8ebbe48d7fdf21
+- lending_structure.bin SHA256 efa3e683dc85665f83c72816bac86dd70960bf707032945d52be8264a1434f37
+- policy_metadata.bin SHA256 60d00eb861c8a51efeec746009edafb7dd6a3f03ee24263243e96f66099fb3f6
+- policy_data.bin SHA256 2315988938ad0d4b6a6ebd605599719735c1dfd9b8b3a0b64cb74cb03fa54eb7
