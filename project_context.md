@@ -18,6 +18,8 @@ The framework is treated as a descriptive lens, not a predictive oracle. The pro
 ## Architecture
 
 - **Entry Points:**
+  - `python -m dalio.pipelines.fetch_national_monitoring --artifact-root <path>` — immutable twelve-attempt US/DE/CA original-source supplement with documented structural gaps, original bytes and honest clocks; no database writes
+  - `python -m dalio.pipelines.build_national_monitoring --db <source>` — read-only US/DE/CA scenario monitoring, native industrial output versus real value added, exact windows and linked annual context; atomic offline reports
   - `python -m dalio.pipelines.fetch_nordic_monitoring --artifact-root <path>` — immutable twelve-attempt NO/DK/FI original-source supplement, exact requests/raw bytes/clocks and explicit gaps; no database writes
   - `python -m dalio.pipelines.build_nordic_monitoring --db <source>` — read-only SE/NO/DK/FI comparison with native definitions, actual comparison windows and linked annual country context; atomic offline JSON/Markdown with exact `--known-at`
   - `python -m dalio.pipelines.fetch_sweden_monitoring --artifact-root <path>` — immutable five-signal original SCB/Riksbank supplement, exact requests/raw bytes/clocks; no database writes
@@ -108,6 +110,19 @@ Tier drives dashboard confidence labels — Tier 2 readings are flagged as "data
 DE · FR · IT · ES · NL (all `eu_member`, `currency_union`) · CA · RU (`sanctioned`, `data_quality=opaque`) · KR · AU · MX (medium) · ID (managed, medium) · SA (`peg`, low) · TR (managed, low) · CH. Plus the 8 cycle countries (US `reserve_issuer`; CN managed/low; IN managed/medium; BR medium). The euro-area aggregate `EU` is `on_map=False`, carries `members=EUROZONE_ISO3` (20), and is **excluded from `RANKING_POPULATION`** (21) — its percentiles are interpolated so its members are not double-counted. Adding a player = one `Country(...)` row.
 
 ## Indicator Catalogue
+
+### US/Germany/Canada scenario monitoring (ADR 0033)
+
+`src/dalio/national_monitoring/` supplies a separately versioned twelve-attempt
+supplement and read-only consumer. Original US/DE/CA evidence augments the Nordic
+panel without changing earlier source contracts or scoring. Documented structural
+gaps retain original publisher documentation and no substituted observations.
+Canadian industrial real value added stays on its native chained-dollar scale;
+output-index coverage, business-loan populations, policy instruments and yields
+remain country-specific. Complete within-series windows, source clocks,
+missingness and conditional scenarios are preserved in an eight-file offline
+export. Macro Atlas consumes the verified exports in its independently dated
+country-evidence view; research-import identities remain unchanged.
 
 ### Nordic scenario monitoring (ADR 0032)
 

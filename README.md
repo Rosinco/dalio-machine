@@ -60,6 +60,21 @@ The complete offline report set is under
 then a country page and its linked annual context. The source database and
 desktop bundle are unchanged. See ADR 0032 for capture, scope and replay rules.
 
+The **US, Germany and Canada monitoring extension** uses a separate original-source
+supplement, preserving earlier Nordic captures. Native industrial volume concepts,
+business-loan populations and policy instruments remain explicit. Documented
+structural gaps, including the discontinued US E.2 survey, contribute no substitute
+rate or directional reading. See ADR 0033.
+
+```bash
+python -m dalio.pipelines.fetch_national_monitoring --artifact-root data/artifacts/national_monitoring
+python -m dalio.pipelines.build_national_monitoring --db data/dalio.db
+```
+
+Open `data/snapshots/national_monitoring/<hash>/index.md` for the offline
+comparison and linked country reports. The collector preserves original bytes;
+the builder opens the database read-only and uses an exact `--known-at` cutoff.
+
 For 8 economies (US, CN, EU, UK, JP, SE, IN, BR), it pulls macro indicators from FRED, BIS, Riksbank, IMF, OECD, SCB and World Bank, then classifies cycle stage with rule-based logic. The World Fundamentals Map extends coverage to 22 players. Numeric pipelines preserve complete source snapshots in an append-only release ledger beside the compatible latest-value table, enabling honest “what was known then?” queries from the ledger cutover onward.
 
 The raw evidence layer now also preserves facts that should not be flattened into one score:

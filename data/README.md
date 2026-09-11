@@ -918,3 +918,21 @@ The `validation/` directory retains the pre-collection inventory and reusable
 source/replay audits. `LATEST.json` points only to a complete immutable report
 set. National industry aggregates, loan populations, fee treatment, currencies,
 policy instruments and yield frequencies are not silently harmonized.
+
+### US/Germany/Canada monitoring supplements (ADR 0033)
+
+`artifacts/national_monitoring/` retains a separate fixed twelve-attempt
+`national-monitoring-v1` source contract, original response entities and exact
+GET/POST selections, request/receipt clocks, HTTP outcomes and hashes. Its latest
+eligible whole bundle is selected before interpreting successes. A documented
+structural gap retains the official documentation and supplies no substitute
+scalar observations; delivery/validation failures remain separately named.
+
+`snapshots/national_monitoring/<snapshot-sha256>/` contains eight offline files:
+the complete JSON snapshot, comparison index, three country monitoring reports
+and their three annual context reports. The database is read-only. Canadian
+industrial real value added remains on its original chained-dollar scale;
+US/German output indices and native lending populations retain their definitions.
+The app consumes a separate dated country-evidence export alongside its existing
+saved score releases. Preserve acquisition, validation and report artifacts
+together; pushing Git does not transfer these local files.

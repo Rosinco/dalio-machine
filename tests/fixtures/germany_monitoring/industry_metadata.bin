@@ -1,0 +1,2783 @@
+
+
+
+
+
+
+
+
+
+
+
+
+<!doctype html>
+<html lang="en">
+<head>
+  <base href="https://www.destatis.de/"/>
+  <meta charset="UTF-8"/>
+  <title>Production index in industry  -  German Federal Statistical Office</title>
+  <meta name="title" content="Production index in industry"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=1"/>
+  <meta name="generator" content="Government Site Builder"/>
+  <meta name="description" content="Production index in industry. Calendar and seasonally adjusted by X13 JDemetra+ or Berlin procedure, version 4.1. Tables and graphs."/>
+<meta name="keywords" content="Produktionsindex"/>
+
+  
+
+
+
+
+
+
+
+
+
+
+<meta property="og:site_name" content="Federal Statistical Office"/>
+<meta property="og:type" content="website"/>
+<meta property="og:title" content="Production index in industry"/>
+<meta property="og:description" content=""/>
+<meta property="og:image" content="https://www.destatis.de/_config/SocialMediaImage_Image.jpg?__blob=poster&amp;v=6"/>
+<meta property="og:image:type" content="image/jpeg"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>
+<meta property="og:url" content="https://www.destatis.de/EN/Themes/Economy/Short-Term-Indicators/Production/kpi117.html"/>
+<meta property="og:locale" content="en_EN"/>
+<meta property="og:updated_time" content="2026-04-14T10:56:22+0200" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="Production index in industry"/>
+<meta name="twitter:description" content=""/>
+<meta name="twitter:image" content="https://www.destatis.de/_config/SocialMediaImage_Image.jpg?__blob=poster&amp;v=6"/>
+
+
+
+
+  <!--
+     Realisiert mit dem Government Site Builder.
+     Die Content Management Lösung der Bundesverwaltung.
+     www.government-site-builder.de
+   -->
+      <link rel="canonical" href="https://www.destatis.de/EN/Themes/Economy/Short-Term-Indicators/Production/kpi117.html"/>
+<link rel="glossary" href="EN/Service/Glossary/glossary_node.html" type="text/html" title="Glossary" />
+<link rel="start" href="EN/Home/_node.html" type="text/html" title="Homepage" />
+<link rel="contents" href="EN/Service/Sitemap/sitemap_node.html" type="text/html" title="Sitemap" />
+<link rel="search" href="EN/Service/Search/search_node.html" type="text/html" title="Search" />
+<link rel="shortcut icon" href="/SiteGlobals/Frontend/Images/favicon.ico?__blob=normal&amp;v=4" type="image/ico" />
+  
+  
+<link rel="stylesheet"  href="SiteGlobals/Frontend/Styles/normalize.css?v=3" type="text/css"/>
+<link rel="stylesheet"  href="SiteGlobals/Frontend/Styles/_libs.css?v=2" type="text/css"/>
+<link rel="stylesheet"  href="SiteGlobals/Frontend/Styles/small.css?v=107" type="text/css"/>
+<link rel="stylesheet"  href="SiteGlobals/Frontend/Styles/medium.css?v=67" type="text/css"/>
+<link rel="stylesheet"  href="SiteGlobals/Frontend/Styles/large.css?v=80" type="text/css"/>
+<link rel="stylesheet"  href="SiteGlobals/Frontend/Styles/custom.css?v=71" type="text/css"/>
+<link rel="stylesheet"  href="SiteGlobals/Frontend/Styles/custom_destatis.css?v=47" type="text/css"/>
+<!--[if IE 9]><link rel="stylesheet"  href="SiteGlobals/Frontend/Styles/addon_iefix_9.css?v=5" type="text/css"/><![endif]-->
+<!--[if lte IE 8]><link rel="stylesheet" href="SiteGlobals/Frontend/Styles/addon_iefix.css?v=1" type="text/css" /><![endif]-->
+<link rel="stylesheet" href="SiteGlobals/Frontend/Styles/addon_print.css?v=15" type="text/css" media="print" />
+
+
+  
+</head>
+
+<body class="gsb  s-podcasts js-off lang-en" data-nn="22952-22984" data-tracking-site-id="58" id="Start">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="wrapperOuter" id="wrapperOuter">
+  <div class="wrapperInner">
+    <nav class="navskip" role="navigation" aria-labelledby="navskiphead">
+      <p class="navSkip" id="navskiphead" aria-hidden="true">
+        <em>Go to:</em>
+      </p>
+      <ul class="navSkip">
+        <li><a href="EN/Themes/Economy/Short-Term-Indicators/Production/kpi117.html?nn=22952#content">Content</a></li>
+        <li><a href="EN/Themes/Economy/Short-Term-Indicators/Production/kpi117.html?nn=22952#navPrimary">Main Menu</a></li>
+        <li><a href="EN/Themes/Economy/Short-Term-Indicators/Production/kpi117.html?nn=22952#search">Search</a></li>
+      </ul>
+    </nav>
+    <div id="wrapperDivisions" class="wrapperDivisions" data-mobile-menu-url="SiteGlobals/Modules/MobileNavigation/EN/General/MobileNavigation.html?view=renderMobileNavigation">
+      <header id="header" class="header">
+        <div class="row">
+          <div class="small-12 column">
+            <div class="row collapse align-justify">
+              <div class="column small-12 show-for-large">
+                <nav class="navServiceMeta" role="navigation" aria-labelledby="serviceMenu">
+                  <h2 class="aural" id="serviceMenu" aria-hidden="true">Servicemeu</h2>
+                  <ul class="c-nav-service-meta">
+    <li class="c-nav-service-meta__item">
+
+          <a href="EN/Press/_node.html"
+  
+  
+  
+  >Press</a></li>
+      <li class="c-nav-service-meta__item">
+
+          <a href="EN/Service/Contact/contact_node.html"
+  
+  
+  
+  >Contact</a></li>
+      <li class="c-nav-service-meta__item">
+
+          <a href="EN/Service/Reporting-Online/_node.html"
+   title="Reporting online"
+  
+  
+  >Reporting online</a></li>
+      <li class="c-nav-service-meta__item">
+
+          <a title="Zum deutschen Auftritt" class="languageLink lang_de" href="DE/Themen/Wirtschaft/Konjunkturindikatoren/_inhalt.html" xml:lang="de" hreflang="de" lang="de">Deutsch</a>
+</li>
+      </ul>
+
+                </nav>
+              </div>
+              <div class="column shrink">
+                <a href="EN/Home/_node.html" class="logo" id="anfang"
+         title="to homepage">
+        <img src="/SiteGlobals/Frontend/Images/logo.svg?__blob=normal&amp;v=11"
+             alt="Logo: Destatis Statistisches Bundesamt (Link to homepage)" />
+      </a>
+    
+              </div>
+              <nav class="header__nav column shrink" aria-label="Hauptmenue"
+                   id="nav" data-qa-navprimary="">
+                <ul class="nav">
+                      <li class="nav__list-item nav__list-item--search">
+                        <a class="nav__item nav__toggle-search js-search-opener" href="EN/Service/Search/search_node.html" id="search"
+                           aria-label="Open search">
+                          <svg width="24" height="23" viewBox="0 0 24 23" xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="1.414"><path d="M23.7 21.3l-5.9-5.7c1.4-1.7 2.2-3.8 2.2-6C20 4.3 15.5 0 10 0S0 4.3 0 9.6s4.5 9.6 10 9.6c2.4 0 4.6-.8 6.3-2.2l6 5.7c.2.2.4.3.7.3.3 0 .5-.1.7-.3.4-.4.4-1 0-1.4zM10 17.2c-4.4 0-8-3.4-8-7.6C2 5.4 5.6 2 10 2s8 3.4 8 7.6c0 4.2-3.6 7.6-8 7.6z" fill="#333" fill-rule="nonzero"/></svg>
+                        </a>
+                          <div
+                            class="l-content-wrapper l-content-wrapper--no-space-inner l-content-wrapper--bg-color l-content-wrapper--gradient l-content-wrapper--inverted l-content-wrapper--less-space-after l-content-wrapper--position"
+                            id="header-search">
+                            <div class="c-search-banner">
+                              <div class="row collapse">
+                                <div class="column large-10 large-offset-1">
+                                  <h2 class="aural">Search</h2>
+                                  <form name="searchService" id="searchService"
+      action="SiteGlobals/Forms/Suche/EN/Servicesuche_Formular.html"
+      role="search"
+      method="get"
+      enctype="application/x-www-form-urlencoded"
+    
+      class="c-search-box__form  js-autosuggest"
+
+    
+      data-autosuggest-form="SiteGlobals/Forms/Suche/EN/Servicesuche_Autosuggest_Formular.html?nn=22952"
+      data-autosuggest-box-description="Gets submit immediately by selection"
+    
+>
+  
+  <input type="hidden" name="nn" value="22952"/>
+  <input type="hidden" name="resourceId" value="2376" />
+  <input type="hidden" name="input_" value="250354" />
+  <input type="hidden" name="pageLocale" value="en" /><div class="c-search-banner__wrapper">
+  
+  
+<span class="formLabel aural">
+  <label for="f2376d2370">Search item </label></span><div class="formField">
+  <input id="f2376d2370" name="templateQueryString" value="" title="Search item must not beginn with ? or *" type="text" pattern="^[^*?].*$" placeholder="search item" size="26" maxlength="100"/>
+</div>
+
+  
+  <input class="image" type="image" src="/SiteGlobals/Forms/_components/Buttons/Submit_weiss.svg?__blob=image&amp;v=1" id="f2376d2372" name="submit" alt="Search" title="Search" />
+</div></form>
+
+
+                                  <div class="c-search-banner__close">
+                                    <button class="c-search-banner__close-button js-search-opener"
+                                            type="button">Close</button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                      </li>
+                    <li class="nav__list-item nav__list-item--mobilemenu" id="navMobileMenu">
+                      <a class="nav__item nav__toggle-nav" href="EN/Service/Sitemap/sitemap_node.html"
+                         id="navPrimary"><span>Menu</span>
+                      </a>
+                    </li>
+                </ul>
+
+                <div class="c-nav-primary js-tree-navigation">
+                  <ul class="c-nav-primary__list js-nav-flyout__list">
+
+  <li
+          class="c-nav-primary__item  js-nav-flyout__node topinpath">
+
+          <button class="c-nav-primary__button js-nav-flyout__navigateToInner" aria-current="true" aria-current="page"
+                    data-qa-flyout-link="">
+              Topics</button>
+          <ul class="c-nav-flyout c-nav-flyout__list--level2 js-nav-flyout__list" data-qa-flyout=""
+                aria-label="Unternavigationspunkte">
+
+              <li class="c-nav-flyout__item c-nav-flyout__item--overview c-nav-flyout__item--level2">
+                <a href="EN/Themes/_node.html"
+                   class="c-nav-flyout__link c-nav-flyout__link--level2 c-nav-flyout__link--overview">
+                  Overview Topics</a>
+              </li>
+
+              <li
+                  class="c-nav-flyout__item c-nav-flyout__item--level2 js-nav-flyout__node c-nav-flyout__item--subheadline"
+                  
+                    aria-hidden="true"
+                    id="flyoutSubheadline_1426906"
+                  
+                  role="none">
+
+                  <p class="c-nav-flyout__subheadline">Statistics</p>
+
+</li>
+              <li
+                  class="c-nav-flyout__item c-nav-flyout__item--level2 js-nav-flyout__node "
+                  
+                    aria-describedby="flyoutSubheadline_1426906"
+                  
+                  role="none">
+
+                  <a href="EN/Themes/_node.html#themaHeadline_1426886_1" class="c-nav-flyout__link">
+    Society and environment</a>
+
+<button
+      class="c-nav-flyout__button c-nav-flyout__button--level2 js-nav-flyout__navigateToInner"
+      aria-label="Society and environment">
+    </button>
+    <ul
+  class="c-nav-flyout__list c-nav-flyout__list--level3 js-nav-flyout__list js-nav-flyout__node"
+  aria-label="Unternavigationspunkte">
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Society-Environment/Education-Research-Culture/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Education, research and culture</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Society-Environment/Environment/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Environment, Environmental Economic Accounting</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Society-Environment/Health/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Health</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Society-Environment/Housing/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Housing</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Society-Environment/Income-Consumption-Living-Conditions/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Income, consumption and living conditions</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Society-Environment/Population/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Population</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Society-Environment/Register-census/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Register census</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Society-Environment/Social-Statistics/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Social statistics</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Society-Environment/Sustainable-Development-Indicators/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Sustainable development indicators</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Society-Environment/Traffic-Accidents/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Traffic accidents</a></li>
+  </ul>
+
+</li>
+              <li
+                  class="c-nav-flyout__item c-nav-flyout__item--level2 js-nav-flyout__node "
+                  
+                    aria-describedby="flyoutSubheadline_1426906"
+                  
+                  role="none">
+
+                  <a href="EN/Themes/_node.html#themaHeadline_1426886_2" class="c-nav-flyout__link">
+    Economy</a>
+
+<button
+      class="c-nav-flyout__button c-nav-flyout__button--level2 js-nav-flyout__navigateToInner"
+      aria-label="Economy">
+    </button>
+    <ul
+  class="c-nav-flyout__list c-nav-flyout__list--level3 js-nav-flyout__list js-nav-flyout__node"
+  aria-label="Unternavigationspunkte">
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Economy/Foreign-Trade/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Foreign trade</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Economy/Globalisation-Indicators/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Globalisation indicators</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Economy/National-Accounts-Domestic-Product/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">National accounts, domestic product</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Economy/Prices/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Prices</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Economy/Short-Term-Indicators/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Short-term indicators</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Economy/Wholesale-Trade-Retail-Trade/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Wholesale and retail trade</a></li>
+  </ul>
+
+</li>
+              <li
+                  class="c-nav-flyout__item c-nav-flyout__item--level2 js-nav-flyout__node "
+                  
+                    aria-describedby="flyoutSubheadline_1426906"
+                  
+                  role="none">
+
+                  <a href="EN/Themes/_node.html#themaHeadline_1426886_3" class="c-nav-flyout__link">
+    Economic sectors and enterprises</a>
+
+<button
+      class="c-nav-flyout__button c-nav-flyout__button--level2 js-nav-flyout__navigateToInner"
+      aria-label="Economic sectors and enterprises">
+    </button>
+    <ul
+  class="c-nav-flyout__list c-nav-flyout__list--level3 js-nav-flyout__list js-nav-flyout__node"
+  aria-label="Unternavigationspunkte">
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Economic-Sectors-Enterprises/Accommodation-Food-Services-Activities-Tourism/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Accommodation and food service activities, tourism</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Economic-Sectors-Enterprises/Agriculture-Forestry-Fisheries/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Agriculture and forestry, fisheries</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Economic-Sectors-Enterprises/Construction/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Construction</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Economic-Sectors-Enterprises/Crafts/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Crafts</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Economic-Sectors-Enterprises/Energy/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Energy</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Economic-Sectors-Enterprises/Enterprises/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Enterprises</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Economic-Sectors-Enterprises/Industry-Manufacturing/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Industry, manufacturing</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Economic-Sectors-Enterprises/Services/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Services</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Economic-Sectors-Enterprises/Transport/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Transport</a></li>
+  </ul>
+
+</li>
+              <li
+                  class="c-nav-flyout__item c-nav-flyout__item--level2 js-nav-flyout__node "
+                  
+                    aria-describedby="flyoutSubheadline_1426906"
+                  
+                  role="none">
+
+                  <a href="EN/Themes/_node.html#themaHeadline_1426886_4" class="c-nav-flyout__link">
+    Labour</a>
+
+<button
+      class="c-nav-flyout__button c-nav-flyout__button--level2 js-nav-flyout__navigateToInner"
+      aria-label="Labour">
+    </button>
+    <ul
+  class="c-nav-flyout__list c-nav-flyout__list--level3 js-nav-flyout__list js-nav-flyout__node"
+  aria-label="Unternavigationspunkte">
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Labour/Earnings/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Earnings</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Labour/Labour-Costs-Non-Wage-Costs/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Labour costs, non-wage costs</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Labour/Labour-Market/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Labour market</a></li>
+  </ul>
+
+</li>
+              <li
+                  class="c-nav-flyout__item c-nav-flyout__item--level2 js-nav-flyout__node "
+                  
+                    aria-describedby="flyoutSubheadline_1426906"
+                  
+                  role="none">
+
+                  <a href="EN/Themes/_node.html#themaHeadline_1426886_5" class="c-nav-flyout__link">
+    Government</a>
+
+<button
+      class="c-nav-flyout__button c-nav-flyout__button--level2 js-nav-flyout__navigateToInner"
+      aria-label="Government">
+    </button>
+    <ul
+  class="c-nav-flyout__list c-nav-flyout__list--level3 js-nav-flyout__list js-nav-flyout__node"
+  aria-label="Unternavigationspunkte">
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Government/Bureaucracy-Costs/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Administrative burden</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Government/Justice/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Justice</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Government/Public-Finance/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Public finance</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Government/Public-Service/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Public service</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Government/Taxes/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Taxes</a></li>
+  </ul>
+
+</li>
+              <li
+                  class="c-nav-flyout__item c-nav-flyout__item--level2 js-nav-flyout__node "
+                  
+                    aria-describedby="flyoutSubheadline_1426906"
+                  
+                  role="none">
+
+                  <a href="EN/Themes/_node.html#themaHeadline_1426886_6" class="c-nav-flyout__link">
+    Countries and regions</a>
+
+<button
+      class="c-nav-flyout__button c-nav-flyout__button--level2 js-nav-flyout__navigateToInner"
+      aria-label="Countries and regions">
+    </button>
+    <ul
+  class="c-nav-flyout__list c-nav-flyout__list--level3 js-nav-flyout__list js-nav-flyout__node"
+  aria-label="Unternavigationspunkte">
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Countries-Regions/Europe/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Europe</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Countries-Regions/International-Statistics/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">International statistics</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Themes/Countries-Regions/Regional-Statistics/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Regional statistics</a></li>
+  </ul>
+
+</li>
+              <li
+                  class="c-nav-flyout__item c-nav-flyout__item--level2 js-nav-flyout__node "
+                  
+                    aria-describedby="flyoutSubheadline_1426906"
+                  
+                  role="none">
+
+                  <a href="EN/Service/EXSTAT/_node.html"
+     class="c-nav-flyout__link">Experimental statistics</a>
+
+</li>
+              <li
+                  class="c-nav-flyout__item c-nav-flyout__item--level2 js-nav-flyout__node c-nav-flyout__item--subheadline"
+                  
+                    aria-hidden="true"
+                    id="flyoutSubheadline_1426916"
+                  
+                  role="none">
+
+                  <p class="c-nav-flyout__subheadline">data offerings and methods</p>
+
+</li>
+              <li
+                  class="c-nav-flyout__item c-nav-flyout__item--level2 js-nav-flyout__node "
+                  
+                    aria-describedby="flyoutSubheadline_1426916"
+                  
+                  role="none">
+
+                  <a href="EN/Themes/_node.html#themaHeadline_1426886_9" class="c-nav-flyout__link">
+    Data access and applications</a>
+
+<button
+      class="c-nav-flyout__button c-nav-flyout__button--level2 js-nav-flyout__navigateToInner"
+      aria-label="Data access and applications">
+    </button>
+    <ul
+  class="c-nav-flyout__list c-nav-flyout__list--level3 js-nav-flyout__list js-nav-flyout__node"
+  aria-label="Unternavigationspunkte">
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Service/Library/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Library</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Service/OpenData/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Open Data</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Service/Statistics-Visualised/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Statistics visualised</a></li>
+  </ul>
+
+</li>
+              <li
+                  class="c-nav-flyout__item c-nav-flyout__item--level2 js-nav-flyout__node "
+                  
+                    aria-describedby="flyoutSubheadline_1426916"
+                  
+                  role="none">
+
+                  <a href="EN/Themes/_node.html#themaHeadline_1426886_10" class="c-nav-flyout__link">
+    Methods and quality</a>
+
+<button
+      class="c-nav-flyout__button c-nav-flyout__button--level2 js-nav-flyout__navigateToInner"
+      aria-label="Methods and quality">
+    </button>
+    <ul
+  class="c-nav-flyout__list c-nav-flyout__list--level3 js-nav-flyout__list js-nav-flyout__node"
+  aria-label="Unternavigationspunkte">
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Methods/Quality/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Quality</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Methods/Seasonal-adjustment/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">Seasonal adjustment</a></li>
+  <li
+      class="c-nav-flyout__item c-nav-flyout__item--level3">
+      <a href="EN/Methods/WISTAScientificJournal/_node.html"
+  
+  
+  
+   class="c-nav-flyout__link c-nav-flyout__link--level3">WISTA-Scientific Journal</a></li>
+  </ul>
+
+</li>
+              </ul>
+          </li>
+      <li
+          class="c-nav-primary__item ">
+
+          <a class="c-nav-primary__link is-external" href="https://genesis.destatis.de/datenbank/online/" title="External link GENESIS-Online Database Homepage (Opens new window)"
+     target="_blank"
+     rel="noopener noreferrer">
+  GENESIS-Online Database</a></li>
+      <li
+          class="c-nav-primary__item ">
+
+          <a class="c-nav-primary__link is-external" href="https://www.dashboard-deutschland.de/" title="External link Dashboard Deutschland (Opens new window)"
+     target="_blank"
+     rel="noopener noreferrer">
+  Dashboard Deutschland</a></li>
+      <li
+          class="c-nav-primary__item  js-nav-flyout__node">
+
+          <button class="c-nav-primary__button js-nav-flyout__navigateToInner"
+                    data-qa-flyout-link="">
+              About us</button>
+          <ul class="c-nav-flyout c-nav-flyout__list--level2 js-nav-flyout__list" data-qa-flyout=""
+                aria-label="Unternavigationspunkte">
+
+              <li class="c-nav-flyout__item c-nav-flyout__item--overview c-nav-flyout__item--level2">
+                <a href="EN/About-Us/_node.html"
+                   class="c-nav-flyout__link c-nav-flyout__link--level2 c-nav-flyout__link--overview">
+                  Overview About us</a>
+              </li>
+
+              <li
+                  class="c-nav-flyout__item c-nav-flyout__item--level2 js-nav-flyout__node "
+                  
+                  role="none">
+
+                  <a href="EN/About-Us/Our-Mission/_node.html"
+     class="c-nav-flyout__link">What we do</a>
+
+</li>
+              <li
+                  class="c-nav-flyout__item c-nav-flyout__item--level2 js-nav-flyout__node "
+                  
+                  role="none">
+
+                  <a href="EN/About-Us/Goals-Strategy/_node.html"
+     class="c-nav-flyout__link">What sets us apart</a>
+
+</li>
+              <li
+                  class="c-nav-flyout__item c-nav-flyout__item--level2 js-nav-flyout__node "
+                  
+                  role="none">
+
+                  <a href="EN/About-Us/Seniormanagement-Organisation/_node.html"
+     class="c-nav-flyout__link">Who we are</a>
+
+</li>
+              <li
+                  class="c-nav-flyout__item c-nav-flyout__item--level2 js-nav-flyout__node "
+                  
+                  role="none">
+
+                  <a href="EN/About-Us/History/_node.html"
+     class="c-nav-flyout__link">Our employees</a>
+
+</li>
+              <li
+                  class="c-nav-flyout__item c-nav-flyout__item--level2 js-nav-flyout__node "
+                  
+                  role="none">
+
+                  <a href="EN/About-Us/Events/_node.html"
+     class="c-nav-flyout__link">Events</a>
+
+</li>
+              </ul>
+          </li>
+      <li class="c-nav-primary__item c-nav-primary__item--search js-flyout-search">
+          <button class="c-nav-primary__button c-nav-primary__button--search js-search-opener">
+          <span class="aural">Search</span>
+          <span class="c-nav-primary__button-loupe">
+              
+
+
+
+
+
+
+
+    
+        <svg width="24" height="23" viewBox="0 0 24 23" xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="1.414"><path d="M23.7 21.3l-5.9-5.7c1.4-1.7 2.2-3.8 2.2-6C20 4.3 15.5 0 10 0S0 4.3 0 9.6s4.5 9.6 10 9.6c2.4 0 4.6-.8 6.3-2.2l6 5.7c.2.2.4.3.7.3.3 0 .5-.1.7-.3.4-.4.4-1 0-1.4zM10 17.2c-4.4 0-8-3.4-8-7.6C2 5.4 5.6 2 10 2s8 3.4 8 7.6c0 4.2-3.6 7.6-8 7.6z" fill="#333" fill-rule="nonzero"/></svg>
+    
+
+
+</span>
+        </button>
+        <div
+          class="l-content-wrapper l-content-wrapper--no-space-inner l-content-wrapper--bg-color l-content-wrapper--gradient l-content-wrapper--inverted l-content-wrapper--less-space-after l-content-wrapper--position"
+          id="header-search">
+          <div class="c-search-banner">
+            <div class="row collapse">
+              <div class="column large-10 large-offset-1">
+                <h2 class="aural">Search</h2>
+                <form name="searchService" id="searchService"
+      action="SiteGlobals/Forms/Suche/EN/Servicesuche_Formular.html"
+      role="search"
+      method="get"
+      enctype="application/x-www-form-urlencoded"
+    
+      class="c-search-box__form  js-autosuggest"
+
+    
+      data-autosuggest-form="SiteGlobals/Forms/Suche/EN/Servicesuche_Autosuggest_Formular.html?nn=22952"
+      data-autosuggest-box-description="Gets submit immediately by selection"
+    
+>
+  
+  <input type="hidden" name="nn" value="22952"/>
+  <input type="hidden" name="resourceId" value="2376" />
+  <input type="hidden" name="input_" value="250354" />
+  <input type="hidden" name="pageLocale" value="en" /><div class="c-search-banner__wrapper">
+  
+  
+<span class="formLabel aural">
+  <label for="f2376d2370">Search item </label></span><div class="formField">
+  <input id="f2376d2370" name="templateQueryString" value="" title="Search item must not beginn with ? or *" type="text" pattern="^[^*?].*$" placeholder="search item" size="26" maxlength="100"/>
+</div>
+
+  
+  <input class="image" type="image" src="/SiteGlobals/Forms/_components/Buttons/Submit_weiss.svg?__blob=image&amp;v=1" id="f2376d2372" name="submit" alt="Search" title="Search" />
+</div></form>
+
+<div class="c-search-banner__close">
+                  <button class="c-search-banner__close-button js-search-opener" type="button">
+                      Close</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </li>
+    </ul>
+
+
+                </div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </header>
+      
+        <nav id="navBreadcrumbs" class="c-breadcrumb" aria-labelledby="breadcrumbhead">
+          <div class="row">
+            <div class="column">
+              <h2 class="aural" aria-hidden="true" id="breadcrumbhead">You are here:</h2>
+              <ol class="c-breadcrumb__list">
+  <li class="c-breadcrumb__item">
+
+        <a href="EN/Home/_node.html"
+   title="Homepage"
+  
+  
+  >Homepage</a></li>
+    <li class="c-breadcrumb__item">
+
+        <a href="EN/Themes/_node.html"
+  
+  
+  
+  >Topics</a></li>
+    <li class="c-breadcrumb__item">
+
+        <a href="EN/Themes/_node.html#themaHeadline_1426886_2" class="c-breadcrumb__link" >
+            Economy</a>
+
+        </li>
+    <li class="c-breadcrumb__item">
+
+        <a href="EN/Themes/Economy/Short-Term-Indicators/_node.html"
+  
+  
+  
+  >Short-term indicators</a></li>
+    <li class="c-breadcrumb__item"><strong>Production index in industry</strong></li>
+
+  </ol>
+
+
+            </div>
+          </div>
+        </nav>
+      
+
+
+
+
+
+
+
+            <div class="row">
+  <div class="columns small-12">
+    <div class="c-alert c-alert--hide-nav-line">
+  <div class="c-alert__box">
+    <div class="c-alert__content">
+      <p>The topic page on short-term indicators will be discontinued as planned and will no longer be updated from October 2026. Details and alternative data sources can be found in our <a class="RichTextIntLink Basepage" href="EN/Themes/Economy/Short-Term-Indicators/changes-in-provision.html?nn=22952" title="Changes in the provision of results for short-term indicators">announcement of 13 April 2026</a>.</p>
+</div>
+    <div class="c-alert__icon">
+      
+
+
+
+
+
+
+
+    
+        
+              
+
+              
+              
+              
+                
+                
+              
+
+              
+              
+              
+              
+                
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+
+              
+
+  <img src="/SiteGlobals/Frontend/Images/icons/achtung.svg?__blob=normal&amp;v=5"
+                
+                  
+     title=""
+                  
+                
+
+                
+     alt=""
+                
+
+                
+                
+                
+
+                
+
+                
+    
+                
+
+                
+   />
+
+              
+    
+
+
+</div>
+  </div>
+</div>
+
+</div>
+</div>
+
+
+
+      
+      <main id="main" class="main row">
+  <div id="content" class="content richtext column medium-offset-2 medium-8 large-offset-2 large-7">
+    
+
+<div class="l-content-wrapper l-content-wrapper--expand-full l-content-wrapper--less-space-after">
+    <div class="row">
+      <div class="column">
+        <div class="c-jumbotron c-jumbotron--category">
+          <div class="row">
+            <div class="column">
+              <div class="c-jumbotron__wrapper">
+                <h1 class="c-jumbotron__heading">
+                  <small class="c-jumbotron__category">
+                      Short-term indicators</small>
+                  Production index in industry</h1>
+                <p>Production index in industry. Calendar and seasonally adjusted by X13 JDemetra+ or Berlin procedure, version 4.1. Tables and graphs.</p>
+</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<div class="l-content-wrapper l-content-wrapper--expand-full">
+    <div class="row">
+      <div class="column" style="position: relative;">
+        <div class="c-actions ">
+  <div class="row">
+    <div class="column">
+      <p class="c-actions__list">
+        <span class="c-actions__item">
+          <a class="c-actions__action c-actions__action--share"
+             href="mailto:?body=https://www.destatis.de/EN/Themes/Economy/Short-Term-Indicators/Production/kpi117.html&subject=SeiteTeilen_Subject_en">
+            Share</a>
+        </span>
+      </p>
+    </div>
+  </div>
+</div>
+
+</div>
+    </div>
+  </div>
+
+
+<div class="l-content-wrapper" id="sprg250354">
+  <div class="row">
+    <div class="column">
+        <p>Data on the short-term economic development in Germany are currently available on the <a class="RichTextExtLink ExternalLink" href="https://www.dashboard-konjunktur.de" target="_blank" rel="noopener noreferrer" title="External link Datenportal: Dashboard Konjunktur (Opens new window)">Economic Dashboard</a>, in the <a class="RichTextExtLink ExternalLink" href="https://genesis.destatis.de/datenbank/online?language=en" target="_blank" rel="noopener noreferrer" title="External link GENESIS-Online, statistical information system (Opens new window)">GENESIS-Online</a> database and on the Short-term indicators page. We wish to inform you that this last option, <strong>the Short-term indicators page, will not be updated from October 2026 and will be deactivated at the start of 2027. </strong>The data will continue to be available, however.</p>
+
+
+
+<p><a class="RichTextIntLink Basepage" href="EN/Themes/Economy/Short-Term-Indicators/changes-in-provision.html" title="Changes in the provision of results for short-term indicators">MORE</a></p>
+
+      <div class="c-toggle c-toggle--expand-right">
+        <div class="tabaccordion">
+          <div class="tabs-container">
+                    <h2 class="c-toggle__heading heading">
+              X 13 JDemetra+ Table</h2>
+
+<div class="c-toggle__entry" id="248648">
+
+         
+        
+
+
+          <table class="wide"><caption>Production index<br/>
+                          Industry<a class="RichTextIntLink Law" href="EN/Themes/Economy/Short-Term-Indicators/Production/kpi117.html#fussnote-1-248648" title="Link to footnote 1"><sup>1</sup></a><br/>
+                          2021=100</caption><colgroup><col style="width:6%;"/><col style="width:6%;"/><col style="width:22%;"/><col style="width:22%;"/><col style="width:22%;"/><col style="width:22%;"/></colgroup><thead><tr>
+              <th colspan="2" rowspan="2">Year, month</th>
+      
+              <th colspan="2" rowspan="1">Non-adjusted value</th>
+              <th colspan="2" rowspan="1">Calendar adjusted and seasonally adjusted using X13 JDemetra+</th>
+            </tr><tr>
+              <th>Value</th>
+              <th>Change on the corresponding month of the previous year in %</th>
+              <th>Value</th>
+              <th>Change on the previous month in %</th>
+            </tr></thead><tfoot><tr>     
+              <td colspan="6"><a id="fussnote-1-248648"></a><span class="footnotetarget">1:</span> Production (except energy and construction).</td>
+            </tr></tfoot><tbody><tr>
+              <th rowspan="7" scope="row">2026</th>
+
+              <th scope="row"><abbr title="July">Jul</abbr></th>
+
+              <td>93.1</td>
+              <td>-3.4</td>
+              <td>90.1</td>
+              <td>-2.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="June">Jun</abbr></th>
+
+              <td>98.0</td>
+              <td>7.0</td>
+              <td>92.1</td>
+              <td>0.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="May">May</abbr></th>
+
+              <td>84.8</td>
+              <td>-8.6</td>
+              <td>92.0</td>
+              <td>0.9</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="April">Apr</abbr></th>
+
+              <td>90.9</td>
+              <td>-2.3</td>
+              <td>91.2</td>
+              <td>0.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="March">Mar</abbr></th>
+
+              <td>101.3</td>
+              <td>-0.1</td>
+              <td>91.1</td>
+              <td>-0.5</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="February">Feb</abbr></th>
+
+              <td>88.0</td>
+              <td>-3.1</td>
+              <td>91.6</td>
+              <td>0.0</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="January">Jan</abbr></th>
+
+              <td>82.1</td>
+              <td>-6.1</td>
+              <td>91.6</td>
+              <td>-1.1</td>
+            </tr><tr>
+              <th rowspan="12" scope="row">2025</th>
+
+              <th scope="row"><abbr title="December">Dec</abbr></th>
+
+              <td>86.5</td>
+              <td>3.7</td>
+              <td>92.6</td>
+              <td>-1.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="November">Nov</abbr></th>
+
+              <td>97.4</td>
+              <td>-0.5</td>
+              <td>93.7</td>
+              <td>1.7</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="October">Oct</abbr></th>
+
+              <td>96.2</td>
+              <td>-0.7</td>
+              <td>92.1</td>
+              <td>0.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="September">Sep</abbr></th>
+
+              <td>99.1</td>
+              <td>3.1</td>
+              <td>92.0</td>
+              <td>1.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="August">Aug</abbr></th>
+
+              <td>79.9</td>
+              <td>-7.4</td>
+              <td>90.9</td>
+              <td>-2.6</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="July">Jul</abbr></th>
+
+              <td>96.4</td>
+              <td>0.7</td>
+              <td>93.3</td>
+              <td>0.4</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="June">Jun</abbr></th>
+
+              <td>91.6</td>
+              <td>-4.7</td>
+              <td>92.9</td>
+              <td>-0.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="May">May</abbr></th>
+
+              <td>92.8</td>
+              <td>3.7</td>
+              <td>93.1</td>
+              <td>-0.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="April">Apr</abbr></th>
+
+              <td>93.0</td>
+              <td>-6.2</td>
+              <td>93.3</td>
+              <td>-3.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="March">Mar</abbr></th>
+
+              <td>101.4</td>
+              <td>3.5</td>
+              <td>96.3</td>
+              <td>3.5</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="February">Feb</abbr></th>
+
+              <td>90.8</td>
+              <td>-5.9</td>
+              <td>93.0</td>
+              <td>-0.9</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="January">Jan</abbr></th>
+
+              <td>87.4</td>
+              <td>-2.7</td>
+              <td>93.8</td>
+              <td>2.6</td>
+            </tr><tr>
+              <th rowspan="12" scope="row">2024</th>
+
+              <th scope="row"><abbr title="December">Dec</abbr></th>
+
+              <td>83.4</td>
+              <td>-5.2</td>
+              <td>91.4</td>
+              <td>-1.9</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="November">Nov</abbr></th>
+
+              <td>97.9</td>
+              <td>-6.8</td>
+              <td>93.2</td>
+              <td>0.3</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="October">Oct</abbr></th>
+
+              <td>96.9</td>
+              <td>-0.3</td>
+              <td>92.9</td>
+              <td>0.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="September">Sep</abbr></th>
+
+              <td>96.1</td>
+              <td>-4.9</td>
+              <td>92.8</td>
+              <td>-2.0</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="August">Aug</abbr></th>
+
+              <td>86.3</td>
+              <td>-7.5</td>
+              <td>94.7</td>
+              <td>2.4</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="July">Jul</abbr></th>
+
+              <td>95.7</td>
+              <td>1.8</td>
+              <td>92.5</td>
+              <td>-2.5</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="June">Jun</abbr></th>
+
+              <td>96.1</td>
+              <td>-9.1</td>
+              <td>94.9</td>
+              <td>2.8</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="May">May</abbr></th>
+
+              <td>89.5</td>
+              <td>-10.9</td>
+              <td>92.3</td>
+              <td>-3.5</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="April">Apr</abbr></th>
+
+              <td>99.1</td>
+              <td>8.2</td>
+              <td>95.6</td>
+              <td>0.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="March">Mar</abbr></th>
+
+              <td>98.0</td>
+              <td>-15.2</td>
+              <td>95.4</td>
+              <td>-1.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="February">Feb</abbr></th>
+
+              <td>96.5</td>
+              <td>-2.1</td>
+              <td>96.6</td>
+              <td>1.8</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="January">Jan</abbr></th>
+
+              <td>89.8</td>
+              <td>-3.6</td>
+              <td>94.9</td>
+              <td>0.9</td>
+            </tr><tr>
+              <th rowspan="12" scope="row">2023</th>
+
+              <th scope="row"><abbr title="December">Dec</abbr></th>
+
+              <td>88.0</td>
+              <td>-8.5</td>
+              <td>94.1</td>
+              <td>-2.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="November">Nov</abbr></th>
+
+              <td>105.0</td>
+              <td>-4.5</td>
+              <td>96.1</td>
+              <td>-0.7</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="October">Oct</abbr></th>
+
+              <td>97.2</td>
+              <td>0.2</td>
+              <td>96.8</td>
+              <td>-0.7</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="September">Sep</abbr></th>
+
+              <td>101.1</td>
+              <td>-6.9</td>
+              <td>97.5</td>
+              <td>-0.8</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="August">Aug</abbr></th>
+
+              <td>93.3</td>
+              <td>-0.6</td>
+              <td>98.3</td>
+              <td>0.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="July">Jul</abbr></th>
+
+              <td>94.0</td>
+              <td>-1.2</td>
+              <td>98.1</td>
+              <td>-1.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="June">Jun</abbr></th>
+
+              <td>105.7</td>
+              <td>3.8</td>
+              <td>99.2</td>
+              <td>-1.8</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="May">May</abbr></th>
+
+              <td>100.5</td>
+              <td>-1.4</td>
+              <td>101.0</td>
+              <td>1.6</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="April">Apr</abbr></th>
+
+              <td>91.6</td>
+              <td>-1.5</td>
+              <td>99.4</td>
+              <td>-0.6</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="March">Mar</abbr></th>
+
+              <td>115.6</td>
+              <td>5.4</td>
+              <td>100.0</td>
+              <td>-2.6</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="February">Feb</abbr></th>
+
+              <td>98.6</td>
+              <td>0.5</td>
+              <td>102.7</td>
+              <td>2.6</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="January">Jan</abbr></th>
+
+              <td>93.2</td>
+              <td>2.9</td>
+              <td>100.1</td>
+              <td>1.7</td>
+            </tr><tr>
+              <th rowspan="12" scope="row">2022</th>
+
+              <th scope="row"><abbr title="December">Dec</abbr></th>
+
+              <td>96.2</td>
+              <td>-2.1</td>
+              <td>98.4</td>
+              <td>-2.4</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="November">Nov</abbr></th>
+
+              <td>109.9</td>
+              <td>1.3</td>
+              <td>100.8</td>
+              <td>0.5</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="October">Oct</abbr></th>
+
+              <td>97.0</td>
+              <td>-3.4</td>
+              <td>100.3</td>
+              <td>-0.5</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="September">Sep</abbr></th>
+
+              <td>108.6</td>
+              <td>6.4</td>
+              <td>100.8</td>
+              <td>2.3</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="August">Aug</abbr></th>
+
+              <td>93.9</td>
+              <td>6.8</td>
+              <td>98.5</td>
+              <td>-0.7</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="July">Jul</abbr></th>
+
+              <td>95.1</td>
+              <td>-5.2</td>
+              <td>99.2</td>
+              <td>-0.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="June">Jun</abbr></th>
+
+              <td>101.8</td>
+              <td>-2.7</td>
+              <td>99.4</td>
+              <td>1.0</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="May">May</abbr></th>
+
+              <td>101.9</td>
+              <td>6.5</td>
+              <td>98.4</td>
+              <td>1.5</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="April">Apr</abbr></th>
+
+              <td>93.0</td>
+              <td>-7.5</td>
+              <td>96.9</td>
+              <td>1.7</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="March">Mar</abbr></th>
+
+              <td>109.7</td>
+              <td>-5.8</td>
+              <td>95.3</td>
+              <td>-5.4</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="February">Feb</abbr></th>
+
+              <td>98.1</td>
+              <td>0.8</td>
+              <td>100.7</td>
+              <td>-0.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="January">Jan</abbr></th>
+
+              <td>90.6</td>
+              <td>2.8</td>
+              <td>100.8</td>
+              <td>-0.3</td>
+            </tr><tr>
+              <th rowspan="12" scope="row">2021</th>
+
+              <th scope="row"><abbr title="December">Dec</abbr></th>
+
+              <td>98.3</td>
+              <td>1.7</td>
+              <td>101.1</td>
+              <td>1.5</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="November">Nov</abbr></th>
+
+              <td>108.5</td>
+              <td>-0.3</td>
+              <td>99.6</td>
+              <td>0.8</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="October">Oct</abbr></th>
+
+              <td>100.4</td>
+              <td>-5.2</td>
+              <td>98.8</td>
+              <td>4.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="September">Sep</abbr></th>
+
+              <td>102.1</td>
+              <td>-1.5</td>
+              <td>94.9</td>
+              <td>0.3</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="August">Aug</abbr></th>
+
+              <td>87.9</td>
+              <td>4.5</td>
+              <td>94.6</td>
+              <td>-6.0</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="July">Jul</abbr></th>
+
+              <td>100.3</td>
+              <td>2.7</td>
+              <td>100.6</td>
+              <td>2.3</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="June">Jun</abbr></th>
+
+              <td>104.6</td>
+              <td>11.4</td>
+              <td>98.3</td>
+              <td>-1.5</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="May">May</abbr></th>
+
+              <td>95.7</td>
+              <td>21.4</td>
+              <td>99.8</td>
+              <td>-1.0</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="April">Apr</abbr></th>
+
+              <td>100.5</td>
+              <td>38.4</td>
+              <td>100.8</td>
+              <td>-0.3</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="March">Mar</abbr></th>
+
+              <td>116.4</td>
+              <td>12.6</td>
+              <td>101.1</td>
+              <td>1.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="February">Feb</abbr></th>
+
+              <td>97.3</td>
+              <td>-3.5</td>
+              <td>99.9</td>
+              <td>-2.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="January">Jan</abbr></th>
+
+              <td>88.1</td>
+              <td>-9.8</td>
+              <td>102.0</td>
+              <td>0.6</td>
+            </tr></tbody>
+
+
+            
+
+
+
+                   
+          
+          
+            
+
+
+            
+
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+
+
+
+
+            
+
+          </table>    
+          
+
+               
+          
+
+
+
+
+       
+
+        <p class="text-right c-law-stand">As at&nbsp;September 4, 2026</p>
+  <p>
+  <a href="EN/Themes/Economy/Short-Term-Indicators/Production/kpi117_x13a.html?view=main[Print]" class="c-more c-more--print" target="_blank" title="Opens new window">Show print version</a>
+</p>
+</div>
+
+
+                    <h2 class="c-toggle__heading heading">
+              BV 4.1 Table</h2>
+
+<div class="c-toggle__entry" id="248644">
+
+         
+        
+
+
+          <table class="wide"><caption>Production index<br/>
+                          Industry<a class="RichTextIntLink Law" href="EN/Themes/Economy/Short-Term-Indicators/Production/kpi117.html#fussnote-1-248644" title="Link to footnote 1"><sup>1</sup></a><br/>
+                          2021=100</caption><colgroup><col style="width:6%;"/><col style="width:6%;"/><col style="width:22%;"/><col style="width:22%;"/><col style="width:22%;"/><col style="width:22%;"/></colgroup><thead><tr>
+              <th colspan="2" rowspan="2">Year, month</th>
+      
+              <th colspan="2" rowspan="1">Non-adjusted value</th>
+              <th colspan="2" rowspan="1">Trend cycle component (BV 4.1)</th>
+            </tr><tr>
+              <th>Value</th>
+              <th>Change on the corresponding month of the previous year in %</th>
+              <th>Value</th>
+              <th>Change on the previous month in %</th>
+            </tr></thead><tfoot><tr>     
+              <td colspan="6"><a id="fussnote-1-248644"></a><span class="footnotetarget">1:</span> Production (except energy and construction).</td>
+            </tr></tfoot><tbody><tr>
+              <th rowspan="7" scope="row">2026</th>
+
+              <th scope="row"><abbr title="July">Jul</abbr></th>
+
+              <td>93.1</td>
+              <td>-3.4</td>
+              <td>90.8</td>
+              <td>-0.3</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="June">Jun</abbr></th>
+
+              <td>98.0</td>
+              <td>7.0</td>
+              <td>91.1</td>
+              <td>-0.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="May">May</abbr></th>
+
+              <td>84.8</td>
+              <td>-8.6</td>
+              <td>91.3</td>
+              <td>-0.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="April">Apr</abbr></th>
+
+              <td>90.9</td>
+              <td>-2.3</td>
+              <td>91.4</td>
+              <td>-0.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="March">Mar</abbr></th>
+
+              <td>101.3</td>
+              <td>-0.1</td>
+              <td>91.6</td>
+              <td>-0.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="February">Feb</abbr></th>
+
+              <td>88.0</td>
+              <td>-3.1</td>
+              <td>91.8</td>
+              <td>-0.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="January">Jan</abbr></th>
+
+              <td>82.1</td>
+              <td>-6.1</td>
+              <td>92.0</td>
+              <td>-0.3</td>
+            </tr><tr>
+              <th rowspan="12" scope="row">2025</th>
+
+              <th scope="row"><abbr title="December">Dec</abbr></th>
+
+              <td>86.5</td>
+              <td>3.7</td>
+              <td>92.3</td>
+              <td>-0.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="November">Nov</abbr></th>
+
+              <td>97.4</td>
+              <td>-0.5</td>
+              <td>92.5</td>
+              <td>-0.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="October">Oct</abbr></th>
+
+              <td>96.2</td>
+              <td>-0.7</td>
+              <td>92.6</td>
+              <td>-0.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="September">Sep</abbr></th>
+
+              <td>99.1</td>
+              <td>3.1</td>
+              <td>92.7</td>
+              <td>-0.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="August">Aug</abbr></th>
+
+              <td>79.9</td>
+              <td>-7.4</td>
+              <td>92.8</td>
+              <td>-0.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="July">Jul</abbr></th>
+
+              <td>96.4</td>
+              <td>0.7</td>
+              <td>92.9</td>
+              <td>-0.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="June">Jun</abbr></th>
+
+              <td>91.6</td>
+              <td>-4.7</td>
+              <td>93.0</td>
+              <td>-0.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="May">May</abbr></th>
+
+              <td>92.8</td>
+              <td>3.7</td>
+              <td>93.1</td>
+              <td>0.0</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="April">Apr</abbr></th>
+
+              <td>93.0</td>
+              <td>-6.2</td>
+              <td>93.1</td>
+              <td>-0.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="March">Mar</abbr></th>
+
+              <td>101.4</td>
+              <td>3.5</td>
+              <td>93.2</td>
+              <td>0.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="February">Feb</abbr></th>
+
+              <td>90.8</td>
+              <td>-5.9</td>
+              <td>93.1</td>
+              <td>0.0</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="January">Jan</abbr></th>
+
+              <td>87.4</td>
+              <td>-2.7</td>
+              <td>93.1</td>
+              <td>0.0</td>
+            </tr><tr>
+              <th rowspan="12" scope="row">2024</th>
+
+              <th scope="row"><abbr title="December">Dec</abbr></th>
+
+              <td>83.4</td>
+              <td>-5.2</td>
+              <td>93.1</td>
+              <td>0.0</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="November">Nov</abbr></th>
+
+              <td>97.9</td>
+              <td>-6.8</td>
+              <td>93.1</td>
+              <td>-0.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="October">Oct</abbr></th>
+
+              <td>96.9</td>
+              <td>-0.3</td>
+              <td>93.2</td>
+              <td>-0.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="September">Sep</abbr></th>
+
+              <td>96.1</td>
+              <td>-4.9</td>
+              <td>93.4</td>
+              <td>-0.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="August">Aug</abbr></th>
+
+              <td>86.3</td>
+              <td>-7.5</td>
+              <td>93.5</td>
+              <td>-0.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="July">Jul</abbr></th>
+
+              <td>95.7</td>
+              <td>1.8</td>
+              <td>93.7</td>
+              <td>-0.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="June">Jun</abbr></th>
+
+              <td>96.1</td>
+              <td>-9.1</td>
+              <td>93.8</td>
+              <td>-0.4</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="May">May</abbr></th>
+
+              <td>89.5</td>
+              <td>-10.9</td>
+              <td>94.2</td>
+              <td>-0.3</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="April">Apr</abbr></th>
+
+              <td>99.1</td>
+              <td>8.2</td>
+              <td>94.5</td>
+              <td>-0.3</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="March">Mar</abbr></th>
+
+              <td>98.0</td>
+              <td>-15.2</td>
+              <td>94.8</td>
+              <td>-0.5</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="February">Feb</abbr></th>
+
+              <td>96.5</td>
+              <td>-2.1</td>
+              <td>95.3</td>
+              <td>-0.5</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="January">Jan</abbr></th>
+
+              <td>89.8</td>
+              <td>-3.6</td>
+              <td>95.8</td>
+              <td>-0.5</td>
+            </tr><tr>
+              <th rowspan="12" scope="row">2023</th>
+
+              <th scope="row"><abbr title="December">Dec</abbr></th>
+
+              <td>88.0</td>
+              <td>-8.5</td>
+              <td>96.3</td>
+              <td>-0.5</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="November">Nov</abbr></th>
+
+              <td>105.0</td>
+              <td>-4.5</td>
+              <td>96.8</td>
+              <td>-0.5</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="October">Oct</abbr></th>
+
+              <td>97.2</td>
+              <td>0.2</td>
+              <td>97.3</td>
+              <td>-0.5</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="September">Sep</abbr></th>
+
+              <td>101.1</td>
+              <td>-6.9</td>
+              <td>97.8</td>
+              <td>-0.5</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="August">Aug</abbr></th>
+
+              <td>93.3</td>
+              <td>-0.6</td>
+              <td>98.3</td>
+              <td>-0.4</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="July">Jul</abbr></th>
+
+              <td>94.0</td>
+              <td>-1.2</td>
+              <td>98.7</td>
+              <td>-0.5</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="June">Jun</abbr></th>
+
+              <td>105.7</td>
+              <td>3.8</td>
+              <td>99.2</td>
+              <td>-0.4</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="May">May</abbr></th>
+
+              <td>100.5</td>
+              <td>-1.4</td>
+              <td>99.6</td>
+              <td>-0.3</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="April">Apr</abbr></th>
+
+              <td>91.6</td>
+              <td>-1.5</td>
+              <td>99.9</td>
+              <td>-0.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="March">Mar</abbr></th>
+
+              <td>115.6</td>
+              <td>5.4</td>
+              <td>100.1</td>
+              <td>-0.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="February">Feb</abbr></th>
+
+              <td>98.6</td>
+              <td>0.5</td>
+              <td>100.2</td>
+              <td>0.0</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="January">Jan</abbr></th>
+
+              <td>93.2</td>
+              <td>2.9</td>
+              <td>100.2</td>
+              <td>0.0</td>
+            </tr><tr>
+              <th rowspan="12" scope="row">2022</th>
+
+              <th scope="row"><abbr title="December">Dec</abbr></th>
+
+              <td>96.2</td>
+              <td>-2.1</td>
+              <td>100.2</td>
+              <td>0.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="November">Nov</abbr></th>
+
+              <td>109.9</td>
+              <td>1.3</td>
+              <td>100.1</td>
+              <td>0.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="October">Oct</abbr></th>
+
+              <td>97.0</td>
+              <td>-3.4</td>
+              <td>100.0</td>
+              <td>0.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="September">Sep</abbr></th>
+
+              <td>108.6</td>
+              <td>6.4</td>
+              <td>99.8</td>
+              <td>0.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="August">Aug</abbr></th>
+
+              <td>93.9</td>
+              <td>6.8</td>
+              <td>99.6</td>
+              <td>0.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="July">Jul</abbr></th>
+
+              <td>95.1</td>
+              <td>-5.2</td>
+              <td>99.4</td>
+              <td>0.3</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="June">Jun</abbr></th>
+
+              <td>101.8</td>
+              <td>-2.7</td>
+              <td>99.1</td>
+              <td>0.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="May">May</abbr></th>
+
+              <td>101.9</td>
+              <td>6.5</td>
+              <td>98.9</td>
+              <td>0.3</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="April">Apr</abbr></th>
+
+              <td>93.0</td>
+              <td>-7.5</td>
+              <td>98.6</td>
+              <td>0.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="March">Mar</abbr></th>
+
+              <td>109.7</td>
+              <td>-5.8</td>
+              <td>98.5</td>
+              <td>0.0</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="February">Feb</abbr></th>
+
+              <td>98.1</td>
+              <td>0.8</td>
+              <td>98.5</td>
+              <td>0.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="January">Jan</abbr></th>
+
+              <td>90.6</td>
+              <td>2.8</td>
+              <td>98.4</td>
+              <td>0.0</td>
+            </tr><tr>
+              <th rowspan="12" scope="row">2021</th>
+
+              <th scope="row"><abbr title="December">Dec</abbr></th>
+
+              <td>98.3</td>
+              <td>1.7</td>
+              <td>98.4</td>
+              <td>0.0</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="November">Nov</abbr></th>
+
+              <td>108.5</td>
+              <td>-0.3</td>
+              <td>98.4</td>
+              <td>-0.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="October">Oct</abbr></th>
+
+              <td>100.4</td>
+              <td>-5.2</td>
+              <td>98.6</td>
+              <td>-0.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="September">Sep</abbr></th>
+
+              <td>102.1</td>
+              <td>-1.5</td>
+              <td>98.8</td>
+              <td>-0.4</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="August">Aug</abbr></th>
+
+              <td>87.9</td>
+              <td>4.5</td>
+              <td>99.2</td>
+              <td>-0.4</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="July">Jul</abbr></th>
+
+              <td>100.3</td>
+              <td>2.7</td>
+              <td>99.6</td>
+              <td>-0.4</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="June">Jun</abbr></th>
+
+              <td>104.6</td>
+              <td>11.4</td>
+              <td>100.0</td>
+              <td>-0.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="May">May</abbr></th>
+
+              <td>95.7</td>
+              <td>21.4</td>
+              <td>100.2</td>
+              <td>-0.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="April">Apr</abbr></th>
+
+              <td>100.5</td>
+              <td>38.4</td>
+              <td>100.4</td>
+              <td>-0.1</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="March">Mar</abbr></th>
+
+              <td>116.4</td>
+              <td>12.6</td>
+              <td>100.5</td>
+              <td>0.2</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="February">Feb</abbr></th>
+
+              <td>97.3</td>
+              <td>-3.5</td>
+              <td>100.3</td>
+              <td>0.3</td>
+            </tr><tr>
+
+              <th scope="row"><abbr title="January">Jan</abbr></th>
+
+              <td>88.1</td>
+              <td>-9.8</td>
+              <td>100.0</td>
+              <td>0.6</td>
+            </tr></tbody>
+
+
+            
+
+
+
+                   
+          
+          
+            
+
+
+            
+
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    
+
+
+
+
+            
+
+          </table>    
+          
+
+               
+          
+
+
+
+
+       
+
+        <p class="text-right c-law-stand">As at&nbsp;September 4, 2026</p>
+  <p>
+  <a href="EN/Themes/Economy/Short-Term-Indicators/Production/kpi117_bv4a.html?view=main[Print]" class="c-more c-more--print" target="_blank" title="Opens new window">Show print version</a>
+</p>
+</div>
+
+
+                    <h2 class="c-toggle__heading heading">
+  Charts</h2>
+
+<div class="c-toggle__entry" id="355966">
+  <div class="diagramm  embedded linksOhne ">
+      <div class="wrapper">
+        
+<p class="chartImage chartImage--1331422 " data-chart-lib="highcharts" data-chart-show-responsive="false" data-chart-src="EN/Themes/Economy/Short-Term-Indicators/_Graphic/_Interactive/kpi117_wert.html?showChartData=1" data-chart-param="{&#034;chartOptions&#034;:{&#034;exporting&#034;:{&#034;filename&#034;: &#034;kpi117_wert_neu&#034;},&#034;xAxis&#034;:[{&#034;title&#034;: {&#034;text&#034;: &#034;Month&#034;, &#034;enabled&#034;: false}, &#034;type&#034;: &#034;datetime&#034;}],&#034;legend&#034;:{&#034;title&#034;:{&#034;text&#034;:&#034;&#034;}},&#034;tooltip&#034;:{&#034;shared&#034;: true,&#034;xDateFormat&#034;: &#034;%B %Y&#034;},&#034;title&#034;:{&#034;text&#034;:&#034;Production index, industry, 2021=100&#034;},&#034;yAxis&#034;:[{&#034;title&#034;: {&#034;text&#034;: &#034;&#034;}, &#034;opposite&#034;: true,&#034;plotLines&#034;: [{&#034;color&#034;: &#034;#b3b3b3&#034;, &#034;id&#034;: &#034;nullLinie&#034;, &#034;value&#034;: 0, &#034;width&#034;: 1, &#034;zIndex&#034;: 2}]}],&#034;series&#034;:[{&#034;colorIndex&#034;: 2}, {&#034;colorIndex&#034;: 0, &#034;visible&#034;: false}, {&#034;colorIndex&#034;:11, &#034;visible&#034;: false}],&#034;subtitle&#034;:{&#034;text&#034;:&#034;&#034;},&#034;chart&#034;:{&#034;type&#034;: &#034;line&#034;,&#034;zoomType&#034;:&#034;xy&#034;,&#034;animation&#034;:&#034;true&#034;}}, &#034;dataOptions&#034;:null}" data-chart-series-names="[&quot;Non-adjusted value&quot;, &quot;Trend cycle component (BV4.1)&quot;, &quot;Calendar- and seasonally adjusted (X13 JDemetra+)&quot;]">
+  Loading...</p>
+
+</div>
+    </div><div class="diagramm  embedded linksOhne ">
+      <div class="wrapper">
+        
+<p class="chartImage chartImage--1331420 " data-chart-lib="highcharts" data-chart-show-responsive="false" data-chart-src="EN/Themes/Economy/Short-Term-Indicators/_Graphic/_Interactive/kpi117_veraend.html?showChartData=1" data-chart-param="{&#034;chartOptions&#034;:{&#034;exporting&#034;:{&#034;filename&#034;: &#034;kpi117_wert_neu&#034;},&#034;xAxis&#034;:[{&#034;title&#034;: {&#034;text&#034;: &#034;Month&#034;, &#034;enabled&#034;: false}, &#034;type&#034;: &#034;datetime&#034;}],&#034;legend&#034;:{&#034;title&#034;:{&#034;text&#034;:&#034;&#034;}},&#034;tooltip&#034;:{&#034;shared&#034;: true,&#034;xDateFormat&#034;: &#034;%B %Y&#034;},&#034;title&#034;:{&#034;text&#034;:&#034;Production index, industry&#034;},&#034;yAxis&#034;:[{&#034;title&#034;: {&#034;text&#034;: &#034;&#034;}, &#034;opposite&#034;: true,&#034;plotLines&#034;: [{&#034;color&#034;: &#034;#b3b3b3&#034;, &#034;id&#034;: &#034;nullLinie&#034;, &#034;value&#034;: 0, &#034;width&#034;: 1, &#034;zIndex&#034;: 2}]}],&#034;series&#034;:[{&#034;colorIndex&#034;: 2}, {&#034;colorIndex&#034;: 0, &#034;visible&#034;: false}, {&#034;colorIndex&#034;:11, &#034;visible&#034;: false}],&#034;subtitle&#034;:{&#034;text&#034;:&#034;Rate of change in %&#034;},&#034;chart&#034;:{&#034;type&#034;: &#034;line&#034;,&#034;zoomType&#034;:&#034;xy&#034;,&#034;animation&#034;:&#034;true&#034;}}, &#034;dataOptions&#034;:null}" data-chart-series-names="[&quot;Non-adjusted value on previous year&quot;, &quot;Trend cycle component (BV4.1) on previous period&quot;, &quot;Calendar- and seasonally adjusted (X13 JDemetra+) on previous period&quot;]">
+  Loading...</p>
+
+</div>
+    </div></div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  </div>
+</main>
+      <footer id="footer" class="footer" role="contentinfo">
+            <div class="footer__related">
+  <div class="l-content-wrapper">
+    <div class="row">
+      <div class="column">
+        <h2 class="l-content-wrapper__headline">Related Topics</h2>
+
+                <div class="l-card-grid">
+          <div class="row" role="list">
+
+                  <div class="column small-12 medium-4 large-3" role="listitem">
+              <ul class="l-card-grid__wrapper" role="none">
+                <li role="none">
+                <a class="c-card-link c-card-link--internal c-card-link--inverted c-card-link--blue" href="EN/Themes/Economy/Foreign-Trade/_node.html">
+  <span class="c-card-link__heading">Foreign trade</span>
+</a>
+
+</li>
+              </ul>
+            </div>
+                    <div class="column small-12 medium-4 large-3" role="listitem">
+              <ul class="l-card-grid__wrapper" role="none">
+                <li role="none">
+                <a class="c-card-link c-card-link--internal c-card-link--inverted c-card-link--blue" href="EN/Themes/Economy/Globalisation-Indicators/_node.html">
+  <span class="c-card-link__heading">Globalisation indicators</span>
+</a>
+
+</li>
+              </ul>
+            </div>
+                    <div class="column small-12 medium-4 large-3" role="listitem">
+              <ul class="l-card-grid__wrapper" role="none">
+                <li role="none">
+                <a class="c-card-link c-card-link--internal c-card-link--inverted c-card-link--blue" href="EN/Themes/Economy/National-Accounts-Domestic-Product/_node.html">
+  <span class="c-card-link__heading">National accounts, domestic product</span>
+</a>
+
+</li>
+              </ul>
+            </div>
+                    <div class="column small-12 medium-4 large-3" role="listitem">
+              <ul class="l-card-grid__wrapper" role="none">
+                <li role="none">
+                <a class="c-card-link c-card-link--internal c-card-link--inverted c-card-link--blue" href="EN/Themes/Economy/Prices/_node.html">
+  <span class="c-card-link__heading">Prices</span>
+</a>
+
+</li>
+              </ul>
+            </div>
+                    <div class="column small-12 medium-4 large-3" role="listitem">
+              <ul class="l-card-grid__wrapper" role="none">
+                <li role="none">
+                <a class="c-card-link c-card-link--internal c-card-link--inverted c-card-link--blue" href="EN/Themes/Economy/Wholesale-Trade-Retail-Trade/_node.html">
+  <span class="c-card-link__heading">Wholesale and retail trade</span>
+</a>
+
+</li>
+              </ul>
+            </div>
+                    </div>
+        </div>
+                <p>
+                    <a href="EN/Themes/Economy/_node.html"
+  
+  
+  
+   class="c-more c-more--prev">Back to: Economy</a></p>
+                </div>
+    </div>
+  </div>
+</div>
+                      <div class="footer__wrapper">
+
+
+
+
+
+
+<div class="row">
+  <div class="column small-12">
+    <div class="row">
+      <div class="column small-12 large-3">
+          <div class="c-actions c-actions--inverted">
+  <div class="row">
+    <div class="column">
+      <p class="c-actions__list">
+        <span class="c-actions__item">
+          <a class="c-actions__action c-actions__action--share"
+             href="mailto:?body=https://www.destatis.de/EN/Themes/Economy/Short-Term-Indicators/Production/kpi117.html?nn=22952&subject=SeiteTeilen_Subject_en">
+            Share</a>
+        </span>
+      </p>
+    </div>
+  </div>
+</div>
+
+
+      </div>
+      <div class="column small-12 medium-6 large-3">
+          
+
+
+<nav class="footer__sitemap" aria-labelledby="footersitemaphead">
+  <h2 class="aural" aria-hidden="true" id="footersitemaphead">Subnavigation of all website sections</h2>
+  <h3 class="heading">Service</h3>
+    <ul class="row">
+     <li class="column small-12">
+       <a href="EN/Themes/_node.html"
+  
+  
+  
+  >Topics</a>
+     </li>
+     <li class="column small-12">
+       <a href="EN/Methods/_node.html"
+  
+  
+  
+  >Methods</a>
+     </li>
+     <li class="column small-12">
+       <a href="EN/Press/_node.html"
+  
+  
+  
+  >Press</a>
+     </li>
+     <li class="column small-12">
+       <a href="EN/About-Us/_node.html"
+  
+  
+  
+  >About us</a>
+     </li>
+     <li class="column small-12">
+       <a href="EN/Service/_node.html"
+  
+  
+  
+  >Service</a>
+     </li>
+    </ul>
+</nav>
+      </div>
+      <div class="column small-12 medium-6">
+        <div class="row align-justify">
+          <div class="column small-12 medium-6">
+            <div class="footer__contact">
+              <h3>Address</h3>
+                <p>Statistisches Bundesamt<br/>
+Gustav-Stresemann-Ring 11<br/>
+65189 Wiesbaden</p>
+
+            </div>
+          </div>
+          <div class="column small-12 medium-6">
+            <div class="footer__social">
+              <h3>Follow us!</h3>
+              <ul class="row large-up-3">
+                    <li class="column shrink">
+                        <a class="" href="https://twitter.com/destatis_news"
+        title="External link Destatis on Twitter (Opens new window)"
+  aria-label="External link Destatis on Twitter (Opens new window)"
+
+        target="_blank"
+        rel="noopener noreferrer"><svg width="45px" height="45px" viewBox="0 0 45 45" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g id="Group-17">
+        <path d="M22.55,45C10.05,45 -0.05,34.9 -0.05,22.5C-0.05,10.1 10.05,0 22.55,0C35.05,0 45.05,10.1 45.05,22.5C44.95,34.9 34.95,45 22.55,45ZM22.55,2C11.15,2 1.95,11.2 1.95,22.5C1.95,33.8 11.15,43 22.55,43C33.95,43 43.05,33.8 43.05,22.5C43.05,11.2 33.85,2 22.55,2Z" style="fill:#fff;fill-rule:nonzero;"/>
+        <g transform="matrix(0.0224825,0,0,0.0224825,4.92119,8.20891)">
+            <path d="M283.94,167.31L670.33,683.95L281.5,1104L369.01,1104L709.43,736.24L984.48,1104L1282.28,1104L874.15,558.3L1236.07,167.31L1148.56,167.31L835.05,506.01L581.74,167.31L283.94,167.31ZM412.63,231.77L549.44,231.77L1153.57,1039.53L1016.76,1039.53L412.63,231.77Z" style="fill:#fff;"/>
+        </g>
+    </g>
+</svg></a>
+                    </li>
+                    <li class="column shrink">
+                        <a class="" href="https://www.youtube.com/user/destatis"
+        title="External link Destatis Youtube Channel (Opens new window)"
+  aria-label="External link Destatis Youtube Channel (Opens new window)"
+
+        target="_blank"
+        rel="noopener noreferrer"><svg width="45" height="45" viewBox="0 0 45 45" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:1.41421;"><g id="Group-16-Copy"><path d="M22.5,45c-12.4,0 -22.5,-10.1 -22.5,-22.5c0,-12.4 10.1,-22.5 22.5,-22.5c12.4,0 22.5,10.1 22.5,22.5c0,12.4 -10.1,22.5 -22.5,22.5Zm0,-43c-11.3,0 -20.5,9.2 -20.5,20.5c0,11.3 9.2,20.5 20.5,20.5c11.3,0 20.5,-9.2 20.5,-20.5c0,-11.3 -9.2,-20.5 -20.5,-20.5Z" style="fill:#fff;fill-rule:nonzero;"/><path d="M35.8,15.3c-0.3,-1.2 -1.3,-2.2 -2.5,-2.5c-2.2,-0.6 -11.1,-0.6 -11.1,-0.6c0,0 -8.9,0 -11.1,0.6c-1.2,0.3 -2.2,1.3 -2.5,2.5c-0.6,2.2 -0.6,6.8 -0.6,6.8c0,0 0,4.6 0.6,6.8c0.3,1.2 1.3,2.2 2.5,2.5c2.2,0.6 11.1,0.6 11.1,0.6c0,0 8.9,0 11.1,-0.6c1.2,-0.3 2.2,-1.3 2.5,-2.5c0.6,-2.2 0.6,-6.8 0.6,-6.8c0,0 0,-4.6 -0.6,-6.8Zm-16.4,11.6l0,-8.8l7,4.4l-7,4.4Z" style="fill:#fff;fill-rule:nonzero;"/></g></svg></a>
+                    </li>
+                    <li class="column shrink">
+                        <a class="" href="https://t.co/2YpoOZhB1y?amp=1"
+        title="External link Destatis (Statistisches Bundesamt) at LinkedIn (Opens new window)"
+  aria-label="External link Destatis (Statistisches Bundesamt) at LinkedIn (Opens new window)"
+
+        target="_blank"
+        rel="noopener noreferrer"><svg width="45" height="45" viewBox="0 0 45 45" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:1.41421;"><g id="Group-17-Copy"><path d="M22.45,45c-12.4,0 -22.4,-10.1 -22.4,-22.5c0,-12.4 10,-22.5 22.4,-22.5c12.4,0 22.5,10.1 22.5,22.5c0.1,12.4 -10,22.5 -22.5,22.5Zm0,-43c-11.3,0 -20.4,9.2 -20.4,20.5c0,11.3 9.1,20.5 20.4,20.5c11.3,0 20.5,-9.2 20.5,-20.5c0,-11.3 -9.1,-20.5 -20.5,-20.5Z" style="fill:#fff;fill-rule:nonzero;"/><path id="LinkedIn" d="M32.85,23.3l0,7.7l-4.5,0l0,-7.2c0,-1.8 -0.6,-3 -2.3,-3c-1.2,0 -2,0.8 -2.3,1.6c-0.1,0.3 -0.1,0.7 -0.1,1.1l0,7.5l-4.4,0c0,0 0,-12.2 0,-13.5l4.5,0l0,1.9c0.6,-0.9 1.7,-2.2 4,-2.2c2.9,0 5.1,1.9 5.1,6.1Zm-18.3,-12.3c-1.5,0 -2.5,1 -2.5,2.4c0,1.3 1,2.3 2.5,2.3c1.6,0 2.5,-1 2.5,-2.3c0,-1.4 -1,-2.4 -2.5,-2.4Zm-2.3,20l4.5,0l0,-13.5l-4.5,0l0,13.5Z" style="fill:#fff;fill-rule:nonzero;"/></g></svg></a>
+                    </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>            <div class="c-to-top">
+              <div class="row">
+                <div class="column">
+                  <p class="navToTop">
+                    <a href="EN/Themes/Economy/Short-Term-Indicators/Production/kpi117.html?nn=22952#Start">
+              
+
+              
+              
+              
+                
+                
+              
+
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+
+              
+
+  <img src="/SiteGlobals/Frontend/Images/icons/to-top.svg?__blob=normal&amp;v=9"
+                
+                  
+     title="to the top"
+                  
+                
+
+                
+     alt="to the top"
+                
+
+                
+                
+                
+
+                
+
+                
+    
+                
+
+                
+   />
+
+              </a>
+                  </p>
+                </div>
+              </div>
+            </div>
+        </div>
+
+
+
+<div class="footer__meta">
+  <div class="row">
+    <div class="column small-12">
+      <div class="row flex-dir-column large-flex-dir-row align-justify">
+        <div class="column shrink">
+          <ul class="row collapse flex-dir-column medium-flex-dir-row">
+            <li class="column shrink"><a href="EN/Service/Legal-Notice/_node.html"
+  
+  
+  
+  >Legal Notice</a></li>
+            <li class="column shrink"><a href="EN/Service/Privacy-Policy/_node.html"
+  
+  
+  
+  >Privacy Policy</a></li>
+          </ul>
+        </div>
+        <div class="column shrink">
+          <p>&copy;&nbsp;
+              
+
+              
+              
+              
+                
+                
+              
+
+              
+              
+              
+              
+                
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+
+              
+
+  <img src="/SiteGlobals/Frontend/Images/icons/logo-partial.png?__blob=normal&amp;v=3"
+                
+                  
+     title=""
+                  
+                
+
+                
+     alt=""
+                
+
+                
+                
+                
+
+                
+
+                
+    
+                
+
+                
+   />
+
+              &nbsp;Statistisches Bundesamt (Destatis) | 2026</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>      </footer>
+          <div id="cookiebanner" class="cookiebanner" data-gsb-tracking-config="https://www.destatis.de/SiteGlobals/Modules/CookieBanner/EN/General/CookieBanner.json?view=renderCookieBannerExtended"></div>
+    </div>
+  </div>
+</div>
+
+  <script src="SiteGlobals/Frontend/JavaScript/init/EN/global.js?v=32"></script>
+
+<!-- Seite generiert am: Fri Sep 11 08:15:10 CEST 2026 -->
+</body>
+</html>

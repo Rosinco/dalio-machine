@@ -1,0 +1,38 @@
+{
+  "industry_data": {
+    "source_receipt": "data/artifacts/national_monitoring/discovery/germany/industry_data.receipt.json",
+    "original_sha256": "c111c660d7717176cbd143d0942bce76bbf9c8c6bbf757cd811a0e4c42bbb13c",
+    "fixture_sha256": "c111c660d7717176cbd143d0942bce76bbf9c8c6bbf757cd811a0e4c42bbb13c",
+    "fixture_note": "Unmodified original response."
+  },
+  "industry_metadata": {
+    "source_receipt": "data/artifacts/national_monitoring/discovery/germany/industry_metadata.receipt.json",
+    "original_sha256": "e2447dd3fea255f098ab88898c8395c5a65edcf8f4a94b258096133bd9907674",
+    "fixture_sha256": "e2447dd3fea255f098ab88898c8395c5a65edcf8f4a94b258096133bd9907674",
+    "fixture_note": "Unmodified original response."
+  },
+  "loan_data": {
+    "source_receipt": "data/artifacts/national_monitoring/discovery/germany/loan_data.receipt.json",
+    "original_sha256": "c776d2d888e27cd4fbe9baab202e017af754c26eb69d42a07b8337fdd4055b14",
+    "fixture_sha256": "c776d2d888e27cd4fbe9baab202e017af754c26eb69d42a07b8337fdd4055b14",
+    "fixture_note": "Unmodified original response."
+  },
+  "yield_data": {
+    "source_receipt": "data/artifacts/national_monitoring/discovery/germany/yield_data.receipt.json",
+    "original_sha256": "7027a7d9d3d5d3d0eb77338f867ff78b6f7a667860e653f77233e94638f14c3e",
+    "fixture_sha256": "c4ecc7efee4e009a3f31874b1d0edfacc14d6dab7502147cc0a0a21c83dc635c",
+    "fixture_note": "Original XML series metadata and all observations from 2026-06-01; serialized by ElementTree."
+  },
+  "policy_metadata": {
+    "source_receipt": "data/artifacts/national_monitoring/discovery/germany/policy_metadata.receipt.json",
+    "original_sha256": "60d00eb861c8a51efeec746009edafb7dd6a3f03ee24263243e96f66099fb3f6",
+    "fixture_sha256": "60d00eb861c8a51efeec746009edafb7dd6a3f03ee24263243e96f66099fb3f6",
+    "fixture_note": "Unmodified original response."
+  },
+  "policy_data": {
+    "source_receipt": "data/artifacts/national_monitoring/discovery/germany/policy_data.receipt.json",
+    "original_sha256": "144f68b83ffe580276579031bdfdddd56611649958ac69fe18892d409928a2e3",
+    "fixture_sha256": "dcd1185550e556defbd4cf18b85106377156b70ae4551c2659712f1cb4185c9d",
+    "fixture_note": "Original CSV header and rows from 2026-06-01; serialized by csv module."
+  }
+}

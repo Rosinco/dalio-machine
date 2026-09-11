@@ -25,3 +25,4 @@ always-loaded state lives in `project_context.md` (Decision Log has one line per
 | [0018](0018-riksbank-2025-communication-metadata-inventory.md) | Closed 2025 Riksbank monetary-policy press-conference cohort with separate replay-page, slide, transcript and exact-caption coverage | 2026-09-09 |
 | [0019](0019-rba-2025-communication-metadata-inventory.md) | Closed 2025 RBA monetary-policy media-conference cohort with separate inline-transcript, external-video and exact-caption coverage | 2026-09-09 |
 | [0020](0020-sovereign-refinancing-evidence-denominator.md) | Fixed 48-stream sovereign-refinancing denominator with 31 harmonized scalar partitions source-ready and 17 national-native streams still planned | 2026-09-09 |
+| [0033](0033-national-monitoring-expansion.md) | Original US/Germany/Canada monitoring, documentation-bound structural gaps, native industrial volume concepts and read-only offline country reports | 2026-09-11 |

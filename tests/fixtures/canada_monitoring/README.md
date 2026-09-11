@@ -1,0 +1,13 @@
+Original publisher bytes captured 2026-09-11 UTC; gzip compression only. Exact discovery responses and transport receipts retained in data/artifacts/national_monitoring/discovery/us_ca. Tests decompress these bytes and use no HTTP.
+
+- industry_metadata.bin.gz: decompressed SHA256 f279c8d6c61860440cf870d6b85efded421c3735d0d37fce3181456386140024
+- industry_series.bin.gz: decompressed SHA256 f7d3d92e929c8166ad9e34e2c25f4279bb681d09139a20ddbe04873cec21291b
+- industry_data.bin.gz: decompressed SHA256 aee1d931d0e41645ca0992da112dd0455ec3af1bb1bb187d785223963d5be5fe
+- lending_metadata.bin.gz: decompressed SHA256 360d060d6ec20aa91bbfccb6041c5dd46cce3c4d0746646c887e28a0696b4849
+- lending_data.bin.gz: decompressed SHA256 fd2125d8ba55aeb892fe6222fa54be9ed6c0ef94474c3a7b42955a0197462066
+- lending_documentation.bin.gz: decompressed SHA256 5581f7102015412b4a8b032e9064d6998b6be1af826ad9c038aa24c0329f0833
+- policy_metadata.bin.gz: decompressed SHA256 fa4178ab58f80d4a809317b43a9c5e279a6fc89bdd1f3d0450eb2a7d95f060bd
+- policy_data.bin.gz: decompressed SHA256 f8ea8b7f56e39e6ae4fd3c3d2c381c27e49fd4616d58154d29d14e1957fe25ad
+- yield_metadata.bin.gz: decompressed SHA256 582d09cf8e1fd891ec2190d67aca0607342c497ac2fcb4bd6111d5a4a339d52d
+- yield_data.bin.gz: decompressed SHA256 ed92165b26eb37f121e068e0c1b146c1cfe173ba89dd6c1ef5eb1529fd297bd8
+- yield_documentation.bin.gz: decompressed SHA256 3a38e80cc6eb25a98e5d100d4ea3745db3e8a1502bf072d79f53d0c3aa9a6108
