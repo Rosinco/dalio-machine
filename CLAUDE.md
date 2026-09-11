@@ -9,6 +9,19 @@ Project-specific guidance. See `project_context.md` for full architecture and in
 - **Slice discipline.** Built slice-by-slice (see roadmap in `project_context.md`). Don't broaden scope mid-slice — finish slice N end-to-end before slice N+1.
 - **Activate venv:** `source .venv/bin/activate` before any Python work in this repo.
 
+## Company analysis
+
+User direction (2026-09-11): use the value-versus-price framework whenever
+analyzing companies for Macro Atlas. Read `docs/company-valuation-framework.md`
+and start from `docs/company-analysis-template.md` (ADR 0035). Include continuing-
+business scenarios, a separate recovery case, dated price, and ordinary/discounted
+payback. Tie macro evidence to verified company exposures. Keep source facts,
+analyst assumptions and calculated outcomes distinct; missing inputs stay missing.
+For completed numerical deep dives, automatically load the reviewed source facts
+and explicit scenarios into the Value workspace. Holmen is the first case (see
+`docs/holmen-valuation-2026-09-11.md`). Preserve user edits and prior drafts; a
+dossier folder alone is not a forecast.
+
 ## Stack reminders
 
 - Python 3.12, venv at `.venv/`, install via `pip install -e ".[dev]"`

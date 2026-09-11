@@ -1,11 +1,86 @@
 # Macro Atlas / dalio-machine handoff — 2026-09-11
 
+## Current checkpoint — automatic Holmen valuation (0.11.0)
+
+The user requested automatic company valuations from completed deep dives,
+starting with Holmen. The desktop worktree now supplies a versioned researched
+starting study with source cash normalization, dated price, three scenarios,
+capital and separate breakup recovery. See
+`docs/holmen-valuation-2026-09-11.md` and the desktop `HANDOFF.md` for full scope,
+verification and installation status. The canonical framework/ADR and workflow
+entry points have been updated. No macro fact or source Börsdata file was changed.
+Version 0.11.0 is installed through the existing desktop shortcut. Verification:
+101 automated tests, 85 browser checks and 90 Windows checks passed. The final
+Windows binary hash and installation receipt are recorded in the desktop handoff.
+The installed app is open on Holmen → Value in the user's normal profile;
+the researched assumptions and preserved previous-draft notice were visually
+verified. The desktop receipts include `holmen-installed-user-profile.png`.
+
+The desktop implementation checkpoint is `6de29d2690b3b73e572843338427de9ba1a0d500`
+on `feat/offline-atlas`. It includes the workspace, automatic Holmen study and
+desktop handoff; its required Python suite passed all 1,206 tests and Ruff is
+clean. The source checkpoint covers the app on `feat/offline-atlas` and shared
+methodology/handoff on `main` in `Rosinco/dalio-machine`; no branch merge is part
+of this checkpoint. Holmen is the only automatic company so far. Further cases
+need individually reviewed source figures and numerical scenarios. Generated
+archives, packs, test receipts and Windows binaries remain local and gitignored.
+
+Canonical pre-commit verification: **1,690 Python tests passed**;
+`ruff check src tests` and staged diff checks are clean. The full test log is
+retained locally in the desktop worktree at
+`desktop/test-results/precommit-macro-pytest.log`.
+
+## Previous company valuation checkpoint — 0.10.0
+
+The user requested the interactive company valuation workspace and high/mid/low
+DCF and cumulative NPV charts with scenario payback. Implementation is in
+`desktop/src/{ValuationWorkspace,ValuationCharts}.tsx`, `valuation.ts`,
+`savedValuations.ts` and `valuation.css` on the desktop working tree. New company
+analyses use ADR 0035 and `docs/company-{valuation-framework,analysis-template}.md`.
+The same methodology and workflow entry points are present in the canonical tree.
+
+Open **Companies → choose a company → Value**. Enter dated equity prices and
+explicit shareholder-payment forecasts; the source FCF series is not an automatic
+forecast. Each scenario includes ordinary/discounted payback, optional final sale
+and separate net recovery. Capital and evidence notes accompany the model.
+Drafts autosave by company and exact data versions, while saved revisions retain
+old assumptions. CSV exports retain inputs and annual calculations.
+
+Verification: **96 automated tests passed**, including 14 valuation/storage
+checks. The complete production browser suite passed, including eight valuation
+flows, without external requests or runtime errors. Web and Windows builds passed.
+The complete Windows native suite also passed **87 checks**, including
+valuation CSV export and draft/revision persistence after a full process restart,
+with no external requests or runtime errors. **0.10.0 is installed** at
+`C:\Users\Adamb\AppData\Local\MacroAtlas\0.10.0\Macro Atlas.exe`.
+The existing `C:\Users\Adamb\OneDrive\Desktop\Macro Atlas.lnk` now targets
+this version. The installed executable checksum matches the native-tested build.
+Earlier installed version folders remain intact. Reopen Macro Atlas to use the
+new workspace; installation did not close existing app windows.
+
+Native receipt: `test-results/windows-native-report.json`.
+Installation verification: `test-results/windows-installation-0.10.0.json`.
+The 0.10.0 workspace source is included in the current 0.11.0 checkpoint.
+
+0.10.0 Windows binary SHA-256:
+`a6481b7d93c87875d1ebf2db80d14cc2506dbd2177de53bb3904edd4747ed163`.
+The earlier 0.9.0 binary was retained at
+`desktop/test-results/releases/0.9.0/macro-atlas.exe` with its original checksum.
+The macro evidence pack, source data and existing import identities are unchanged.
+No country collection or automatic company valuation was performed for this feature.
+
+Current receipts in the desktop `test-results/` directory:
+`browser-report.json`, `valuation-browser-report.json`,
+`valuation-documentation-report.json`, `valuation-charts.png`,
+`valuation-compact.png`, and `valuation-export.csv`.
+Browser screenshots and CSV use explicitly hypothetical test inputs, not a
+company investment conclusion. The Windows test uses an isolated app profile.
+
 ## Identity and working locations
 
-- **Macro Atlas 0.9.0** is the new offline Windows desktop integration. The Windows
-  build and focused native financial check passed; the complete ordinary native
-  suite and installation are pending after the pause. Its working
-  tree is `/home/rosinco/workspace/dalio-atlas-desktop`, branch
+- **Macro Atlas 0.11.0** is the installed offline Windows desktop app. The full
+  browser and Windows native suites passed, including valuation persistence.
+  Its working tree is `/home/rosinco/workspace/dalio-atlas-desktop`, branch
   `feat/offline-atlas`.
 - **dalio-machine**, described as **Macro History & Risk Observatory**, is the
   canonical macro evidence and analysis engine. Its main working tree is
@@ -15,7 +90,7 @@
   financial histories. Listing geography is distinct from issuer domicile,
   revenue exposure and physical assets.
 
-## Latest checkpoint — US/Germany/Canada and desktop evidence integration
+## Previous macro checkpoint — US/Germany/Canada and 0.9.0 evidence integration
 
 Backend checkpoint **`34a229e`** is committed and pushed on canonical `main`.
 The user paused work on September 11 and requested commit, push and handoff.
@@ -349,8 +424,8 @@ Macro Atlas retains 19,140 listings across 10 sectors and 94 branches, financial
 statements, market-cap histories and branch comparisons. Version 0.9.0 adds
 **Macro → Assessments** with the verified country-evidence pack described above;
 the export, Windows native build, complete browser suite and focused full-pack
-native financial test passed. The complete ordinary Windows native suite and
-desktop installation remain pending after the pause. The pack keeps each
+native financial test passed. The subsequent complete native suite and installed
+0.11.0 app verification also passed. The pack keeps each
 assessment and monitoring cutoff visible,
 including **2026-09-10–11** assessments, independently of the **2026-09-08** saved
 fundamentals/research release. Newly covered countries do not inherit old scores
@@ -361,10 +436,12 @@ map markers are future work.
 
 ## Next development step
 
-On resume, first run the complete ordinary Windows native suite with the new
-default test transport, then install and verify the exact 0.9.0 executable if
-those checks pass. Preserve the focused native financial receipt and earlier
-transport diagnostics. The app is not claimed installed at this checkpoint.
+The 0.11.0 build is installed after the complete Windows native suite, including
+country evidence, valuation, automatic Holmen inputs and persistence checks.
+Preserve the earlier builds and diagnostic receipts. Further automatic company
+studies can follow the Holmen pattern after source reconciliation and explicit
+forecast/recovery assumptions. The company-valuation request did not resume
+additional macro data collection.
 
 Extend verified original-source monitoring to the remaining **twelve listing
 countries: BE, CH, EE, ES, FR, GB, IT, LT, LV, NL, PL and PT**. Listing GB maps
@@ -478,5 +555,6 @@ Existing sandbox rules still apply; use already-approved command prefixes
 correctly and do not treat elapsed time as approval.
 
 The latest user instruction pauses implementation and collection after this
-commit/push/handoff checkpoint. Resume the pending native verification,
-installation and country expansion when the user returns and asks to continue.
+commit/push/handoff checkpoint. Native verification and installation are complete.
+Further company studies and country expansion remain available continuation
+tasks when the user asks to resume.
