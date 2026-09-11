@@ -20,8 +20,10 @@ Outputs are offline JSON and Markdown under
 the complete published directory. The source database is read-only. Publisher
 forecasts, descriptive arithmetic and Observatory hypotheses remain distinct;
 there are no calibrated probabilities, composite risk scores or company
-verdicts. These files are not yet bundled into Macro Atlas. See ADR 0030 and
-`HANDOFF.md` for the current checkpoint.
+verdicts. Macro Atlas 0.9.0 now includes a verified offline export of these
+profiles; the complete ordinary Windows native suite and installation are pending
+after the user-requested pause. See ADR
+0030 and `HANDOFF.md` for the current checkpoint.
 
 ## What it does
 
@@ -57,8 +59,9 @@ python -m dalio.pipelines.build_nordic_monitoring --db data/dalio.db
 
 The complete offline report set is under
 `data/snapshots/nordic_monitoring/<hash>/`: open `index.md` for the comparison,
-then a country page and its linked annual context. The source database and
-desktop bundle are unchanged. See ADR 0032 for capture, scope and replay rules.
+then a country page and its linked annual context. The source database is
+read-only; a separate verified export supplies the desktop evidence pack. See
+ADR 0032 for capture, scope and replay rules.
 
 The **US, Germany and Canada monitoring extension** uses a separate original-source
 supplement, preserving earlier Nordic captures. Native industrial volume concepts,
@@ -74,6 +77,40 @@ python -m dalio.pipelines.build_national_monitoring --db data/dalio.db
 Open `data/snapshots/national_monitoring/<hash>/index.md` for the offline
 comparison and linked country reports. The collector preserves original bytes;
 the builder opens the database read-only and uses an exact `--known-at` cutoff.
+
+The verified national checkpoint **`34a229e`** is pushed on `main`: **26 successful
+HTTP requests**, **11 source histories plus the documented US loan-rate gap**,
+and **5,182 native slots** (4,994 numeric, 188 null). All **1,690 backend tests**
+passed; independent source audits and exact offline replay preserved the database
+and all 196 checked source/output files. Snapshot `62c94ffb…` uses UTC assessment
+date **2026-09-11** and cutoff **2026-09-11T06:26:50.807464+00:00**. Full immutable
+paths, audit receipts and exact reproduction commands are in `HANDOFF.md`.
+
+**Macro Atlas 0.9.0 → Macro → Assessments** integrates **19 annual profiles** and
+**seven monitored countries**: SE, NO, DK, FI, US, DE and CA. The independent
+offline pack contains 29 monitoring topics, comprising 28 source histories and
+the US gap. Its September 10–11 assessment dates remain visibly separate from the
+September 8 fundamentals/research release: twelve annual profiles retain September
+10, and the seven monitored countries use September 11 embedded assessments. Annual charts, native histories,
+conditional scenarios and source references are available offline. **82 frontend,
+53 desktop Python (including eight exporter) and nine focused browser tests
+passed**. The Windows native build and complete browser suite also passed, with
+zero external browser requests or runtime errors. A focused native financial
+rerun passed full 109,862,912-byte hash/import/export, reload and process restart
+checks using the revised test-only transport, without external requests or runtime
+errors. The **complete ordinary Windows native suite and desktop installation are
+pending for the next session**; 0.9.0 is not confirmed installed. An independent pack
+audit reconciled all 19 profiles and 28 monitoring histories and preserved all 23
+source/pack files.
+The exporter is `desktop/scripts/export_country_evidence.py` in the separate
+`dalio-atlas-desktop` repository; `HANDOFF.md` gives the exact three input snapshots.
+
+The next source-discovery batches cover the remaining twelve listing countries
+(BE, CH, EE, ES, FR, GB/UK, IT, LT, LV, NL, PL, PT), prioritizing accessible original
+publishers and suitable definitions. The German industrial feed also needs a
+scope-preserving GENESIS migration before the current Destatis CSV stops receiving
+updates in October 2026. Sector and company headwind/tailwind verdicts
+still require verified business exposures and further research.
 
 For 8 economies (US, CN, EU, UK, JP, SE, IN, BR), it pulls macro indicators from FRED, BIS, Riksbank, IMF, OECD, SCB and World Bank, then classifies cycle stage with rule-based logic. The World Fundamentals Map extends coverage to 22 players. Numeric pipelines preserve complete source snapshots in an append-only release ledger beside the compatible latest-value table, enabling honest “what was known then?” queries from the ledger cutover onward.
 
@@ -424,4 +461,11 @@ Tier drives dashboard confidence labels — Tier 2 readings are flagged as such.
 
 ## Status
 
-Pre-alpha. The cycle and fundamentals product is working, and the raw-history foundation now includes sovereign-debt anatomy, Swedish debt holders, IMF financial-account transactions, 127,970 bilateral investment-position rows, three Swedish AP-fund disclosures, a ten-document official-report corpus, 63,179 monthly commodity observations, ten official-money histories and 22 separate shadow-liquidity histories. Read-only liquidity diagnostics, a 20-item report review queue, an append-only human decision gate and a 24-policy/19-organization institutional-communications schema foundation are available. A closed 2025 Fed/ECB pilot adds 16/16 exact first-party text links and an offline rights-review packet; separate BoE, Riksbank and RBA cohorts add representation-specific metadata. The bounded 2025 Riksbank-plus-RBA central-bank package now closes 16/16 denominator events, while all communication content and database evidence remain absent. Checked manifests bind immutable source-policy snapshots, and the ordered one-artifact/one-byte-lineage, multi-section storage contract is ready. ADR 0017 caps the remaining Version 1 foundation at five bounded packages. The debt package now has 31 audited harmonized refinancing histories (697 observations) inside its checked 48-stream denominator, with an atomic refresh, offline staging promotion and a descriptive comparison brief; 16 national-native streams remain after the original Swedish monthly tranche. This is not a complete global money-flow map, a communications corpus, a universal M5, an additive liquidity total, a causal or deposit-flow model, or an investable commodity return history: all 20 report candidates still need named human review; every communication representation remains rights-gated; allocator history has only one H1 2026 release per fund; QPSD and IMF position coverage are voluntary and uneven; and debt cash-flow schedules, broader banking/funding channels and horizon risk scenarios remain to be built. See `project_context.md`, ADRs 0004–0020 and 0028–0029, and `data/README.md` for current boundaries.
+The latest national-monitoring backend checkpoint is `34a229e` (1,690 tests), with
+the Macro Atlas 0.9.0 country-evidence integration prepared as described above.
+Work is paused at the user’s request for commit, push and handoff. The complete
+ordinary Windows native suite and desktop installation remain next; no installed
+0.9.0 release is claimed. Earlier cycle/fundamentals releases keep
+their original dates and scoring populations.
+
+Pre-alpha. The cycle and fundamentals product is working, and the raw-history foundation now includes sovereign-debt anatomy, Swedish debt holders, IMF financial-account transactions, 127,970 bilateral investment-position rows, three Swedish AP-fund disclosures, a ten-document official-report corpus, 63,179 monthly commodity observations, ten official-money histories and 22 separate shadow-liquidity histories. Read-only liquidity diagnostics, a 20-item report review queue, an append-only human decision gate and a 24-policy/19-organization institutional-communications schema foundation are available. A closed 2025 Fed/ECB pilot adds 16/16 exact first-party text links and an offline rights-review packet; separate BoE, Riksbank and RBA cohorts add representation-specific metadata. The bounded 2025 Riksbank-plus-RBA central-bank package now closes 16/16 denominator events, while all communication content and database evidence remain absent. Checked manifests bind immutable source-policy snapshots, and the ordered one-artifact/one-byte-lineage, multi-section storage contract is ready. ADR 0017 caps the remaining Version 1 foundation at five bounded packages. The debt package now has 31 audited harmonized refinancing histories (697 observations) inside its checked 48-stream denominator, with an atomic refresh, offline staging promotion and a descriptive comparison brief; 16 national-native streams remain after the original Swedish monthly tranche. This is not a complete global money-flow map, a communications corpus, a universal M5, an additive liquidity total, a causal or deposit-flow model, or an investable commodity return history: all 20 report candidates still need named human review; every communication representation remains rights-gated; allocator history has only one H1 2026 release per fund; QPSD and IMF position coverage are voluntary and uneven; and broader debt cash-flow schedules, banking/funding channels and calibrated stress models remain to be built. The implemented country scenarios are conditional research cases, not calibrated forecasts. See `project_context.md`, ADRs 0004–0020 and 0028–0033, and `data/README.md` for current boundaries.

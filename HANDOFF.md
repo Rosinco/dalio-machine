@@ -2,7 +2,9 @@
 
 ## Identity and working locations
 
-- **Macro Atlas 0.8.0** is the offline Windows desktop application. Its working
+- **Macro Atlas 0.9.0** is the new offline Windows desktop integration. The Windows
+  build and focused native financial check passed; the complete ordinary native
+  suite and installation are pending after the pause. Its working
   tree is `/home/rosinco/workspace/dalio-atlas-desktop`, branch
   `feat/offline-atlas`.
 - **dalio-machine**, described as **Macro History & Risk Observatory**, is the
@@ -13,7 +15,71 @@
   financial histories. Listing geography is distinct from issuer domicile,
   revenue exposure and physical assets.
 
-## Latest checkpoint — four-country Nordic monitoring
+## Latest checkpoint — US/Germany/Canada and desktop evidence integration
+
+Backend checkpoint **`34a229e`** is committed and pushed on canonical `main`.
+The user paused work on September 11 and requested commit, push and handoff.
+Desktop checkpoint: **`0152f88`**, pushed on `feat/offline-atlas`.
+No further implementation or collection is planned during this pause.
+ADR 0033 adds a separate twelve-attempt US/Germany/Canada supplement after a
+retained-evidence audit. All **26 HTTP requests succeeded**: **11 original-source
+histories** and one source-documented US corporate new-loan-rate gap. The retired
+Federal Reserve E.2 survey is not replaced by a prime rate or credit-standards
+proxy. Canadian industrial activity retains its native real industrial GDP
+volume in millions of chained 2017 CAD, without artificial index rebasing.
+Country industry scopes, borrower populations and policy instruments remain
+explicit; no sector or company verdict follows from these signals.
+
+Immutable bundle:
+`1038458825e26cf7a6768bde5293534a72028234a2b927e068209acc8d9af1a3`.
+The exact known-at cutoff is **2026-09-11T06:26:50.807464+00:00**, with UTC
+assessment date **2026-09-11**. The canonical eight-file offline snapshot is
+`62c94ffb8a31495db5cdccf92bb7d1f806764c0f77742110be70fe15d4a0ef46`
+under `data/snapshots/national_monitoring/`. Open `index.md`, the `US.md`, `DE.md`
+and `CA.md` reports, and their linked `context/<country>.md` annual profiles.
+`snapshot.json` retains complete evidence and full-precision values.
+
+Validation: **1,690 backend tests passed**. The full new-source audit reconciled
+**5,182 native slots: 4,994 numeric and 188 null**, across all eleven histories.
+Independent US/Canada and German decoders checked the original native vectors;
+the combined audit checked calculations, citations and report links. Exact
+offline replay preserved all **196 checked files**, including source and output
+bytes and modification times. The source database is unchanged.
+
+Macro Atlas **0.9.0** has a prepared independent country-evidence pack:
+`156bcef284718b80a273ae8d32d03b6c2c6013c1891da5516f2e29430b61fdad`.
+It contains **19 annual profiles**, **seven monitored countries** (SE, NO, DK,
+FI, US, DE, CA), and **29 monitoring topics: 28 source histories plus the US
+loan-rate gap**. Evidence assessment dates span **September 10–11**: twelve annual
+profiles retain September 10, while the seven monitored countries use September
+11 embedded assessments. These remain separate from the September 8
+fundamentals/research release. Annual history, original Swedish
+debt context, source references and conditional scenarios are inspectable offline.
+**82 frontend tests, all 53 desktop Python tests (including eight new exporter
+regressions) and nine focused browser tests passed**; Ruff is clean for the new
+exporter and tests. The Windows native build succeeded, producing a 12 MB binary.
+The independent desktop audit verified 19 annual profiles/152 annual histories,
+seven monitored countries/28 source histories, 29,175 monitoring rows/415 nulls,
+and the US structural gap while preserving 23 source/pack files. The complete
+browser suite also passed all research, business, directory, financial, comparison
+and nine evidence checks, with zero external requests or runtime errors. Windows
+binary SHA-256 is `8e9c1dccaa3d55113fe4a097f65cc3668b76a7c07cdab661521797388d386f93`.
+The focused native financial rerun passed on that same binary using the revised
+uncompressed test transport in **55 seconds**, from
+**2026-09-11T07:30:11.128Z** to **07:31:06 UTC**. The complete
+**109,862,912-byte** financial pack passed hash verification, byte-identical
+import/export, reload and process-restart persistence, with zero external requests
+or runtime errors. The **complete ordinary Windows native suite and desktop
+installation are pending for the next session**; 0.9.0 is not confirmed installed.
+Retained failed native tests captured malformed incoming CDP JSON in
+`Network.requestWillBeSent` frames, followed by an automation-client disconnect.
+The imported financial file remained intact; an application crash has not been
+established. The successful experiment changed both compression and the WebSocket
+client path, so it does not isolate compression as the cause. The revised
+transport is now the test default; `-CompressedCdp` retains the earlier diagnostic
+reproduction option. No production financial-importer change was made.
+
+## Earlier checkpoint — four-country Nordic monitoring
 
 Implementation `1f1d57c` is integrated and pushed on `main` and
 `feat/nordic-scenario-monitoring`. ADR 0032 extends Sweden's verified pilot to
@@ -43,7 +109,8 @@ Canonical ten-file offline snapshot:
 Open `data/snapshots/nordic_monitoring/<hash>/index.md` for the comparison,
 `SE.md`, `NO.md`, `DK.md` and `FI.md` for monitoring, and `context/<country>.md`
 for the linked annual assessment. `snapshot.json` retains full precision and
-source evidence. The separate Macro Atlas desktop pack remains unchanged.
+source evidence. At that checkpoint the separate Macro Atlas desktop pack was
+unchanged; the 0.9.0 export above now includes this verified snapshot.
 
 Source definitions matter. Norway's selected industrial index excludes oil/gas
 extraction, related services and electricity but includes mining, quarrying and
@@ -246,6 +313,30 @@ them together:
   four monitoring reports and four linked annual profiles; `validation/`
   contains the retained-data inventory, original transport receipts, capture
   summaries, independent source audits and exact-replay verification
+- `data/artifacts/national_monitoring/`, especially
+  `bundles/1038458825e26cf7a6768bde5293534a72028234a2b927e068209acc8d9af1a3.json`:
+  complete US/DE/CA attempt bundle, original responses and discovery receipts
+- `data/snapshots/national_monitoring/62c94ffb8a31495db5cdccf92bb7d1f806764c0f77742110be70fe15d4a0ef46/`:
+  complete offline national comparison and linked annual profiles
+- `data/snapshots/national_monitoring/validation/`: preserve the audit scripts,
+  full test log, transport/capture receipts and these final verification receipts:
+  `source-cell-audit-62c94ffb8a31495db5cdccf92bb7d1f806764c0f77742110be70fe15d4a0ef46-20260911T062735.json`,
+  `independent-us-ca-62c94ffb8a31495db5cdccf92bb7d1f806764c0f77742110be70fe15d4a0ef46.json`,
+  `independent-germany-62c94ffb.json`, and
+  `reproducibility-62c94ffb8a31495db5cdccf92bb7d1f806764c0f77742110be70fe15d4a0ef46.json`
+- `/home/rosinco/workspace/dalio-atlas-desktop/desktop/public/data/country-evidence/`:
+  small `index.json` plus immutable hashed country files. The pack retains source
+  identities and references; original response binaries stay in the backend archive.
+- `/home/rosinco/workspace/dalio-atlas-desktop/desktop/test-results/country-evidence-validation/`:
+  `desktop-pack-156bcef2-independent.json` and
+  `audit_desktop_country_pack.py` retain the independent pack/parent/native-history
+  audit and reproducible checks.
+- `/home/rosinco/workspace/dalio-atlas-desktop/desktop/test-results/browser-report.json`:
+  complete browser regression results, including the nine evidence checks.
+- `/home/rosinco/workspace/dalio-atlas-desktop/desktop/test-results/windows-native-financial-report.json`:
+  focused native financial import/reload/process-restart check; retain the
+  `windows-native-diagnostics-*.json` files beside it, including the successful
+  `2026-09-11T07-04-02.490Z` run and retained failed automation sessions.
 
 The older country v1 bundle is superseded by v2; do not promote it. Source
 bytes and publication/reference/acquisition dates are retained separately.
@@ -254,34 +345,51 @@ of what this system knew before the ledger cutover.
 
 ## Desktop boundary
 
-The installed Macro Atlas application has 19,140 listings across 10 sectors
-and 94 branches, financial statements, market-cap histories and branch
-comparisons. Its bundled macro snapshot is still **2026-09-08**. The new country
-and native-debt evidence has not yet been exported into the desktop pack.
+Macro Atlas retains 19,140 listings across 10 sectors and 94 branches, financial
+statements, market-cap histories and branch comparisons. Version 0.9.0 adds
+**Macro → Assessments** with the verified country-evidence pack described above;
+the export, Windows native build, complete browser suite and focused full-pack
+native financial test passed. The complete ordinary Windows native suite and
+desktop installation remain pending after the pause. The pack keeps each
+assessment and monitoring cutoff visible,
+including **2026-09-10–11** assessments, independently of the **2026-09-08** saved
+fundamentals/research release. Newly covered countries do not inherit old scores
+or map colours. Country files load on demand; the complete active pack is about
+13 MB. Publisher websites need internet, but saved profiles and histories do not.
 Standard balance-sheet tables work; detailed physical-asset inventories and
 map markers are future work.
 
 ## Next development step
 
-Extend the verified Nordic monitoring approach to the remaining listing countries
-in bounded batches. Audit existing series first, then select original sources
+On resume, first run the complete ordinary Windows native suite with the new
+default test transport, then install and verify the exact 0.9.0 executable if
+those checks pass. Preserve the focused native financial receipt and earlier
+transport diagnostics. The app is not claimed installed at this checkpoint.
+
+Extend verified original-source monitoring to the remaining **twelve listing
+countries: BE, CH, EE, ES, FR, GB, IT, LT, LV, NL, PL and PT**. Listing GB maps
+explicitly to engine UK. All already have annual WB/IMF profiles. Select bounded
+batches according to actual primary-source accessibility and suitable native
+definitions, rather than listing counts alone. Audit existing series first, then
+select original sources
 with explicit native scopes, seasonal adjustment, units and publication clocks.
 Do not force non-comparable country loan-rate or industry definitions into one
 ranking. Retain named gaps when an original signal is unavailable.
 
-The next candidate batch is **US, Germany and Canada**, in that order; a smaller
-first tranche can stop at US and Germany. The saved universe contains 6,345 US,
-6,340 German and 2,321 Canadian listings, together 15,006/19,140 (78.4%). These
-are listing records, not deduplicated issuers or operating exposure; Germany's
-large catalogue especially requires that distinction. Each country already has
-19 verified annual WB/IMF histories and a country assessment. Audit those
-histories and the substantial existing US/Canadian scalar data before collecting
-gaps. Existing US DFF/DGS10 releases have no raw-artifact bindings; they cannot
-be promoted as original-response-verified monitoring without honest new capture.
-Germany's applicable ECB instrument must remain explicitly shared euro-area
-policy. Retained harmonized German debt measures and saved US/German debt-office
-entrypoints are separate funding-context leads, not proof that a national
-four-signal monitoring contract is ready.
+Before the next German industrial refresh, migrate the Destatis short-term CSV
+to an appropriate original GENESIS selection: the publisher will stop updating
+the current CSV in **October 2026**. Preserve the selected German industrial
+scope, adjustment and units, and verify the replacement against retained values.
+The existing CSV remains valid evidence of its captured vintage, not a source of
+new releases after retirement.
+
+The completed US/Germany/Canada slice is the reference for honest original-source
+collection, documented structural gaps and retained native scopes. Listing counts
+remain listing records, not deduplicated issuers or operating exposure. Existing
+legacy scalar rows without bound original responses cannot be retroactively
+promoted as verified delivery evidence; acquire missing original bytes with honest
+new receipt clocks. National debt-office evidence remains a separate funding
+context with its own scope, units and publication dates.
 
 A later compatible capture can support a separate change-since-last-capture
 comparison, distinguishing revised historical values from newly added periods.
@@ -290,8 +398,8 @@ vintage. Energy, lending standards, defaults, actual government funding
 execution and company/customer geography remain additional research inputs.
 
 Company implications still require actual revenue, asset, cost and financing
-exposures. A later desktop export can present the profiles and monitoring in
-Macro Atlas's sidebar; the bundled application data remains unchanged.
+exposures. The desktop integration presents evidence and conditional country
+scenarios; sector/branch and company headwind/tailwind verdicts are not yet produced.
 
 The user explicitly prefers **first-hand sources whenever available**. This
 is recorded in `CLAUDE.md`; official WB/IMF harmonized baselines retain their
@@ -302,12 +410,13 @@ The ranking population and existing scoring methodology are unchanged.
 Twenty institutional report drafts remain unverified; communication content
 remains outside the acquired evidence. Numeric analysis can proceed without
 inventing report reviews or communications clearance. See ADRs 0004, 0017,
-0028–0032, and `project_context.md` for the current architecture.
+0028–0033, and `project_context.md` for the current architecture.
 
 ## Working commands
 
 ```bash
 source .venv/bin/activate
+export PYTHONPATH=src
 pytest -q
 ruff check src tests
 python -m dalio.storage.inventory --db data/dalio.db --json
@@ -316,7 +425,30 @@ python -m dalio.pipelines.fetch_sweden_monitoring --artifact-root data/artifacts
 python -m dalio.pipelines.build_sweden_monitoring --db data/dalio.db --as-of 2026-09-10 --known-at 2026-09-10T22:10:11.307779+00:00
 python -m dalio.pipelines.fetch_nordic_monitoring --artifact-root data/artifacts/nordic_monitoring
 python -m dalio.pipelines.build_nordic_monitoring --db data/dalio.db --as-of 2026-09-11 --known-at 2026-09-11T06:01:15.044707+00:00
+python -m dalio.pipelines.fetch_national_monitoring --artifact-root data/artifacts/national_monitoring
+python -m dalio.pipelines.build_national_monitoring --db data/dalio.db --as-of 2026-09-11 --known-at 2026-09-11T06:26:50.807464+00:00 --bundle data/artifacts/national_monitoring/bundles/1038458825e26cf7a6768bde5293534a72028234a2b927e068209acc8d9af1a3.json --no-latest
 ```
+
+The national collector makes fresh network requests and records a new complete
+attempt batch. The exact-cutoff national build above replays retained evidence
+offline and preserves `LATEST.json`. Run from canonical `dalio-machine` so bound
+source paths retain the published snapshot identity.
+
+To reproduce the desktop pack, run from
+`/home/rosinco/workspace/dalio-atlas-desktop/desktop` with the canonical venv:
+
+```bash
+source /home/rosinco/workspace/dalio-machine/.venv/bin/activate
+python scripts/export_country_evidence.py \
+  --assessment /home/rosinco/workspace/dalio-machine/data/snapshots/country_assessments/b2524c09385af9682a462be968e0eb20ccd5e5917e0e73d43b06949f93fd5144/snapshot.json \
+  --monitoring /home/rosinco/workspace/dalio-machine/data/snapshots/nordic_monitoring/289d3f3eb37afbba9d6f62758d91947d412ac3f7d12a74d72bb809851dbf6804/snapshot.json \
+  --monitoring /home/rosinco/workspace/dalio-machine/data/snapshots/national_monitoring/62c94ffb8a31495db5cdccf92bb7d1f806764c0f77742110be70fe15d4a0ef46/snapshot.json
+python scripts/export_country_evidence.py --verify
+```
+
+The exporter reads no database or network. It verifies source identities, selects
+the newest complete country profile, and does not fill newer gaps from old batches.
+Repeating an unchanged export preserves pack bytes and modification times.
 
 Assessment worktree: `/home/rosinco/workspace/dalio-country-assessments`, branch
 `feat/country-assessments`. Use the canonical venv and `PYTHONPATH=src` in a
@@ -344,3 +476,7 @@ commit, push and handoff are authorized in the conversation. The user asked
 for autonomous progress overnight without repeated permission questions.
 Existing sandbox rules still apply; use already-approved command prefixes
 correctly and do not treat elapsed time as approval.
+
+The latest user instruction pauses implementation and collection after this
+commit/push/handoff checkpoint. Resume the pending native verification,
+installation and country expansion when the user returns and asks to continue.
