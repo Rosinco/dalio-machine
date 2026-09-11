@@ -6,7 +6,87 @@ requires no terminal, Python environment, WSL, account or network connection.
 Windows WebView2 must be installed; it is present on Adam's PC. The Tauri installer
 configuration can also bundle its offline installer when distributing to another PC.
 
-## Version 0.9.0
+## Version 0.11.0 — researched Holmen valuation
+
+Open **Company observatory → Holmen → Value**. Holmen now opens with a complete
+researched starting study: dated price, high/mid/low forecasts, DCF and cumulative
+NPV charts, ordinary/discounted payback, capital exposures and separate breakup
+recovery. **Edit price & assumptions** opens the populated input forms.
+**Inspect sources and calculations** explains the cash normalization, forecasts,
+asset haircuts and original source dates. Forecasts are analyst scenarios, not
+reported facts or management guidance.
+
+The study was prepared on **11 September 2026**, using Holmen's June 2026 report
+and your downloaded **7 August 2026 B-share close of SEK 329**. The price basis
+uses 150.434534 million outstanding common shares, excluding treasury shares,
+as B-equivalent equity; it is not a live quote or the sum of both share classes'
+separately quoted capitalizations. The May deep dive supplies research context;
+its obsolete price targets and forest-plus-whole-business double count are not
+carried forward. The [Holmen worksheet](../docs/holmen-valuation-2026-09-11.md)
+records the starting assumptions and calculated outcomes.
+
+Untouched and price-only drafts receive the researched study automatically;
+an existing draft is preserved as a saved revision before replacement. Entered
+forecasts, capital/evidence notes and explicitly restored revisions stay intact.
+**Start from researched assumptions** saves the current draft before opening the
+baseline. Subsequent edits, including deliberately blank inputs, survive reopening.
+Study origin and dates are retained in drafts, revisions and calculation exports.
+
+This first automatic case is **Holmen**. Further deep dives can join the versioned
+registry in `research/valuations/` after their source figures and numerical
+assumptions have been checked. A dossier folder alone does not supply a forecast.
+Loading requires the matching listing/ISIN and archived deep-dive source hash;
+the study's dates remain independent of the selected macro release. Tests use
+isolated profiles; no hypothetical test forecasts are installed in user studies.
+
+## Version 0.10.0 — company value and price
+
+Open **Company observatory → select a company → Value** for the valuation workspace.
+Enter a dated equity market value, an investment amount (default SEK 1,000),
+and low/mid/high cash-payment forecasts over 1–50 years. Company inputs are in
+millions of the selected currency; the charts scale them to your investment.
+The first model uses explicit cash distributions to common shareholders after
+reinvestment and financing, with required equity returns and optional final net
+equity sale proceeds. Companies without an included researched valuation begin
+with blank forecasts and discount rates. The saved
+publication-window SEK market value can be selected explicitly as a historical
+price, with its date, shares and FX inputs retained.
+
+- **DCF** shows each year's discounted shareholder payment. **Cumulative NPV**
+  subtracts the purchase price from discounted payments received through each
+  year. Named high/mid/low paths and their shaded range remain visible when paths
+  cross; the range is not a probability interval. Payments occur at year-end,
+  so cumulative paths use steps.
+- Each scenario shows present value, NPV, value/price, discount to estimated
+  value and **ordinary/discounted payback years**. Payback is not extrapolated
+  beyond the forecast. A later reversal is flagged. Payback from payments alone
+  stays separate from payback including the assumed final sale; the NPV chart
+  can include that sale explicitly.
+- **Liquidation or breakup recovery** is a separate net-equity scenario. Enter
+  proceeds after prior claims, sale/closure costs, taxes and cash burn, plus the
+  payment year. Its present value and payback use the scenario's equity discount
+  rate. Recovery is never added to the continuing-business value or treated as
+  a guaranteed floor. Zero recovery and missing estimates remain distinct.
+- **Business, capital & evidence** records tangible equity, average tangible
+  capital, normalized NOPAT, gross debt, surplus cash and investment-sized
+  exposures. Evidence notes connect macro/branch observations to verified
+  company exposures and forecast assumptions. Financing is not deducted twice
+  from an equity cash-flow valuation. Reconcile the dates and ownership basis.
+- Working drafts **autosave locally by company and exact source versions**.
+  Save study revisions to preserve earlier assumptions. Different data versions
+  cannot silently replace a saved study's basis. Drafts and revisions are separate
+  from exported research packs. **Export calculations** writes a CSV containing
+  all three annual paths, dated price inputs, discount rates and source versions.
+
+Use the [analysis framework](../docs/company-valuation-framework.md) and
+[company worksheet](../docs/company-analysis-template.md) for the supporting
+research. The model does not automatically turn vendor FCF into shareholder
+payments or provide a new company verdict. Amounts need a consistent currency
+and ownership claim; account for future dilution, funding contributions and
+the distributions the modeled shareholder will actually receive. Build and
+installation receipts are recorded in [HANDOFF.md](HANDOFF.md).
+
+## Version 0.9.0 — country evidence
 
 
 **Macro → Assessments** opens the verified country evidence alongside the older

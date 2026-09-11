@@ -32,3 +32,4 @@ always-loaded state lives in `project_context.md` (Decision Log has one line per
 | [0025](0025-company-financial-history.md) | Indexed offline annual/quarterly histories across the listing directory, source-bound SQLite companion and financial statements | 2026-09-10 |
 | [0026](0026-branch-history-comparisons.md) | Historical branch bubbles, whole-cohort medians and IQR, synchronized charts/table and source-bound saved comparisons | 2026-09-10 |
 | [0034](0034-app-country-evidence.md) | Independently dated offline country assessments, original-source monitoring, native histories and conditional scenarios | 2026-09-11 |
+| [0035](0035-company-value-and-price.md) | Company value versus price, high/mid/low DCF and NPV charts, and scenario payback | 2026-09-11 |

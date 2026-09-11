@@ -1,4 +1,133 @@
-# Macro Atlas 0.9.0 handoff — 2026-09-11
+# Macro Atlas 0.11.0 handoff — 2026-09-11
+
+## Current checkpoint — automatic Holmen valuation
+
+User request: populate the workspace automatically for previously researched
+companies, starting with a Holmen test. **Company observatory → Holmen → Value**
+now loads `holmen-2026-09-11-v1`: original June 2026 accounts, saved 7 August
+B-share close of SEK 329, corrected outstanding-share basis, explicit low/mid/high
+dividend assumptions, 20-year DCF/NPV, payback and separate breakup recovery.
+Source figures, normalization and assumptions are inspectable. Input forms open
+via **Edit price & assumptions**; results show first.
+
+The authored, versioned JSON is in `research/valuations/`. The registry requires
+matching listing/ISIN and archived deep-dive SHA-256. Only Holmen is included so
+far. Old price-only drafts are preserved as saved revisions before automatic
+replacement. Entered forecasts/notes, explicitly restored drafts and deliberate
+blank edits survive reload. Resetting to researched assumptions preserves the
+current draft first. Study origin is retained in local storage and CSV.
+
+The archived May deep dive is not treated as a current recommendation. Its
+forest-plus-whole-business double count is removed. Cash taxes and lease
+principal are reconciled before setting analyst dividend scenarios. A common
+9% required return produces PV per SEK 1,000 of 210.76 / 401.38 / 783.87;
+the high cash-payment case pays back in year 16, while discounted payments do
+not recover the purchase within 20 years. These are conditional sensitivity
+results, not source facts or a buy verdict. Capital uses explicitly labeled
+book-value proxies; recovery retains all prior claims and is not a floor.
+
+Verification: **101 automated tests, 85 complete production browser checks and
+90 complete Windows checks passed**, including eleven valuation flow checks,
+native CSV export and full-process restart. No external requests or runtime
+errors occurred. Version **0.11.0 is installed** at
+`C:\Users\Adamb\AppData\Local\MacroAtlas\0.11.0\Macro Atlas.exe`; the existing
+desktop shortcut targets it. Earlier installed versions are retained.
+
+The installed 0.11.0 app is open on **Company observatory → Holmen → Value**
+in the user's normal profile. Windows accessibility inspection and a screenshot
+confirmed the automatic-study banner, archived previous-draft notice, SEK
+49,492.96m price basis and all three expected present values. Screenshot:
+`test-results/holmen-installed-user-profile.png`. The temporary browser preview
+server was stopped; the installed app remains open.
+
+Windows binary SHA-256:
+`b41ed495c32442811d871e9a7a8d083911bde3460a5df60a15dd0d3d0e86e4c5`.
+Use **`python scripts/build-windows-native.py`** with the canonical `.venv`
+activated on this machine. The cargo-xwin path spends many minutes re-extracting
+CAB files; the existing native-extracted SDK path completed the final build in
+93 seconds. The Microsoft SDK's missing external debug-symbol warning does not
+prevent the optimized binary from building or passing the native checks.
+
+Receipts: `test-results/browser-report.json`, `valuation-browser-report.json`,
+`holmen-study-provenance.json`, `holmen-automatic-valuation.png`,
+`holmen-automatic-charts.png`. Original June report bytes and extracted text are
+in `test-results/valuation-sources/`. The prior 0.10.0 binary is preserved under
+`test-results/releases/0.10.0/`.
+
+The framework, ADR, Holmen worksheet and workflow entry points are also present
+in the canonical macro worktree. Source Börsdata files and macro facts were not
+changed. See `docs/holmen-valuation-2026-09-11.md` in the worktree root.
+
+## Repository checkpoint and continuation
+
+Pre-commit verification on this desktop worktree: **1,206 Python tests passed**;
+`ruff check src tests` and the staged diff checks are clean. The Python log is
+retained locally at `test-results/precommit-desktop-pytest.log`. The 101 frontend,
+85 browser and 90 Windows checks above cover the unchanged app build.
+
+This checkpoint combines the interactive valuation workspace and Holmen's
+automatic researched study on `feat/offline-atlas`. The shared framework,
+worksheet, ADR and canonical handoff are on `main` in the same GitHub repository,
+`Rosinco/dalio-machine`. Keep these branches separate; no integration merge is
+part of this checkpoint.
+
+Implementation is paused for the user's commit, push and handoff request.
+The next company-analysis step is to add reviewed numerical studies for further
+completed deep dives using Holmen's registry pattern. Each case needs its own
+source reconciliation, dated price, explicit forecasts and recovery assumptions;
+Holmen remains the only automatic case. The installed app is ready to use.
+
+Generated source archives, data packs, test receipts, screenshots and Windows
+binaries remain local and gitignored. The versioned Holmen JSON and methodology
+are included in the source checkpoint; a Git push does not back up local artifacts.
+
+## Previous company valuation checkpoint — 0.10.0
+
+The user requested the interactive company valuation workspace and high/mid/low
+DCF and cumulative NPV charts with scenario payback. Implementation is in
+`desktop/src/{ValuationWorkspace,ValuationCharts}.tsx`, `valuation.ts`,
+`savedValuations.ts` and `valuation.css` on the desktop working tree. New company
+analyses use ADR 0035 and `docs/company-{valuation-framework,analysis-template}.md`.
+The same methodology and workflow entry points are present in the canonical tree.
+
+Open **Companies → choose a company → Value**. Enter dated equity prices and
+explicit shareholder-payment forecasts; the source FCF series is not an automatic
+forecast. Each scenario includes ordinary/discounted payback, optional final sale
+and separate net recovery. Capital and evidence notes accompany the model.
+Drafts autosave by company and exact data versions, while saved revisions retain
+old assumptions. CSV exports retain inputs and annual calculations.
+
+Verification: **96 automated tests passed**, including 14 valuation/storage
+checks. The complete production browser suite passed, including eight valuation
+flows, without external requests or runtime errors. Web and Windows builds passed.
+The complete Windows native suite also passed **87 checks**, including
+valuation CSV export and draft/revision persistence after a full process restart,
+with no external requests or runtime errors. **0.10.0 is installed** at
+`C:\Users\Adamb\AppData\Local\MacroAtlas\0.10.0\Macro Atlas.exe`.
+The existing `C:\Users\Adamb\OneDrive\Desktop\Macro Atlas.lnk` now targets
+this version. The installed executable checksum matches the native-tested build.
+Earlier installed version folders remain intact. Reopen Macro Atlas to use the
+new workspace; installation did not close existing app windows.
+
+Native receipt: `test-results/windows-native-report.json`.
+Installation verification: `test-results/windows-installation-0.10.0.json`.
+The 0.10.0 workspace source is included in the current 0.11.0 checkpoint.
+
+0.10.0 Windows binary SHA-256:
+`a6481b7d93c87875d1ebf2db80d14cc2506dbd2177de53bb3904edd4747ed163`.
+The earlier 0.9.0 binary was retained at
+`desktop/test-results/releases/0.9.0/macro-atlas.exe` with its original checksum.
+The macro evidence pack, source data and existing import identities are unchanged.
+No country collection or automatic company valuation was performed for this feature.
+
+Current receipts in the desktop `test-results/` directory:
+`browser-report.json`, `valuation-browser-report.json`,
+`valuation-documentation-report.json`, `valuation-charts.png`,
+`valuation-compact.png`, and `valuation-export.csv`.
+Browser screenshots and CSV use explicitly hypothetical test inputs, not a
+company investment conclusion. The Windows test uses an isolated app profile.
+
+## Previous 0.9.0 checkpoint (historical)
 
 Paused at the user's request before the final complete Windows native suite and
 desktop installation. Version 0.9.0 is implemented and built, **not installed**.
@@ -86,7 +215,10 @@ exact projection against the three verified snapshots, all country/index hashes,
 source clocks and unchanged source/pack files. Original response-vector and
 comparison audits are retained separately in the backend validation archive.
 
-## Continuation
+## Historical 0.9.0 continuation (completed by 0.11.0)
+
+The steps below describe the earlier pause. The full native suite, installation
+and installed-profile verification are complete as recorded at the top.
 
 1. Run `scripts/test-windows.ps1` in Windows PowerShell without a focused-scope
    flag. Its default connection is now uncompressed. Require a fresh passing

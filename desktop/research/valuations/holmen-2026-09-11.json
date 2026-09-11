@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "id": "holmen-2026-09-11-v1",
+  "company": "102",
+  "isin": "SE0011090018",
+  "name": "Holmen B",
+  "asOf": "2026-09-11",
+  "deepDive": {
+    "date": "2026-05-21",
+    "path": "studies/sectors/material/skogsbolag/deep_dives/holm_b/deep_dive.md",
+    "sha256": "933def46787d053c74c6ed4f79920399786782a23ac3bbe102873fe930abcc7e"
+  },
+  "sources": [
+    {
+      "id": "interim",
+      "title": "Holmen January–June 2026 report",
+      "date": "2026-08-20",
+      "url": "https://vp165.alertir.com/afw/files/press/holmen/202608199658-1.pdf",
+      "location": "Pages 3–6: operations; 9: financing; 10: balance sheet; 11: cash flows; 15: debt reconciliation",
+      "sha256": "5be9b02b19d75a6c45378c378b766f146cfad0d8145ef508c03730f2e53c0333"
+    },
+    {
+      "id": "shares",
+      "title": "Holmen share cancellation and outstanding shares",
+      "date": "2026-05-29",
+      "url": "https://www.holmen.com/en/Newsroom/press/press-releases/2026/changes-in-the-total-number-of-shares-in-holmen/",
+      "location": "150,434,534 outstanding A and B shares; treasury shares excluded"
+    },
+    {
+      "id": "prices",
+      "title": "Saved Börsdata closing prices",
+      "date": "2026-08-10",
+      "path": "data/raw_api_snapshots/2026-08-10/all_stockprices/all_stockprices.parquet",
+      "location": "ins_id = 102; date = 2026-08-07; close = 329 SEK; latest available observation for this listing",
+      "sha256": "a8c9f95df438070483c4822f92a6bf806e3dd37b616c34f318c95fa8fa08e547"
+    },
+    {
+      "id": "annual",
+      "title": "Saved Börsdata annual statements",
+      "date": "2026-08-10",
+      "path": "data/raw_api_snapshots/2026-08-10/all_reports/all_yearly_reports.parquet",
+      "location": "Holmen 2024–2025 equity, net debt and intangible assets; two-endpoint capital proxy",
+      "sha256": "df421594766e357df06197a63cb447315945700520d37c303b9210dfb3d4f84c"
+    }
+  ],
+  "price": { "close": 329, "date": "2026-08-07", "sharesM": 150.434534, "sharesDate": "2026-05-29" },
+  "cashHistory": {
+    "annual2025": { "operatingCash": 3851, "capex": 2139, "leasePrincipal": 134, "cashTaxes": 60 },
+    "half2025": { "operatingCash": 1850, "capex": 1069, "leasePrincipal": 66, "cashTaxes": 118 },
+    "half2026": { "operatingCash": 1443, "capex": 487, "leasePrincipal": 66, "cashTaxes": 48 }
+  },
+  "capital": {
+    "date": "2026-06-30",
+    "equity": 54182,
+    "intangibles": 482,
+    "borrowingLong": 4108,
+    "borrowingShort": 2623,
+    "leaseDebtLong": 91,
+    "leaseDebtShort": 95,
+    "pensionObligations": 5,
+    "cash": 182,
+    "netFinancialDebt": 6482,
+    "equity2024": 57370,
+    "netDebt2024": 3397,
+    "intangibles2024": 498,
+    "equity2025": 55405,
+    "netDebt2025": 4979,
+    "intangibles2025": 487,
+    "ebit2025": 3270,
+    "biologicalGain2025": 895
+  },
+  "assumptions": {
+    "years": 20,
+    "requiredReturn": 9,
+    "normalizedAnnualCashTax": 500,
+    "normalizedOperatingTaxPercent": 22,
+    "surplusCash": 0,
+    "saleCostPercent": 2,
+    "growthPhaseYears": 10,
+    "ownership": "Constant proportional common-equity ownership. Forecast available equity cash is assumed paid as dividends after interest, reinvestment and lease principal. No additional net borrowing, buybacks or dilution are assumed. All amounts are nominal SEK."
+  },
+  "scenarios": {
+    "low": {
+      "firstPayment": 1000, "growth": -1, "matureGrowth": 0,
+      "recoveryYear": 5, "recoveryCosts": 2000,
+      "rationale": "Analyst downside: year-one dividends of SEK 1,000m are SEK 243m below the tax-normalized trailing cash reference. Weak construction and paper demand, harvesting disruption and reinvestment absorb the difference. Payments fall 1% annually through year 10, then remain flat. Forest values are realized only in the separate recovery case."
+    },
+    "mid": {
+      "firstPayment": 1500, "growth": 2, "matureGrowth": 1,
+      "recoveryYear": 3, "recoveryCosts": 1200,
+      "rationale": "Analyst base: year-one dividends of SEK 1,500m require SEK 257m improvement over the tax-normalized trailing cash reference. This assumes moderate recovery after investment spending and temporary harvesting disruption, with maintenance spending and financing funded first. Payments grow 2% through year 10, then 1%. No carbon-credit income is assigned."
+    },
+    "high": {
+      "firstPayment": 2400, "growth": 4, "matureGrowth": 2,
+      "recoveryYear": 2, "recoveryCosts": 800,
+      "rationale": "Analyst upside: year-one dividends of SEK 2,400m require SEK 1,157m improvement over the tax-normalized trailing cash reference. This needs a substantial industrial recovery, stronger utilization and successful energy investment. Payments grow 4% through year 10, then 2%, after funding reinvestment. This is an optimistic assumption, not management guidance."
+    }
+  },
+  "recovery": {
+    "claims": 26887,
+    "deferredTaxIncluded": 14348,
+    "assets": [
+      { "label": "Forest land and standing timber", "book": 57236, "rates": { "low": 0.55, "mid": 0.75, "high": 0.9 } },
+      { "label": "Property, plant and equipment", "book": 11339, "rates": { "low": 0.1, "mid": 0.35, "high": 0.55 } },
+      { "label": "Inventories", "book": 5229, "rates": { "low": 0.4, "mid": 0.65, "high": 0.8 } },
+      { "label": "Trade receivables", "book": 3020, "rates": { "low": 0.8, "mid": 0.9, "high": 0.98 } },
+      { "label": "Other operating receivables", "book": 1389, "rates": { "low": 0.5, "mid": 0.7, "high": 0.85 } },
+      { "label": "Tax receivable", "book": 49, "rates": { "low": 1, "mid": 1, "high": 1 } },
+      { "label": "Associates", "book": 1696, "rates": { "low": 0.4, "mid": 0.65, "high": 0.8 } },
+      { "label": "Other shares", "book": 6, "rates": { "low": 0, "mid": 0.5, "high": 0.8 } },
+      { "label": "Financial receivables", "book": 47, "rates": { "low": 0.8, "mid": 0.9, "high": 1 } },
+      { "label": "Cash", "book": 182, "rates": { "low": 1, "mid": 1, "high": 1 } },
+      { "label": "Right-of-use assets", "book": 179, "rates": { "low": 0, "mid": 0, "high": 0 } },
+      { "label": "Pension assets", "book": 211, "rates": { "low": 0, "mid": 0, "high": 0 } },
+      { "label": "Deferred tax assets", "book": 3, "rates": { "low": 0, "mid": 0, "high": 0 } }
+    ]
+  },
+  "notes": {
+    "business": "The May 2026 deep dive establishes the forest-ownership thesis and through-cycle research questions. This update does not reuse its price targets, position-size verdict or claim that book value is a floor. The archived conservative calculation combines whole-business cash flows with forest asset value; that double count is removed. Cash realization and forest recovery are alternative models. Workington makes consumer paperboard; its classification as a newsprint mill in the old study is not carried forward. The forecast is a sensitivity study, not a completed new investment recommendation.",
+    "macro": "Transmission assumptions: construction activity affects wood-product utilization; consumer and packaging demand affects board and paper; electricity prices, production and hedges affect energy and mill costs; forestry disruptions affect harvest timing. The reported 2026 harvesting disruption is a reason to keep a downside case. These company exposures inform the scenario spread; no GDP score, listing-country label, carbon-credit forecast or mechanical macro multiplier is added to value. The base and high paths require operating improvement, not merely a favorable sector classification.",
+    "financing": "Tangible equity and gross debt use 30 June 2026. Gross debt includes borrowings and lease liabilities; pension obligations are disclosed separately. The average tangible-capital figure is a 2024/2025 two-endpoint proxy: reported equity + net financial debt - intangibles. It retains forest revaluations and follows the company's net-financial-debt perimeter, including net pension assets and cash, so it is not a fully reconciled operating-capital measure. NOPAT is FY2025 EBIT less the biological-asset gain, taxed at an assumed 22%. Cash of SEK 182m is assumed needed for operations, giving zero surplus. The equity DCF already includes financing costs; no further debt deduction or cash addition is made. Historical buybacks are not treated as dividends to a continuing shareholder.",
+    "recovery": "Asset realization rates, additional costs and payment dates are analyst stress assumptions, not appraisals or observed bids. Start from the June 2026 tangible asset buckets, apply each haircut, subtract all SEK 26,887m book liabilities once and additional transaction costs/cash burn beyond existing provisions. Full deferred-tax liabilities of SEK 14,348m are retained within those claims; no second tax charge is added. This can overstate tax on assets sold below book. Leased assets, pension surplus and deferred-tax assets receive no recovery credit. A shareholder cannot compel the modeled disposal program; legal claims, taxes, realizable prices and feasibility still require transaction-specific review. Recovery is a separate alternative and is never a guaranteed floor.",
+    "decision": "Prepared 11 September 2026 using the saved 7 August B-share close and the published outstanding-share count. Price is historical; this is not a point-in-time backtest or a live-price assessment. A and B shares are assumed to have equal financial rights: B price times all outstanding common shares is a B-equivalent equity purchase basis, not a sum of both classes' market capitalizations. Nominal required equity return is 9% in all scenarios so operational scenario differences are not penalized again through varying rates. The 20-year horizon exposes long-term uncertainty. Final sale capitalizes only post-horizon distributions, less an assumed 2% sale cost; it does not add forest book value. No scenario probabilities or automatic buy verdict are assigned. Reassess if normalized cash, reinvestment, outstanding shares, financing or forest sale evidence changes."
+  }
+}

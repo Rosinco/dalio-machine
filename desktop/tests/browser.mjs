@@ -8,6 +8,7 @@ import { businessFlows } from './business-flows.mjs';
 import { taxonomyFlows } from './taxonomy-flows.mjs';
 import { listingFlows } from './listing-flows.mjs';
 import { countryEvidenceFlows } from './country-evidence-flows.mjs';
+import { valuationFlows } from './valuation-flows.mjs';
 
 const base = process.env.ATLAS_URL || 'http://127.0.0.1:1420';
 await mkdir('test-results', { recursive: true });
@@ -36,6 +37,13 @@ await page.locator('[data-map-ready="true"]').waitFor();
 if (process.argv.includes('--evidence-only')) {
   console.log(JSON.stringify(await countryEvidenceFlows(page, process.cwd())));
   assert.deepEqual(external, []); assert.deepEqual(errors, []);
+  await browser.close(); process.exit(0);
+}
+if (process.argv.includes('--valuation-only')) {
+  const result = await valuationFlows(page, process.cwd());
+  assert.deepEqual(external, []); assert.deepEqual(errors, []);
+  await writeFile('test-results/valuation-browser-report.json', JSON.stringify({ ...result, external, errors }, null, 2));
+  console.log(JSON.stringify(result));
   await browser.close(); process.exit(0);
 }
 if (process.argv.includes('--comparison-only')) {
@@ -125,6 +133,8 @@ taxonomy.checks.push(...listings.checks); timing.listing_flows_ms = listings.dur
 const financial = await financialFlows(page, process.cwd());
 taxonomy.checks.push(...financial.checks); timing.financial_company_switch_ms = financial.timings;
 const comparison = await comparisonFlows(page, process.cwd());
+const valuation = await valuationFlows(page, process.cwd());
+taxonomy.checks.push(...valuation.checks);
 taxonomy.checks.push(...comparison.checks); timing.branch_forestry_ms = comparison.forestryMs; timing.branch_mining_ms = comparison.miningMs;
 await page.setViewportSize({ width: 1100, height: 760 });
 await page.screenshot({ path: 'test-results/company-compact.png' });

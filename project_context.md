@@ -8,6 +8,30 @@ Since slice 18 it also hosts the **World Fundamentals Map**: 21 countries + the 
 
 The framework is treated as a descriptive lens, not a predictive oracle. The product surfaces state, constraints, alternative pathways and portfolio fragilities with explicit evidence and confidence — it does not output market-timing or automatic buy/sell signals. `dalio-machine` is the sole upstream macro source; Börsdata/company analysis consumes versioned exports and never writes verdicts back into the macro fact base (ADR 0004).
 
+## Company valuation standard
+
+The user adopted value versus price for company analysis (ADR 0035) and requested
+an interactive workspace with high/mid/low DCF and cumulative NPV charts and
+scenario payback years. Use `docs/company-valuation-framework.md` and
+`docs/company-analysis-template.md` for new company analyses. The desktop Companies
+→ Value workspace models explicit shareholder cash distributions and separately
+assumed net equity sale proceeds; ordinary and discounted payback use year-end
+cash timing. Liquidation/breakup recovery remains an alternative scenario.
+Tangible capital, cash/debt exposure and macro-to-company evidence accompany the
+forecasts. Drafts autosave locally by company and exact data versions, with saved
+revisions and dated CSV calculations. It requires analyst inputs and does not
+infer company cash payments or new verdicts from vendor FCF. See the desktop
+handoff for build and installation status.
+
+Version 0.11 adds automatic loading of the reviewed Holmen numerical study,
+with a dated downloaded quote, original-report cash normalization, explicit
+low/mid/high forecasts and a separate asset-recovery calculation. The matching
+listing/ISIN and archived deep-dive hash are required. Results open before input
+forms; old price-only drafts are backed up, and entered forecasts/user edits are
+preserved. The versioned registry can accept further reviewed numerical studies.
+See `docs/holmen-valuation-2026-09-11.md`; company assumptions remain downstream
+of the immutable macro/source fact base.
+
 ## Tech Stack
 
 The `desktop/` presentation target (ADR 0021, 2026-09-10) adds **Macro Atlas**:
@@ -363,6 +387,8 @@ All thresholds in `src/dalio/scoring/short_term.py`. Vote weights and reasons ar
 
 ## Current State
 
+- **Macro Atlas 0.11.0 installed:** Companies → Value provides scenario DCF/NPV charts, ordinary/discounted payback, separate recovery, tangible-capital/evidence notes and source-bound local drafts/revisions. Holmen automatically loads its reviewed source figures and explicit scenarios while preserving earlier drafts and user edits. All 101 frontend tests, 85 production browser checks and 90 Windows checks passed; installed and tested binary hashes match. See the current desktop handoff, Holmen worksheet and ADR 0035. The source checkpoint covers `feat/offline-atlas` and shared methodology on canonical `main`.
+
 - **Slice 27 shipped (2026-09-08):** ADR 0004 establishes dalio-machine as the Macro History & Risk Observatory's sole upstream source. Additive `data_releases` / `release_observations` tables, complete-snapshot ingestion, deterministic content hashes, three-clock provenance, safe current projection, point-in-time panel queries and an explicit idempotent legacy bootstrap are implemented. FRED is the first live pipeline on the new path; identical refreshes deduplicate, omitted rows stay omitted, and late historical releases cannot roll current data backwards. The existing observation schema, classifiers, snapshots and CLIs remain compatible.
 - **Slice 28 shipped (2026-09-08):** every numeric pipeline now writes stable per-country/native-series complete releases: FRED; dedicated BIS TC/DSR; IMF CPI, BIS policy rates and OECD QNA/LFS; World Bank/WGI plus derived shares/member means; IMF WEO history+forecasts plus derived interest burden; Tier-3 BIS; bilateral IMTS; and OEC. WEO history and forecasts are replaced together per country, so omitted forecast rows disappear from current without disappearing from history. Empty responses cannot erase current state. Replay calibration now expands only through each cursor, direct historical classifiers forward their cutoff, and HY-spread windows are capped at it. Replay remains revised-data economic history—not a true pre-ledger vintage reconstruction.
 - **Slice 29 shipped (2026-09-08):** official Swedish data is consolidated in the observatory. SCB's direct monthly CPI y/y series runs beneath the existing `cpi` flow. Riksbank SWEA contributes eight fixed-window daily series through its own paced CLI. Both write immutable native-series releases, fail closed on empty responses and retain exact source URLs. Same-date Swedish CPI, policy-rate and yield ties use narrow official-source preferences while a newer fallback observation still wins. NOK starts at the 2023-11-27 unit break; the broken legacy KIX alias remains excluded.
@@ -487,6 +513,7 @@ semantically reviewed.
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
+| 2026-09-11 | **ADR 0035** — company value versus price, scenario charts and payback | Equity cash distributions, explicit final sale and separate net recovery; source-bound drafts/revisions, tangible-capital context and evidence-linked macro assumptions. |
 | 2026-09-10 | **ADR 0026** — branch histories and saved comparisons | Compare annual values with a whole-branch median/IQR, linked charts and exact-version saved notes; single-currency monetary measures and explicit market-cap/ROIC/CAPEX gaps. See `decisions/0026-branch-history-comparisons.md`. |
 | 2026-09-10 | **ADR 0025** — indexed company financial histories and three statements | Reconcile saved annual/quarterly reports, preserve source dates and raw FX-scaled amounts, and attach an immutable SQLite pack only to its matching directory. See `decisions/0025-company-financial-history.md`. |
 | 2026-09-10 | **ADR 0024** — populate the company directory from all downloaded Börsdata instrument metadata | Latest record wins by instrument ID; older-only and separate listings remain identifiable. All branch/country counts reconcile, source conflicts stay visible, and financial-profile coverage remains separate. See `decisions/0024-downloaded-company-directory.md`. |
@@ -524,6 +551,7 @@ semantically reviewed.
 
 | Date | Change | Files |
 |------|--------|-------|
+| 2026-09-11 | **Company valuation workspace and analysis standard (ADR 0035).** High/mid/low DCF and cumulative NPV charts, ordinary/discounted payback, separate recovery, capital/exposure notes and local drafts/revisions. Build and installation status is recorded in the desktop handoff. | `docs/company-*.md`, ADR 0035; desktop `ValuationWorkspace`, `ValuationCharts`, calculation/storage modules and tests |
 | 2026-09-10 | **Macro Atlas 0.7.0: branch comparisons (ADR 0026).** Annual bubbles, whole-filtered-branch median/IQR and coverage, linked charts/table, eight-listing selections and saved settings/Swedish notes tied to exact data versions. Single-currency monetary comparisons and explicit size choices preserve missingness; market cap awaits verified split/date alignment. Bounded annual reads loaded Mining’s 1,745 listings in 1.36 s in Windows. Verified 1,238 Python / 51 frontend / 19 Rust tests and complete browser/Windows flows, including process restart, with no external requests or runtime errors. | `desktop/`, `decisions/0026-branch-history-comparisons.md` |
 | 2026-09-10 | **Macro Atlas 0.6.0: company financial histories (ADR 0025).** A 96 MB source-bound SQLite companion serves 872,604 annual/quarterly reports for 18,943 listings, with 197 no-report listings and 1,174 withheld source rows. Coverage, source dates, currency conversion and three financial statements accompany per-company reads. Financial packs export/import separately from unchanged research JSON. Verified 1,238 Python / 43 frontend / 18 Rust tests and complete browser/Windows flows, including exact 96 MB export/import and process restart with no external requests or runtime errors. | `desktop/`, `decisions/0025-company-financial-history.md` |
 | 2026-09-10 | **Macro Atlas 0.5.0: complete downloaded company directory (ADR 0024).** Merged latest saved metadata by instrument ID: 19,140 listings, 19 countries, all 94 branches; 1,547 older-only IDs retain their date, and 11 source sector conflicts retain original values and review flags. Search, pagination, country/presence filters and basic identity panels accompany the five financial profiles. Taxonomy v2 is hash-bound inside the v3 package. Verified 1,227 Python / 37 frontend / 14 Rust tests and browser/Windows offline imports, exports and restart. | `desktop/`, `decisions/0024-downloaded-company-directory.md` |

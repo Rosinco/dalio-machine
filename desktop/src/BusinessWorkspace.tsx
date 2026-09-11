@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, BookOpen, Building2, ChevronRight, Globe2, Info, Layers3, ListTree, TrendingUp, Trees } from 'lucide-react';
+import { ArrowRight, BookOpen, Building2, Calculator, ChevronRight, Globe2, Info, Layers3, ListTree, TrendingUp, Trees } from 'lucide-react';
 import WorldMap, { type Paint } from './WorldMap';
 import { Chart } from './Charts';
 import FinancialChart from './FinancialChart';
 import FinancialHistory from './FinancialHistory';
 import BranchExplorer from './BranchExplorer';
+import ValuationWorkspace from './ValuationWorkspace';
+import { researchedStudyFor } from './researchedValuations';
 import type { FinancialIndex } from './financialData';
 import { useFinancialCompany } from './financialService';
 import { amountLabels, financialSeries, formulas, metricLabels, periodLabel, ratioLabels, type BusinessIndex, type Company, type CompanySummary, type Observatory, type SavedStudy } from './business';
@@ -17,9 +19,9 @@ import { BranchCoverage, BranchInventory, ClassificationDetails, TaxonomyDirecto
 import { CompanyList, ListingDetails } from './CompanyDirectory';
 export { DirectorySearch as BusinessSearch } from './CompanyDirectory';
 
-type View = 'browse' | 'overview' | 'companies' | 'compare' | 'financials' | 'peers' | 'context' | 'research';
+type View = 'browse' | 'overview' | 'companies' | 'compare' | 'financials' | 'peers' | 'context' | 'research' | 'valuation';
 const sectorViews = [{ id: 'browse', label: 'Browse sectors and branches', short: 'Browse', icon: ListTree }, { id: 'overview', label: 'Branch overview', short: 'Branch', icon: Trees }, { id: 'companies', label: 'Branch companies', short: 'Companies', icon: Building2 }, { id: 'compare', label: 'Branch comparison', short: 'Compare', icon: TrendingUp }, { id: 'context', label: 'Branch macro context', short: 'Context', icon: Globe2 }, { id: 'research', label: 'Branch research', short: 'Research', icon: BookOpen }] as const;
-const companyViews = [{ id: 'financials', label: 'Company financials', short: 'Profile', icon: TrendingUp }, { id: 'peers', label: 'Company peers', short: 'Peers', icon: Building2 }, { id: 'context', label: 'Company macro context', short: 'Context', icon: Globe2 }, { id: 'research', label: 'Company research', short: 'Research', icon: BookOpen }] as const;
+const companyViews = [{ id: 'financials', label: 'Company financials', short: 'Profile', icon: TrendingUp }, { id: 'valuation', label: 'Company valuation', short: 'Value', icon: Calculator }, { id: 'peers', label: 'Company peers', short: 'Peers', icon: Building2 }, { id: 'context', label: 'Company macro context', short: 'Context', icon: Globe2 }, { id: 'research', label: 'Company research', short: 'Research', icon: BookOpen }] as const;
 
 export default function BusinessWorkspace({ observatory, index, taxonomy, financial, financialReady, financialError, ready, error, macro, release, code, selectedName, companyId, branchId, onBranch, onCountry, onCompany, onMacro, onSector, onLibrary }: {
   observatory: Exclude<Observatory, 'macro'>; index: BusinessIndex | null; ready: boolean; error: string; macro: AtlasIndex; release: ResearchRelease;
@@ -61,8 +63,8 @@ export default function BusinessWorkspace({ observatory, index, taxonomy, financ
   const canShow = !!index || !!taxonomy?.catalogue;
   const hasDetails = financialReady && (observatory !== 'companies' || !entry || (financial ? history.ready : !selected || detail.ready && !!company));
   return <div className="workspace business-workspace" data-observatory={observatory} data-listing-count={entries.length} data-financial-count={financial?.summary.with_reports ?? 0}>
-    <nav className="rail" aria-label={`${observatory === 'sectors' ? 'Sector' : 'Company'} views`}><div className="rail-label">EXPLORE</div>{views.map(item => <button key={item.id} className={view === item.id ? 'active' : ''} aria-label={item.label} aria-pressed={view === item.id} onClick={() => setView(item.id)}><item.icon size={21} strokeWidth={1.5} /><span>{item.short}</span></button>)}<div className="rail-spacer" /><button onClick={onLibrary} aria-label="About this release"><Layers3 size={20} /><span>Library</span></button><span className="rail-version">V0.8.0</span></nav>
-    {observatory === 'sectors' && view === 'compare' ? <BranchExplorer key={`${release.id}:${financial?.id}:${activeBranchId}`} entries={branchEntries} financial={financial} financialReady={financialReady} financialError={financialError} release={release} taxonomy={taxonomy} branchId={activeBranchId} branchName={branchName} onBranch={onBranch} onBrowse={browse} onCompany={onCompany} /> : <>
+    <nav className="rail" aria-label={`${observatory === 'sectors' ? 'Sector' : 'Company'} views`}><div className="rail-label">EXPLORE</div>{views.map(item => <button key={item.id} className={view === item.id ? 'active' : ''} aria-label={item.label} aria-pressed={view === item.id} onClick={() => setView(item.id)}><item.icon size={21} strokeWidth={1.5} /><span>{item.short}</span></button>)}<div className="rail-spacer" /><button onClick={onLibrary} aria-label="About this release"><Layers3 size={20} /><span>Library</span></button><span className="rail-version">V0.11.0</span></nav>
+    {observatory === 'companies' && view === 'valuation' && entry && ready && !error && financialReady ? <ValuationWorkspace key={`${release.id}:${financial?.id}:${entry.id}`} entry={entry} financial={financial} history={history.data} release={release} researched={researchedStudyFor(entry, index?.sources ?? [])} onProfile={() => setView('financials')} /> : observatory === 'sectors' && view === 'compare' ? <BranchExplorer key={`${release.id}:${financial?.id}:${activeBranchId}`} entries={branchEntries} financial={financial} financialReady={financialReady} financialError={financialError} release={release} taxonomy={taxonomy} branchId={activeBranchId} branchName={branchName} onBranch={onBranch} onBrowse={browse} onCompany={onCompany} /> : <>
     <main className="map-panel">
       <div className="map-heading business-map-heading"><div><div className="eyebrow">{observatory === 'sectors' ? 'SECTORS & BRANCHES' : 'COMPANY OBSERVATORY'}</div><h1>{observatory === 'sectors' ? branchName : entry?.display_name ?? 'Explore companies'}</h1><p>{observatory === 'sectors' ? 'Connect a branch, its businesses and the wider economy.' : 'Explore your saved company directory and financial research.'}</p></div></div>
       <button className="map-filter business-map-filter branch-breadcrumb" aria-label="Choose a sector or branch" onClick={browse}><Trees size={15} /><span>{sectorName}</span><ChevronRight size={13} /><strong>{branchName}</strong><span>BROWSE</span></button>

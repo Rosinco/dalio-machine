@@ -8,6 +8,19 @@ Its source and build instructions are in `desktop/`.
 
 One auditable, point-in-time account of the world economy, growing from a macro-cycle dashboard built on Ray Dalio's economic-machine framework. It tracks cycles and fundamentals today and is expanding into institutional reports, sovereign debt, large-allocator positions, capital flows, commodity pressure and monetary liquidity for a SEK-based household investor. It is a decision-support tool, **not** a market-timing signal generator.
 
+## Company value and price
+
+Company analysis now follows the [value and price framework](docs/company-valuation-framework.md)
+and [reusable worksheet](docs/company-analysis-template.md). Macro Atlas's new
+**Companies → Value** workspace compares high/mid/low DCF and cumulative NPV paths,
+ordinary and discounted payback, and separate recovery scenarios. Forecasts are
+analyst inputs; source facts retain their own dates and identities. See ADR 0035
+and the desktop handoff for build and installation status.
+
+The [Holmen starting study](docs/holmen-valuation-2026-09-11.md) now supplies
+reviewed figures and explicit scenarios automatically. Its dated price, cash
+normalization and separate breakup assumptions remain visible and editable.
+
 ## What it does
 
 For 8 economies (US, CN, EU, UK, JP, SE, IN, BR), it pulls macro indicators from FRED, BIS, Riksbank, IMF, OECD, SCB and World Bank, then classifies cycle stage with rule-based logic. The World Fundamentals Map extends coverage to 22 players. Numeric pipelines preserve complete source snapshots in an append-only release ledger beside the compatible latest-value table, enabling honest “what was known then?” queries from the ledger cutover onward.

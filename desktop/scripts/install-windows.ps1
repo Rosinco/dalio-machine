@@ -29,7 +29,15 @@ foreach ($pack in $packs) {
   if ((Get-FileHash -LiteralPath $packDestination -Algorithm SHA256).Hash.ToLowerInvariant() -cne $packHash) { throw 'Installed financial history checksum failed.' }
 }
 Copy-Item -LiteralPath (Join-Path $project 'public\THIRD-PARTY-NOTICES.txt') -Destination (Join-Path $folder 'THIRD-PARTY-NOTICES.txt')
-Copy-Item -LiteralPath (Join-Path $project 'README.md') -Destination (Join-Path $folder 'README.md')
+$readme = Get-Content -LiteralPath (Join-Path $project 'README.md') -Raw -Encoding UTF8
+[IO.File]::WriteAllText((Join-Path $folder 'README.md'), $readme.Replace('(../docs/', '(docs/'))
+foreach ($relative in @('docs/company-valuation-framework.md', 'docs/company-analysis-template.md', 'docs/holmen-valuation-2026-09-11.md', 'decisions/0035-company-value-and-price.md')) {
+  $source = Join-Path (Split-Path $project -Parent) $relative
+  $target = Join-Path $folder $relative
+  New-Item -ItemType Directory -Path (Split-Path $target -Parent) -Force | Out-Null
+  Copy-Item -LiteralPath $source -Destination $target
+}
+Copy-Item -LiteralPath (Join-Path $project 'HANDOFF.md') -Destination (Join-Path $folder 'HANDOFF.md')
 $desktop = [Environment]::GetFolderPath('Desktop')
 $shortcutPath = Join-Path $desktop 'Macro Atlas.lnk'
 $shell = New-Object -ComObject WScript.Shell

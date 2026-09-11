@@ -17,6 +17,7 @@ import { researchFlows } from './research-flows.mjs';
 import { businessFlows } from './business-flows.mjs';
 import { taxonomyFlows } from './taxonomy-flows.mjs';
 import { listingFlows } from './listing-flows.mjs';
+import { valuationFlows } from './valuation-flows.mjs';
 
 const project = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const financialOnly = process.argv.includes('--financial-only');
@@ -156,6 +157,8 @@ try {
   report.checks.push(...financial.checks); report.financialCompanySwitchMs = financial.timings; report.financialExport = financial.exportedPath;
   const comparison = await comparisonFlows(page, project);
   report.checks.push(...comparison.checks); report.branchForestryMs = comparison.forestryMs; report.branchMiningMs = comparison.miningMs;
+  const valuation = await valuationFlows(page, project, { native: true });
+  report.checks.push(...valuation.checks);
   const firstPid = app.pid;
   await stopApp();
   console.log(`Windows app restarted for persistence testing: ${await startApp()}`);
@@ -163,6 +166,13 @@ try {
   await page.locator(`[data-active-release="${research.current.id}"] [data-company="102"][data-business-ready="true"]`).waitFor();
   await page.locator(`[data-financial-history="102"][data-financial-pack="${financial.index.id}"]`).waitFor();
   report.checks.push('Imported company financial pack survives native process restart');
+  await page.getByLabel('Company valuation', { exact: true }).click();
+  await page.locator('[data-valuation-ready="true"]').waitFor();
+  assert.equal(await page.locator('[data-scenario="mid"] [data-result="value"]').innerText(), '1,228.91 SEK');
+  assert.match(await page.locator('.valuation-saved').innerText(), /TEST FIXTURE/);
+  await page.getByRole('button', { name: 'Company profile', exact: true }).click();
+  await page.locator('[data-business-ready="true"]').waitFor();
+  report.checks.push('Valuation draft, scenario results and saved study survive native process restart');
   await restoreMarketComparison(page);
   report.checks.push('SEK market-cap metrics, bubble size, all-currency filter and Swedish notes survive native process restart');
   await restoreComparison(page);
