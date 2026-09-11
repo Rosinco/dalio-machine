@@ -13,7 +13,81 @@
   financial histories. Listing geography is distinct from issuer domicile,
   revenue exposure and physical assets.
 
-## Completed checkpoint
+## Latest checkpoint — four-country Nordic monitoring
+
+Implementation `1f1d57c` is integrated and pushed on `main` and
+`feat/nordic-scenario-monitoring`. ADR 0032 extends Sweden's verified pilot to
+Norway, Denmark and Finland. All **17 source signals have complete comparison
+windows**: four common topics per country plus Swedish industrial orders.
+Each country has a monitoring report linked to its annual IMF reference path,
+structural evidence and conditional scenarios. No country ranking, composite
+risk score, forecast probability or company verdict is introduced.
+
+The retained-data audit first verified 57 NO/DK/FI annual histories, 2,603
+observations and 309 artifact bindings, and inspected 233 caches plus 91 raw
+machine-readable artifacts. The fixed monthly/daily panel required new original
+inputs. Twelve new inputs were then captured through 24 successful HTTP requests
+to SSB, Norges Bank, Danish Statbank, Statistics Finland, Bank of Finland and
+ECB. Official distributors retain the underlying producer attribution.
+
+Successful Nordic bundle:
+`ac08d5e898d3ba13ab62861fb84d51c396f454de0bf488c752bc1d3a188dc9d2`.
+Capture began **2026-09-11T06:00:06.705251+00:00**, outside SSB's update window,
+and completed **2026-09-11T06:01:15.044707+00:00**. The report uses that exact
+knowledge cutoff and **2026-09-11** as its UTC assessment date. Sweden retains
+its independently acquired five-input bundle and original 2026-09-10 receipt
+clock. The new supplement contains 12,131 native observation slots.
+
+Canonical ten-file offline snapshot:
+`289d3f3eb37afbba9d6f62758d91947d412ac3f7d12a74d72bb809851dbf6804`.
+Open `data/snapshots/nordic_monitoring/<hash>/index.md` for the comparison,
+`SE.md`, `NO.md`, `DK.md` and `FI.md` for monitoring, and `context/<country>.md`
+for the linked annual assessment. `snapshot.json` retains full precision and
+source evidence. The separate Macro Atlas desktop pack remains unchanged.
+
+Source definitions matter. Norway's selected industrial index excludes oil/gas
+extraction, related services and electricity but includes mining, quarrying and
+petroleum-related manufacturing. Denmark includes oil/gas extraction; Finland
+also includes energy. Finnish actual new drawdowns cover all currencies and
+exclude housing corporations; the other selected lending rates use their
+domestic currencies and different agreement/fee populations. Finnish policy is
+the shared ECB deposit-facility rate. Denmark's government yield is monthly;
+Norwegian and Finnish reference-yield construction differs. Their original
+definitions, historical corrections, date-only updates and actual comparison
+windows remain visible.
+
+The observed industrial means rose in SE/NO/DK and fell in FI over May–July
+versus February–April. Selected corporate lending rates rose in SE/NO/DK and
+fell in FI from April to July. These are within-series historical changes in
+one captured vintage. They neither establish a GDP forecast miss nor determine
+a company's borrowing cost or performance. Funding and demand scenarios remain
+conditional hypotheses requiring further evidence and actual company exposures.
+
+Validation: **1,582 integrated tests passed**; Ruff and diff checks are clean.
+The final independent audit reconciled **23,993 native scalar slots** (23,766
+numeric and 227 missing), all **17 comparisons**, 76 annual histories/3,478
+observations, seven native debt context cells and **217 citations**. All 181
+displayed table values and 915 report links passed. The database, 239 protected
+source files and ten output files retained their hashes, sizes and modification
+times during the audit; SQLite integrity and foreign-key checks passed.
+The exact post-publication CLI replay reproduced the same snapshot and preserved
+all **251 checked files**, including `LATEST.json`. A separate final comparison
+also preserved all 160 pre-collection inventory files, including the database
+and desktop taxonomy. Independent Norwegian and Finnish yield decoders separately
+verified 2,113 of those native slots and all five associated comparison/citation sets;
+the Norwegian audit confirms zero overlap with SSB's maintenance window.
+
+An earlier partial attempt
+`82f98d14d713c13e2418109cfeb20b1e0aebbd7bed7769bbab40049058cd82c5`
+is retained honestly. Two SSB inputs overlapped its update window; the Finnish
+loan structure response exposed missing gzip decoding in the auxiliary curl
+transport. The transport was corrected and independently checked, followed by
+the complete fresh capture above. The earlier bundle and partial snapshot
+`74ce2debd1686975b824a82b63b1b63910b72ff7d6d8ce391133ba6c81fb1fa8`
+were never used to fill the final batch's inputs or published through `LATEST`.
+No production source contract changed after implementation `1f1d57c`.
+
+## Earlier collection checkpoint
 
 The collection checkpoint and handoff were pushed on `main` at `548aa41`;
 the separate desktop branch was pushed at `3d2f8dc`.
@@ -165,6 +239,13 @@ them together:
 - `data/snapshots/sweden_monitoring/validation/`: retained-data audit,
   source-discovery records, capture receipts, source-cell reconciliation,
   deterministic replay checks and test logs
+- `data/artifacts/nordic_monitoring/`: immutable twelve-input attempt bundles
+  and original SSB, Norges Bank, Danish Statbank, Statistics Finland, Bank of
+  Finland and ECB response entities
+- `data/snapshots/nordic_monitoring/`: immutable four-country comparison,
+  four monitoring reports and four linked annual profiles; `validation/`
+  contains the retained-data inventory, original transport receipts, capture
+  summaries, independent source audits and exact-replay verification
 
 The older country v1 bundle is superseded by v2; do not promote it. Source
 bytes and publication/reference/acquisition dates are retained separately.
@@ -182,11 +263,25 @@ map markers are future work.
 
 ## Next development step
 
-Extend the verified Sweden monitoring approach to the other listing countries
+Extend the verified Nordic monitoring approach to the remaining listing countries
 in bounded batches. Audit existing series first, then select original sources
 with explicit native scopes, seasonal adjustment, units and publication clocks.
 Do not force non-comparable country loan-rate or industry definitions into one
 ranking. Retain named gaps when an original signal is unavailable.
+
+The next candidate batch is **US, Germany and Canada**, in that order; a smaller
+first tranche can stop at US and Germany. The saved universe contains 6,345 US,
+6,340 German and 2,321 Canadian listings, together 15,006/19,140 (78.4%). These
+are listing records, not deduplicated issuers or operating exposure; Germany's
+large catalogue especially requires that distinction. Each country already has
+19 verified annual WB/IMF histories and a country assessment. Audit those
+histories and the substantial existing US/Canadian scalar data before collecting
+gaps. Existing US DFF/DGS10 releases have no raw-artifact bindings; they cannot
+be promoted as original-response-verified monitoring without honest new capture.
+Germany's applicable ECB instrument must remain explicitly shared euro-area
+policy. Retained harmonized German debt measures and saved US/German debt-office
+entrypoints are separate funding-context leads, not proof that a national
+four-signal monitoring contract is ready.
 
 A later compatible capture can support a separate change-since-last-capture
 comparison, distinguishing revised historical values from newly added periods.
@@ -207,7 +302,7 @@ The ranking population and existing scoring methodology are unchanged.
 Twenty institutional report drafts remain unverified; communication content
 remains outside the acquired evidence. Numeric analysis can proceed without
 inventing report reviews or communications clearance. See ADRs 0004, 0017,
-0028–0031, and `project_context.md` for the current architecture.
+0028–0032, and `project_context.md` for the current architecture.
 
 ## Working commands
 
@@ -219,6 +314,8 @@ python -m dalio.storage.inventory --db data/dalio.db --json
 python -m dalio.pipelines.build_country_assessments --db data/dalio.db --as-of 2026-09-10 --known-at 2026-09-10T21:10:00+00:00
 python -m dalio.pipelines.fetch_sweden_monitoring --artifact-root data/artifacts/sweden_monitoring
 python -m dalio.pipelines.build_sweden_monitoring --db data/dalio.db --as-of 2026-09-10 --known-at 2026-09-10T22:10:11.307779+00:00
+python -m dalio.pipelines.fetch_nordic_monitoring --artifact-root data/artifacts/nordic_monitoring
+python -m dalio.pipelines.build_nordic_monitoring --db data/dalio.db --as-of 2026-09-11 --known-at 2026-09-11T06:01:15.044707+00:00
 ```
 
 Assessment worktree: `/home/rosinco/workspace/dalio-country-assessments`, branch
@@ -232,3 +329,18 @@ requests and retains new acquisition clocks; the build command is offline.
 For exact replay, use the captured cutoff above and preserve the associated
 source bundle and response files. Source locations participate in snapshot
 identity, so publication is finalized from canonical `main`.
+
+Nordic worktree: `/home/rosinco/workspace/dalio-nordic-monitoring`, branch
+`feat/nordic-scenario-monitoring`. Use the canonical venv and `PYTHONPATH=src`.
+The Nordic collector records twelve new inputs in a complete attempt bundle;
+the offline builder restores Sweden independently at the same knowledge cutoff.
+Keep rejected attempts and their original clocks. SSB requests overlapping
+05:00–08:00 Europe/Oslo are excluded because the publisher warns that temporary
+update placeholders may appear. A fresh complete capture outside that window
+is required; successful values are never patched in from an older attempt.
+
+Routine implementation, read-only verification, original-source collection,
+commit, push and handoff are authorized in the conversation. The user asked
+for autonomous progress overnight without repeated permission questions.
+Existing sandbox rules still apply; use already-approved command prefixes
+correctly and do not treat elapsed time as approval.

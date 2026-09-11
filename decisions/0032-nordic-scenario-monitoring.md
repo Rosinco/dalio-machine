@@ -27,7 +27,7 @@ changed. The complete reproducible inventory is retained under
 | Country | Industrial production | Corporate lending | Policy instrument | Government reference yield |
 |---|---|---|---|---|
 | SE | Existing SCB TAB1872 B+C, excluding energy | Existing SCB TAB5780 new and renegotiated SEK agreements | Riksbank effective policy rate | SWEA ten-year benchmark |
-| NO | SSB 07095/P103, excluding extraction and electricity | SSB 10729/02/03, new NOK repayment loans to NFCs | Norges Bank IR/B.KPRA.SD.R | GOVT_GENERIC_RATES/B.10Y.GBON, nearest-maturity security |
+| NO | SSB 07095/P103, excluding oil/gas extraction, related services and electricity | SSB 10729/02/03, new NOK repayment loans to NFCs | Norges Bank IR/B.KPRA.SD.R | GOVT_GENERIC_RATES/B.10Y.GBON, nearest-maturity security |
 | DK | IPOP21/BC, current DB25 classification | DNRNUPI, NFC new DKK lending, excluding repos | DNRENTD/OIBNAA, certificates of deposit | MPK3/5500701004, monthly ten-year redemption yield |
 | FI | Statistics Finland 14mh, total B+C+D including energy | Bank of Finland MFI_PUBL, actual new drawdowns to domestic NFCs, all currencies | ECB deposit-facility rate, euro-area scope | Bank of Finland daily ten-year reference report, underlying LSEG data |
 
@@ -38,6 +38,9 @@ notice are retained; it is not presented as a newly measured economic change.
 Norwegian generic yields use a nearest-maturity security's closing mid-yield;
 the Finnish reference report describes primary-dealer selling-price inputs at
 13:00. Neither is silently treated as an identical instrument or auction cost.
+The Finnish report supplies its displayed current-year history and a date-only
+update. Its percentage-yield scale is a documented convention, rather than a
+separate literal unit field in the original HTML.
 The Finnish lending selection excludes housing corporations, overdrafts, card
 credit and non-recourse factoring; it covers all currencies together. The
 Swedish, Norwegian and Danish selections use their respective domestic
@@ -91,8 +94,9 @@ Policy instruments, currencies, loan populations, fee treatment, industrial
 coverage, yield construction and reference periods differ across countries.
 Those definitions are displayed with the measured changes. Finland's ECB policy
 context is a euro-area instrument, not an independent Finnish policy decision.
-Norwegian industry excludes extraction but still includes petroleum-related
-manufacturing. A secondary-market yield is not a company's borrowing cost or
+Norwegian industry excludes oil/gas extraction and related services but still
+includes mining, quarrying and petroleum-related manufacturing. A
+secondary-market yield is not a company's borrowing cost or
 government auction execution. A new-business loan rate does not measure credit
 access, and a changing loan mix can change the average rate.
 
@@ -119,3 +123,38 @@ Completion requires offline source/contract tests, the integrated test suite,
 raw-cell and comparison reconciliation, valid report links, and an exact
 read-only replay. This slice does not change the scalar database, scoring
 population or Macro Atlas's bundled desktop data.
+
+## Verified completion — 2026-09-11
+
+Implementation `1f1d57c` passed all 1,582 integrated tests and Ruff. The complete
+live twelve-input capture began at 2026-09-11T06:00:06.705251+00:00, outside SSB's
+update window, and completed at **2026-09-11T06:01:15.044707+00:00**. All 24 HTTP
+requests succeeded and all twelve inputs validated. Bundle:
+`ac08d5e898d3ba13ab62861fb84d51c396f454de0bf488c752bc1d3a188dc9d2`.
+
+The canonical report uses assessment date 2026-09-11 and that exact completion
+cutoff. Published snapshot:
+`289d3f3eb37afbba9d6f62758d91947d412ac3f7d12a74d72bb809851dbf6804`.
+All 17 signals have complete comparison windows. The independent source audit
+reconciled 23,993 native slots (23,766 numeric, 227 missing), 76 annual histories
+with 3,478 observations, seven native debt context cells, 217 citations, 181
+displayed table values and 915 report links. Ten output files and 239 protected
+source files remained unchanged. Exact post-publication CLI replay reproduced
+the same identity and preserved all 251 checked files including the database and
+latest pointer. Integrity/foreign-key checks passed. The database and all 159
+other pre-collection protected inventory files also retained hashes and mtimes.
+
+An earlier nine-input partial attempt remains archived with its genuine errors:
+two Norwegian captures overlapped the maintenance exclusion, and the auxiliary
+curl transport initially failed to decode a compressed Finnish structure
+response. The transport was corrected and checked against retained gzip bytes;
+the complete fresh batch above replaced it by whole-batch selection. No prior
+bytes were retimestamped, no gaps were patched from older successes, and the
+partial candidate was never published through `LATEST.json`. Production source
+interpretation is unchanged from the tested implementation.
+
+Receipts and reproducible scripts are under
+`data/snapshots/nordic_monitoring/validation/`; the final capture, raw responses
+and generated reports remain local gitignored evidence. See `HANDOFF.md` for
+exact locations, reproduction commands, desktop boundary and the next bounded
+country batch.
