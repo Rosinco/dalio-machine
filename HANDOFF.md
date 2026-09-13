@@ -1,3 +1,71 @@
+# Macro Atlas / dalio-machine handoff — 2026-09-13
+
+**Macro Atlas 0.19.0 is installed and verified.** Implementation lives in
+`/home/rosinco/workspace/dalio-atlas-desktop` on `feat/offline-atlas`;
+this canonical `main` worktree carries methodology, ADRs 0036–0042 and research
+notes. Existing canonical source-priority and macro-monitoring guidance is preserved.
+
+The full release detail is in the desktop
+[handoff](https://github.com/Rosinco/dalio-machine/blob/feat/offline-atlas/desktop/HANDOFF.md).
+Companies → Lists now supports the downloaded KPI catalogue, 32 columns,
+12 numeric conditions, named watchlists/views, three sorting priorities,
+eight-company comparison and CSV export. There are 218 field definitions with
+some observations (177 provider families plus 41 Atlas fields), and 33 explicitly
+unavailable provider families. Coverage varies across the 19,140 saved listings
+and selected source-period-calculation variants.
+
+Editable cash-flow, DCF, NPV, sustainable terminal and purchase-price scenarios
+remain available across the universe. The default purchase margin is 30% and
+editable. New provider price columns do not reprice the frozen research gauge or
+change reviewed Holmen/SCA studies or authored valuation drafts.
+
+Installed executable:
+`C:\Users\Adamb\AppData\Local\MacroAtlas\0.19.0\Macro Atlas.exe`.
+SHA-256: `a3b35eb29e86083bdd08f6ecf1b138436f8130eca19d5b7334a6845869cde157`.
+The existing OneDrive Desktop shortcut targets 0.19.0; 0.18.0 is retained.
+
+## Source closeout — 2026-09-13
+
+The user requested commit, push and handoff. The complete company valuation,
+research-screen and expanded-list work through **Macro Atlas 0.19.0** is committed:
+
+- Desktop implementation: `814e2f7231782e8415d79a3d37f6617889e3e637` on `feat/offline-atlas`.
+- Canonical methodology: `611c737d5d207e7c09e2f94c49577d7437884224` on `main`.
+- Both content commits were pushed to `Rosinco/dalio-machine`; exact remote refs
+  were verified. The branches remain separate. Subsequent handoff-only commits
+  record this checkpoint; the final ref receipt is
+  `desktop/test-results/closeout-2026-09-13/git-closeout.json` in the desktop worktree.
+
+Closeout verification passed: **1,206 desktop repository Python tests** and
+**1,690 canonical Python tests**, with `ruff check src tests` clean in both
+worktrees; **280 app/transport unit tests**, **138 desktop Python tests and
+19 subtests**, and the Node cash-flow backtest also passed. No app code changed
+after the verified 0.19.0 executable was built. Its release evidence covers
+35 production-browser list/research checks and 11 expanded-list Windows checks,
+including restart and actual CSV output. The full older valuation browser/native
+suites were not rerun on the final 0.19.0 binary.
+
+Generated source packs, provider shards, executable and test receipts remain
+local and gitignored. This source push does not back them up. The desktop README
+records the retained-data prerequisites and gauge/KPI regeneration commands;
+checked manifests preserve input identities. The original 0.19.0 release receipt
+and handoff are retained under `test-results/releases/0.19.0/pre-closeout/`.
+Installed documentation is refreshed without rebuilding or restarting the app;
+installation and release verification receipts are refreshed after the copy.
+
+Next practical task: use **Companies → Lists** to form a small named research
+watchlist, inspect source dates and missing values, then select one company for a
+project-native Börsdata deep dive. Reconcile owner cash, capital needs and dated
+valuation inputs before revising its assumptions. List presets and cash bands
+remain research aids; they establish neither an investment verdict nor calibrated
+whole-path DCF/NPV probabilities.
+
+## Earlier canonical handoffs — historical
+
+The following checkpoint is preserved from canonical commit `11da245`.
+Its installation, uncommitted-work and next-step statements describe that earlier
+state; the current source closeout above and desktop release handoff supersede them.
+
 # Macro Atlas / dalio-machine handoff — 2026-09-11
 
 ## Current checkpoint — automatic Holmen valuation (0.11.0)
