@@ -10,6 +10,77 @@ The framework is treated as a descriptive lens, not a predictive oracle. The pro
 
 ## Company valuation standard
 
+Version 0.19.0 expands both the provider KPI catalogue and list features (ADR 0042).
+It imports existing screener/relative-history downloads with source bindings,
+hashes, unit/currency reconciliation and explicit coverage. Named watchlists,
+column presets, richer numeric conditions, three sorting priorities, side-by-side
+comparison and CSV support descriptive research across the listing universe.
+Frozen starter valuations and authored studies remain separate from provider prices.
+See the desktop handoff for actual validation and installation status.
+
+Version 0.18.0 adds **Companies → Lists** (ADR 0041): a dense table with configurable
+KPI columns, supported annual-window calculations, explicit numeric and candidate
+filters, named saved views and a personal watchlist. It reuses the exact verified
+research artifact; list preferences stay separate from all valuation drafts.
+Every amount retains its unit/date, unavailable data stays missing, and candidate
+matches establish research questions rather than investment verdicts. Actual
+verification and Windows installation are recorded in the handoff.
+
+Version 0.17.0 adds a read-only universe research table and company summary card
+(ADR 0040). Historical evidence, data readiness and business research routes stay
+separate from optional dated standard-starter valuation context. All saved
+listings remain visible; explicit filters and alphabetical order create no
+investment score or gate verdict. The deterministic source-bound asset uses the
+existing verified annual/quarterly and market companion, validates its pinned
+hashes and exact source identities, and never loads whole-universe histories at
+runtime or saves/migrates local valuation drafts. Additional raw price/R12/KPI
+imports remain a separate verified slice. See the handoff for actual build,
+Windows verification and installation status.
+
+Version 0.16.0 adds a purchase-price/NPV chart to every company's Value workspace.
+The user selected an editable 30% discount to scenario equity value, initially
+Mid. Value includes terminal sale once; NPV subtracts the proposed equity price.
+The selected ceiling admits lower positive prices, without a manufactured minimum.
+Per-share conversion needs an explicit dated ownership basis; reported-share
+suggestions remain unreviewed proxies. Missing cash and nonpositive values stay
+honest, and purchase policy survives history/baseline/reviewed changes. ADR 0039
+records the method; the handoff records actual validation and installation.
+
+User approval on 2026-09-13 adopts the tested universe recommendation in version
+0.14.0 (`empirical-cash-starter-v3`). Every listing retains the common editable
+cash-flow, DCF and NPV workspace. New generic starters use five annual periods and
+latest signed cash held flat; weighted trend and weighted flat mean remain
+available. Eligible operating/property histories use model-specific historical
+error ranges for Years 1–4, grouped by cash dispersion, with an 80% research target.
+Years 5–10 carry the Year 4 half-width plus an editable assumed widening of 10% of
+historical cash scale per year. Unsupported settings or source/currency/timing
+lineage use labelled percentage sensitivities; missing inputs remain visible.
+Banks, insurers and other financial businesses outside property require reviewed
+equity-cash/capital inputs. COVID/rebound observations stay in the raw history.
+An optional crisis path adds separate editable shock/recovery and DCF/NPV outputs
+without assigning a probability or changing the three original paths. Reviewed
+Holmen/SCA studies and all user edits remain intact; exact untouched v1/v2 defaults
+upgrade only after successful backup and replacement persistence. Deep dives
+refine the same workspace. See ADR 0037, `docs/standard-company-valuation.md` and
+the desktop handoff for model limitations and current verification/installation.
+
+Version 0.15.0 separates sustainable terminal equity cash from annual range
+endpoints and provides editable mature growth, dynamic r−g sale calculation,
+working terminal assumptions and required-return NPV sensitivities. The signed
+historical median and ±20% seed are explicit unreviewed assumptions. Annual cash
+forecasts/calibration remain unchanged; cash-component evidence exposes available
+same-report amounts and missing reinvestment definitions. Exact old drafts remain
+reproducible and edited/reviewed/restored studies are preserved. ADR 0038 records
+the method; handoffs record verification/installation separately.
+
+Version 0.14.1 extends the DCF/NPV charts with annual minimum/maximum whiskers,
+scenario shading and inspectable bounds alongside the named scenario amounts.
+Nominal cash and annual DCF shading follows exact linear crossings. NPV uses
+year-end steps and the range across independently accumulated scenario paths;
+an enabled final equity sale affects only the last point. Cash assumptions,
+required returns and calculations are unchanged. Widths need not increase, and
+historical cash-range labels do not establish an 80% DCF/NPV probability.
+
 The user adopted value versus price for company analysis (ADR 0035) and requested
 an interactive workspace with high/mid/low DCF and cumulative NPV charts and
 scenario payback years. Use `docs/company-valuation-framework.md` and
@@ -19,9 +90,10 @@ assumed net equity sale proceeds; ordinary and discounted payback use year-end
 cash timing. Liquidation/breakup recovery remains an alternative scenario.
 Tangible capital, cash/debt exposure and macro-to-company evidence accompany the
 forecasts. Drafts autosave locally by company and exact data versions, with saved
-revisions and dated CSV calculations. It requires analyst inputs and does not
-infer company cash payments or new verdicts from vendor FCF. See the desktop
-handoff for build and installation status.
+revisions and dated CSV calculations. Reviewed company forecasts require analyst
+inputs. Generic starters use vendor FCF as an explicitly unreviewed cash-payment
+assumption and do not create new company verdicts. See the desktop handoff for
+build and installation status.
 
 Version 0.11 adds automatic loading of the reviewed Holmen numerical study,
 with a dated downloaded quote, original-report cash normalization, explicit

@@ -1,8 +1,40 @@
 import { describe, expect, it } from 'vitest';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { blankValuation, calculateValuation } from './valuation';
 import { buildResearchedValuation, holmenStudy, researchedStudyFor, shouldStartResearchedStudy } from './researchedValuations';
+import { reviewedStudy, type ReviewedStudy } from './researchedStudy';
+import ValuationResearchEvidence from './ValuationResearchEvidence';
+
+function euroStudy(): ReviewedStudy {
+  return {
+    version: 2, id: 'example-2026-09-10-v2', company: 'example', isin: 'FI0000000000', name: 'Example', asOf: '2026-09-10', currency: 'EUR',
+    deepDive: { date: '2026-03-12', path: 'studies/example.md', sha256: 'a'.repeat(64) },
+    sources: [{ id: 'annual', title: 'Example FY 2024 report', date: '2025-02-28', location: 'Page 42', url: 'https://example.com/annual.pdf' }],
+    price: { marketCap: 100, date: '2026-09-01', narrative: 'EUR 10 close × 10 million single-class common shares; no currency conversion.' },
+    years: 3, ownership: 'Constant common-share ownership. Nominal EUR after-financing distributions.',
+    capital: { tangibleEquity: 40, averageTCE: null, nopat: null, grossDebt: 12, surplusCash: null },
+    notes: { business: 'Finite runoff.', macro: 'Export receipts.', financing: 'TCE remains unreconciled.', recovery: 'No appraisal available.', decision: 'Scenario sensitivity only.' },
+    scenarios: {
+      low: { cashFlows: [4, 3, 2], discountRate: 8, terminalEquity: 20, rationale: 'Low receipts.' },
+      mid: { cashFlows: [7, 5, 3], discountRate: 8, terminalEquity: 30, rationale: 'Mid receipts.' },
+      high: { cashFlows: [10, 8, 6], discountRate: 8, terminalEquity: 40, rationale: 'High receipts.' },
+    },
+    evidence: [{ heading: 'Reviewed annual bridge', blocks: [
+      { kind: 'paragraph', classification: 'calculation', text: 'FY 2024 shareholder cash: EUR 9m less EUR 2m reinvestment = EUR 7m.', sourceIds: ['annual'] },
+      { kind: 'table', classification: 'source', columns: ['Reported item', 'FY 2024'], rows: [{ label: 'Cash received', values: [9] }, { label: 'Matched average TCE', values: [null] }], sourceIds: ['annual'], precision: 1 },
+    ] }],
+    recovery: { status: 'unavailable', reason: 'Asset realizations and prior claims are not yet reconciled.', sourceIds: ['annual'] },
+  };
+}
 
 describe('researched company valuation', () => {
+  it('preserves the entire published Holmen draft so existing drafts do not become falsely edited', async () => {
+    // Captured from the pre-adapter implementation, including provenance strings.
+    const serialized = JSON.stringify(buildResearchedValuation(holmenStudy).draft);
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(serialized));
+    expect(Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')).toBe('bc14e3a76eb71c19bb1169c7ab23a5373b7be7fff73b4dd2f1750dcf7c938b53');
+  });
   it('requires the reviewed listing identity and archived research source', () => {
     const entry = { id: '102', isin: 'SE0011090018' };
     const sources = [{ sha256: holmenStudy.deepDive.sha256 }];
@@ -73,6 +105,9 @@ describe('researched company valuation', () => {
     const seeded = buildResearchedValuation(holmenStudy).draft;
     seeded.scenarios.mid.cashFlows[0] = null;
     expect(shouldStartResearchedStudy(seeded)).toBe(false);
+    const clearedStarter = blankValuation('Edited historical starter');
+    clearedStarter.starterOrigin = { id: 'weighted-cash-starter-v1', asOf: '2026-09-12', weights: [30, 25, 20, 15, 10], spreadPercent: 20 };
+    expect(shouldStartResearchedStudy(clearedStarter)).toBe(false);
   });
   it('returns fresh editable drafts without mutating the researched baseline', () => {
     const first = buildResearchedValuation(holmenStudy).draft;
@@ -80,5 +115,72 @@ describe('researched company valuation', () => {
     const next = buildResearchedValuation(holmenStudy).draft;
     expect(next.scenarios.mid.cashFlows[0]).toBe(1500);
     expect(next.notes.macro).not.toBe('My view');
+  });
+  it('loads explicit distributions and dated ownership in the study currency without fabricating missing capital or recovery', () => {
+    const study = euroStudy(), { draft } = buildResearchedValuation(study);
+    expect(draft.currency).toBe('EUR');
+    expect(draft.valuationDate).toBe('2026-09-10');
+    expect(draft.priceDate).toBe('2026-09-01');
+    expect(draft.priceSource).toBe(study.price.narrative);
+    expect(draft.marketCap).toBe(100);
+    expect(draft.capital).toEqual(study.capital);
+    expect(draft.scenarios.mid.cashFlows).toEqual([7, 5, 3]);
+    expect(draft.scenarios.mid.terminalEquity).toBe(30);
+    expect(draft.scenarios.mid.recoveryEquity).toBeNull();
+    expect(draft.scenarios.mid.recoveryYear).toBeNull();
+    expect(draft.scenarios.mid.rationale).toContain(study.ownership);
+    expect(calculateValuation(draft).scenarios.mid.value).toBeCloseTo(7 / 1.08 + 5 / 1.08 ** 2 + 33 / 1.08 ** 3);
+    draft.scenarios.mid.cashFlows[0] = 999; draft.capital.grossDebt = 999;
+    expect(study.scenarios.mid.cashFlows[0]).toBe(7);
+    expect(study.capital.grossDebt).toBe(12);
+  });
+  it('requires both the archive path and digest for a v2 study', () => {
+    const study = euroStudy(), entry = { id: study.company, isin: study.isin };
+    expect(researchedStudyFor(entry, [study.deepDive], [study])).toBe(study);
+    expect(researchedStudyFor(entry, [{ sha256: study.deepDive.sha256 }], [study])).toBeNull();
+    expect(researchedStudyFor(entry, [{ ...study.deepDive, path: 'another.md' }], [study])).toBeNull();
+    expect(researchedStudyFor({ ...entry, isin: 'wrong' }, [study.deepDive], [study])).toBeNull();
+  });
+  it('renders company-specific periods and source-linked calculations without legacy-company text', () => {
+    const html = renderToStaticMarkup(createElement(ValuationResearchEvidence, { study: euroStudy(), edited: false }));
+    expect(html).toContain('How the Example scenarios were built');
+    expect(html).toContain('EUR millions');
+    expect(html).toContain('FY 2024');
+    expect(html).toContain('href="#research-example-2026-09-10-v2-source-annual"');
+    expect(html).toContain('Unavailable');
+    expect(html).toContain('Asset realizations and prior claims are not yet reconciled.');
+    expect(html).not.toMatch(/Holmen|SEK|H1 2026|biological|forest|B-equivalent|57,370/);
+  });
+  it('keeps an incomplete forecast missing and rejects malformed reviewed source bridges', () => {
+    const study = euroStudy();
+    study.scenarios.mid.cashFlows[1] = null;
+    expect(buildResearchedValuation(study).draft.scenarios.mid.cashFlows).toEqual([7, null, 3]);
+    expect(calculateValuation(buildResearchedValuation(study).draft).ready).toBe(false);
+    expect(reviewedStudy(study)).toEqual(study);
+    const wrongLength = structuredClone(study); wrongLength.scenarios.mid.cashFlows.pop();
+    expect(() => reviewedStudy(wrongLength)).toThrow(/cashFlows/);
+    const missingSource = structuredClone(study); missingSource.evidence[0].blocks[0].sourceIds = ['missing'];
+    expect(() => reviewedStudy(missingSource)).toThrow(/source/);
+    const missingCapital = structuredClone(study); delete (missingCapital.capital as Partial<ReviewedStudy['capital']>).averageTCE;
+    expect(() => reviewedStudy(missingCapital)).toThrow(/averageTCE/);
+  });
+  it('calculates a separate asset recovery, exposes funding shortfalls, and propagates unknown proceeds', () => {
+    const study = euroStudy();
+    study.recovery = { status: 'available', explanation: 'Illustrative asset sale.', sourceIds: ['annual'],
+      assets: [{ label: 'Property', book: 50, proceeds: { low: 10, mid: 30, high: null } }],
+      scenarios: {
+        low: { claims: 15, costs: 2, cashBurn: 3, year: 2 },
+        mid: { claims: 15, costs: 2, cashBurn: 3, year: 2 },
+        high: { claims: 15, costs: 2, cashBurn: 3, year: 2 },
+      }, limitations: 'Minority owners cannot force a sale.' };
+    const { draft, recovery } = buildResearchedValuation(study);
+    expect(recovery!.low.shortfall).toBe(10);
+    expect(draft.scenarios.low.recoveryEquity).toBe(0);
+    expect(draft.scenarios.mid.recoveryEquity).toBe(10);
+    expect(draft.scenarios.high.recoveryEquity).toBeNull();
+    expect(recovery!.high.gross).toBeNull();
+    expect(calculateValuation(draft).scenarios.mid.value).toBeCloseTo(7 / 1.08 + 5 / 1.08 ** 2 + 33 / 1.08 ** 3);
+    const html = renderToStaticMarkup(createElement(ValuationResearchEvidence, { study, edited: false }));
+    expect(html).toContain('Funding shortfall before common equity');
   });
 });

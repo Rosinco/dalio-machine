@@ -1,0 +1,59 @@
+{
+  "id": "within-branch-cash-uncertainty-refinement-v1",
+  "predeclaredAt": "2026-09-12T21:11:12.045528+00:00",
+  "scope": "operating_and_property",
+  "comparisons": [
+    {
+      "model": "linear",
+      "horizon": 1
+    },
+    {
+      "model": "linear",
+      "horizon": 2
+    },
+    {
+      "model": "naive",
+      "horizon": 1
+    }
+  ],
+  "candidates": [
+    "branch",
+    "branch_tangible_assets_sales",
+    "branch_tbv_ebit",
+    "branch_ebit_margin",
+    "branch_cash_residual_dispersion"
+  ],
+  "featureGroups": {
+    "branch_tangible_assets_sales": "tangible_assets_sales",
+    "branch_tbv_ebit": "tbv_ebit",
+    "branch_ebit_margin": "ebit_margin",
+    "branch_cash_residual_dispersion": "cash_residual_dispersion"
+  },
+  "bins": "Use prepared-forecasts.parquet existing discretized columns, unchanged; no thresholds fitted or searched.",
+  "baseline": "Same-fold branch factor; branch comparator included. scoreImprovement = 1 - candidate meanIntervalScore / branch meanIntervalScore.",
+  "fallback": "Missing or unsupported branch\u00d7feature -> branch -> sector -> global; branch baseline -> sector -> global. No rows dropped per candidate.",
+  "minimumCalibrationRows": 300,
+  "minimumCalibrationListings": 100,
+  "minimumCalibrationHistories": 100,
+  "targetCoverage": 0.8,
+  "weightings": [
+    "listing_balanced",
+    "duplicate_history_downweighted"
+  ],
+  "weights": "Reuse root pool_weights on whole same-fold calibration or evaluation pool; never rebalance within feature groups. Annual evaluation regenerates pool weights within target year.",
+  "splits": {
+    "calibration": "Prepared calibration_ok rows only, target FY<=2020 and original publication gates through2021-06-30",
+    "validation": "Application-eligible targets2021\u20132023",
+    "recent": "Application-eligible targets2024\u20132025"
+  },
+  "annualMetrics": true,
+  "supports": "Report support counts and eligible groups for parent and refinement; fallbackShare remains actual weighted parent-fallback share.",
+  "classification": "Exploratory follow-up fixed before inspecting any within-branch outcome results; recent years already used elsewhere, so not untouched confirmation.",
+  "inputHelperSha256": "2a6e0ed5d973d61e1095475bdbe096e3e589e8234e9ce4b850c7496c2d803a9a",
+  "limitations": [
+    "Current taxonomy and retrospective merged financial vintage; no point-in-time reconstruction.",
+    "TBV/EBIT is missing when strict5 denominator/book guards fail; such cases receive parent factors.",
+    "Branch\u00d7asset associations can be predictive without proving asset intensity causes uncertainty.",
+    "Five-year signed-cash normalization and share-class dependencies retain original experiment limitations."
+  ]
+}

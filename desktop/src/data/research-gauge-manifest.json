@@ -1,0 +1,18 @@
+{
+  "format": "macro-atlas-research-gauge-manifest",
+  "version": 1,
+  "asOf": "2026-09-13",
+  "model": "research-gauge-v1",
+  "financialPackId": "1f1534d48fc30c1e3769cb7f1e9060c85fb1dc63ec39b06ada40fb6e11d2c69a",
+  "financialPackBytes": 109862912,
+  "taxonomySha256": "cc54a95110c5ab068434fdab8a548082ee26b48b67fbe2cde5ec330b578b37ff",
+  "calibrationId": "cash-uncertainty-2026-09-12-v1",
+  "rows": 19140,
+  "artifact": {
+    "path": "data/research-gauge/gauge.bin",
+    "sha256": "fcbcccadbdd86da4a6521a64c2be8907ceff91f23dc1aa2e7fcfd2f991ba0e2b",
+    "bytes": 11272132,
+    "uncompressedSha256": "825391361a89ad37b28b32803b6617a64ee14f0f7108b9c4ecb5b8a1b52eb64c",
+    "uncompressedBytes": 77849515
+  }
+}

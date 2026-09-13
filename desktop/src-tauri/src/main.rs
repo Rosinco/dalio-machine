@@ -158,7 +158,7 @@ fn export_csv(app: tauri::AppHandle, filename: String, contents: String) -> Resu
         || filename
             .chars()
             .any(|c| !(c.is_ascii_alphanumeric() || "-_.".contains(c)))
-        || contents.len() > 8_000_000
+        || contents.len() > 64_000_000
     {
         return Err("Invalid export".into());
     }

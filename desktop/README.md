@@ -6,6 +6,255 @@ requires no terminal, Python environment, WSL, account or network connection.
 Windows WebView2 must be installed; it is present on Adam's PC. The Tauri installer
 configuration can also bundle its offline installer when distributing to another PC.
 
+## Version 0.19.0 — expanded KPIs and list tools
+
+**0.19.0 is installed and verified** through the existing Macro Atlas shortcut;
+0.18.0 is retained. Validation passes: 280 unit tests, ten exporter tests, exact
+source reproduction, 35 browser checks and 11 Windows checks including restart
+and real CSV output. The catalogue contains 251 entries: 177 provider families
+with saved values plus the existing 41 fields, and 33 explicitly unavailable
+provider families. Coverage varies by listing and selected calculation.
+
+The saved provider KPI datasets now extend **Companies → Lists**. Choose from
+valuation ratios, per-share figures, dividends, profitability, financial strength,
+price performance, technical measures and specialist business fields. The picker
+shows supported provider periods/calculations, actual coverage, units and snapshot
+context. Fields without usable values can be revealed explicitly.
+
+Use named watchlists, column presets, up to 32 columns, 12 conditions, three sorting
+priorities, compact rows and comparisons of up to eight listings. Save up to 20
+views and 20 watchlists. Export CSV includes every filtered row, the chosen KPI
+identities, unit, currency, date and status. On Windows the app saves a new file
+in Downloads and shows its path. Click a value for its source and explanation.
+
+These are values from the existing downloaded data, not live prices. Provider
+snapshot dates do not establish the underlying quote/report date. Some definitions
+and currency combinations are withheld after reconciliation. Different currencies
+remain separate, and failed/loading values do not count as observed missing data.
+New provider price columns do not reprice the frozen DCF/NPV/purchase gauge.
+
+Old list settings migrate in memory; explicit changes save to the separate v2 key.
+Authored valuations and the retained older application's v1 settings are preserved.
+See [ADR 0042](../decisions/0042-expanded-kpi-catalogue-and-list-tools.md) and
+[HANDOFF.md](HANDOFF.md) for actual verification and installation status.
+
+```sh
+node tests/browser.mjs --expanded-company-list-only
+# Windows PowerShell: scripts/test-windows.ps1 -ExpandedCompanyListOnly
+```
+
+## Version 0.18.0 — customizable company lists
+
+The sections below record earlier releases; the 0.19.0 section above describes
+the current installation and expanded KPI support.
+
+**0.18.0 was installed and verified** through the existing Macro Atlas shortcut;
+0.17.0 is retained. Validation passed: 250 unit tests, 13 company-list browser
+checks, 14 Windows checks including full restart, and 12 existing research-screen
+browser checks. No external requests or runtime errors occurred.
+
+Open **Companies → Lists**. **Choose KPIs** opens a searchable category selector
+with definitions, supported periods and calculations. Add, remove and reorder
+columns, click headers to sort, and use explicit filters to compare listings.
+Star companies for your watchlist and save a named view to reuse its columns and
+filters. See [HANDOFF.md](HANDOFF.md) for actual verification and installation.
+
+All 19,140 listings remain accessible. The **Cash + 30% margin** preset uses an
+explicit historical screen: operating businesses, five-period evidence, five
+positive provider-FCF and EBIT observations, and saved price at or below the
+standard Mid ceiling. Inspect the dates and assumptions before taking a company
+into a deep dive. Preset matches and personal watchlist membership are separate.
+
+Annual history calculations use the selected complete comparable window. Amounts
+retain currency and scale; missing values show an em dash with an explanation.
+Valuation KPIs use the frozen generic starter rather than edited or reviewed
+studies. The screen margin remains 30%; edit your working assumptions in Value.
+EPS, P/E, dividend yield, R12, price performance and additional raw KPI histories
+were outside the 0.18.0 import. Version 0.19.0 adds the reconciled provider variants.
+
+List preferences are stored independently from valuations. Browsing lists cannot
+save or migrate a valuation, and a different source pack withholds the results.
+See [ADR 0041](../decisions/0041-customizable-company-lists.md).
+
+Focused validation after building the frontend and executable:
+
+```sh
+node tests/browser.mjs --company-list-only
+# Windows PowerShell:
+# scripts/test-windows.ps1 -CompanyListOnly
+```
+
+## Version 0.17.0 — universe research screen
+
+**0.17.0 was installed and verified** through the Macro Atlas shortcut;
+0.16.0 is retained. Validation passed: 236 unit tests, 12 research-screen checks
+in each of browser and Windows, plus 55 browser and 58 Windows valuation checks.
+The Windows checks include full-process restart and unchanged saved studies.
+
+Open **Companies → Screen**, or use **Explore research screen** on a company
+profile. **Sectors & branches → Screen** starts with the selected branch. All
+19,140 saved listings remain available, including older-only identities,
+financial businesses and companies with missing evidence.
+
+Search or filter by sector, branch, listing country, research route, annual
+coverage and an explicit historical observation lens. Results start in
+alphabetical order, with 50 listings per page. Inspect the actual annual periods,
+positive/valid cash and EBIT observations, comparable quarterly changes,
+financing/asset proxies, source dates and questions for a deep dive. Coverage
+labels describe data availability; they do not rank investment quality.
+
+**Show starter valuation context** adds dated whole-equity price comparisons,
+terminal dependence, Low NPV and required cash levels at a fixed 30% margin.
+This standard snapshot is separate from reviewed studies and your working drafts.
+Open **Value** to edit assumptions or the margin. DCF includes terminal value once;
+reverse multiples describe required proportional cash, not expected growth.
+Browsing the research screen and profile card never saves or migrates valuations.
+
+The screen uses Atlas's existing verified annual/quarterly pack and its saved
+publication-window prices. Additional downloaded August prices, R12 and KPI
+histories were outside this screen's import; 0.19.0 adds supported provider columns
+to Lists while preserving the frozen screen valuation. Sources retain their actual dates.
+The screen withholds calculations if the selected financial pack or directory
+has a different identity. See [ADR 0040](../decisions/0040-universe-research-screen.md)
+and [HANDOFF.md](HANDOFF.md) for validation and installation status.
+
+Reproduce and verify the derived snapshot from the pinned downloaded pack:
+
+```sh
+node scripts/export-research-gauge.mjs
+node scripts/export-research-gauge.mjs --check
+npm test
+npm run build
+npm run preview -- --port 1420
+# In another terminal, with the preview running:
+node tests/research-gauge-flows.mjs
+# In Windows PowerShell after building the executable:
+# scripts/test-windows.ps1 -ResearchGaugeOnly
+```
+
+The generated gzip file is gitignored under `public/data/research-gauge/`; retain
+it separately or regenerate it from the exact saved source pack. The small source
+manifest pins both compressed and uncompressed hashes and sizes. No raw downloads
+or personal valuation studies are changed by the export.
+
+## Version 0.16.0 — editable purchase-price ranges
+
+Open **Companies → Value → Purchase price range**. The starting rule is an
+editable **30% discount to Mid scenario equity value**. Each named scenario has
+its own purchase ceiling; the chart shows NPV at different proposed prices and
+highlights positive prices at or below the selected ceiling. Terminal sale is
+already included in DCF and is counted once.
+
+Change the margin, reference scenario or proposed price. Total equity millions
+are the initial units; price per share requires an explicitly applied dated
+share count and ownership source. Available saved references can be applied with
+**Use saved share reference**. Reported shares remain an unreviewed ownership
+proxy. Saved market prices retain their original dates and are not live quotes.
+
+The table exposes terminal dependence and cash-only ceilings. Nonpositive values
+have no positive purchase ceiling, and incomplete scenarios stay unavailable.
+The margin is your assumption; generic starter forecasts still require a deep
+dive. Settings persist with drafts/revisions and survive history or baseline
+changes. **Export purchase range** saves the inputs, values and missing states.
+
+**Version 0.16.0 was installed and verified** through the existing Macro Atlas
+desktop shortcut. Version 0.15.0 is retained. All 19,140 existing generic starter
+valuations reproduced exactly; 217 unit tests, 55 integrated browser checks and
+58 Windows checks passed, including full-process restart persistence.
+See [ADR 0039](../decisions/0039-editable-purchase-price-range.md),
+[the standard model](../docs/standard-company-valuation.md) and [HANDOFF.md](HANDOFF.md).
+
+## Version 0.15.0 — separate sustainable terminal cash
+
+Open **Companies → Value → Edit inputs** to adjust sustainable cash for the first
+year after the forecast, mature growth and required equity return. Annual range
+widening no longer sets perpetual sale cash. New generic starters use an
+unreviewed signed historical median with an assumed ±20% terminal sensitivity;
+this is distinct from the historical annual cash-error range. Explicit sale
+proceeds remain editable, and crisis sale stays separate.
+
+The terminal table and required-return sensitivity show how those assumptions
+affect DCF and final-year NPV. **Business, capital & evidence** shows same-report
+cash components, arithmetic differences and missing reinvestment definitions.
+The latest-cash annual benchmark remains: the new robust-blend/damped-trend
+experiment did not improve recent Year 1 results. Whole-path probabilistic NPV
+ranges and verified owner cash remain further research.
+
+Edited, cleared, restored and reviewed studies are preserved. Exact untouched
+old defaults upgrade only after saving their previous revision. The same
+workspace remains available when data gaps require explicit inputs.
+Version 0.15.0 was installed and verified; see the handoff for the current
+installation and retained releases.
+See [ADR 0038](../decisions/0038-separate-sustainable-terminal-cash.md),
+[component audit](../docs/cash-component-audit-2026-09-13.md),
+[midline experiment](../docs/cash-flow-midline-challengers-2026-09-13.md), and
+[HANDOFF.md](HANDOFF.md) for verification and installation status.
+
+## Version 0.14.1 — cash-flow ranges carried through DCF and NPV
+
+Open **Companies → Value**. Both valuation charts now show annual min/max markers,
+range checkpoints and an inspection table with minimum, maximum and all three
+named scenarios. Nominal cash and DCF shading narrows correctly where paths cross.
+NPV accumulates each scenario's discounted cash separately from the initial cost,
+with year-end steps and an optional final sale only at the last year.
+
+The tables distinguish historically informed cash inputs from assumed later years
+and edited/reviewed scenarios. The range has no assigned DCF/NPV confidence level,
+and discounting or scenario crossings can narrow it. Existing cash assumptions,
+source data, drafts and reviewed studies retain their calculations.
+
+Version 0.14.1 was installed and verified and is retained as a previous release.
+See [HANDOFF.md](HANDOFF.md) for current installation status and release evidence.
+
+## Version 0.14.0 — historical cash uncertainty and a separate crisis case
+
+Every company retains **Companies → Value** with editable cash-flow, DCF and NPV
+charts. New standard starters select **five annual periods** and use the **latest
+signed cash flow held flat** as the provisional midline. Weighted trend and
+weighted flat mean remain available. Deep dives refine the same workspace;
+reviewed Holmen/SCA studies and user edits remain intact.
+
+Comparable operating/property histories use dated, model-specific historical
+error ranges for **Years 1-4**, classified by five-year cash dispersion. Their
+**80% research target** is an empirical annual target, not a guarantee for the
+company or its DCF. **Years 5-10** carry the Year 4 half-width forward and add an
+editable **10% of historical cash scale per year** as an explicit assumption.
+Source, currency, history or model settings outside the researched population use
+labelled percentage sensitivities. Zero mid cash does not imply zero uncertainty.
+Other financial businesses require manually reviewed equity-cash and capital
+inputs while retaining the common charts and source history.
+
+**Crisis scenario** is separate and initially disabled. Its illustrative starting
+assumptions are a 40% cash reduction from Year 1, two shock years, three recovery
+years, zero extra annual cash cost, 10% required return and zero final equity sale.
+The shock and extra cost fade during recovery. It has its own cash/DCF/NPV output
+and no assigned probability. Raw COVID and rebound observations stay in history.
+
+Under **Adjust history weights & range**, **Use empirical defaults** fills the
+new settings and **Apply history assumptions** saves the current draft first.
+Only exact untouched v1/v2 defaults can upgrade automatically after their original
+has been backed up; entered, cleared, customized and deliberately restored work
+remains preserved. Range provenance, assumed tail settings and crisis inputs
+survive saving/reloading and calculation exports. See the
+[standard model](../docs/standard-company-valuation.md) and
+[ADR 0037](../decisions/0037-empirical-company-cash-flow-starters.md).
+
+## Version 0.13.0 — cash-flow trends and widening scenarios
+
+**Companies → Value → Cash flow over time** shows nominal company cash flow in currency millions on the vertical axis and annual time on the horizontal axis. Saved annual observations precede the current low/mid/high forecast paths; DCF and cumulative NPV remain below. The cash-flow chart can show forecasts before a price or required return has been supplied.
+
+New standard starters fit a weighted historical trend from **five or ten annual observations**. Newest-first weights default to **30/25/20/15/10** for five years or **19/17/15/13/11/9/7/5/3/1** for ten. The fitted latest-year level and annual slope generate the mid forecast. The default range widens from **±10% in Year 1**, to **±20% in Year 2**, **±30% in Year 3** and onward. These are editable sensitivities; negative cash and bands wider than 100% can cross zero.
+
+Under **Adjust history weights & range**, choose the history window, weighted trend or flat weighted average, weights, first-year range and yearly widening. **Use widening trend defaults** fills the controls; **Apply history assumptions** saves the current draft before applying them. Reviewed studies and saved edits remain intact. An exact untouched legacy flat default upgrades automatically only after its original has been saved as a revision; edited, custom or explicitly restored legacy drafts remain available unchanged.
+
+The historical source cash remains an unreviewed provider proxy. Partial history, missing inputs, original dates and currency lineage stay visible. The ten-year forecast extrapolates annual steps from a fitted historical level; its separate final-sale assumption holds positive final-year cash flat beyond the horizon. See the [standard model](../docs/standard-company-valuation.md) for arithmetic and source limitations, and [HANDOFF.md](HANDOFF.md) for build and installation status.
+
+## Version 0.12.0 — standard company DCF and NPV
+
+Every listing has **Companies → Value** with an editable weighted historical cash-flow starter. Newest-to-oldest annual weights default to **30%, 25%, 20%, 15%, 10%**, with low/high paths **±20%** around the mid baseline. Change them under **Adjust history weights & range**. Deep dives refine the same forecasts; Holmen and SCA open with their reviewed studies, while retaining access to the standard baseline.
+
+Saved vendor free cash flow is an explicitly unreviewed proxy. The source table shows periods, weights, currency conversion and historical price. Missing or unsupported inputs remain visible in the common chart workspace. Applying new baseline settings saves the preceding draft; user edits and both starter/reviewed origins survive reload and CSV export. See the [standard model](../docs/standard-company-valuation.md) and [SCA worksheet](../docs/sca-valuation-2026-09-12.md).
+
 ## Version 0.11.0 — researched Holmen valuation
 
 Open **Company observatory → Holmen → Value**. Holmen now opens with a complete
@@ -381,7 +630,11 @@ control so its review history remains available.
 
 ## Build and refresh
 
-From this `desktop/` folder:
+From this `desktop/` folder, with the retained macro snapshots and Börsdata source
+downloads available at the paths below. Generated packs, KPI shards, test receipts
+and Windows binaries are local, gitignored outputs; cloning the source repository
+does not restore them. The checked manifests pin the current inputs, so later
+source downloads require a separately verified refresh rather than substitution.
 
 ```sh
 npm ci
@@ -416,6 +669,10 @@ PYTHONDONTWRITEBYTECODE=1 python scripts/export_financials.py \
 PYTHONDONTWRITEBYTECODE=1 python scripts/export_market_history.py \
   --borsdata-root /mnt/c/Users/Adamb/borsdata_project/GitClone/Modern-Borsdata-Client \
   --financial-pack financial-data/BASE_V1_PACK_ID.sqlite --output financial-data
+mkdir -p test-results
+node scripts/export-research-gauge.mjs
+source /home/rosinco/workspace/dalio-machine/.venv/bin/activate
+python scripts/export-expanded-kpis.py
 npm test
 npm run build
 ```
@@ -453,6 +710,18 @@ CRT are separate packages: `ATLAS_SDK_VERSION` defaults to `10.0.26100.0` and
 `ATLAS_UCRT_VERSION` to `10.0.10240.0`. The script validates its include/library
 directories and statically links the C runtime. These cached tool paths are build
 prerequisites, not a portable toolchain installer.
+
+This PC's restored and validated tool cache is now persistent at
+`/home/rosinco/.cache/macro-atlas-tools`. With the canonical Python environment
+activated, build from `desktop/` using:
+
+```bash
+ATLAS_BUILD_TOOLS=/home/rosinco/.cache/macro-atlas-tools python scripts/build-windows-native.py
+```
+
+This avoids relying on the temporary default tool directory. Preserve the cached
+SDK/MSVC/LLVM prerequisites between builds; installation does not need them.
+
 The cross-compiled executable embeds the whole `dist/` folder. Financial SQLite
 packs are external resources, copied beside the executable by the install script
 (and included by Tauri's bundle resource mapping). The Linux build uses a Clang

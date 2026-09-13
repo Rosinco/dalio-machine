@@ -1,11 +1,23 @@
+import { resolveTerminalSale } from './terminalValue';
+
 export const scenarioKeys = ['low', 'mid', 'high'] as const;
 export type ScenarioKey = typeof scenarioKeys[number];
 export const scenarioNames = { low: 'Low', mid: 'Mid', high: 'High' };
 export const scenarioColors = { low: '#a87840', mid: '#326d94', high: '#7966ad' };
-export type Scenario = { cashFlows: (number | null)[]; discountRate: number | null; terminalEquity: number | null; recoveryEquity: number | null; recoveryYear: number | null; rationale: string };
+export type Scenario = { cashFlows: (number | null)[]; discountRate: number | null; terminalEquity: number | null; terminalCash?: { cashFlow: number | null; growthRate: number | null }; recoveryEquity: number | null; recoveryYear: number | null; rationale: string };
 export const capitalLabels = { tangibleEquity: 'Tangible book equity', averageTCE: 'Average tangible capital employed', nopat: 'Normalized annual NOPAT', grossDebt: 'Gross corporate debt', surplusCash: 'Available surplus cash' };
+export type StarterOrigin = { asOf: string; weights: number[]; spreadPercent: number } & (
+  { id: 'weighted-cash-starter-v1' } |
+  { id: 'weighted-cash-starter-v2'; historyYears: 5 | 10; spreadStepPercent: number; projection: 'trend' | 'flat' } |
+  { id: 'empirical-cash-starter-v3'; historyYears: 5 | 10; spreadStepPercent: number; projection: 'latest' | 'trend' | 'flat'; rangeMode: 'historical' | 'percentage'; tailWideningPercent: number; calibrationId: string; terminalMethod?: 'historical-median-v1' }
+);
+export type CrisisAssumptions = { enabled: boolean; shockPercent: number | null; startYear: number | null; durationYears: number | null; recoveryYears: number | null; extraAnnualCashCost: number | null; discountRate: number | null; terminalEquity: number | null; rationale: string };
+export type PurchaseRangeSettings = { marginOfSafetyPercent: number | null; referenceScenario: ScenarioKey; candidateEquity?: number | null; unit: 'equity' | 'share'; shareBasis?: { sharesMillions: number | null; date: string; source: string; currency: string } };
 export type ValuationDraft = {
+  purchaseRange?: PurchaseRangeSettings;
+  crisis?: CrisisAssumptions;
   researchOrigin?: { id: string; asOf: string };
+  starterOrigin?: StarterOrigin;
   researchAutofillDisabled?: boolean;
   title: string; currency: string; valuationDate: string; priceDate: string; priceSource: string;
   marketCap: number | null; investment: number | null; years: number; scenarios: Record<ScenarioKey, Scenario>;
@@ -45,6 +57,23 @@ function empty(error: string, recovery: Recovery | null = null, recoveryError: s
   return { error, recovery, recoveryError, discounted: [], cumulativeCash: [], cumulativeNPV: [], cumulativeNPVWithSale: [], value: null, cashPV: null, terminalPV: null, terminalShare: null,
     npv: null, valuePrice: null, discountToValue: null, stakeValue: null, payback: noPayback, discountedPayback: noPayback, paybackWithSale: noPayback, discountedPaybackWithSale: noPayback };
 }
+/** Intrinsic cash value is independent of the observed purchase price and stake size. */
+export function calculateCashValue(d: ValuationDraft, key: ScenarioKey): { error: string | null; discounted: number[]; cashPV: number | null; terminalPV: number | null; value: number | null } {
+  const fail = (error: string) => ({ error, discounted: [], cashPV: null, terminalPV: null, value: null });
+  if (!validDay(d.valuationDate)) return fail('Enter a valid valuation date.');
+  if (!/^[A-Z]{3}$/.test(d.currency)) return fail('Enter one three-letter currency for every amount.');
+  if (!Number.isInteger(d.years) || d.years < 1 || d.years > 50) return fail('Choose a forecast of 1–50 years.');
+  const s = d.scenarios[key], r = s.discountRate;
+  if (!validAmount(r) || r < 0 || r > 100) return fail('Enter a required equity return from 0% to 100%.');
+  const cash = s.cashFlows.slice(0, d.years);
+  if (cash.length !== d.years || !cash.every(validAmount)) return fail('Enter a cash distribution for every forecast year; use 0 for no payment.');
+  const terminal = resolveTerminalSale(s);
+  if (terminal.error || terminal.value === null) return fail(terminal.error!);
+  const factor = 1 + r / 100, discounted = cash.map((v, i) => v / factor ** (i + 1));
+  const cashPV = discounted.reduce((a, b) => a + b, 0), terminalPV = terminal.value / factor ** d.years, value = cashPV + terminalPV;
+  if (![...discounted, cashPV, terminalPV, value].every(Number.isFinite)) return fail('These inputs exceed the supported numerical range.');
+  return { error: null, discounted, cashPV, terminalPV, value };
+}
 export function calculateScenario(d: ValuationDraft, key: ScenarioKey): ScenarioResult {
   if (!validAmount(d.marketCap) || d.marketCap < 1e-9 || !validAmount(d.investment) || d.investment < 1e-9) return empty('Enter a positive equity market value and investment amount.');
   if (!validDay(d.valuationDate) || !validDay(d.priceDate) || d.priceDate > d.valuationDate) return empty('Enter valid valuation and price dates; the price cannot be later than the valuation date.');
@@ -62,16 +91,15 @@ export function calculateScenario(d: ValuationDraft, key: ScenarioKey): Scenario
       recovery = { value, npv: value - d.marketCap, valuePrice: value / d.marketCap, payback: s.recoveryEquity >= d.marketCap ? s.recoveryYear : null, discountedPayback: value >= d.marketCap ? s.recoveryYear : null };
     }
   }
-  const cash = s.cashFlows.slice(0, d.years);
-  if (cash.length !== d.years || !cash.every(validAmount)) return empty('Enter a cash distribution for every forecast year; use 0 for no payment.', recovery, recoveryError);
-  if (!validAmount(s.terminalEquity) || s.terminalEquity < 0) return empty('Enter nonnegative final equity sale proceeds, or 0 for no sale.', recovery, recoveryError);
-  const discounted = cash.map((value, i) => value / factor ** (i + 1));
+  const priced = calculateCashValue(d, key);
+  if (priced.error) return empty(priced.error, recovery, recoveryError);
+  const cash = s.cashFlows.slice(0, d.years) as number[], discounted = priced.discounted;
+  const terminal = resolveTerminalSale(s);
   const cumulativeCash = [0], cumulativePV = [0];
   cash.forEach((value, i) => { cumulativeCash.push(cumulativeCash[i] + value); cumulativePV.push(cumulativePV[i] + discounted[i]); });
-  const terminalPV = s.terminalEquity / factor ** d.years;
-  const cashPV = cumulativePV[d.years], value = cashPV + terminalPV;
+  const terminalPV = priced.terminalPV!, cashPV = priced.cashPV!, value = priced.value!;
   const cashWithSale = [...cumulativeCash], pvWithSale = [...cumulativePV];
-  cashWithSale[d.years] += s.terminalEquity; pvWithSale[d.years] += terminalPV;
+  cashWithSale[d.years] += terminal.value!; pvWithSale[d.years] += terminalPV;
   const npv = value - d.marketCap, stakeValue = value / d.marketCap * d.investment;
   if (![...discounted, ...cumulativeCash, ...cumulativePV, value, npv, stakeValue].every(Number.isFinite)) return empty('These inputs exceed the supported numerical range.', recovery, recoveryError);
   return { error: null, recovery, recoveryError, discounted, cumulativeCash, cumulativeNPV: cumulativePV.map(v => v - d.marketCap!), cumulativeNPVWithSale: pvWithSale.map(v => v - d.marketCap!),

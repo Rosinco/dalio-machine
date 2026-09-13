@@ -30,8 +30,8 @@ foreach ($pack in $packs) {
 }
 Copy-Item -LiteralPath (Join-Path $project 'public\THIRD-PARTY-NOTICES.txt') -Destination (Join-Path $folder 'THIRD-PARTY-NOTICES.txt')
 $readme = Get-Content -LiteralPath (Join-Path $project 'README.md') -Raw -Encoding UTF8
-[IO.File]::WriteAllText((Join-Path $folder 'README.md'), $readme.Replace('(../docs/', '(docs/'))
-foreach ($relative in @('docs/company-valuation-framework.md', 'docs/company-analysis-template.md', 'docs/holmen-valuation-2026-09-11.md', 'decisions/0035-company-value-and-price.md')) {
+[IO.File]::WriteAllText((Join-Path $folder 'README.md'), $readme.Replace('(../docs/', '(docs/').Replace('(../decisions/', '(decisions/'))
+foreach ($relative in @('docs/company-valuation-framework.md', 'docs/company-analysis-template.md', 'docs/holmen-valuation-2026-09-11.md', 'docs/sca-valuation-2026-09-12.md', 'docs/standard-company-valuation.md', 'decisions/0035-company-value-and-price.md', 'decisions/0036-standard-company-cash-flow-scenarios.md', 'decisions/0037-empirical-company-cash-flow-starters.md', 'docs/cash-flow-segmentation-2026-09-12.md', 'docs/cash-flow-universe-setup-proposal-2026-09-12.md', 'docs/cash-flow-segmentation-concepts-2026-09-12.md', 'docs/cash-flow-backtest-2026-09-12.md', 'docs/cash-flow-backtest-data-vintages-2026-09-12.md', 'decisions/0038-separate-sustainable-terminal-cash.md', 'docs/cash-component-audit-2026-09-13.md', 'docs/cash-flow-midline-challengers-2026-09-13.md', 'decisions/0039-editable-purchase-price-range.md', 'decisions/0040-universe-research-screen.md', 'decisions/0041-customizable-company-lists.md', 'decisions/0042-expanded-kpi-catalogue-and-list-tools.md')) {
   $source = Join-Path (Split-Path $project -Parent) $relative
   $target = Join-Path $folder $relative
   New-Item -ItemType Directory -Path (Split-Path $target -Parent) -Force | Out-Null

@@ -18,9 +18,20 @@ import { businessFlows } from './business-flows.mjs';
 import { taxonomyFlows } from './taxonomy-flows.mjs';
 import { listingFlows } from './listing-flows.mjs';
 import { valuationFlows } from './valuation-flows.mjs';
+import { restoreScaValuation } from './sca-valuation-flows.mjs';
+import { restoreEmpiricalUniverseValuation } from './empirical-universe-valuation-flows.mjs';
+import { seedTerminalRestart, assertTerminalRestart } from './terminal-valuation-flows.mjs';
+import { seedPurchaseRestart, assertPurchaseRestart } from './purchase-range-flows.mjs';
+import { researchGaugeFlows, assertResearchGaugeRestart } from './research-gauge-flows.mjs';
+import { expandedCompanyListFlows, assertExpandedCompanyListRestart } from './expanded-company-list-flows.mjs';
+import { companyListFlows, assertCompanyListRestart } from './company-list-flows.mjs';
 
 const project = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const financialOnly = process.argv.includes('--financial-only');
+const valuationOnly = process.argv.includes('--valuation-only');
+const researchGaugeOnly = process.argv.includes('--research-gauge-only');
+const expandedCompanyListOnly = process.argv.includes('--expanded-company-list-only');
+const companyListOnly = process.argv.includes('--company-list-only');
 const noCdpCompression = !process.argv.includes('--compressed-cdp');
 const executable = process.argv.slice(2).find(arg => !arg.startsWith('--')) || resolve(project, 'src-tauri/target/x86_64-pc-windows-msvc/release/macro-atlas.exe');
 const resultFolder = resolve(project, 'test-results');
@@ -118,7 +129,40 @@ try {
   console.log(`Windows app started for testing: ${await startApp()}`);
   await page.evaluate(() => localStorage.clear());
   await page.reload();
-  if (financialOnly) {
+  if (expandedCompanyListOnly) {
+    const catalogue = JSON.parse(await readFile(resolve(project, 'public/data/catalog.json'), 'utf8'));
+    await page.locator(`[data-active-release="${catalogue.default_id}"] [data-country="SE"][data-ready="true"]`).waitFor();
+    const result = await expandedCompanyListFlows(page, project, { native: true });
+    const firstPid = app.pid;
+    await stopApp(); await startApp(); assert.notEqual(app.pid, firstPid);
+    await assertExpandedCompanyListRestart(page, result.restart);
+    assert.deepEqual(externalRequests, []); assert.deepEqual(runtimeErrors, []);
+    const report = { ...result, status: 'PASS', scope: 'expanded-company-list-only', checks: [...result.checks, 'Expanded list settings survive a full native process restart; authored valuations remain unchanged'], externalRequests, runtimeErrors, executableSha256: createHash('sha256').update(await readFile(executable)).digest('hex') };
+    await writeFile(resolve(resultFolder, 'windows-native-expanded-company-list-report.json'), JSON.stringify(report, null, 2));
+    console.log(JSON.stringify(report, null, 2));
+  } else if (companyListOnly) {
+    const catalogue = JSON.parse(await readFile(resolve(project, 'public/data/catalog.json'), 'utf8'));
+    await page.locator(`[data-active-release="${catalogue.default_id}"] [data-country="SE"][data-ready="true"]`).waitFor();
+    const result = await companyListFlows(page, project, { native: true });
+    const firstPid = app.pid;
+    await stopApp(); await startApp(); assert.notEqual(app.pid, firstPid);
+    await assertCompanyListRestart(page, result);
+    assert.deepEqual(externalRequests, []); assert.deepEqual(runtimeErrors, []);
+    const report = { ...result, status: 'PASS', scope: 'company-list-only', checks: [...result.checks, 'Company columns, saved view and watchlist survive a full native process restart; valuations remain unchanged'], externalRequests, runtimeErrors, executableSha256: createHash('sha256').update(await readFile(executable)).digest('hex') };
+    await writeFile(resolve(resultFolder, 'windows-native-company-list-report.json'), JSON.stringify(report, null, 2));
+    console.log(JSON.stringify(report, null, 2));
+  } else if (researchGaugeOnly) {
+    const catalogue = JSON.parse(await readFile(resolve(project, 'public/data/catalog.json'), 'utf8'));
+    await page.locator(`[data-active-release="${catalogue.default_id}"] [data-country="SE"][data-ready="true"]`).waitFor();
+    const result = await researchGaugeFlows(page, project, { native: true });
+    const firstPid = app.pid;
+    await stopApp(); await startApp(); assert.notEqual(app.pid, firstPid);
+    await assertResearchGaugeRestart(page, result);
+    assert.deepEqual(externalRequests, []); assert.deepEqual(runtimeErrors, []);
+    const report = { ...result, status: 'PASS', scope: 'research-gauge-only', checks: [...result.checks, 'Research screen survives a full native process restart with unchanged saved valuations and revisions'], externalRequests, runtimeErrors, executableSha256: createHash('sha256').update(await readFile(executable)).digest('hex') };
+    await writeFile(resolve(resultFolder, 'windows-native-research-gauge-report.json'), JSON.stringify(report, null, 2));
+    console.log(JSON.stringify(report, null, 2));
+  } else if (financialOnly) {
     // Use the real included default release and full native companion/importer.
     // Skip unrelated research, directory and branch loops, never shrink the pack.
     const catalogue = JSON.parse(await readFile(resolve(project, 'public/data/catalog.json'), 'utf8'));
@@ -136,6 +180,26 @@ try {
     const report = { status: 'PASS', scope: 'financial-only', checks: [...financial.checks, 'Full imported financial pack survives native process restart'], pack: financial.index.id, bytes: financial.index.bytes, taxonomy: financial.index.taxonomy_sha256, externalRequests, runtimeErrors, executableSha256: createHash('sha256').update(await readFile(executable)).digest('hex') };
     await writeFile(resolve(resultFolder, 'windows-native-financial-report.json'), JSON.stringify(report, null, 2));
     diagnostic({ stage: 'focused_financial_flow_passed', pack: report.pack, bytes: report.bytes });
+    console.log(JSON.stringify(report, null, 2));
+  } else if (valuationOnly) {
+    const catalogue = JSON.parse(await readFile(resolve(project, 'public/data/catalog.json'), 'utf8'));
+    await page.locator(`[data-active-release="${catalogue.default_id}"] [data-country="SE"][data-ready="true"]`).waitFor();
+    const valuation = await valuationFlows(page, project, { native: true });
+    const terminalRestart = await seedTerminalRestart(page);
+    const purchaseRestart = await seedPurchaseRestart(page);
+    const firstPid = app.pid;
+    await stopApp(); await startApp(); assert.notEqual(app.pid, firstPid);
+    await page.locator('[data-company="102"][data-business-ready="true"]').waitFor();
+    await page.getByLabel('Company valuation', { exact: true }).click();
+    await page.locator('[data-valuation-ready="true"]').waitFor();
+    assert.equal(await page.locator('[data-scenario="mid"] [data-result="value"]').innerText(), '1,228.91 SEK');
+    await page.getByRole('button', { name: 'Company profile', exact: true }).click();
+    await restoreScaValuation(page); await restoreEmpiricalUniverseValuation(page);
+    await assertTerminalRestart(page, terminalRestart);
+    await assertPurchaseRestart(page, purchaseRestart);
+    assert.deepEqual(externalRequests, []); assert.deepEqual(runtimeErrors, []);
+    const report = { status: 'PASS', scope: 'valuation-only', checks: [...valuation.checks, 'Holmen, SCA and empirical starter edits, gaps and crisis settings survive native process restart', 'Independent terminal cash, growth, return and resolved DCF/NPV survive a full native process restart with exact saved draft and source basis', 'Editable purchase margin, reference scenario, candidate price, independent NPV and exact draft/source basis survive a full native process restart'], externalRequests, runtimeErrors, executableSha256: createHash('sha256').update(await readFile(executable)).digest('hex') };
+    await writeFile(resolve(resultFolder, 'windows-native-valuation-report.json'), JSON.stringify(report, null, 2));
     console.log(JSON.stringify(report, null, 2));
   } else {
   const expression = await readFile(resolve(project, 'tests/native-smoke.js'), 'utf8');
@@ -159,6 +223,10 @@ try {
   report.checks.push(...comparison.checks); report.branchForestryMs = comparison.forestryMs; report.branchMiningMs = comparison.miningMs;
   const valuation = await valuationFlows(page, project, { native: true });
   report.checks.push(...valuation.checks);
+  const gauge = await researchGaugeFlows(page, project, { native: true });
+  report.checks.push(...gauge.checks);
+  const terminalRestart = await seedTerminalRestart(page);
+  const purchaseRestart = await seedPurchaseRestart(page);
   const firstPid = app.pid;
   await stopApp();
   console.log(`Windows app restarted for persistence testing: ${await startApp()}`);
@@ -173,6 +241,14 @@ try {
   await page.getByRole('button', { name: 'Company profile', exact: true }).click();
   await page.locator('[data-business-ready="true"]').waitFor();
   report.checks.push('Valuation draft, scenario results and saved study survive native process restart');
+  await restoreScaValuation(page);
+  report.checks.push('SCA edited draft, cleared inputs and saved study survive native process restart');
+  await restoreEmpiricalUniverseValuation(page);
+  report.checks.push('Standard cash-flow model, ranges, edits, cleared inputs and crisis assumptions survive native process restart');
+  await assertTerminalRestart(page, terminalRestart);
+  report.checks.push('Independent terminal cash, growth, return and resolved DCF/NPV survive a full native process restart with exact saved draft and source basis');
+  await assertPurchaseRestart(page, purchaseRestart);
+  report.checks.push('Editable purchase margin, reference scenario, candidate price, independent NPV and exact draft/source basis survive a full native process restart');
   await restoreMarketComparison(page);
   report.checks.push('SEK market-cap metrics, bubble size, all-currency filter and Swedish notes survive native process restart');
   await restoreComparison(page);
@@ -236,7 +312,7 @@ try {
     const metadata = await stat(resolve(uploadFolder, name));
     financialFiles.push({ file: `financial-packs/${name}`, bytes: metadata.size, modified_at: metadata.mtime.toISOString() });
   }
-  await writeFile(diagnosticsPath, JSON.stringify({ runId, scope: financialOnly ? 'financial-only' : 'full', status: failed ? 'FAIL' : 'PASS', executableSha256: createHash('sha256').update(await readFile(executable)).digest('hex'), failure, isolatedProfile: failed ? profile : null, financialFiles, events, runtimeErrors, externalRequests }, null, 2));
+  await writeFile(diagnosticsPath, JSON.stringify({ runId, scope: expandedCompanyListOnly ? 'expanded-company-list-only' : companyListOnly ? 'company-list-only' : researchGaugeOnly ? 'research-gauge-only' : financialOnly ? 'financial-only' : valuationOnly ? 'valuation-only' : 'full', status: failed ? 'FAIL' : 'PASS', executableSha256: createHash('sha256').update(await readFile(executable)).digest('hex'), failure, isolatedProfile: failed ? profile : null, financialFiles, events, runtimeErrors, externalRequests }, null, 2));
   console.log(`Native diagnostics: ${diagnosticsPath}`);
   if (failed) console.warn(`Preserved failed isolated test profile: ${profile}`);
   else await rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }).catch(() => console.warn(`Test profile still in use: ${profile}`));

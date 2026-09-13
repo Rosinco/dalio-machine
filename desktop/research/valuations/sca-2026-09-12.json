@@ -1,0 +1,933 @@
+{
+  "version": 2,
+  "id": "sca-2026-09-12-v1",
+  "company": "197",
+  "isin": "SE0000112724",
+  "name": "SCA B",
+  "asOf": "2026-09-12",
+  "currency": "SEK",
+  "deepDive": {
+    "date": "2026-08-17",
+    "path": "studies/sectors/material/skogsbolag/deep_dives/sca/deep_dive_2026-08-17_omkorning.md",
+    "sha256": "0d4ea16b0c3d782d02295420bf4cd8bfc81b76d7db079371dd21e8266ff89269"
+  },
+  "sources": [
+    {
+      "id": "interim",
+      "title": "SCA half-year report January–June 2026",
+      "date": "2026-07-22",
+      "url": "https://www.sca.com/siteassets/media/press-releases-and-reports/documents/2026/20260722-half-year-report-q2-2026-en-0-5400552.pdf",
+      "location": "Pages 2–7: operating exposures; 13: balance sheet; 14: statutory cash flow; 16: debt instruments; 17: shares/guarantees and alternative cash-flow measure; 18: capital and net debt",
+      "sha256": "3b0034d3f1713805a1ef0a5b8da323a74b91f903d575dfba8104b20e36931a38"
+    },
+    {
+      "id": "annual",
+      "title": "SCA annual report 2025",
+      "date": "2026-03-04",
+      "url": "https://www.sca.com/siteassets/investors/reports-and-presentations/annual-reports/2025/sca-annual-report-2025.pdf",
+      "location": "Printed pages 67: dividend rights; 73: treasury shares; 168: balance sheet; 169: statutory cash flow; 171–173: definitions/capital; 197–198: financing; 205: guarantees/contingencies",
+      "sha256": "47307fff6ceff81324c577b6b069b641d46b1cf0253d3ab4a93adcc0ae961bd5"
+    },
+    {
+      "id": "prices",
+      "title": "Saved Börsdata SCA B closing prices",
+      "date": "2026-08-10",
+      "path": "data/raw_api_snapshots/2026-08-10/all_stockprices/all_stockprices.parquet",
+      "location": "ins_id 197; latest retained observation 2026-08-07; close 110.30 SEK",
+      "sha256": "a8c9f95df438070483c4822f92a6bf806e3dd37b616c34f318c95fa8fa08e547"
+    },
+    {
+      "id": "deep-dive",
+      "title": "Archived SCA research review",
+      "date": "2026-08-17",
+      "path": "studies/sectors/material/skogsbolag/deep_dives/sca/deep_dive_2026-08-17_omkorning.md",
+      "location": "Historical business thesis and source review; earlier targets, gates and allocation verdicts are not inherited",
+      "sha256": "0d4ea16b0c3d782d02295420bf4cd8bfc81b76d7db079371dd21e8266ff89269"
+    }
+  ],
+  "price": {
+    "marketCap": 77468.3765367,
+    "date": "2026-08-07",
+    "narrative": "Historical SCA B close 110.30 SEK on 2026-08-07 × 702.342489 million outstanding A+B shares disclosed for 2026-06-30 in the report published 2026-07-22 = 77,468.3765367 SEK m. This B-equivalent common-equity purchase basis assumes equal economic rights and unchanged shares; it is not the sum of separately priced classes. Saved Börsdata download 2026-08-10; no FX conversion. This is a dated-price sensitivity study, not a live quote or a point-in-time backtest."
+  },
+  "years": 20,
+  "ownership": "Constant proportional ownership of SCA common equity. Annual forecast cash is assumed distributed as dividends after reinvestment, cash interest, taxes and lease principal. No additional net borrowing, buybacks or dilution. No additional acquisitions or joint-venture funding are assumed necessary to sustain the modeled business; review this assumption if capital commitments change. All amounts are nominal SEK millions and payments occur at each full year-end after valuation.",
+  "capital": {
+    "tangibleEquity": 99902,
+    "averageTCE": 112527,
+    "nopat": 2104.1,
+    "grossDebt": 15536,
+    "surplusCash": 0
+  },
+  "notes": {
+    "business": "SCA combines owned forest with wood products, pulp, containerboard and renewable energy. The archived August review provides historical business context. This numerical update uses original FY 2025 and H1 2026 reports and separates industrial cash generation from non-cash biological gains. It does not inherit prior price targets, screening gates or position-size recommendations. Reported self-sufficiency in raw material, energy and logistics may cushion costs, while commodity pricing, currency and utilization remain cyclical. Forecast payments require sufficient reinvestment and an actual distribution policy; they are sensitivity assumptions.",
+    "macro": "Verified company exposures in the H1 report: European construction and wood demand affect wood-product volumes/prices; Europe/US pulp demand and producer stocks affect pulp pricing; European industrial activity, packaging consumption and e-commerce affect kraftliner demand; currency moves affect realized selling prices; wood, energy and fuel prices affect mill and forest costs. These mechanisms can change margins, working capital and reinvestment over coming quarters, and inform the explicit scenario bridge. Monitor segment volumes/prices, delivery costs, actual cash capex, cash after financing and distributions. Weakening prices/utilization invalidate the mid/high recovery paths. No listing-country score, GDP multiplier, macro probability or carbon-credit proceeds are inserted. Original company reporting has its own date, independent of the selected Atlas macro release.",
+    "financing": "At June 30 common book equity is 101,194 total equity less 17 non-controlling interests = 101,177; subtract 1,275 intangibles for tangible common equity 99,902. Gross borrowings plus lease liabilities = 12,582 + 2,524 + 256 + 174 = 15,536. Pension provisions 40 and other financial marks 7 are separate. The issuer reports broader financial liabilities 15,583 and net debt 10,859 after deducting cash 162, pension surplus 4,401 and other financial assets 161; pension surplus is not assumed distributable cash. All 162 cash is required; surplus 0. Average tangible capital 112,527 is a two-endpoint FY 2025 proxy from issuer capital employed less intangibles, retaining forest revaluations and the issuer financial-asset/operating-liability perimeter. Normalized NOPAT 2,104.1 uses FY 2025 EBIT 4,432 less biological gain 1,782 taxed at an assumed 20.6%; it is not a fully reconciled operating return. Financing maturity and hedges require ongoing review; no debt is deducted again from this after-financing equity DCF. The issuer reports SEK 6,000m undrawn credit facilities through 2030 and average gross-debt maturity of 3.5 years. The capital proxy retains NCI and pension-related accounting; it is not an FCFF return.",
+    "recovery": "Separate orderly-disposal stress case. June asset buckets reconcile to total assets 147,667. Apply explicit analyst proceeds, subtract total liabilities 46,473 plus 17 booked NCI reserve once, then sale/closure costs, 600 additional external-claim contingency and net pre-completion cash burn. Full deferred tax 24,490 is already in liabilities, and existing provisions are not charged twice. Pension surplus, leased assets and intangible assets receive zero proceeds in these stress assumptions; that is not an appraisal or a claim that their true value is zero. Minority owners cannot compel disposal. Actual tax, claims, minority settlement and asset-sale feasibility could materially differ; lower-than-book proceeds can make full deferred-tax deduction conservative. Recovery is neither a floor nor added to the continuing-business value.",
+    "decision": "Prepared September 12 using the dated August 7 B-share price and June 30 reported shares. The 9% nominal equity return is an analyst hurdle used consistently across cases, not an observed company cost of equity. Twenty years exposes long-term uncertainty; the final sale prices only post-horizon dividends and includes a 2% assumed sale cost. Probabilities are unset. Scenarios depend on industrial earnings recovery, maintained financing access and the forecast reinvestment envelope. Further acquisitions, JV funding, dilution or unbooked obligations would reduce distributable cash and require a revised study. Reassess on material report, financing, price/share or forest-sale evidence. This is a transparent numerical sensitivity study, not an automatic buy/sell verdict."
+  },
+  "scenarios": {
+    "low": {
+      "cashFlows": [
+        630,
+        623.7,
+        617.4630000000001,
+        611.2883700000001,
+        605.1754863000001,
+        599.1237314370001,
+        593.1324941226301,
+        587.2011691814038,
+        581.3291574895898,
+        575.5158659146939,
+        575.5158659146939,
+        575.5158659146939,
+        575.5158659146939,
+        575.5158659146939,
+        575.5158659146939,
+        575.5158659146939,
+        575.5158659146939,
+        575.5158659146939,
+        575.5158659146939,
+        575.5158659146939
+      ],
+      "discountRate": 9,
+      "terminalEquity": 6266.728317737778,
+      "rationale": "Even this low case assumes year-one EBIT excluding biological gains of SEK 1,900m, above the trailing year to June 2026 of SEK 1,340m. Weak industrial pricing, adverse currency effects and wood/fuel costs hold year-one EBIT excluding biological gains to SEK 1,900m. Cash after explicit reinvestment and financing is SEK 630m, below the tax-adjusted trailing reference. Payments decline 1% through year 10, then remain flat. Required nominal equity return is 9%. Final sale in year 20 capitalizes year-21 distributions at 9% less 0% mature growth, less 2% sale costs. Forest assets and recovery are not added to this continuing-business value."
+    },
+    "mid": {
+      "cashFlows": [
+        1230,
+        1254.6,
+        1279.692,
+        1305.28584,
+        1331.3915568,
+        1358.019387936,
+        1385.1797756947199,
+        1412.8833712086143,
+        1441.1410386327866,
+        1469.9638594054425,
+        1484.663497999497,
+        1499.510132979492,
+        1514.505234309287,
+        1529.65028665238,
+        1544.9467895189036,
+        1560.3962574140926,
+        1576.0002199882335,
+        1591.760222188116,
+        1607.6778244099971,
+        1623.7546026540972
+      ],
+      "discountRate": 9,
+      "terminalEquity": 20089.903821337815,
+      "rationale": "Year-one EBIT excluding biological gains returns to FY2025 SEK 2,650m, above the trailing trough. Gross investment of SEK 2,400m exceeds the trailing cash-spend reference. After working capital, financing, taxes and leases, SEK 1,230m is assumed distributed; payments grow 2% through year 10, then 1%. This requires industrial recovery, not merely higher forest book values. Required nominal equity return is 9%. Final sale in year 20 capitalizes year-21 distributions at 9% less 1% mature growth, less 2% sale costs. Forest assets and recovery are not added to this continuing-business value."
+    },
+    "high": {
+      "cashFlows": [
+        2050,
+        2132,
+        2217.28,
+        2305.9712000000004,
+        2398.2100480000004,
+        2494.1384499200003,
+        2593.9039879168004,
+        2697.6601474334725,
+        2805.5665533308115,
+        2917.789215464044,
+        2976.144999773325,
+        3035.6678997687914,
+        3096.3812577641675,
+        3158.3088829194508,
+        3221.47506057784,
+        3285.9045617893967,
+        3351.6226530251847,
+        3418.6551060856887,
+        3487.0282082074027,
+        3556.7687723715508
+      ],
+      "discountRate": 9,
+      "terminalEquity": 50790.65806946575,
+      "rationale": "Year-one EBIT excluding biological gains of SEK 4,000m requires substantial recovery in wood, pulp and containerboard pricing and utilization. Gross capex increases to SEK 2,600m and working capital to SEK 250m; SEK 2,050m is assumed distributed after cash interest, taxes and leases. Payments grow 4% through year 10, then 2%. This is an optimistic analyst scenario, not company guidance. Required nominal equity return is 9%. Final sale in year 20 capitalizes year-21 distributions at 9% less 2% mature growth, less 2% sale costs. Forest assets and recovery are not added to this continuing-business value."
+    }
+  },
+  "evidence": [
+    {
+      "heading": "SCA source cash and normalized reference",
+      "blocks": [
+        {
+          "kind": "paragraph",
+          "classification": "source",
+          "text": "The statutory cash-flow statement includes cash interest and taxes in operating activities. SCA also publishes an alternative performance measure called operating cash flow; that measure has a different perimeter and is not substituted here. Original issuer accounts anchor this study; saved vendor rows are separately dated.",
+          "sourceIds": [
+            "interim",
+            "annual"
+          ]
+        },
+        {
+          "kind": "table",
+          "classification": "source",
+          "columns": [
+            "Statutory source input · SEK m",
+            "FY 2025",
+            "H1 2025",
+            "H1 2026"
+          ],
+          "rows": [
+            {
+              "label": "Operating cash after interest and tax",
+              "values": [
+                4017,
+                1791,
+                1392
+              ]
+            },
+            {
+              "label": "Gross cash purchases of tangible/intangible assets",
+              "values": [
+                2815,
+                1549,
+                770
+              ]
+            },
+            {
+              "label": "Lease principal paid",
+              "values": [
+                223,
+                111,
+                107
+              ]
+            },
+            {
+              "label": "Cash tax paid (negative = refund)",
+              "values": [
+                197,
+                149,
+                -59
+              ]
+            }
+          ],
+          "sourceIds": [
+            "annual",
+            "interim"
+          ],
+          "precision": 0
+        },
+        {
+          "kind": "table",
+          "classification": "calculation",
+          "columns": [
+            "Trailing year to June 2026 · SEK m",
+            "FY 2025 + H1 2026 − H1 2025"
+          ],
+          "rows": [
+            {
+              "label": "Operating cash",
+              "values": [
+                3618
+              ]
+            },
+            {
+              "label": "Gross cash capex",
+              "values": [
+                2036
+              ]
+            },
+            {
+              "label": "Lease principal",
+              "values": [
+                219
+              ]
+            },
+            {
+              "label": "Cash tax paid",
+              "values": [
+                -11
+              ]
+            },
+            {
+              "label": "Cash after gross capex and leases",
+              "values": [
+                1363
+              ]
+            }
+          ],
+          "sourceIds": [
+            "annual",
+            "interim"
+          ],
+          "precision": 0
+        },
+        {
+          "kind": "paragraph",
+          "classification": "assumption",
+          "text": "Normal annual cash tax is assumed at 450 SEK m. Current spending is not established maintenance capex; acquisition/JV cash calls and asset-sale proceeds are excluded from this reference. Forecast reinvestment is set separately below.",
+          "sourceIds": []
+        },
+        {
+          "kind": "paragraph",
+          "classification": "calculation",
+          "text": "Tax-adjusted normalized reference: 3,618 − 2,036 − 219 − 11 − 450 = 902 SEK m. Actual working-capital changes remain in this reference. The reference is not automatically inserted as dividends.",
+          "sourceIds": [
+            "annual",
+            "interim"
+          ]
+        }
+      ]
+    },
+    {
+      "heading": "Year-one shareholder-payment assumptions",
+      "blocks": [
+        {
+          "kind": "paragraph",
+          "classification": "calculation",
+          "text": "FY 2025 EBIT 4,432 less biological-value gains 1,782 gives 2,650 SEK m before the assumed operating tax. H1 2026 reported operating profit 1,267 includes 847 biological gains, so EBIT excluding biological gains were weaker than the annual anchor. These are source anchors, not forecast dividend payments.",
+          "sourceIds": [
+            "annual",
+            "interim"
+          ]
+        },
+        {
+          "kind": "table",
+          "classification": "assumption",
+          "columns": [
+            "Year-one bridge · SEK m",
+            "Low",
+            "Mid",
+            "High"
+          ],
+          "rows": [
+            {
+              "label": "EBIT excluding biological gains",
+              "values": [
+                1900,
+                2650,
+                4000
+              ]
+            },
+            {
+              "label": "Add depreciation/amortization",
+              "values": [
+                2250,
+                2250,
+                2300
+              ]
+            },
+            {
+              "label": "Deduct gross cash capex",
+              "values": [
+                -2400,
+                -2400,
+                -2600
+              ]
+            },
+            {
+              "label": "Deduct working-capital investment",
+              "values": [
+                -150,
+                -150,
+                -250
+              ]
+            },
+            {
+              "label": "Deduct cash net interest",
+              "values": [
+                -450,
+                -450,
+                -450
+              ]
+            },
+            {
+              "label": "Deduct cash tax",
+              "values": [
+                -300,
+                -450,
+                -730
+              ]
+            },
+            {
+              "label": "Deduct lease principal",
+              "values": [
+                -220,
+                -220,
+                -220
+              ]
+            }
+          ],
+          "sourceIds": [],
+          "precision": 0
+        },
+        {
+          "kind": "table",
+          "classification": "calculation",
+          "columns": [
+            "Result · SEK m",
+            "Low",
+            "Mid",
+            "High"
+          ],
+          "rows": [
+            {
+              "label": "Assumed first shareholder payment",
+              "values": [
+                630,
+                1230,
+                2050
+              ]
+            },
+            {
+              "label": "Difference from 902 normalized reference",
+              "values": [
+                -272,
+                328,
+                1148
+              ]
+            }
+          ],
+          "sourceIds": [],
+          "precision": 0
+        },
+        {
+          "kind": "paragraph",
+          "classification": "assumption",
+          "text": "Gross investment exceeds the trailing 2,036 reference. Cash tax is a rounded scenario allowance near 20.6% of EBIT less cash net interest. Dividends assume common-equity cash can be distributed after these commitments. No additional acquisition or JV funding is required in this model; if necessary, deduct it before forecasting distributions.",
+          "sourceIds": []
+        },
+        {
+          "kind": "paragraph",
+          "classification": "assumption",
+          "text": "All three first-year scenarios assume operating improvement: even low-case EBIT excluding biological gains of 1,900 SEK m exceeds the trailing 1,340 SEK m. Persisting or deeper weakness would require a lower path; the low case is not a guaranteed lower bound.",
+          "sourceIds": [
+            "interim",
+            "annual"
+          ]
+        }
+      ]
+    },
+    {
+      "heading": "Forecast, required return and final sale",
+      "blocks": [
+        {
+          "kind": "table",
+          "classification": "assumption",
+          "columns": [
+            "Forecast choice",
+            "Low",
+            "Mid",
+            "High"
+          ],
+          "rows": [
+            {
+              "label": "Annual growth in years 2–10 · %",
+              "values": [
+                -1,
+                2,
+                4
+              ]
+            },
+            {
+              "label": "Mature annual growth from year 11 · %",
+              "values": [
+                0,
+                1,
+                2
+              ]
+            },
+            {
+              "label": "Required nominal equity return · %",
+              "values": [
+                9,
+                9,
+                9
+              ]
+            },
+            {
+              "label": "Explicit horizon · years",
+              "values": [
+                20,
+                20,
+                20
+              ]
+            },
+            {
+              "label": "Final selling cost · %",
+              "values": [
+                2,
+                2,
+                2
+              ]
+            }
+          ],
+          "sourceIds": [],
+          "precision": 0
+        },
+        {
+          "kind": "paragraph",
+          "classification": "assumption",
+          "text": "Constant proportional ownership of SCA common equity. Annual forecast cash is assumed distributed as dividends after reinvestment, cash interest, taxes and lease principal. No additional net borrowing, buybacks or dilution. No additional acquisitions or joint-venture funding are assumed necessary to sustain the modeled business; review this assumption if capital commitments change. All amounts are nominal SEK millions and payments occur at each full year-end after valuation.",
+          "sourceIds": []
+        },
+        {
+          "kind": "paragraph",
+          "classification": "calculation",
+          "text": "The first payment comes from the explicit year-one bridge. Later payments compound by the entered phase growth. Final equity sale at year 20 = year 21 dividend ÷ (9% − mature growth) × 98%. It counts post-horizon distributions once; no forest book value or extra debt/cash adjustment is added. Review the separately editable final sale whenever changing forecasts or discount rates.",
+          "sourceIds": []
+        },
+        {
+          "kind": "table",
+          "classification": "calculation",
+          "columns": [
+            "Net final equity sale · SEK m",
+            "Low",
+            "Mid",
+            "High"
+          ],
+          "rows": [
+            {
+              "label": "Year 20 sale",
+              "values": [
+                6266.728317737778,
+                20089.903821337815,
+                50790.65806946575
+              ]
+            }
+          ],
+          "sourceIds": [],
+          "precision": 2
+        }
+      ]
+    },
+    {
+      "heading": "Common capital, debt and unavailable cash",
+      "blocks": [
+        {
+          "kind": "table",
+          "classification": "source",
+          "columns": [
+            "June 30 2026 source amount · SEK m",
+            "Amount"
+          ],
+          "rows": [
+            {
+              "label": "Total equity",
+              "values": [
+                101194
+              ]
+            },
+            {
+              "label": "Non-controlling interests",
+              "values": [
+                17
+              ]
+            },
+            {
+              "label": "Goodwill and intangibles",
+              "values": [
+                1275
+              ]
+            },
+            {
+              "label": "Long-term borrowings",
+              "values": [
+                12582
+              ]
+            },
+            {
+              "label": "Short-term borrowings",
+              "values": [
+                2524
+              ]
+            },
+            {
+              "label": "Long-term leases",
+              "values": [
+                256
+              ]
+            },
+            {
+              "label": "Short-term leases",
+              "values": [
+                174
+              ]
+            },
+            {
+              "label": "Pension provisions",
+              "values": [
+                40
+              ]
+            },
+            {
+              "label": "Other financial marks",
+              "values": [
+                7
+              ]
+            },
+            {
+              "label": "Cash",
+              "values": [
+                162
+              ]
+            },
+            {
+              "label": "Surplus in funded pensions",
+              "values": [
+                4401
+              ]
+            }
+          ],
+          "sourceIds": [
+            "interim"
+          ],
+          "precision": 0
+        },
+        {
+          "kind": "table",
+          "classification": "calculation",
+          "columns": [
+            "Reconciled or proxy amount · SEK m",
+            "Amount"
+          ],
+          "rows": [
+            {
+              "label": "Tangible common equity = 101194 − 17 − 1275",
+              "values": [
+                99902
+              ]
+            },
+            {
+              "label": "Gross borrowings and lease liabilities",
+              "values": [
+                15536
+              ]
+            },
+            {
+              "label": "Issuer broader financial liabilities = 15536 + 40 + 7",
+              "values": [
+                15583
+              ]
+            },
+            {
+              "label": "Issuer net debt = 15583 − 4401 − 161 − 162",
+              "values": [
+                10859
+              ]
+            },
+            {
+              "label": "FY 2024 tangible-capital proxy = 114920 − 1025",
+              "values": [
+                113895
+              ]
+            },
+            {
+              "label": "FY 2025 tangible-capital proxy = 112460 − 1301",
+              "values": [
+                111159
+              ]
+            },
+            {
+              "label": "Average FY 2025 tangible-capital proxy",
+              "values": [
+                112527
+              ]
+            },
+            {
+              "label": "Normalized NOPAT = (4432 − 1782) ×(1 − 20.6%)",
+              "values": [
+                2104.1
+              ]
+            }
+          ],
+          "sourceIds": [
+            "annual",
+            "interim"
+          ],
+          "precision": 1
+        },
+        {
+          "kind": "paragraph",
+          "classification": "assumption",
+          "text": "All 162 SEK m cash is assumed required for operations; available surplus cash is 0. The 20.6% tax rate and biological-gain removal are analyst normalization choices. The capital denominator retains revalued forest assets and the issuer accounting perimeter; resulting 1.87% is a descriptive proxy, not a fully reconciled cash return or a valuation by itself.",
+          "sourceIds": []
+        }
+      ]
+    },
+    {
+      "heading": "Separate recovery assumptions",
+      "blocks": [
+        {
+          "kind": "paragraph",
+          "classification": "source",
+          "text": "June 30 total assets 147,667 and total liabilities 46,473 are the source balance sheet. Full deferred tax 24,490 and booked provisions are already within liabilities. Non-controlling interests are 17. The source report gives book carrying values, not observed liquidation bids.",
+          "sourceIds": [
+            "interim"
+          ]
+        },
+        {
+          "kind": "table",
+          "classification": "assumption",
+          "columns": [
+            "Proceeds as percentage of book",
+            "Low",
+            "Mid",
+            "High"
+          ],
+          "rows": [
+            {
+              "label": "Forest land and standing timber",
+              "values": [
+                50,
+                70,
+                90
+              ]
+            },
+            {
+              "label": "Industrial property, plant and equipment",
+              "values": [
+                10,
+                30,
+                50
+              ]
+            },
+            {
+              "label": "Inventories",
+              "values": [
+                40,
+                60,
+                80
+              ]
+            },
+            {
+              "label": "Trade receivables",
+              "values": [
+                80,
+                90,
+                98
+              ]
+            },
+            {
+              "label": "Other current receivables",
+              "values": [
+                30,
+                55.00000000000001,
+                75
+              ]
+            },
+            {
+              "label": "Other non-current assets excluding pension surplus",
+              "values": [
+                20,
+                50,
+                75
+              ]
+            },
+            {
+              "label": "Cash and cash equivalents",
+              "values": [
+                100,
+                100,
+                100
+              ]
+            },
+            {
+              "label": "Right-of-use assets",
+              "values": [
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "label": "Surplus in funded pension plans",
+              "values": [
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "label": "Goodwill and other intangible assets",
+              "values": [
+                0,
+                0,
+                0
+              ]
+            }
+          ],
+          "sourceIds": [],
+          "precision": 0
+        },
+        {
+          "kind": "table",
+          "classification": "assumption",
+          "columns": [
+            "Additional deductions and timing",
+            "Low",
+            "Mid",
+            "High"
+          ],
+          "rows": [
+            {
+              "label": "Incremental sale/closure costs · SEK m",
+              "values": [
+                3000,
+                1900,
+                1100
+              ]
+            },
+            {
+              "label": "Unbooked external-claim contingency · SEK m",
+              "values": [
+                600,
+                600,
+                600
+              ]
+            },
+            {
+              "label": "Net pre-completion cash burn · SEK m",
+              "values": [
+                1000,
+                600,
+                400
+              ]
+            },
+            {
+              "label": "Payment year",
+              "values": [
+                5,
+                3,
+                2
+              ]
+            }
+          ],
+          "sourceIds": [],
+          "precision": 0
+        },
+        {
+          "kind": "paragraph",
+          "classification": "assumption",
+          "text": "The 600 contingency is an extra allowance for unbooked external guarantees/claims. Consolidated subsidiary debt guarantees are not summed again. Pension surplus, right-of-use assets and intangibles receive no proceeds in these deliberately conservative stress cases; actual recovery remains uncertain. The 17 NCI deduction is a booked reserve, not a verified minority buyout price.",
+          "sourceIds": []
+        }
+      ]
+    }
+  ],
+  "recovery": {
+    "status": "available",
+    "explanation": "Independent asset-disposal stress calculation using June 30 2026 book assets and analyst proceeds. All values are SEK m. Book amounts are source facts; sale proceeds, additional deductions and timing are assumptions.",
+    "sourceIds": [
+      "interim",
+      "annual"
+    ],
+    "assets": [
+      {
+        "label": "Forest land and standing timber",
+        "book": 104393,
+        "proceeds": {
+          "low": 52196.5,
+          "mid": 73075.09999999999,
+          "high": 93953.7
+        }
+      },
+      {
+        "label": "Industrial property, plant and equipment",
+        "book": 24489,
+        "proceeds": {
+          "low": 2448.9,
+          "mid": 7346.7,
+          "high": 12244.5
+        }
+      },
+      {
+        "label": "Inventories",
+        "book": 6491,
+        "proceeds": {
+          "low": 2596.4,
+          "mid": 3894.6,
+          "high": 5192.8
+        }
+      },
+      {
+        "label": "Trade receivables",
+        "book": 3690,
+        "proceeds": {
+          "low": 2952,
+          "mid": 3321,
+          "high": 3616.2
+        }
+      },
+      {
+        "label": "Other current receivables",
+        "book": 896,
+        "proceeds": {
+          "low": 268.8,
+          "mid": 492.80000000000007,
+          "high": 672
+        }
+      },
+      {
+        "label": "Other non-current assets excluding pension surplus",
+        "book": 1467,
+        "proceeds": {
+          "low": 293.40000000000003,
+          "mid": 733.5,
+          "high": 1100.25
+        }
+      },
+      {
+        "label": "Cash and cash equivalents",
+        "book": 162,
+        "proceeds": {
+          "low": 162,
+          "mid": 162,
+          "high": 162
+        }
+      },
+      {
+        "label": "Right-of-use assets",
+        "book": 403,
+        "proceeds": {
+          "low": 0,
+          "mid": 0,
+          "high": 0
+        }
+      },
+      {
+        "label": "Surplus in funded pension plans",
+        "book": 4401,
+        "proceeds": {
+          "low": 0,
+          "mid": 0,
+          "high": 0
+        }
+      },
+      {
+        "label": "Goodwill and other intangible assets",
+        "book": 1275,
+        "proceeds": {
+          "low": 0,
+          "mid": 0,
+          "high": 0
+        }
+      }
+    ],
+    "scenarios": {
+      "low": {
+        "claims": 46490,
+        "costs": 3600,
+        "cashBurn": 1000,
+        "year": 5
+      },
+      "mid": {
+        "claims": 46490,
+        "costs": 2500,
+        "cashBurn": 600,
+        "year": 3
+      },
+      "high": {
+        "claims": 46490,
+        "costs": 1700,
+        "cashBurn": 400,
+        "year": 2
+      }
+    },
+    "limitations": "Prior claims include 46,473 total book liabilities plus 17 for NCI, including full deferred tax 24,490 once. Costs include incremental sale/closure costs plus 600 external-claim contingency; cash burn is separate. Assumed proceeds are not appraisals. Minority shareholders cannot compel disposals; actual tax, claim settlement, unbooked commitments and sale feasibility need transaction-specific work. No recovery value is added to the DCF or presented as a floor."
+  }
+}

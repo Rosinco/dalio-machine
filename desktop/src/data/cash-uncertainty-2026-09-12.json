@@ -1,0 +1,1641 @@
+{
+  "id": "cash-uncertainty-2026-09-12-v1",
+  "schemaVersion": 1,
+  "researchDate": "2026-09-12",
+  "status": "research",
+  "targetCoverage": 0.8,
+  "latestEmpiricalHorizon": 4,
+  "historyYears": 5,
+  "scope": "operating_and_property",
+  "weighting": "listing_balanced",
+  "modelDefinitions": {
+    "linear": {
+      "description": "Weighted least-squares line over five signed annual cash values, extrapolated from its fitted latest intercept.",
+      "newestFirstWeights": [
+        30,
+        25,
+        20,
+        15,
+        10
+      ]
+    },
+    "naive": {
+      "description": "Latest annual signed cash held constant in every forecast year."
+    }
+  },
+  "cashFlowBasis": {
+    "field": "free_cash_flow",
+    "currency": "native_reporting_currency",
+    "conversion": "Each saved raw amount divided by its own positive currency_ratio.",
+    "requiresConsistentReportingCurrency": true,
+    "quoteCurrencyFallbackTested": false
+  },
+  "calibrationTiming": "Calibration targets are FY2020 or earlier, with known publication by 2021-06-30. Training publications must be known, on or after their fiscal end and no later than origin publication, which precedes target fiscal end. Evaluation applies factors only to origins FY2021 or later published on or after the cutoff.",
+  "scopeDefinition": "Operating companies and property: excludes Financials except Real Estate and REITs. Provider cash remains an unreviewed proxy.",
+  "sourceAsOf": "2026-08-10",
+  "taxonomySha256": "cc54a95110c5ab068434fdab8a548082ee26b48b67fbe2cde5ec330b578b37ff",
+  "sourceFiles": [
+    {
+      "id": "2025-06-21-annual",
+      "as_of": "2025-06-21",
+      "path": "data/raw_api/all_reports/all_yearly_reports.parquet",
+      "sha256": "3ddb13ef1540d97fb06048d4466dde2d25b5c35c4335d58c5378322597cf3efc",
+      "frequency": "annual"
+    },
+    {
+      "id": "2026-08-10-annual",
+      "as_of": "2026-08-10",
+      "path": "data/raw_api_snapshots/2026-08-10/all_reports/all_yearly_reports.parquet",
+      "sha256": "df421594766e357df06197a63cb447315945700520d37c303b9210dfb3d4f84c",
+      "frequency": "annual"
+    }
+  ],
+  "calibrationCutoff": "2021-06-30",
+  "calibrationLastTargetYear": 2020,
+  "minimumCalibrationRows": 300,
+  "minimumCalibrationListings": 100,
+  "minimumCalibrationHistories": 100,
+  "covidTreatment": {
+    "omittedTargetYears": [],
+    "historicalShocksRemoved": false,
+    "description": "Original all-year calibration retains FY2020 and the unchanged raw histories. No COVID-omission sensitivity or normalization is used."
+  },
+  "cashDispersion": {
+    "bounds": [
+      0.25,
+      0.75
+    ],
+    "labels": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "boundConvention": "Lower-inclusive groups: low <0.25; medium >=0.25 and <0.75; high >=0.75.",
+    "definition": "Population standard deviation of five signed FCF levels / mean absolute five-year FCF; missing for zero scale. This includes trend and growth.",
+    "requiredHistoryYears": 5,
+    "standardDeviationDegreesOfFreedom": 0
+  },
+  "rangeDefinition": {
+    "scale": "Mean absolute cash across all five signed annual history values, unweighted and strictly positive.",
+    "halfWidth": "The selected model/horizon factor times the historical cash scale.",
+    "bounds": "Mid cash minus/plus half-width. Signed cash and zero crossings are retained.",
+    "quantile": "Weighted nearest cumulative 80th percentile of absolute error / mean absolute five-year training cash. Half-width = factor × that scale; unchanged point forecast.",
+    "weighting": "Within each scope/model/horizon calibration pool, each listing has total weight one divided across its eligible folds; these fixed weights enter every group quantile. Evaluation gives each listing total weight one within the full scope/model/horizon/period pool. Subgroup diagnostics retain those pool weights rather than rebalancing each group.",
+    "fallback": "An unavailable or unsupported cash group uses the model/horizon's global pool. A different peer pool need not imply a wider range.",
+    "ineligibleHistory": "Partial, invalid, unavailable or zero-scale histories have no empirical interval; any starter range for them is an explicit assumption.",
+    "beyondLatestEmpiricalHorizon": "No calibrated factor is provided after Year 4. Longer-horizon values require separately labelled assumptions.",
+    "probabilityMeaning": "An empirical 80% research target for annual cash, not a guarantee for a company, joint cash path or DCF valuation."
+  },
+  "calibrationByModelHorizon": {
+    "linear": {
+      "1": {
+        "global": {
+          "factor": 1.579507645361372,
+          "count": 83949,
+          "listings": 10069,
+          "histories": 78012,
+          "weight": 10069.0,
+          "supported": true
+        },
+        "cashDispersion": {
+          "high": {
+            "factor": 2.3135268109623084,
+            "count": 34482,
+            "listings": 7101,
+            "histories": 31912,
+            "weight": 4228.235661560661,
+            "supported": true
+          },
+          "low": {
+            "factor": 0.5428303157971751,
+            "count": 13684,
+            "listings": 3759,
+            "histories": 12610,
+            "weight": 1492.5315906315905,
+            "supported": true
+          },
+          "medium": {
+            "factor": 1.1476862580122211,
+            "count": 35783,
+            "listings": 8343,
+            "histories": 33490,
+            "weight": 4348.232747807748,
+            "supported": true
+          }
+        }
+      },
+      "2": {
+        "global": {
+          "factor": 2.232650649679281,
+          "count": 73704,
+          "listings": 9585,
+          "histories": 68458,
+          "weight": 9585.0,
+          "supported": true
+        },
+        "cashDispersion": {
+          "high": {
+            "factor": 3.1587699439413544,
+            "count": 30536,
+            "listings": 6673,
+            "histories": 28224,
+            "weight": 4054.3211399711404,
+            "supported": true
+          },
+          "low": {
+            "factor": 0.7583563337333653,
+            "count": 11885,
+            "listings": 3402,
+            "histories": 10958,
+            "weight": 1410.3783910533912,
+            "supported": true
+          },
+          "medium": {
+            "factor": 1.652605190786051,
+            "count": 31283,
+            "listings": 7802,
+            "histories": 29276,
+            "weight": 4120.30046897547,
+            "supported": true
+          }
+        }
+      },
+      "3": {
+        "global": {
+          "factor": 2.836951278524882,
+          "count": 64048,
+          "listings": 9210,
+          "histories": 59472,
+          "weight": 9210.0,
+          "supported": true
+        },
+        "cashDispersion": {
+          "high": {
+            "factor": 3.940731830918541,
+            "count": 26743,
+            "listings": 6247,
+            "histories": 24684,
+            "weight": 3925.09706959707,
+            "supported": true
+          },
+          "low": {
+            "factor": 0.954511056924241,
+            "count": 10188,
+            "listings": 3085,
+            "histories": 9404,
+            "weight": 1328.8911005661007,
+            "supported": true
+          },
+          "medium": {
+            "factor": 2.045697646779178,
+            "count": 27117,
+            "listings": 7290,
+            "histories": 25384,
+            "weight": 3956.01182983683,
+            "supported": true
+          }
+        }
+      },
+      "4": {
+        "global": {
+          "factor": 3.420975386662232,
+          "count": 54830,
+          "listings": 8766,
+          "histories": 50902,
+          "weight": 8766.0,
+          "supported": true
+        },
+        "cashDispersion": {
+          "high": {
+            "factor": 4.591973746136332,
+            "count": 23172,
+            "listings": 5836,
+            "histories": 21360,
+            "weight": 3778.3587301587295,
+            "supported": true
+          },
+          "low": {
+            "factor": 1.102680481692035,
+            "count": 8541,
+            "listings": 2770,
+            "histories": 7893,
+            "weight": 1244.9071428571428,
+            "supported": true
+          },
+          "medium": {
+            "factor": 2.439555862331604,
+            "count": 23117,
+            "listings": 6714,
+            "histories": 21649,
+            "weight": 3742.7341269841268,
+            "supported": true
+          }
+        }
+      }
+    },
+    "naive": {
+      "1": {
+        "global": {
+          "factor": 1.406043046357616,
+          "count": 83949,
+          "listings": 10069,
+          "histories": 78012,
+          "weight": 10069.0,
+          "supported": true
+        },
+        "cashDispersion": {
+          "high": {
+            "factor": 2.098280619825939,
+            "count": 34482,
+            "listings": 7101,
+            "histories": 31912,
+            "weight": 4228.235661560661,
+            "supported": true
+          },
+          "low": {
+            "factor": 0.5389283694090857,
+            "count": 13684,
+            "listings": 3759,
+            "histories": 12610,
+            "weight": 1492.5315906315905,
+            "supported": true
+          },
+          "medium": {
+            "factor": 1.0595677385345283,
+            "count": 35783,
+            "listings": 8343,
+            "histories": 33490,
+            "weight": 4348.232747807748,
+            "supported": true
+          }
+        }
+      },
+      "2": {
+        "global": {
+          "factor": 1.8423190913501728,
+          "count": 73704,
+          "listings": 9585,
+          "histories": 68458,
+          "weight": 9585.0,
+          "supported": true
+        },
+        "cashDispersion": {
+          "high": {
+            "factor": 2.6128385883651197,
+            "count": 30536,
+            "listings": 6673,
+            "histories": 28224,
+            "weight": 4054.3211399711404,
+            "supported": true
+          },
+          "low": {
+            "factor": 0.7569444444444443,
+            "count": 11885,
+            "listings": 3402,
+            "histories": 10958,
+            "weight": 1410.3783910533912,
+            "supported": true
+          },
+          "medium": {
+            "factor": 1.438036092257411,
+            "count": 31283,
+            "listings": 7802,
+            "histories": 29276,
+            "weight": 4120.30046897547,
+            "supported": true
+          }
+        }
+      },
+      "3": {
+        "global": {
+          "factor": 2.102308746796418,
+          "count": 64048,
+          "listings": 9210,
+          "histories": 59472,
+          "weight": 9210.0,
+          "supported": true
+        },
+        "cashDispersion": {
+          "high": {
+            "factor": 2.960342216287981,
+            "count": 26743,
+            "listings": 6247,
+            "histories": 24684,
+            "weight": 3925.09706959707,
+            "supported": true
+          },
+          "low": {
+            "factor": 0.926168674698795,
+            "count": 10188,
+            "listings": 3085,
+            "histories": 9404,
+            "weight": 1328.8911005661007,
+            "supported": true
+          },
+          "medium": {
+            "factor": 1.7078317152103561,
+            "count": 27117,
+            "listings": 7290,
+            "histories": 25384,
+            "weight": 3956.01182983683,
+            "supported": true
+          }
+        }
+      },
+      "4": {
+        "global": {
+          "factor": 2.3298033282904687,
+          "count": 54830,
+          "listings": 8766,
+          "histories": 50902,
+          "weight": 8766.0,
+          "supported": true
+        },
+        "cashDispersion": {
+          "high": {
+            "factor": 3.150035413551586,
+            "count": 23172,
+            "listings": 5836,
+            "histories": 21360,
+            "weight": 3778.3587301587295,
+            "supported": true
+          },
+          "low": {
+            "factor": 1.0733212964983365,
+            "count": 8541,
+            "listings": 2770,
+            "histories": 7893,
+            "weight": 1244.9071428571428,
+            "supported": true
+          },
+          "medium": {
+            "factor": 1.9275752006698816,
+            "count": 23117,
+            "listings": 6714,
+            "histories": 21649,
+            "weight": 3742.7341269841268,
+            "supported": true
+          }
+        }
+      }
+    }
+  },
+  "evaluationByModelHorizon": {
+    "linear": {
+      "1": {
+        "validation": {
+          "global": {
+            "count": 20989,
+            "listings": 11427,
+            "histories": 19564,
+            "targetYears": [
+              2022,
+              2023
+            ],
+            "weight": 11427.0,
+            "coverage": 0.7767568040605584,
+            "belowShare": 0.11897260873370089,
+            "aboveShare": 0.10427058720574078,
+            "meanWidth": 3.159015290722787,
+            "meanIntervalScore": 15.500375423507016,
+            "medianNormalizedError": 0.6880700413669364,
+            "meanNormalizedError": 2.0297446893892586,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 20989,
+            "listings": 11427,
+            "histories": 19564,
+            "targetYears": [
+              2022,
+              2023
+            ],
+            "weight": 11427.0,
+            "coverage": 0.7768443160934628,
+            "belowShare": 0.12378577054344972,
+            "aboveShare": 0.09936991336308743,
+            "meanWidth": 3.073477823107594,
+            "meanIntervalScore": 14.897503760835656,
+            "medianNormalizedError": 0.6880700413669364,
+            "meanNormalizedError": 2.0297446893892586,
+            "fallbackShare": 0.0
+          }
+        },
+        "FY2022": {
+          "global": {
+            "count": 9626,
+            "listings": 9626,
+            "histories": 8945,
+            "targetYears": [
+              2022
+            ],
+            "weight": 9626.0,
+            "coverage": 0.7648036567629337,
+            "belowShare": 0.1286100145439435,
+            "aboveShare": 0.10658632869312279,
+            "meanWidth": 3.1590152907227136,
+            "meanIntervalScore": 26.980510736423287,
+            "medianNormalizedError": 0.687122497455039,
+            "meanNormalizedError": 3.1842725876248132,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 9626,
+            "listings": 9626,
+            "histories": 8945,
+            "targetYears": [
+              2022
+            ],
+            "weight": 9626.0,
+            "coverage": 0.7562850612923333,
+            "belowShare": 0.1374402659463952,
+            "aboveShare": 0.10627467276127156,
+            "meanWidth": 3.053044262237794,
+            "meanIntervalScore": 26.38665444003274,
+            "medianNormalizedError": 0.687122497455039,
+            "meanNormalizedError": 3.1842725876248132,
+            "fallbackShare": 0.0
+          }
+        },
+        "FY2023": {
+          "global": {
+            "count": 11363,
+            "listings": 11363,
+            "histories": 10619,
+            "targetYears": [
+              2023
+            ],
+            "weight": 11363.0,
+            "coverage": 0.7838598961541846,
+            "belowShare": 0.11264630819325883,
+            "aboveShare": 0.10349379565255655,
+            "meanWidth": 3.1590152907227256,
+            "meanIntervalScore": 7.021193715949346,
+            "medianNormalizedError": 0.6871878941494235,
+            "meanNormalizedError": 1.1761550032221944,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 11363,
+            "listings": 11363,
+            "histories": 10619,
+            "targetYears": [
+              2023
+            ],
+            "weight": 11363.0,
+            "coverage": 0.7908122854879873,
+            "belowShare": 0.11396638211739857,
+            "aboveShare": 0.0952213323946141,
+            "meanWidth": 3.0727187892267085,
+            "meanIntervalScore": 6.403151890628073,
+            "medianNormalizedError": 0.6871878941494235,
+            "meanNormalizedError": 1.1761550032221944,
+            "fallbackShare": 0.0
+          }
+        },
+        "recent": {
+          "global": {
+            "count": 24440,
+            "listings": 13069,
+            "histories": 22889,
+            "targetYears": [
+              2024,
+              2025
+            ],
+            "weight": 13069.0,
+            "coverage": 0.8304001836406764,
+            "belowShare": 0.07823857984543577,
+            "aboveShare": 0.09136123651388782,
+            "meanWidth": 3.159015290722806,
+            "meanIntervalScore": 6.798023403375222,
+            "medianNormalizedError": 0.5817154754482182,
+            "meanNormalizedError": 1.0859777707316594,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 24440,
+            "listings": 13069,
+            "histories": 22889,
+            "targetYears": [
+              2024,
+              2025
+            ],
+            "weight": 13069.0,
+            "coverage": 0.8245083786058612,
+            "belowShare": 0.08420690182875507,
+            "aboveShare": 0.09128471956538373,
+            "meanWidth": 3.005737485475908,
+            "meanIntervalScore": 6.335095997252324,
+            "medianNormalizedError": 0.5817154754482182,
+            "meanNormalizedError": 1.0859777707316594,
+            "fallbackShare": 0.0
+          }
+        },
+        "FY2024": {
+          "global": {
+            "count": 12322,
+            "listings": 12322,
+            "histories": 11537,
+            "targetYears": [
+              2024
+            ],
+            "weight": 12322.0,
+            "coverage": 0.8277876968024671,
+            "belowShare": 0.07620516149975654,
+            "aboveShare": 0.09600714169777634,
+            "meanWidth": 3.1590152907227385,
+            "meanIntervalScore": 5.983507214022396,
+            "medianNormalizedError": 0.6064267661571787,
+            "meanNormalizedError": 1.0171485231252522,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 12322,
+            "listings": 12322,
+            "histories": 11537,
+            "targetYears": [
+              2024
+            ],
+            "weight": 12322.0,
+            "coverage": 0.824622626197046,
+            "belowShare": 0.08196721311475409,
+            "aboveShare": 0.09341016068819996,
+            "meanWidth": 3.031063390831514,
+            "meanIntervalScore": 5.47898806566404,
+            "medianNormalizedError": 0.6064267661571787,
+            "meanNormalizedError": 1.0171485231252522,
+            "fallbackShare": 0.0
+          }
+        },
+        "FY2025": {
+          "global": {
+            "count": 12118,
+            "listings": 12118,
+            "histories": 11352,
+            "targetYears": [
+              2025
+            ],
+            "weight": 12118.0,
+            "coverage": 0.8408978379270506,
+            "belowShare": 0.07682785938273642,
+            "aboveShare": 0.08227430269021291,
+            "meanWidth": 3.159015290722736,
+            "meanIntervalScore": 7.463902284898665,
+            "medianNormalizedError": 0.5446216781775435,
+            "meanNormalizedError": 1.1258821419776113,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 12118,
+            "listings": 12118,
+            "histories": 11352,
+            "targetYears": [
+              2025
+            ],
+            "weight": 12118.0,
+            "coverage": 0.8291797326291467,
+            "belowShare": 0.08359465258293448,
+            "aboveShare": 0.08722561478791879,
+            "meanWidth": 2.9456810430636766,
+            "meanIntervalScore": 7.0442949944986255,
+            "medianNormalizedError": 0.5446216781775435,
+            "meanNormalizedError": 1.1258821419776113,
+            "fallbackShare": 0.0
+          }
+        }
+      },
+      "2": {
+        "validation": {
+          "global": {
+            "count": 9570,
+            "listings": 9570,
+            "histories": 8891,
+            "targetYears": [
+              2023
+            ],
+            "weight": 9570.0,
+            "coverage": 0.7717868338557994,
+            "belowShare": 0.12361546499477534,
+            "aboveShare": 0.10459770114942529,
+            "meanWidth": 4.465301299358546,
+            "meanIntervalScore": 10.17861578118743,
+            "medianNormalizedError": 0.9981830194912457,
+            "meanNormalizedError": 1.7120798630529783,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 9570,
+            "listings": 9570,
+            "histories": 8891,
+            "targetYears": [
+              2023
+            ],
+            "weight": 9570.0,
+            "coverage": 0.770846394984326,
+            "belowShare": 0.12685475444096134,
+            "aboveShare": 0.10229885057471265,
+            "meanWidth": 4.248433584505878,
+            "meanIntervalScore": 9.259119366047322,
+            "medianNormalizedError": 0.9981830194912457,
+            "meanNormalizedError": 1.7120798630529783,
+            "fallbackShare": 0.0
+          }
+        },
+        "FY2023": {
+          "global": {
+            "count": 9570,
+            "listings": 9570,
+            "histories": 8891,
+            "targetYears": [
+              2023
+            ],
+            "weight": 9570.0,
+            "coverage": 0.7717868338557994,
+            "belowShare": 0.12361546499477534,
+            "aboveShare": 0.10459770114942529,
+            "meanWidth": 4.465301299358546,
+            "meanIntervalScore": 10.17861578118743,
+            "medianNormalizedError": 0.9981830194912457,
+            "meanNormalizedError": 1.7120798630529783,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 9570,
+            "listings": 9570,
+            "histories": 8891,
+            "targetYears": [
+              2023
+            ],
+            "weight": 9570.0,
+            "coverage": 0.770846394984326,
+            "belowShare": 0.12685475444096134,
+            "aboveShare": 0.10229885057471265,
+            "meanWidth": 4.248433584505878,
+            "meanIntervalScore": 9.259119366047322,
+            "medianNormalizedError": 0.9981830194912457,
+            "meanNormalizedError": 1.7120798630529783,
+            "fallbackShare": 0.0
+          }
+        },
+        "recent": {
+          "global": {
+            "count": 22611,
+            "listings": 12186,
+            "histories": 21122,
+            "targetYears": [
+              2024,
+              2025
+            ],
+            "weight": 12186.0,
+            "coverage": 0.8032578368619727,
+            "belowShare": 0.08796980141145577,
+            "aboveShare": 0.10877236172657148,
+            "meanWidth": 4.465301299358545,
+            "meanIntervalScore": 9.868675479120553,
+            "medianNormalizedError": 0.9503809545088926,
+            "meanNormalizedError": 1.6473654552963266,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 22611,
+            "listings": 12186,
+            "histories": 21122,
+            "targetYears": [
+              2024,
+              2025
+            ],
+            "weight": 12186.0,
+            "coverage": 0.8007549647136057,
+            "belowShare": 0.09121122599704579,
+            "aboveShare": 0.10803380928934843,
+            "meanWidth": 4.257145364596529,
+            "meanIntervalScore": 9.095166106654546,
+            "medianNormalizedError": 0.9503809545088926,
+            "meanNormalizedError": 1.6473654552963266,
+            "fallbackShare": 0.0
+          }
+        },
+        "FY2024": {
+          "global": {
+            "count": 11240,
+            "listings": 11240,
+            "histories": 10499,
+            "targetYears": [
+              2024
+            ],
+            "weight": 11240.0,
+            "coverage": 0.7917259786476868,
+            "belowShare": 0.09813167259786477,
+            "aboveShare": 0.1101423487544484,
+            "meanWidth": 4.465301299358545,
+            "meanIntervalScore": 8.932232538154937,
+            "medianNormalizedError": 1.0029386266142746,
+            "meanNormalizedError": 1.5812235126813792,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 11240,
+            "listings": 11240,
+            "histories": 10499,
+            "targetYears": [
+              2024
+            ],
+            "weight": 11240.0,
+            "coverage": 0.7899466192170819,
+            "belowShare": 0.10124555160142348,
+            "aboveShare": 0.10880782918149466,
+            "meanWidth": 4.2712301230824,
+            "meanIntervalScore": 8.06656945468979,
+            "medianNormalizedError": 1.0029386266142746,
+            "meanNormalizedError": 1.5812235126813792,
+            "fallbackShare": 0.0
+          }
+        },
+        "FY2025": {
+          "global": {
+            "count": 11371,
+            "listings": 11371,
+            "histories": 10623,
+            "targetYears": [
+              2025
+            ],
+            "weight": 11371.0,
+            "coverage": 0.8228827719637675,
+            "belowShare": 0.07853311054436725,
+            "aboveShare": 0.09858411749186527,
+            "meanWidth": 4.465301299358545,
+            "meanIntervalScore": 10.765509019614441,
+            "medianNormalizedError": 0.8842897204716098,
+            "meanNormalizedError": 1.6924026577320095,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 11371,
+            "listings": 11371,
+            "histories": 10623,
+            "targetYears": [
+              2025
+            ],
+            "weight": 11371.0,
+            "coverage": 0.8138246416322223,
+            "belowShare": 0.08275437516489315,
+            "aboveShare": 0.10342098320288454,
+            "meanWidth": 4.184369498897018,
+            "meanIntervalScore": 10.076614379415691,
+            "medianNormalizedError": 0.8842897204716098,
+            "meanNormalizedError": 1.6924026577320095,
+            "fallbackShare": 0.0
+          }
+        }
+      },
+      "3": {
+        "recent": {
+          "global": {
+            "count": 19893,
+            "listings": 11137,
+            "histories": 18506,
+            "targetYears": [
+              2024,
+              2025
+            ],
+            "weight": 11137.0,
+            "coverage": 0.7860734488641465,
+            "belowShare": 0.10469605818443027,
+            "aboveShare": 0.10923049295142319,
+            "meanWidth": 5.673902557049655,
+            "meanIntervalScore": 14.034506502685268,
+            "medianNormalizedError": 1.2709056918901476,
+            "meanNormalizedError": 2.2880748351736333,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 19893,
+            "listings": 11137,
+            "histories": 18506,
+            "targetYears": [
+              2024,
+              2025
+            ],
+            "weight": 11137.0,
+            "coverage": 0.7834695160276556,
+            "belowShare": 0.10554907066534973,
+            "aboveShare": 0.11098141330699471,
+            "meanWidth": 5.305730378082004,
+            "meanIntervalScore": 12.9121992225548,
+            "medianNormalizedError": 1.2709056918901476,
+            "meanNormalizedError": 2.2880748351736333,
+            "fallbackShare": 0.0
+          }
+        },
+        "FY2024": {
+          "global": {
+            "count": 9465,
+            "listings": 9465,
+            "histories": 8788,
+            "targetYears": [
+              2024
+            ],
+            "weight": 9465.0,
+            "coverage": 0.7828843106180665,
+            "belowShare": 0.10998415213946117,
+            "aboveShare": 0.10713153724247226,
+            "meanWidth": 5.673902557049717,
+            "meanIntervalScore": 11.805458383495427,
+            "medianNormalizedError": 1.246486154777316,
+            "meanNormalizedError": 2.050827008837298,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 9465,
+            "listings": 9465,
+            "histories": 8788,
+            "targetYears": [
+              2024
+            ],
+            "weight": 9465.0,
+            "coverage": 0.7805599577390385,
+            "belowShare": 0.1109350237717908,
+            "aboveShare": 0.10850501848917063,
+            "meanWidth": 5.279316560504313,
+            "meanIntervalScore": 10.6474048315004,
+            "medianNormalizedError": 1.246486154777316,
+            "meanNormalizedError": 2.050827008837298,
+            "fallbackShare": 0.0
+          }
+        },
+        "FY2025": {
+          "global": {
+            "count": 10428,
+            "listings": 10428,
+            "histories": 9718,
+            "targetYears": [
+              2025
+            ],
+            "weight": 10428.0,
+            "coverage": 0.7910433448408132,
+            "belowShare": 0.10069044879171461,
+            "aboveShare": 0.1082662063674722,
+            "meanWidth": 5.673902557049705,
+            "meanIntervalScore": 15.992965330579267,
+            "medianNormalizedError": 1.291595807597074,
+            "meanNormalizedError": 2.4882492704802397,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 10428,
+            "listings": 10428,
+            "histories": 9718,
+            "targetYears": [
+              2025
+            ],
+            "weight": 10428.0,
+            "coverage": 0.7872075182201764,
+            "belowShare": 0.10136171845032604,
+            "aboveShare": 0.1114307633294975,
+            "meanWidth": 5.276224834657689,
+            "meanIntervalScore": 14.89385464493343,
+            "medianNormalizedError": 1.291595807597074,
+            "meanNormalizedError": 2.4882492704802397,
+            "fallbackShare": 0.0
+          }
+        }
+      },
+      "4": {
+        "recent": {
+          "global": {
+            "count": 8763,
+            "listings": 8763,
+            "histories": 8114,
+            "targetYears": [
+              2025
+            ],
+            "weight": 8763.0,
+            "coverage": 0.7838639735250486,
+            "belowShare": 0.10932329111035034,
+            "aboveShare": 0.10681273536460116,
+            "meanWidth": 6.84195077332437,
+            "meanIntervalScore": 19.760305407956846,
+            "medianNormalizedError": 1.5276912937040992,
+            "meanNormalizedError": 3.0425089546516717,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 8763,
+            "listings": 8763,
+            "histories": 8114,
+            "targetYears": [
+              2025
+            ],
+            "weight": 8763.0,
+            "coverage": 0.769713568412644,
+            "belowShare": 0.11822435239073377,
+            "aboveShare": 0.11206207919662216,
+            "meanWidth": 6.156795854964293,
+            "meanIntervalScore": 18.405411343142177,
+            "medianNormalizedError": 1.5276912937040992,
+            "meanNormalizedError": 3.0425089546516717,
+            "fallbackShare": 0.0
+          }
+        },
+        "FY2025": {
+          "global": {
+            "count": 8763,
+            "listings": 8763,
+            "histories": 8114,
+            "targetYears": [
+              2025
+            ],
+            "weight": 8763.0,
+            "coverage": 0.7838639735250486,
+            "belowShare": 0.10932329111035034,
+            "aboveShare": 0.10681273536460116,
+            "meanWidth": 6.84195077332437,
+            "meanIntervalScore": 19.760305407956846,
+            "medianNormalizedError": 1.5276912937040992,
+            "meanNormalizedError": 3.0425089546516717,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 8763,
+            "listings": 8763,
+            "histories": 8114,
+            "targetYears": [
+              2025
+            ],
+            "weight": 8763.0,
+            "coverage": 0.769713568412644,
+            "belowShare": 0.11822435239073377,
+            "aboveShare": 0.11206207919662216,
+            "meanWidth": 6.156795854964293,
+            "meanIntervalScore": 18.405411343142177,
+            "medianNormalizedError": 1.5276912937040992,
+            "meanNormalizedError": 3.0425089546516717,
+            "fallbackShare": 0.0
+          }
+        }
+      }
+    },
+    "naive": {
+      "1": {
+        "validation": {
+          "global": {
+            "count": 20989,
+            "listings": 11427,
+            "histories": 19564,
+            "targetYears": [
+              2022,
+              2023
+            ],
+            "weight": 11427.0,
+            "coverage": 0.7805635774919052,
+            "belowShare": 0.11643475977946968,
+            "aboveShare": 0.10300166272862518,
+            "meanWidth": 2.8120860927151887,
+            "meanIntervalScore": 15.170080462771864,
+            "medianNormalizedError": 0.552515957887756,
+            "meanNormalizedError": 1.9149142959322363,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 20989,
+            "listings": 11427,
+            "histories": 19564,
+            "targetYears": [
+              2022,
+              2023
+            ],
+            "weight": 11427.0,
+            "coverage": 0.782051282051282,
+            "belowShare": 0.11765992824013302,
+            "aboveShare": 0.10028878970858493,
+            "meanWidth": 2.8176923295597334,
+            "meanIntervalScore": 14.691428777731806,
+            "medianNormalizedError": 0.552515957887756,
+            "meanNormalizedError": 1.9149142959322363,
+            "fallbackShare": 0.0
+          }
+        },
+        "FY2022": {
+          "global": {
+            "count": 9626,
+            "listings": 9626,
+            "histories": 8945,
+            "targetYears": [
+              2022
+            ],
+            "weight": 9626.0,
+            "coverage": 0.7605443590276335,
+            "belowShare": 0.1303760648244338,
+            "aboveShare": 0.10907957614793268,
+            "meanWidth": 2.8120860927152154,
+            "meanIntervalScore": 26.649810593947443,
+            "medianNormalizedError": 0.5714931008326728,
+            "meanNormalizedError": 3.080559905318346,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 9626,
+            "listings": 9626,
+            "histories": 8945,
+            "targetYears": [
+              2022
+            ],
+            "weight": 9626.0,
+            "coverage": 0.7616870974444213,
+            "belowShare": 0.13110326199875338,
+            "aboveShare": 0.10720964055682526,
+            "meanWidth": 2.7997461163152924,
+            "meanIntervalScore": 26.14542116711134,
+            "medianNormalizedError": 0.5714931008326728,
+            "meanNormalizedError": 3.080559905318346,
+            "fallbackShare": 0.0
+          }
+        },
+        "FY2023": {
+          "global": {
+            "count": 11363,
+            "listings": 11363,
+            "histories": 10619,
+            "targetYears": [
+              2023
+            ],
+            "weight": 11363.0,
+            "coverage": 0.7941564727624747,
+            "belowShare": 0.10630995335738802,
+            "aboveShare": 0.09953357388013728,
+            "meanWidth": 2.812086092715207,
+            "meanIntervalScore": 6.679188717067338,
+            "medianNormalizedError": 0.5368516833484985,
+            "meanNormalizedError": 1.0507052639499057,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 11363,
+            "listings": 11363,
+            "histories": 10619,
+            "targetYears": [
+              2023
+            ],
+            "weight": 11363.0,
+            "coverage": 0.7962685910410983,
+            "belowShare": 0.10701399278359588,
+            "aboveShare": 0.09671741617530581,
+            "meanWidth": 2.8170555520294642,
+            "meanIntervalScore": 6.214103321014623,
+            "medianNormalizedError": 0.5368516833484985,
+            "meanNormalizedError": 1.0507052639499057,
+            "fallbackShare": 0.0
+          }
+        },
+        "recent": {
+          "global": {
+            "count": 24440,
+            "listings": 13069,
+            "histories": 22889,
+            "targetYears": [
+              2024,
+              2025
+            ],
+            "weight": 13069.0,
+            "coverage": 0.8330400183640676,
+            "belowShare": 0.08084015609457494,
+            "aboveShare": 0.08611982554135741,
+            "meanWidth": 2.8120860927152287,
+            "meanIntervalScore": 6.496573586503185,
+            "medianNormalizedError": 0.43274622670828444,
+            "meanNormalizedError": 0.9596594556195693,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 24440,
+            "listings": 13069,
+            "histories": 22889,
+            "targetYears": [
+              2024,
+              2025
+            ],
+            "weight": 13069.0,
+            "coverage": 0.8352590098706864,
+            "belowShare": 0.08344173234371413,
+            "aboveShare": 0.08129925778559952,
+            "meanWidth": 2.7574497486264944,
+            "meanIntervalScore": 6.123506276149093,
+            "medianNormalizedError": 0.43274622670828444,
+            "meanNormalizedError": 0.9596594556195693,
+            "fallbackShare": 0.0
+          }
+        },
+        "FY2024": {
+          "global": {
+            "count": 12322,
+            "listings": 12322,
+            "histories": 11537,
+            "targetYears": [
+              2024
+            ],
+            "weight": 12322.0,
+            "coverage": 0.8324947248823243,
+            "belowShare": 0.07596169453010874,
+            "aboveShare": 0.09154358058756695,
+            "meanWidth": 2.812086092715204,
+            "meanIntervalScore": 5.665621636745382,
+            "medianNormalizedError": 0.43018204553574335,
+            "meanNormalizedError": 0.8747915787883132,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 12322,
+            "listings": 12322,
+            "histories": 11537,
+            "targetYears": [
+              2024
+            ],
+            "weight": 12322.0,
+            "coverage": 0.8393929556890115,
+            "belowShare": 0.07571822756046097,
+            "aboveShare": 0.08488881675052751,
+            "meanWidth": 2.779986332823897,
+            "meanIntervalScore": 5.238115089219736,
+            "medianNormalizedError": 0.43018204553574335,
+            "meanNormalizedError": 0.8747915787883132,
+            "fallbackShare": 0.0
+          }
+        },
+        "FY2025": {
+          "global": {
+            "count": 12118,
+            "listings": 12118,
+            "histories": 11352,
+            "targetYears": [
+              2025
+            ],
+            "weight": 12118.0,
+            "coverage": 0.8423007096880674,
+            "belowShare": 0.08004621224624525,
+            "aboveShare": 0.0776530780656874,
+            "meanWidth": 2.8120860927152047,
+            "meanIntervalScore": 7.163762149582707,
+            "medianNormalizedError": 0.4184549356223176,
+            "meanNormalizedError": 1.0152130230815501,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 12118,
+            "listings": 12118,
+            "histories": 11352,
+            "targetYears": [
+              2025
+            ],
+            "weight": 12118.0,
+            "coverage": 0.8375144413269516,
+            "belowShare": 0.08598778676349232,
+            "aboveShare": 0.07649777190955603,
+            "meanWidth": 2.7043425601491653,
+            "meanIntervalScore": 6.843325895203339,
+            "medianNormalizedError": 0.4184549356223176,
+            "meanNormalizedError": 1.0152130230815501,
+            "fallbackShare": 0.0
+          }
+        }
+      },
+      "2": {
+        "validation": {
+          "global": {
+            "count": 9570,
+            "listings": 9570,
+            "histories": 8891,
+            "targetYears": [
+              2023
+            ],
+            "weight": 9570.0,
+            "coverage": 0.7772204806687565,
+            "belowShare": 0.12173458725182863,
+            "aboveShare": 0.10104493207941484,
+            "meanWidth": 3.6846381827003714,
+            "meanIntervalScore": 9.387384626976889,
+            "medianNormalizedError": 0.7771167733004078,
+            "meanNormalizedError": 1.481162622475965,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 9570,
+            "listings": 9570,
+            "histories": 8891,
+            "targetYears": [
+              2023
+            ],
+            "weight": 9570.0,
+            "coverage": 0.7718913270637409,
+            "belowShare": 0.12528735632183907,
+            "aboveShare": 0.10282131661442007,
+            "meanWidth": 3.616795684515955,
+            "meanIntervalScore": 8.761591479582215,
+            "medianNormalizedError": 0.7771167733004078,
+            "meanNormalizedError": 1.481162622475965,
+            "fallbackShare": 0.0
+          }
+        },
+        "FY2023": {
+          "global": {
+            "count": 9570,
+            "listings": 9570,
+            "histories": 8891,
+            "targetYears": [
+              2023
+            ],
+            "weight": 9570.0,
+            "coverage": 0.7772204806687565,
+            "belowShare": 0.12173458725182863,
+            "aboveShare": 0.10104493207941484,
+            "meanWidth": 3.6846381827003714,
+            "meanIntervalScore": 9.387384626976889,
+            "medianNormalizedError": 0.7771167733004078,
+            "meanNormalizedError": 1.481162622475965,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 9570,
+            "listings": 9570,
+            "histories": 8891,
+            "targetYears": [
+              2023
+            ],
+            "weight": 9570.0,
+            "coverage": 0.7718913270637409,
+            "belowShare": 0.12528735632183907,
+            "aboveShare": 0.10282131661442007,
+            "meanWidth": 3.616795684515955,
+            "meanIntervalScore": 8.761591479582215,
+            "medianNormalizedError": 0.7771167733004078,
+            "meanNormalizedError": 1.481162622475965,
+            "fallbackShare": 0.0
+          }
+        },
+        "recent": {
+          "global": {
+            "count": 22611,
+            "listings": 12186,
+            "histories": 21122,
+            "targetYears": [
+              2024,
+              2025
+            ],
+            "weight": 12186.0,
+            "coverage": 0.8161414738224192,
+            "belowShare": 0.08427703922534055,
+            "aboveShare": 0.09958148695224027,
+            "meanWidth": 3.6846381827002763,
+            "meanIntervalScore": 9.074847523228126,
+            "medianNormalizedError": 0.679267369000895,
+            "meanNormalizedError": 1.3872253476502927,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 22611,
+            "listings": 12186,
+            "histories": 21122,
+            "targetYears": [
+              2024,
+              2025
+            ],
+            "weight": 12186.0,
+            "coverage": 0.8185212538979156,
+            "belowShare": 0.08522074511734777,
+            "aboveShare": 0.09625800098473658,
+            "meanWidth": 3.62331632627881,
+            "meanIntervalScore": 8.562076045827979,
+            "medianNormalizedError": 0.679267369000895,
+            "meanNormalizedError": 1.3872253476502927,
+            "fallbackShare": 0.0
+          }
+        },
+        "FY2024": {
+          "global": {
+            "count": 11240,
+            "listings": 11240,
+            "histories": 10499,
+            "targetYears": [
+              2024
+            ],
+            "weight": 11240.0,
+            "coverage": 0.8089857651245551,
+            "belowShare": 0.08843416370106762,
+            "aboveShare": 0.10258007117437723,
+            "meanWidth": 3.684638182700372,
+            "meanIntervalScore": 8.065068464358196,
+            "medianNormalizedError": 0.7263246112300961,
+            "meanNormalizedError": 1.313878538805727,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 11240,
+            "listings": 11240,
+            "histories": 10499,
+            "targetYears": [
+              2024
+            ],
+            "weight": 11240.0,
+            "coverage": 0.8112989323843416,
+            "belowShare": 0.08887900355871886,
+            "aboveShare": 0.0998220640569395,
+            "meanWidth": 3.634378377409081,
+            "meanIntervalScore": 7.523061973820995,
+            "medianNormalizedError": 0.7263246112300961,
+            "meanNormalizedError": 1.313878538805727,
+            "fallbackShare": 0.0
+          }
+        },
+        "FY2025": {
+          "global": {
+            "count": 11371,
+            "listings": 11371,
+            "histories": 10623,
+            "targetYears": [
+              2025
+            ],
+            "weight": 11371.0,
+            "coverage": 0.8303579280626154,
+            "belowShare": 0.07774162342801864,
+            "aboveShare": 0.09190044850936593,
+            "meanWidth": 3.6846381827003714,
+            "meanIntervalScore": 10.03007874054707,
+            "medianNormalizedError": 0.6170038020660018,
+            "meanNormalizedError": 1.442478497069798,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 11371,
+            "listings": 11371,
+            "histories": 10623,
+            "targetYears": [
+              2025
+            ],
+            "weight": 11371.0,
+            "coverage": 0.8285111247911353,
+            "belowShare": 0.08055579984170258,
+            "aboveShare": 0.09093307536716208,
+            "meanWidth": 3.566814549578236,
+            "meanIntervalScore": 9.556029521641628,
+            "medianNormalizedError": 0.6170038020660018,
+            "meanNormalizedError": 1.442478497069798,
+            "fallbackShare": 0.0
+          }
+        }
+      },
+      "3": {
+        "recent": {
+          "global": {
+            "count": 19893,
+            "listings": 11137,
+            "histories": 18506,
+            "targetYears": [
+              2024,
+              2025
+            ],
+            "weight": 11137.0,
+            "coverage": 0.7964442848163779,
+            "belowShare": 0.09742300439974859,
+            "aboveShare": 0.10613271078387357,
+            "meanWidth": 4.2046174935928455,
+            "meanIntervalScore": 12.602467433248226,
+            "medianNormalizedError": 0.8519887864136836,
+            "meanNormalizedError": 1.8595698473267965,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 19893,
+            "listings": 11137,
+            "histories": 18506,
+            "targetYears": [
+              2024,
+              2025
+            ],
+            "weight": 11137.0,
+            "coverage": 0.8044356649007812,
+            "belowShare": 0.09634551495016612,
+            "aboveShare": 0.09921882014905271,
+            "meanWidth": 4.200412548850214,
+            "meanIntervalScore": 12.024090143792668,
+            "medianNormalizedError": 0.8519887864136836,
+            "meanNormalizedError": 1.8595698473267965,
+            "fallbackShare": 0.0
+          }
+        },
+        "FY2024": {
+          "global": {
+            "count": 9465,
+            "listings": 9465,
+            "histories": 8788,
+            "targetYears": [
+              2024
+            ],
+            "weight": 9465.0,
+            "coverage": 0.7911251980982568,
+            "belowShare": 0.1034337031167459,
+            "aboveShare": 0.10544109878499736,
+            "meanWidth": 4.204617493592825,
+            "meanIntervalScore": 10.358290326573929,
+            "medianNormalizedError": 0.8477487794587426,
+            "meanNormalizedError": 1.6365703163805891,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 9465,
+            "listings": 9465,
+            "histories": 8788,
+            "targetYears": [
+              2024
+            ],
+            "weight": 9465.0,
+            "coverage": 0.7989434759640782,
+            "belowShare": 0.10206022187004754,
+            "aboveShare": 0.09899630216587427,
+            "meanWidth": 4.182214105458312,
+            "meanIntervalScore": 9.733553018020451,
+            "medianNormalizedError": 0.8477487794587426,
+            "meanNormalizedError": 1.6365703163805891,
+            "fallbackShare": 0.0
+          }
+        },
+        "FY2025": {
+          "global": {
+            "count": 10428,
+            "listings": 10428,
+            "histories": 9718,
+            "targetYears": [
+              2025
+            ],
+            "weight": 10428.0,
+            "coverage": 0.803030303030303,
+            "belowShare": 0.09119677790563867,
+            "aboveShare": 0.10577291906405831,
+            "meanWidth": 4.204617493592807,
+            "meanIntervalScore": 14.579747055387001,
+            "medianNormalizedError": 0.84768093832346,
+            "meanNormalizedError": 2.0494741487533816,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 10428,
+            "listings": 10428,
+            "histories": 9718,
+            "targetYears": [
+              2025
+            ],
+            "weight": 10428.0,
+            "coverage": 0.8084004602991944,
+            "belowShare": 0.08908707326428845,
+            "aboveShare": 0.10251246643651707,
+            "meanWidth": 4.18048528573424,
+            "meanIntervalScore": 14.022809243405469,
+            "medianNormalizedError": 0.84768093832346,
+            "meanNormalizedError": 2.0494741487533816,
+            "fallbackShare": 0.0
+          }
+        }
+      },
+      "4": {
+        "recent": {
+          "global": {
+            "count": 8763,
+            "listings": 8763,
+            "histories": 8114,
+            "targetYears": [
+              2025
+            ],
+            "weight": 8763.0,
+            "coverage": 0.7842063220358325,
+            "belowShare": 0.10487276047015862,
+            "aboveShare": 0.1109209174940089,
+            "meanWidth": 4.659606656580937,
+            "meanIntervalScore": 17.803211901274175,
+            "medianNormalizedError": 0.9673832468495182,
+            "meanNormalizedError": 2.454902183628556,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 8763,
+            "listings": 8763,
+            "histories": 8114,
+            "targetYears": [
+              2025
+            ],
+            "weight": 8763.0,
+            "coverage": 0.7900262467191601,
+            "belowShare": 0.10099281068127354,
+            "aboveShare": 0.10898094259956635,
+            "meanWidth": 4.550893189971127,
+            "meanIntervalScore": 17.201141393758014,
+            "medianNormalizedError": 0.9673832468495182,
+            "meanNormalizedError": 2.454902183628556,
+            "fallbackShare": 0.0
+          }
+        },
+        "FY2025": {
+          "global": {
+            "count": 8763,
+            "listings": 8763,
+            "histories": 8114,
+            "targetYears": [
+              2025
+            ],
+            "weight": 8763.0,
+            "coverage": 0.7842063220358325,
+            "belowShare": 0.10487276047015862,
+            "aboveShare": 0.1109209174940089,
+            "meanWidth": 4.659606656580937,
+            "meanIntervalScore": 17.803211901274175,
+            "medianNormalizedError": 0.9673832468495182,
+            "meanNormalizedError": 2.454902183628556,
+            "fallbackShare": 0.0
+          },
+          "cashDispersion": {
+            "count": 8763,
+            "listings": 8763,
+            "histories": 8114,
+            "targetYears": [
+              2025
+            ],
+            "weight": 8763.0,
+            "coverage": 0.7900262467191601,
+            "belowShare": 0.10099281068127354,
+            "aboveShare": 0.10898094259956635,
+            "meanWidth": 4.550893189971127,
+            "meanIntervalScore": 17.201141393758014,
+            "medianNormalizedError": 0.9673832468495182,
+            "meanNormalizedError": 2.454902183628556,
+            "fallbackShare": 0.0
+          }
+        }
+      }
+    }
+  },
+  "horizonEvidence": {
+    "1": {
+      "validationTargetYears": [
+        2022,
+        2023
+      ],
+      "exploratoryRecentTargetYears": [
+        2024,
+        2025
+      ],
+      "status": "research"
+    },
+    "2": {
+      "validationTargetYears": [
+        2023
+      ],
+      "exploratoryRecentTargetYears": [
+        2024,
+        2025
+      ],
+      "status": "research"
+    },
+    "3": {
+      "validationTargetYears": [],
+      "exploratoryRecentTargetYears": [
+        2024,
+        2025
+      ],
+      "status": "limited_recent_regimes_only"
+    },
+    "4": {
+      "validationTargetYears": [],
+      "exploratoryRecentTargetYears": [
+        2025
+      ],
+      "status": "limited_recent_regimes_only"
+    }
+  },
+  "evaluationMeaning": "Global and cashDispersion identify complete range rules on matching scored observations. Coverage is weighted empirical coverage; widths are full widths divided by historical cash scale. These are not per-company probabilities.",
+  "limitations": [
+    "Later-vintage source statements and current taxonomy do not recreate point-in-time financial information or historical company classifications.",
+    "Provider FCF definition differences between downloads remain unresolved; matching source lineage does not establish reconciled FCFF or distributable equity cash.",
+    "The retained universe can omit former or delisted issuers. Related listings, repeated targets and origin histories are dependent.",
+    "Recent FY2024-2025 outcomes were inspected in the earlier audit and remain exploratory. New untouched outcomes are needed for confirmation.",
+    "Year 1 validation contains FY2022-2023 and Year 2 only FY2023. Years 3-4 have no admissible validation period; Year 4 recent results cover only FY2025.",
+    "Cash dispersion includes trend and growth and shares a denominator with normalized forecast errors; this is not proof of underlying business risk or causation.",
+    "Negative cash remains signed. Narrow uncertainty around losses does not indicate an attractive business or investment.",
+    "Support counts and an 80% target are research choices, not probability guarantees. Annual ranges do not establish joint cash-path or DCF intervals."
+  ],
+  "provenance": {
+    "sourceProtocolId": "exploratory-cash-uncertainty-groups-v1",
+    "inputArtifactSha256": {
+      "group-calibration.json": "bf386c3709497665ad1fe23df1f3818a87686da5792c4c75d61d80509a1595a5",
+      "results.json": "7d79048bb2390ffe41f806f185da45f850df69dac48186580cffad96a62219eb",
+      "experiment-receipt.json": "bf96bd1c091c898f1c5d3c349cb82871eb73b2444674b0a4dbcf5e8a0c5d22e4",
+      "feature-summary.json": "6850553b6c5470b581240337e570fe65bc964c73992a17953d0ae1871b9019ca"
+    },
+    "sourcePack": {
+      "path": "financial-data/1f1534d48fc30c1e3769cb7f1e9060c85fb1dc63ec39b06ada40fb6e11d2c69a.sqlite",
+      "sha256": "1f1534d48fc30c1e3769cb7f1e9060c85fb1dc63ec39b06ada40fb6e11d2c69a",
+      "asOf": "2026-08-10"
+    },
+    "sourceForecastsSha256": "34aa56eaafc1d6e195154e86bbcd4b6bbf151052244cf7b1ca895105203bfd6b",
+    "featureRowsSha256": "45f6e44c16304c68bfe2976dbb99821c77bd79c3a64aa3bf3cc109fd7990b253",
+    "experimentScriptSha256": "2a6e0ed5d973d61e1095475bdbe096e3e589e8234e9ce4b850c7496c2d803a9a",
+    "featureExtractorScriptSha256": "8be06b7dfbd814965e3a2db4f8ba8d7540cf97b6087185a84e78550d0f562bce",
+    "exportMethod": "Exact factors, support records and selected evaluation fields copied without recomputation, refitting, threshold changes or crisis-year deletion."
+  }
+}

@@ -28,6 +28,40 @@ sale or liquidation as its terminal cash flow, counted once.
 
 ## Analysis workflow
 
+User direction (2026-09-13, Macro Atlas 0.15; ADR 0038): separate sustainable
+terminal cash from annual cash uncertainty. Keep the v3 annual benchmark and
+calibration. New generic origins add `terminalMethod: historical-median-v1`;
+signed historical median and an assumed ±20% seed remain unreviewed until a deep
+dive reconciles reinvestment/financing. Resolve first post-horizon cash at r−g;
+keep explicit sale as an alternative and crisis sale separate. Preserve edited,
+cleared/customized/restored/reviewed studies. Only exact untouched old defaults
+upgrade after backup and replacement persistence. Show same-report cash components
+and missing definitions without inventing maintenance capex or owner cash.
+
+User direction (2026-09-13, Macro Atlas 0.14): keep the same editable cash-flow,
+DCF and NPV workspace for every company. New `empirical-cash-starter-v3` defaults
+to five annual periods and latest signed cash held flat. Eligible comparable
+operating/property histories use source-bound, model-specific historical-error
+ranges for Years 1-4, with an 80% research target and cash-dispersion groups. Keep
+sector/branch context; the target is not a company or DCF probability. Years 5-10
+carry the Year 4 absolute half-width forward and add an editable 10% of historical
+cash scale per later year as an explicit assumption. Weighted trend and weighted
+flat mean remain available; unsupported history/model/source/currency settings
+use labelled percentage sensitivities. Zero cash does not imply zero uncertainty.
+Other financial businesses need manually reviewed equity-cash and capital inputs.
+
+Retain raw COVID and recovery histories and the original all-year calibration.
+A separate optional crisis scenario starts disabled: 40% cash reduction, start
+Year 1, two shock years, three recovery years, zero extra annual cash cost, 10%
+required return and zero final equity sale. It has no assigned probability and
+does not overwrite low/mid/high or add liquidation recovery. Deep dives retain
+raw facts and document adjustments separately. Only exact untouched v1/v2 defaults
+may upgrade after a saved backup succeeds; preserve edited/cleared/customized,
+crisis, explicitly restored and reviewed studies. Preserve calibration IDs,
+source versions, assumed tails and revisions.
+See [the standard model](standard-company-valuation.md) and
+[ADR 0037](../decisions/0037-empirical-company-cash-flow-starters.md).
+
 1. Establish the company, ownership claim, valuation date, financial periods,
    currencies and source versions. Keep facts, calculations and assumptions distinct.
 2. Understand the operating business: customers, competitors, moat, pace of
@@ -211,10 +245,25 @@ edits. A research folder alone does not establish a usable forecast; unsupported
 inputs remain missing. Research, financial-report and quote dates retain their
 own identities, including when the selected macro release is older.
 
-Show each year's discounted payment and cumulative NPV through each year. The
-high/mid/low envelope represents the entered scenarios, not a calibrated
-confidence interval. Preserve scenario labels when paths cross. The cumulative
-chart uses steps because the model places payments at each year-end.
+Show each year's discounted payment and cumulative NPV through each year. In
+0.14.1, annual whiskers and shading show the numerical minimum and maximum across
+the three scenarios, with those bounds and the named scenario amounts available
+in the DCF/NPV tables. Nominal cash and annual DCF shading follow the exact linear
+scenario lines through crossings. Preserve scenario names and colours when their
+numerical order changes; do not force range widths to increase over time.
+
+Calculate each cumulative NPV path from that scenario's own discounted payments
+less the initial investment, then take the range across the cumulative paths.
+Summing annual extrema could splice together different scenarios and is not the
+displayed NPV range. The cumulative chart uses year-end steps, with any enabled
+final equity sale included only in the last point. The chart update leaves cash
+assumptions, required returns and valuation arithmetic unchanged.
+
+The envelope represents the current scenarios. Historical-error labels for
+eligible starter cash in Years 1–4 and assumed widening in Years 5–10 describe the
+source of those cash bounds. The historical calibration's 80% annual research
+target does not establish an 80% DCF/NPV interval or a joint-path probability.
+Reviewed and edited scenarios retain their own evidence and assumption basis.
 
 Ordinary payback is the first year cumulative undiscounted cash payments recover
 the purchase price. Discounted payback uses the cumulative present value of those

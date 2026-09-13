@@ -1,4 +1,4 @@
-param([string]$Executable, [switch]$FinancialOnly, [switch]$CompressedCdp)
+param([string]$Executable, [switch]$FinancialOnly, [switch]$ValuationOnly, [switch]$ResearchGaugeOnly, [switch]$CompanyListOnly, [switch]$ExpandedCompanyListOnly, [switch]$CompressedCdp)
 $ErrorActionPreference = 'Stop'
 $project = Split-Path (Split-Path $PSCommandPath -Parent) -Parent
 if (-not $Executable) { $Executable = Join-Path $project 'src-tauri\target\x86_64-pc-windows-msvc\release\macro-atlas.exe' }
@@ -19,6 +19,10 @@ $runner = New-Object System.Diagnostics.Process
 $runner.StartInfo.FileName = $node
 $runner.StartInfo.Arguments = '--eval "' + $bootstrap + '" "' + $test + '" "' + $Executable + '"'
 if ($FinancialOnly) { $runner.StartInfo.Arguments += ' --financial-only' }
+if ($ValuationOnly) { $runner.StartInfo.Arguments += ' --valuation-only' }
+if ($ExpandedCompanyListOnly) { $runner.StartInfo.Arguments += ' --expanded-company-list-only' }
+if ($CompanyListOnly) { $runner.StartInfo.Arguments += ' --company-list-only' }
+if ($ResearchGaugeOnly) { $runner.StartInfo.Arguments += ' --research-gauge-only' }
 if ($CompressedCdp) { $runner.StartInfo.Arguments += ' --compressed-cdp' }
 $runner.StartInfo.UseShellExecute = $false
 $runner.StartInfo.EnvironmentVariables['NODE_UNC_HOST_ALLOWLIST'] = 'wsl.localhost'
@@ -28,7 +32,7 @@ $runner.StartInfo.RedirectStandardError = $true
 $null = $runner.Start()
 $stdout = $runner.StandardOutput.ReadToEndAsync()
 $stderr = $runner.StandardError.ReadToEndAsync()
-if (-not $runner.WaitForExit(300000)) { $runner.Kill(); throw 'Native test exceeded 300 seconds.' }
+if (-not $runner.WaitForExit(600000)) { $runner.Kill(); throw 'Native test exceeded 600 seconds.' }
 Write-Output $stdout.GetAwaiter().GetResult()
 Write-Output $stderr.GetAwaiter().GetResult()
 exit $runner.ExitCode

@@ -1,0 +1,98 @@
+{
+  "title": "Stora Enso — weighted cash trend starter",
+  "currency": "EUR",
+  "valuationDate": "2026-09-12",
+  "priceDate": "2026-02-04",
+  "priceSource": "Saved publication-window equity price: 788.6 million reported shares × 10.585 EUR close on 2026-02-04; annual period 2025-01-01–2025-12-31, published 2026-02-04, source 2026-08-10-annual, saved 2026-08-10. Uses the matching EUR local market value; no additional FX conversion. This listing/share basis requires review; it is not a sum across share classes or a live quote.",
+  "marketCap": 8347.331,
+  "investment": 1000,
+  "years": 10,
+  "scenarios": {
+    "low": {
+      "cashFlows": [
+        132.3,
+        74.16000000000001,
+        26.880000000000024,
+        -22.25999999999997,
+        -105.29999999999998,
+        -199.1999999999999,
+        -303.9599999999999,
+        -419.5799999999999,
+        -546.06,
+        -683.4
+      ],
+      "discountRate": 10,
+      "terminalEquity": 0,
+      "recoveryEquity": null,
+      "recoveryYear": null,
+      "rationale": "Low subtracts the widening percentage of each year's absolute mid cash. Fit a weighted linear trend to the included annual cash proxies, with the latest historical year at time zero. Project from the fitted intercept: mid at year t = intercept + slope × t. Project 10 full years. Low/high = mid ± abs(mid) × [10% + 10 percentage points × (year − 1)]. The spread is a user-chosen sensitivity, not a confidence interval or estimated probability. Bands are not capped at 100%; signed paths may cross zero. Saved provider FCF proxy; not verified cash to shareholders. Lease principal, interest classification, acquisitions, restricted or regulatory capital and financing require review. For banks and insurers, equity-capital requirements and actual distributions need specific review; this proxy is not FCFF. No missing FCF is inferred from operating or investing cash flow. Required nominal equity return is an editable 10% assumption. Final equity sale at year 10 assumes year 11 cash equals year 10 cash, with zero mature growth and no selling costs, capitalized at 10%. Nonpositive cash receives zero assumed sale proceeds; this is not a recovery appraisal. Treating this proxy as cash available to common shareholders is an explicit modeling assumption. Negative payments model hypothetical additional shareholder funding; accounting or cash-flow losses do not establish a personal obligation. Recovery is unavailable, and debt or asset values are not added to or deducted from the proxy DCF. Starter method weighted-cash-starter-v2; source basis 2026-09-12."
+    },
+    "mid": {
+      "cashFlows": [
+        147,
+        92.70000000000002,
+        38.400000000000034,
+        -15.899999999999977,
+        -70.19999999999999,
+        -124.49999999999994,
+        -178.79999999999995,
+        -233.09999999999997,
+        -287.4,
+        -341.7
+      ],
+      "discountRate": 10,
+      "terminalEquity": 0,
+      "recoveryEquity": null,
+      "recoveryYear": null,
+      "rationale": "Mid follows the weighted historical trend. Fit a weighted linear trend to the included annual cash proxies, with the latest historical year at time zero. Project from the fitted intercept: mid at year t = intercept + slope × t. Project 10 full years. Low/high = mid ± abs(mid) × [10% + 10 percentage points × (year − 1)]. The spread is a user-chosen sensitivity, not a confidence interval or estimated probability. Bands are not capped at 100%; signed paths may cross zero. Saved provider FCF proxy; not verified cash to shareholders. Lease principal, interest classification, acquisitions, restricted or regulatory capital and financing require review. For banks and insurers, equity-capital requirements and actual distributions need specific review; this proxy is not FCFF. No missing FCF is inferred from operating or investing cash flow. Required nominal equity return is an editable 10% assumption. Final equity sale at year 10 assumes year 11 cash equals year 10 cash, with zero mature growth and no selling costs, capitalized at 10%. Nonpositive cash receives zero assumed sale proceeds; this is not a recovery appraisal. Treating this proxy as cash available to common shareholders is an explicit modeling assumption. Negative payments model hypothetical additional shareholder funding; accounting or cash-flow losses do not establish a personal obligation. Recovery is unavailable, and debt or asset values are not added to or deducted from the proxy DCF. Starter method weighted-cash-starter-v2; source basis 2026-09-12."
+    },
+    "high": {
+      "cashFlows": [
+        161.7,
+        111.24000000000002,
+        49.920000000000044,
+        -9.539999999999987,
+        -35.099999999999994,
+        -49.79999999999998,
+        -53.639999999999986,
+        -46.620000000000005,
+        -28.74000000000001,
+        0
+      ],
+      "discountRate": 10,
+      "terminalEquity": 0,
+      "recoveryEquity": null,
+      "recoveryYear": null,
+      "rationale": "High adds the widening percentage of each year's absolute mid cash. Fit a weighted linear trend to the included annual cash proxies, with the latest historical year at time zero. Project from the fitted intercept: mid at year t = intercept + slope × t. Project 10 full years. Low/high = mid ± abs(mid) × [10% + 10 percentage points × (year − 1)]. The spread is a user-chosen sensitivity, not a confidence interval or estimated probability. Bands are not capped at 100%; signed paths may cross zero. Saved provider FCF proxy; not verified cash to shareholders. Lease principal, interest classification, acquisitions, restricted or regulatory capital and financing require review. For banks and insurers, equity-capital requirements and actual distributions need specific review; this proxy is not FCFF. No missing FCF is inferred from operating or investing cash flow. Required nominal equity return is an editable 10% assumption. Final equity sale at year 10 assumes year 11 cash equals year 10 cash, with zero mature growth and no selling costs, capitalized at 10%. Nonpositive cash receives zero assumed sale proceeds; this is not a recovery appraisal. Treating this proxy as cash available to common shareholders is an explicit modeling assumption. Negative payments model hypothetical additional shareholder funding; accounting or cash-flow losses do not establish a personal obligation. Recovery is unavailable, and debt or asset values are not added to or deducted from the proxy DCF. Starter method weighted-cash-starter-v2; source basis 2026-09-12."
+    }
+  },
+  "capital": {
+    "tangibleEquity": 10183,
+    "averageTCE": null,
+    "nopat": null,
+    "grossDebt": null,
+    "surplusCash": null
+  },
+  "notes": {
+    "business": "Unreviewed weighted cash starter. Weighted provider cash-flow proxy = sum(cash proxy × entered annual weight) ÷ 100. 5 annual periods are included, newest first. This is a sensitivity input, not verified distributable cash. Saved provider FCF proxy; not verified cash to shareholders. Lease principal, interest classification, acquisitions, restricted or regulatory capital and financing require review. For banks and insurers, equity-capital requirements and actual distributions need specific review; this proxy is not FCFF. No missing FCF is inferred from operating or investing cash flow.",
+    "macro": "No macro forecast, listing-country score or industry multiplier is inserted. Review verified company exposure before adjusting this sensitivity.",
+    "financing": "Tangible equity is a nullable source proxy: latest reported total equity minus intangibles (2025-12-31). Common-equity and minority claims are not reconciled. Average tangible operating capital, NOPAT, gross debt and surplus cash remain unavailable. The pack supplies net debt, which is not substituted for gross debt. Amounts are in reporting currency EUR, recovered by dividing each saved monetary amount by its own positive saved currency ratio.",
+    "recovery": "No reviewed asset, prior-claim, tax, cost or payment schedule is available. Every recovery input remains missing; no book-value floor is assumed.",
+    "decision": "Fit a weighted linear trend to the included annual cash proxies, with the latest historical year at time zero. Project from the fitted intercept: mid at year t = intercept + slope × t. Project 10 full years. Low/high = mid ± abs(mid) × [10% + 10 percentage points × (year − 1)]. The spread is a user-chosen sensitivity, not a confidence interval or estimated probability. Bands are not capped at 100%; signed paths may cross zero. Required nominal equity return is an editable 10% assumption. Final equity sale at year 10 assumes year 11 cash equals year 10 cash, with zero mature growth and no selling costs, capitalized at 10%. Nonpositive cash receives zero assumed sale proceeds; this is not a recovery appraisal. Treating this proxy as cash available to common shareholders is an explicit modeling assumption. Negative payments model hypothetical additional shareholder funding; accounting or cash-flow losses do not establish a personal obligation. Recovery is unavailable, and debt or asset values are not added to or deducted from the proxy DCF. Financial snapshot 2026-08-10 is older than valuation 2026-09-12; source amounts and dated prices have not been refreshed."
+  },
+  "starterOrigin": {
+    "id": "weighted-cash-starter-v2",
+    "asOf": "2026-09-12",
+    "historyYears": 5,
+    "weights": [
+      30,
+      25,
+      20,
+      15,
+      10
+    ],
+    "spreadPercent": 10,
+    "spreadStepPercent": 10,
+    "projection": "trend"
+  }
+}

@@ -9,6 +9,9 @@ import { taxonomyFlows } from './taxonomy-flows.mjs';
 import { listingFlows } from './listing-flows.mjs';
 import { countryEvidenceFlows } from './country-evidence-flows.mjs';
 import { valuationFlows } from './valuation-flows.mjs';
+import { researchGaugeFlows } from './research-gauge-flows.mjs';
+import { expandedCompanyListFlows } from './expanded-company-list-flows.mjs';
+import { companyListFlows } from './company-list-flows.mjs';
 
 const base = process.env.ATLAS_URL || 'http://127.0.0.1:1420';
 await mkdir('test-results', { recursive: true });
@@ -34,6 +37,27 @@ const start = performance.now();
 await page.goto(base);
 await page.locator('[data-country="SE"][data-ready="true"]').waitFor();
 await page.locator('[data-map-ready="true"]').waitFor();
+if (process.argv.includes('--expanded-company-list-only')) {
+  const result = await expandedCompanyListFlows(page, process.cwd());
+  assert.deepEqual(external, []); assert.deepEqual(errors, []);
+  await writeFile('test-results/expanded-company-list-browser-report.json', JSON.stringify({ ...result, status: 'PASS', external, errors }, null, 2));
+  console.log(JSON.stringify(result));
+  await browser.close(); process.exit(0);
+}
+if (process.argv.includes('--company-list-only')) {
+  const result = await companyListFlows(page, process.cwd());
+  assert.deepEqual(external, []); assert.deepEqual(errors, []);
+  await writeFile('test-results/company-list-browser-report.json', JSON.stringify({ ...result, status: 'PASS', external, errors }, null, 2));
+  console.log(JSON.stringify(result));
+  await browser.close(); process.exit(0);
+}
+if (process.argv.includes('--research-gauge-only')) {
+  const result = await researchGaugeFlows(page, process.cwd());
+  assert.deepEqual(external, []); assert.deepEqual(errors, []);
+  await writeFile('test-results/research-gauge-browser-report.json', JSON.stringify({ ...result, external, errors }, null, 2));
+  console.log(JSON.stringify(result));
+  await browser.close(); process.exit(0);
+}
 if (process.argv.includes('--evidence-only')) {
   console.log(JSON.stringify(await countryEvidenceFlows(page, process.cwd())));
   assert.deepEqual(external, []); assert.deepEqual(errors, []);

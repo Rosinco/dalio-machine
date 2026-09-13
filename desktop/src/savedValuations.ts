@@ -14,7 +14,38 @@ export function validateValuation(v: any): asserts v is SavedValuation {
   check(typeof v.created === 'string' && /^\d{4}-\d{2}-\d{2}T.+Z$/.test(v.created) && Number.isFinite(Date.parse(v.created)));
   check(hash(v.release) && (v.financial === null || hash(v.financial)) && (v.taxonomy === null || hash(v.taxonomy)));
   const d = v.draft;
+  if (d?.purchaseRange !== undefined) {
+    const p = d.purchaseRange;
+    check(obj(p) && amount(p.marginOfSafetyPercent) && scenarioKeys.includes(p.referenceScenario) && ['equity', 'share'].includes(p.unit));
+    check(p.candidateEquity === undefined || amount(p.candidateEquity));
+    if (p.shareBasis !== undefined) check(obj(p.shareBasis) && amount(p.shareBasis.sharesMillions) && text(p.shareBasis.date, 10) && text(p.shareBasis.source, 5000) && text(p.shareBasis.currency, 3));
+  }
   check(d?.researchOrigin === undefined || obj(d.researchOrigin) && text(d.researchOrigin.id, 100) && /^[a-zA-Z0-9-]+$/.test(d.researchOrigin.id) && validDay(d.researchOrigin.asOf));
+  if (d?.starterOrigin !== undefined) {
+    const origin = d.starterOrigin;
+    check(obj(origin) && ['weighted-cash-starter-v1', 'weighted-cash-starter-v2', 'empirical-cash-starter-v3'].includes(origin.id) && validDay(origin.asOf));
+    const historyYears = origin.id === 'weighted-cash-starter-v1' ? 5 : origin.historyYears;
+    check([5, 10].includes(historyYears) && Array.isArray(origin.weights) && origin.weights.length === historyYears && origin.weights.every((n: unknown) => validAmount(n) && n >= 0 && n <= 100)
+      && Math.abs(origin.weights.reduce((sum: number, n: number) => sum + n, 0) - 100) <= 1e-6
+      && validAmount(origin.spreadPercent) && origin.spreadPercent >= 0 && origin.spreadPercent <= 100);
+    if (origin.id === 'weighted-cash-starter-v2') check(['trend', 'flat'].includes(origin.projection) && validAmount(origin.spreadStepPercent) && origin.spreadStepPercent >= 0 && origin.spreadStepPercent <= 100);
+    if (origin.id === 'empirical-cash-starter-v3') check(['latest', 'trend', 'flat'].includes(origin.projection) && ['historical', 'percentage'].includes(origin.rangeMode)
+      && validAmount(origin.spreadStepPercent) && origin.spreadStepPercent >= 0 && origin.spreadStepPercent <= 100
+      && validAmount(origin.tailWideningPercent) && origin.tailWideningPercent >= 0 && origin.tailWideningPercent <= 100
+      && text(origin.calibrationId, 150) && /^[a-zA-Z0-9-]+$/.test(origin.calibrationId));
+    check(origin.terminalMethod === undefined || origin.id === 'empirical-cash-starter-v3' && origin.terminalMethod === 'historical-median-v1');
+  }
+  if (d?.crisis !== undefined) {
+    const c = d.crisis;
+    check(obj(c) && typeof c.enabled === 'boolean' && text(c.rationale, 5000));
+    for (const k of ['shockPercent', 'startYear', 'durationYears', 'recoveryYears', 'extraAnnualCashCost', 'discountRate', 'terminalEquity']) check(amount(c[k]));
+    check(c.shockPercent === null || c.shockPercent >= 0 && c.shockPercent <= 300);
+    for (const k of ['startYear', 'durationYears', 'recoveryYears']) check(c[k] === null || Number.isInteger(c[k]) && c[k] >= (k === 'recoveryYears' ? 0 : 1) && c[k] <= 50);
+    check(c.extraAnnualCashCost === null || c.extraAnnualCashCost >= 0);
+    check(c.discountRate === null || c.discountRate >= 0 && c.discountRate <= 100);
+    check(c.terminalEquity === null || c.terminalEquity >= 0);
+  }
+  check(!d?.researchOrigin || !d?.starterOrigin);
   check(d?.researchAutofillDisabled === undefined || typeof d.researchAutofillDisabled === 'boolean');
   check(obj(d) && text(d.title, 160) && d.title.trim() && typeof d.currency === 'string' && /^[A-Z]{3}$/.test(d.currency));
   check(validDay(d.valuationDate) && (d.priceDate === '' || validDay(d.priceDate)) && text(d.priceSource, 5000));
@@ -24,6 +55,7 @@ export function validateValuation(v: any): asserts v is SavedValuation {
     const s = d.scenarios[key];
     check(obj(s) && Array.isArray(s.cashFlows) && s.cashFlows.length >= d.years && s.cashFlows.length <= 50 && s.cashFlows.every(amount));
     check(amount(s.discountRate) && amount(s.terminalEquity) && amount(s.recoveryEquity));
+    if (s.terminalCash !== undefined) check(obj(s.terminalCash) && Object.keys(s.terminalCash).length === 2 && amount(s.terminalCash.cashFlow) && amount(s.terminalCash.growthRate));
     check(s.recoveryYear === null || Number.isInteger(s.recoveryYear) && s.recoveryYear >= 0 && s.recoveryYear <= 50);
     check(text(s.rationale, 5000));
   }

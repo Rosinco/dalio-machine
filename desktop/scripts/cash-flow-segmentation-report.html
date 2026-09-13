@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Macro Atlas · Cash-flow uncertainty groups</title>
+<style>
+:root{color-scheme:light;--ink:#142f39;--muted:#4c6570;--paper:#f2f6f5;--white:#fff;--line:#d2dedf;--teal:#087f78;--orange:#ad570e;--blue:#426e9a;--warm:#fff2dc;--soft:#e5f4ef}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}header{background:#142f39;color:white;padding:16px max(22px,calc((100% - 1320px)/2));display:flex;justify-content:space-between;gap:20px;align-items:center}header strong{letter-spacing:.12em;font-size:14px}header span{font-size:12px;color:#cae2e0}main{max-width:1364px;margin:auto;padding:32px 22px 60px}h1{font-size:clamp(28px,4vw,43px);line-height:1.13;letter-spacing:-.035em;margin:8px 0 14px}h2{font-size:22px;margin:0 0 8px;line-height:1.3}h3{font-size:17px;margin:0 0 8px}p{margin:0 0 14px}.eyebrow{font-size:12px;font-weight:750;letter-spacing:.1em;text-transform:uppercase;color:var(--teal)}.intro{max-width:920px;font-size:17px;color:var(--muted)}.notice{padding:15px 18px;border-left:4px solid var(--orange);background:var(--warm);border-radius:5px;margin:20px 0;color:#644010}.notice strong{color:#53350c}.controls,.panel{background:white;border:1px solid var(--line);border-radius:12px;padding:22px;margin-top:20px}.controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px 20px}label{display:block;font-size:12px;font-weight:700;color:var(--muted)}select,input{display:block;width:100%;margin-top:6px;padding:11px 12px;border:1px solid #b6cbcd;border-radius:7px;background:white;color:var(--ink);font:inherit;min-width:0}select:focus,input:focus,button:focus,a:focus{outline:3px solid #86c9c1;outline-offset:2px}.control-note{grid-column:1/-1;margin:0;font-size:13px;color:var(--muted)}.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:20px 0}.card{padding:18px;background:white;border:1px solid var(--line);border-radius:10px}.card span{font-size:12px;font-weight:700;color:var(--muted);display:block}.card strong{display:block;font-size:30px;letter-spacing:-.03em;margin:5px 0}.card p{font-size:12px;color:var(--muted);margin:0}.split{display:grid;grid-template-columns:1.2fr 1fr;gap:22px}.muted,.caption{color:var(--muted)}.caption{font-size:12px;margin:8px 0 0}.small{font-size:13px}.table-wrap{overflow:auto;width:100%}table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}th,td{padding:11px 10px;border-bottom:1px solid #e1e9e9;vertical-align:top;text-align:right}th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;background:#f7faf9}th:first-child,td:first-child{text-align:left}tbody tr:last-child td{border-bottom:0}tbody tr.selected{background:var(--soft)}.feature-button{padding:0;background:none;border:0;color:var(--ink);text-align:left;text-decoration:underline;text-underline-offset:3px;cursor:pointer;font:inherit;font-weight:650}.legend{display:flex;gap:20px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:10px 0}.dot{display:inline-block;width:9px;height:9px;background:var(--teal);border-radius:50%;margin-right:5px}.dot.gray{background:#879da3}.dot.orange{background:var(--orange)}.good{color:#08715d}.bad{color:#9b4a0b}.measure{white-space:nowrap}.bar{display:inline-block;vertical-align:middle;width:50px;height:7px;background:#e3eae9;position:relative;margin-right:6px}.bar i{display:block;height:100%;background:var(--teal)}.table-heading{display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:16px}.table-heading label{min-width:240px;max-width:340px}.empty{padding:25px;background:#f5f8f7;border-radius:8px;color:var(--muted)}.empty[hidden]{display:none}.hidden{display:none!important}a{color:#086b70;text-underline-offset:3px}.link-row{display:flex;gap:20px;flex-wrap:wrap;margin-top:12px}details summary{cursor:pointer;font-weight:700;font-size:18px}details[open] summary{margin-bottom:18px}code{background:#edf2f2;padding:2px 5px;border-radius:4px;font-size:12px}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f1f6f5;padding:16px;border-radius:8px;font-size:13px}li{margin:6px 0}ul{padding-left:23px}.concept-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}.concept{background:#f3f8f6;border-radius:8px;padding:17px}.company-query{max-width:540px;margin:15px 0}.mono{font:11px/1.5 ui-monospace,monospace;overflow-wrap:anywhere}svg{display:block;max-width:100%;height:auto}.download{font-weight:650}.section-lead{max-width:900px;color:var(--muted)}.tag{display:inline-block;padding:3px 8px;border-radius:12px;background:#e7efef;font-size:11px;font-weight:700}.status{min-height:24px;margin-top:18px}.nowrap{white-space:nowrap}.delta{display:block;font-size:11px;color:var(--muted)}@media(max-width:900px){.split,.concept-grid{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.controls{grid-template-columns:repeat(2,minmax(0,1fr))}.table-heading{display:block}.table-heading label{margin-top:15px;max-width:none}main{padding:22px 15px 40px}.panel,.controls{padding:17px}}@media(max-width:520px){header{padding:14px 16px}header span{max-width:120px;text-align:right}.controls{grid-template-columns:1fr}.cards{gap:9px}.card{padding:13px}.card strong{font-size:25px}h2{font-size:20px}.panel{padding:15px}.table-heading label{min-width:0}.link-row{gap:12px}.intro{font-size:15px}th,td{padding:9px 7px}}
+.card strong{font-size:clamp(20px,2.2vw,29px);overflow-wrap:normal}#cash-behavior-chart{overflow-x:auto}#cash-behavior-chart svg{min-width:760px}@media(max-width:520px){.card strong{font-size:19px}.card span{font-size:11px}}
+</style>
+</head>
+<body>
+<header><strong>MACRO ATLAS</strong><span>Offline research · 12 September 2026</span></header>
+<main>
+<div class="eyebrow">Cash-flow forecast research</div>
+<h1>Which companies need a wider range?</h1>
+<p class="intro">Compare sector, branch and financial patterns against one pooled uncertainty range. Each comparison keeps the cash-flow forecast and scored observations the same; only the range around that forecast changes.</p>
+<div class="notice"><strong>Exploratory evidence, with unresolved measurement differences.</strong> These are later-vintage financial statements and current company classifications. The recent years have already been inspected in the first audit. Provider cash definitions changed between downloads; the groups cannot separate that issue from business surprises. No new range has been installed in Atlas.</div>
+<p id="drift-note" class="small muted"></p>
+
+<section class="controls" aria-label="Comparison controls">
+<label>Middle forecast<select id="model"><option value="linear">Five-year weighted trend</option><option value="naive">Latest cash held constant</option></select></label>
+<label>Forecast horizon<select id="horizon"><option value="1">Year 1</option><option value="2">Year 2</option><option value="3">Year 3</option><option value="4">Year 4</option></select></label>
+<label>Evaluation period<select id="period"></select></label>
+<label>Company scope<select id="scope"><option value="operating_and_property">Operating companies + property</option><option value="all_listings">All listings, including financial firms</option></select></label>
+<label>Observation weighting<select id="weighting"><option value="listing_balanced">Each listing balanced</option><option value="duplicate_history_downweighted">Identical history duplicates downweighted</option></select></label>
+<label>Highlighted grouping<select id="candidate"></select></label>
+<p class="control-note">Primary scope excludes Financials except Real Estate and REITs. All ranges target 80% using older calibration errors. Width and interval score are expressed relative to each forecast's mean absolute five-year historical cash.</p>
+</section>
+<p id="cohort" class="status small muted" aria-live="polite"></p>
+<div id="no-results" class="empty" hidden>No observations pass the timing rules for this combination. Choose another period or horizon; a missing cohort is not a zero result.</div>
+<div id="scored-content">
+<section class="cards" aria-label="Selected grouping summary">
+<div class="card"><span>Coverage: pooled → selected</span><strong id="coverage-card"></strong><p id="coverage-caption"></p></div>
+<div class="card"><span>Full width: pooled → selected</span><strong id="width-card"></strong><p>Historical cash scale units; smaller is narrower.</p></div>
+<div class="card"><span>Interval score improvement</span><strong id="score-card"></strong><p id="score-caption"></p></div>
+<div class="card"><span>Uses a parent or pooled fallback</span><strong id="fallback-card"></strong><p id="fallback-caption"></p></div>
+</section>
+
+<section class="panel">
+<div class="split">
+<div><h2>Coverage and width together</h2><p class="section-lead small">The dashed line marks the 80% research target. A useful group can correct under-coverage or narrow excess width. More width alone is not a better result.</p><div id="scatter"></div><p class="caption">Each dot is a complete grouping rule on the same selected cohort. The orange dot is the pooled baseline; teal highlights your selected rule.</p></div>
+<div><h2>What changed?</h2><p id="selection-explanation"></p><p class="small muted">The interval score combines full width with a penalty for observations outside the band. At the nominal 80% target, the penalty is ten times the outside distance. Lower is better; a negative improvement means a worse score.</p><div id="tail-details"></div><p class="caption">The two tails are measured separately. Symmetric cash bands need not produce equal upside and downside miss rates.</p></div>
+</div>
+</section>
+
+<section class="panel" id="cash-behavior-panel">
+<h2>The same cohort, separated by historical cash behavior</h2>
+<p class="section-lead small">A pooled range can be too wide for stable cash histories and too narrow for variable ones at the same time. These fixed low, medium and high groups compare their original pooled coverage with coverage after conditioning on cash dispersion.</p>
+<div class="legend"><span><i class="dot gray"></i>Pooled range within each group</span><span><i class="dot"></i>Cash-dispersion range</span><span><i class="dot orange"></i>80% research target</span></div>
+<div id="cash-behavior-chart"></div><p class="caption">The width figures are mean full widths relative to each history's cash scale. Full width 2.0 means mid ±1.0 times historical cash scale. A listing can change groups between forecast origins, so group listing counts need not sum to the cohort's listing count. Historical dispersion includes trend and growth; it is not a direct measure of a company's underlying business risk. Scroll this chart sideways on small screens.</p>
+</section>
+
+<section class="panel">
+<h2>Compare the grouping rules</h2>
+<p class="section-lead small">Select a rule to highlight it and inspect its groups below. Fixed choices are shown in protocol order; this table does not select a winning production model.</p>
+<div class="table-wrap"><table id="comparison-table"><thead><tr><th>Grouping rule</th><th>Inside range</th><th>Full width</th><th>Interval score ↓</th><th>Score improvement</th><th>Broader fallback</th></tr></thead><tbody></tbody></table></div>
+<p id="point-note" class="caption"></p>
+</section>
+
+<section class="panel">
+<div class="table-heading"><div><h2 id="group-title">Inside the selected groups</h2><p id="group-subtitle" class="small muted"></p></div><label>Find a group<input id="group-search" type="search" placeholder="Sector, branch, or group label"></label></div>
+<div id="group-unavailable" class="empty" hidden></div>
+<div class="table-wrap" id="group-table-wrap"><table id="group-table"><thead><tr><th>Group</th><th>Listings / forecasts</th><th>Coverage<br>pooled → group</th><th>Full width<br>pooled → group</th><th>Interval score<br>pooled → group</th><th>Broader fallback</th></tr></thead><tbody></tbody></table></div>
+<p class="caption">Group rows preserve the selected cohort's weights. Counts are listings and forecast observations, not independent companies or trials. Missing features remain visible and use a parent or pooled calibration group; that does not necessarily mean a wider numerical range.</p>
+</section>
+</div>
+
+<section class="panel">
+<h2>Does the feature add information within its branch?</h2>
+<p class="section-lead small">This separate comparison starts with a branch-based range, then divides peers by one additional financial feature. It asks whether the feature adds information beyond branch membership. Score improvement here is relative to the same observations' <strong>branch baseline</strong>.</p>
+<div id="within-unavailable" class="empty" hidden></div>
+<div class="table-wrap" id="within-table-wrap"><table id="within-table"><thead><tr><th>Within-branch rule</th><th>Inside range</th><th>Full width</th><th>Interval score ↓</th><th>Improvement vs branch</th><th>Broader fallback</th></tr></thead><tbody></tbody></table></div>
+<p id="within-caption" class="caption"></p>
+</section>
+
+<section class="panel">
+<details><summary>Why tangible book value / EBIT is an imperfect asset-intensity measure</summary>
+<p>The ratio is book equity per annual operating profit. It combines capital intensity, the profit margin and financing. It can be a useful predictor to test, but it does not identify physical asset requirements by itself.</p>
+<pre>Tangible book equity / EBIT = (tangible book equity / sales) / EBIT margin</pre>
+<div class="table-wrap"><table><thead><tr><th>Same physical operation</th><th>Operating assets</th><th>Operating liabilities</th><th>Debt</th><th>Book equity</th><th>EBIT</th><th>Equity / EBIT</th></tr></thead><tbody><tr><td>Unlevered</td><td>1,000</td><td>200</td><td>0</td><td>800</td><td>100</td><td>8×</td></tr><tr><td>After debt-funded shareholder payout</td><td>1,000</td><td>200</td><td>400</td><td>400</td><td>100</td><td>4×</td></tr><tr><td>Original financing, earnings downturn</td><td>1,000</td><td>200</td><td>0</td><td>800</td><td>20</td><td>40×</td></tr></tbody></table></div>
+<p class="caption">Illustrative arithmetic, with no cash or intangible assets. Physical assets are identical; financing and profitability change the ratio. This is not cash payback.</p>
+<div class="concept-grid" style="margin-top:20px"><div class="concept"><h3>Separate the economic questions</h3><ul><li>Asset intensity: average PP&E or tangible operating capital relative to sales.</li><li>Operating returns: normalized NOPAT relative to average operating capital.</li><li>Financing: gross debt, liquidity, interest coverage and maturities.</li><li>Predictability: demand, margins, cash stability and investment timing.</li></ul></div><div class="concept"><h3>Book values need context</h3><ul><li>Internally developed brands and research can be absent from recognized assets.</li><li>Leased assets and debt need a consistent perimeter.</li><li>Depreciated old equipment can look unusually capital-light.</li><li>Acquisition cost still matters when goodwill is excluded from operating diagnostics.</li></ul></div></div>
+<p class="small" style="margin-top:18px">Sources: <a href="https://www.berkshirehathaway.com/letters/1983.html">Berkshire on tangible returns and acquisition cost</a>, <a href="https://www.ifrs.org/issued-standards/list-of-standards/ias-38-intangible-assets/">IAS 38 on intangibles</a>, <a href="https://www.ifrs.org/news-and-events/news/2019/01/ifrs-16-is-now-effective/">IFRS 16 on leases</a>.</p>
+</details>
+</section>
+
+<section class="panel">
+<details><summary>Fixed group definitions and available data</summary>
+<p id="feature-aggregation" class="small muted"></p>
+<div class="table-wrap"><table id="definitions-table"><thead><tr><th>Grouping</th><th>Fixed bins</th><th>Feature definition</th><th>Available origin histories</th></tr></thead><tbody></tbody></table></div>
+<p class="small muted">The experiment tests vendor tangible-assets and book-equity proxies. It does not have reconciled PP&E, maintenance capex or operating capital for every company. Raw cash and revenue dispersion include trend and growth; they are not pure surprise or cyclicality measures.</p>
+</details>
+</section>
+
+<section class="panel">
+<details id="company-section"><summary>Explore company features from FY2024 histories</summary>
+<p class="small muted">These saved histories had at least one eligible five-year forecast during feature extraction. This is a descriptive company list, independent of the selected scored cohort. It does not assign a company a permanent uncertainty or quality rating.</p>
+<label class="company-query">Find a company, sector or branch<input id="company-search" type="search" placeholder="For example ABB, SCA, forestry, software"></label><p id="company-count" class="caption"></p>
+<div class="table-wrap"><table id="company-table"><thead><tr><th>Company / current branch</th><th>Cash signs</th><th>Cash dispersion</th><th>Tangible assets / sales</th><th>Book equity / EBIT</th><th>Net debt / assets</th><th>EBIT margin</th></tr></thead><tbody></tbody></table></div>
+<p class="caption">At most 100 matches shown. Missing ratios are displayed as unavailable; the experiment uses a parent or pooled calibration group for them. Book-equity/EBIT requires positive book equity and an EBIT margin of at least 1% in every training year.</p>
+</details>
+</section>
+
+<section class="panel">
+<details><summary>Calibration, limits and reproducible files</summary>
+<p id="protocol-summary"></p><ul id="limitations"></ul>
+<p class="small">The publication gates prevent a learned range being applied before its nominal calibration date, but later-vintage statement values cannot recreate the original historical information set. Retained company directories can omit former or delisted issuers, and missing outcomes are absent from the scored cohort. An 80% empirical target is neither a coverage guarantee for an individual company nor a probability interval for its DCF valuation. Signed annual cash paths and terminal assumptions require separate analysis.</p>
+<p class="small">Further research: study the cash-flow components and business mechanisms behind misses. <a href="https://www.gsb.stanford.edu/faculty-research/publications/accruals-prediction-future-cash-flows">Barth, Cram and Nelson's original study</a> supports testing accrual components alongside cash; <a href="https://www.ifrs.org/issued-standards/list-of-standards/ias-7-statement-of-cash-flows/">IAS 7</a> distinguishes operations from investment and financing. Net investing is not a universal capex measure.</p>
+<div class="link-row"><a class="download" href="comparisons.csv" download>All comparisons CSV</a><a class="download" href="group-diagnostics.csv" download>Group diagnostics CSV</a><a href="results.json">Results JSON</a><a href="group-calibration.json">Calibration support and factors</a><a href="report-receipt.json">Report hashes</a></div>
+<details style="margin-top:20px"><summary>Input SHA-256 hashes</summary><div id="hashes"></div></details>
+</details>
+</section>
+<p class="caption" style="margin-top:20px">Macro Atlas · All report data is embedded for offline use. External sources open only when selected.</p>
+</main>
+<script id="report-data" type="application/json">__REPORT_DATA__</script>
+<script>
+'use strict';
+const DATA=JSON.parse(document.getElementById('report-data').textContent), R=DATA.results, P=R.protocol;
+const $=id=>document.getElementById(id);
+const labels={global:'Pooled baseline',sector:'Sector',branch:'Branch',cash_dispersion:'Historical cash dispersion',cash_residual_dispersion:'Cash dispersion after fitted trend',cfo_dispersion:'Operating cash dispersion',revenue_dispersion:'Revenue dispersion',ebit_margin:'EBIT margin',margin_dispersion:'EBIT margin dispersion',tangible_assets_sales:'Tangible assets / sales',tangible_assets_share:'Tangible assets / total assets',tbv_ebit:'Tangible book equity / EBIT',net_debt_assets:'Net debt / assets',working_capital_sales:'Working capital proxy / sales',cash_gap_dispersion:'Operating cash / FCF gap dispersion',cash_sign:'Historical cash signs',sector_cash_dispersion:'Sector + cash dispersion',branch_cash_dispersion:'Branch + cash dispersion'};
+const descriptions={global:'One factor from all admissible older errors in the selected scope.',sector:'Different ranges for saved sectors, with a pooled fallback for missing or unsupported sectors.',branch:'Different ranges for saved branches, falling back to sector and then the pooled baseline.',cash_dispersion:'Groups five-year cash histories by their dispersion relative to historical cash scale.',cash_residual_dispersion:'Groups the variation left after fitting the historical cash trend. It measures in-sample residuals, not future certainty.',cfo_dispersion:'Groups the stability of operating cash, which may differ from provider free cash flow.',revenue_dispersion:'Groups revenue-level dispersion, which can reflect growth, acquisitions or cyclical changes.',ebit_margin:'Groups profitability without combining it with a capital denominator.',margin_dispersion:'Groups how much the five annual operating margins vary.',tangible_assets_sales:'Tests a vendor asset-intensity proxy relative to revenue.',tangible_assets_share:'Tests the share of total book assets represented by vendor tangible assets.',tbv_ebit:'Tests the user-proposed capital-to-profit ratio. Missing or nonpositive book equity and weak EBIT can make it unavailable.',net_debt_assets:'Tests financing exposure separately from operating asset intensity.',working_capital_sales:'Tests a broad balance-sheet proxy; current liabilities still include financing items.',cash_gap_dispersion:'Tests changes in the gap between operating cash and provider FCF; this gap is not assumed to be capex.',cash_sign:'Separates persistently positive, negative, mixed and zero-containing cash histories.',sector_cash_dispersion:'Adds cash behavior within sector; thin groups use sector then pooled support.',branch_cash_dispersion:'Adds cash behavior within branch; thin groups use branch, sector then pooled support.'};
+const fmt=(x,d=2)=>Number.isFinite(x)?x.toLocaleString('en-US',{maximumFractionDigits:d,minimumFractionDigits:d}):'Unavailable';
+const count=x=>Number.isFinite(x)?x.toLocaleString('en-US'):'—';
+const pct=x=>Number.isFinite(x)?`${fmt(100*x,1)}%`:'Unavailable';
+const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const option=(value,label)=>{const o=document.createElement('option');o.value=value;o.textContent=label;return o;};
+const periods=['validation','recent',...new Set(R.metrics.map(r=>r.period).filter(x=>x.startsWith('FY')).sort())];
+for(const p of periods)$('period').append(option(p,p==='validation'?'Validation targets 2021–2023':p==='recent'?'Exploratory targets 2024–2025':p));
+for(const c of P.candidates)$('candidate').append(option(c,labels[c]||c));
+$('period').value='recent';$('candidate').value='cash_dispersion';
+function state(){return {model:$('model').value,horizon:+$('horizon').value,period:$('period').value,scope:$('scope').value,weighting:$('weighting').value,candidate:$('candidate').value};}
+function match(row,s){return ['model','horizon','period','scope','weighting'].every(k=>row[k]===s[k]);}
+function arrow(a,b,formatter=fmt){return `${formatter(a)} → ${formatter(b)}`;}
+function scatter(rows,selected){
+ const w=650,h=292,left=58,right=26,top=20,bottom=49,plotW=w-left-right,plotH=h-top-bottom;
+ const maximum=Math.max(...rows.map(r=>r.meanWidth),.1)*1.14;
+ const xx=x=>left+x/maximum*plotW,yy=y=>top+(1-y)*plotH;
+ let v=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Coverage versus normalized full width for the selected cohort"><rect width="${w}" height="${h}" fill="white"/>`;
+ for(const n of [0,.2,.4,.6,.8,1])v+=`<line x1="${left}" x2="${w-right}" y1="${yy(n)}" y2="${yy(n)}" stroke="${n===.8?'#ad570e':'#dce6e5'}" ${n===.8?'stroke-dasharray="5 4"':''}/><text x="${left-8}" y="${yy(n)+4}" text-anchor="end" font-size="11" fill="#4c6570">${n*100}%</text>`;
+ for(let i=0;i<=4;i++){const x=maximum*i/4;v+=`<text x="${xx(x)}" y="${h-28}" text-anchor="middle" font-size="11" fill="#4c6570">${fmt(x,1)}</text>`;}
+ const ordered=rows.filter(r=>r.candidate!=='global'&&r.candidate!==selected).concat(rows.filter(r=>r.candidate==='global'),rows.filter(r=>r.candidate===selected&&selected!=='global'));
+ for(const row of ordered){const active=row.candidate===selected,global=row.candidate==='global';v+=`<circle cx="${xx(row.meanWidth)}" cy="${yy(row.coverage)}" r="${active?7:global?6:4}" fill="${active?'#087f78':global?'#ad570e':'#879da3'}" stroke="white" stroke-width="1.5"><title>${esc(labels[row.candidate])}: coverage ${pct(row.coverage)}, width ${fmt(row.meanWidth)}</title></circle>`;}
+ v+=`<text x="${left+plotW/2}" y="${h-6}" text-anchor="middle" font-size="12" fill="#4c6570">Full width / historical cash scale</text></svg>`;$('scatter').innerHTML=v;
+}
+function renderGroups(s){
+ $('group-title').textContent=`Inside ${labels[s.candidate].toLowerCase()}`;
+ const query=$('group-search').value.trim().toLocaleLowerCase();
+ const all=R.groupMetrics.filter(r=>match(r,s)&&r.candidate===s.candidate);
+ const rows=all.filter(r=>String(r.group).toLocaleLowerCase().includes(query)).sort((a,b)=>b.listings-a.listings||String(a.group).localeCompare(String(b.group)));
+ $('group-subtitle').textContent=all.length?`${count(all.length)} groups, including any missing-feature fallback. Values compare each group's same observations.`:'Detailed group rows are available for the combinations retained in this experiment.';
+ $('group-table-wrap').classList.toggle('hidden',!all.length);$('group-unavailable').hidden=!!all.length;
+ $('group-unavailable').textContent=s.candidate==='global'?'The pooled baseline has one scope-wide factor. Select a grouping rule to inspect its constituent groups.':'This combination has no retained group diagnostics. The full comparison above is still valid. Try weighted trend, Year 1 or 2, balanced listings, and a combined validation or recent period.';
+ $('group-table').tBodies[0].innerHTML=rows.map(r=>`<tr><td>${esc(s.scope==='operating_and_property'?String(r.group).replace(/^Financials(?= \/|$)/,'Property (within Financials taxonomy)'):r.group)}</td><td>${count(r.listings)} / ${count(r.count)}<span class="delta">${count(r.histories)} distinct origin histories</span></td><td class="measure">${arrow(r.globalCoverage,r.coverage,pct)}</td><td class="measure">${arrow(r.globalWidth,r.meanWidth)}</td><td class="measure">${arrow(r.globalScore,r.meanIntervalScore)}<span class="delta">${pct(r.scoreImprovement)} score improvement</span></td><td>${pct(r.fallbackShare)}</td></tr>`).join('')||'<tr><td colspan="6">No groups match this search.</td></tr>';
+}
+function cashBehavior(s){
+ const rows=['low','medium','high'].map(group=>R.groupMetrics.find(r=>match(r,s)&&r.candidate==='cash_dispersion'&&r.group===group)).filter(Boolean);
+ $('cash-behavior-panel').classList.toggle('hidden',rows.length!==3);if(rows.length!==3)return;
+ const w=1020,h=260,left=95,right=365,top=28,plotW=w-left-right,xx=value=>left+value*plotW;
+ let out=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Pooled versus conditional coverage in low, medium and high historical cash dispersion groups"><rect width="${w}" height="${h}" fill="white"/>`;
+ for(const p of [0,.2,.4,.6,.8,1])out+=`<line x1="${xx(p)}" x2="${xx(p)}" y1="${top-5}" y2="${h-35}" stroke="${p===.8?'#ad570e':'#dce6e5'}" ${p===.8?'stroke-dasharray="5 4"':''}/><text x="${xx(p)}" y="${h-15}" text-anchor="middle" font-size="12" fill="#4c6570">${p*100}%</text>`;
+ rows.forEach((r,i)=>{const y=top+12+i*67;out+=`<text x="${left-12}" y="${y+17}" text-anchor="end" font-size="14" font-weight="650" fill="#142f39">${r.group}</text><rect x="${left}" y="${y}" width="${r.globalCoverage*plotW}" height="13" fill="#879da3"/><rect x="${left}" y="${y+19}" width="${r.coverage*plotW}" height="13" fill="#087f78"/><text x="${w-right+22}" y="${y+13}" font-size="15" fill="#142f39">Coverage ${pct(r.globalCoverage)} → ${pct(r.coverage)}</text><text x="${w-right+22}" y="${y+34}" font-size="13" fill="#4c6570">Width ${fmt(r.globalWidth)} → ${fmt(r.meanWidth)} · ${count(r.listings)} listings</text>`;});
+ $('cash-behavior-chart').innerHTML=out+'</svg>';
+}
+function renderWithin(s){
+ const within=DATA.withinBranch,rows=within?within.metrics.filter(r=>match(r,s)):[];
+ const names={branch:'Branch baseline',branch_tangible_assets_sales:'Branch + tangible assets / sales',branch_tbv_ebit:'Branch + tangible book equity / EBIT',branch_ebit_margin:'Branch + EBIT margin',branch_cash_residual_dispersion:'Branch + cash dispersion after fitted trend'};
+ $('within-unavailable').hidden=!!rows.length;$('within-table-wrap').classList.toggle('hidden',!rows.length);
+ $('within-unavailable').textContent=within?'No within-branch comparison was specified for this combination. Choose operating companies + property, weighted trend Year 1 or 2, or latest cash Year 1.':'The within-branch comparison has not yet been included in this report.';
+ $('within-table').tBodies[0].innerHTML=rows.map(r=>`<tr class="${r.candidate==='branch'?'selected':''}"><td>${esc(names[r.candidate]||r.candidate)}</td><td>${pct(r.coverage)}</td><td>${fmt(r.meanWidth)}</td><td>${fmt(r.meanIntervalScore)}</td><td class="${r.scoreImprovement>=0?'good':'bad'}">${pct(r.scoreImprovement)}</td><td>${pct(r.fallbackShare)}</td></tr>`).join('');
+ const base=rows.find(r=>r.candidate==='branch');
+ $('within-caption').textContent=base?`${count(base.listings)} listings and ${count(base.count)} forecast observations. Missing or sparse refinements fall back to branch, then sector and pooled support. The mid forecast is unchanged.`:'This is a bounded additional experiment using the same fixed bins and older calibration periods.';
+}
+function render(){
+ const s=state(),rows=R.metrics.filter(r=>match(r,s)),base=rows.find(r=>r.candidate==='global'),selected=rows.find(r=>r.candidate===s.candidate);
+ renderWithin(s);
+ const ready=!!base&&!!selected;$('no-results').hidden=ready;$('scored-content').classList.toggle('hidden',!ready);
+ if(!ready){$('cohort').textContent='No admissible evaluation cohort for this selection.';return;}
+ $('cohort').textContent=`${count(base.listings)} listings · ${count(base.count)} forecast observations · actual targets ${base.targetYears.map(y=>'FY'+y).join(', ')}. ${s.weighting==='listing_balanced'?'Each listing receives total evaluation weight one.':'Identical history/target duplicates receive less weight; this is not verified issuer deduplication.'}`;
+ $('coverage-card').textContent=arrow(base.coverage,selected.coverage,pct);$('coverage-caption').textContent=`Research target ${pct(P.targetCoverage)}; gap ${fmt((selected.coverage-P.targetCoverage)*100,1)} percentage points.`;
+ $('width-card').textContent=arrow(base.meanWidth,selected.meanWidth);
+ $('score-card').textContent=pct(selected.scoreImprovement);$('score-card').className=selected.scoreImprovement>=0?'good':'bad';$('score-caption').textContent=`${arrow(base.meanIntervalScore,selected.meanIntervalScore)} normalized score; lower is better.`;
+ $('fallback-card').textContent=pct(selected.fallbackShare);$('fallback-caption').textContent=s.candidate==='global'?'Baseline uses the full supported scope.':'Missing or thin groups use a parent or pooled range.';
+ $('selection-explanation').textContent=descriptions[s.candidate]||labels[s.candidate];
+ $('tail-details').innerHTML=`<div class="table-wrap"><table><thead><tr><th>Outcome</th><th>Pooled</th><th>Selected</th></tr></thead><tbody><tr><td>Below the low bound</td><td>${pct(base.belowShare)}</td><td>${pct(selected.belowShare)}</td></tr><tr><td>Inside the range</td><td>${pct(base.coverage)}</td><td>${pct(selected.coverage)}</td></tr><tr><td>Above the high bound</td><td>${pct(base.aboveShare)}</td><td>${pct(selected.aboveShare)}</td></tr></tbody></table></div>`;
+ $('comparison-table').tBodies[0].innerHTML=rows.map(r=>`<tr class="${r.candidate===s.candidate?'selected':''}"><td><button class="feature-button" data-candidate="${esc(r.candidate)}" aria-pressed="${r.candidate===s.candidate}">${esc(labels[r.candidate]||r.candidate)}</button></td><td class="measure"><span class="bar"><i style="width:${Math.max(0,Math.min(100,r.coverage*100))}%"></i></span>${pct(r.coverage)}</td><td>${fmt(r.meanWidth)}</td><td>${fmt(r.meanIntervalScore)}</td><td class="${r.scoreImprovement>=0?'good':'bad'}">${pct(r.scoreImprovement)}</td><td>${pct(r.fallbackShare)}</td></tr>`).join('');
+ $('point-note').textContent=`All groupings retain the same middle forecast: weighted median absolute point error is ${fmt(base.medianNormalizedError)} historical cash units. A different range cannot improve that point error.`;
+ scatter(rows,s.candidate);renderGroups(s);cashBehavior(s);
+}
+function renderDefinitions(){
+ $('feature-aggregation').textContent=DATA.features.aggregation;
+ const body=$('definitions-table').tBodies[0];
+ body.innerHTML=Object.entries(P.numericBins).map(([name,[column,edges,groups]])=>{const available=DATA.features.numericAvailability[column];const bins=groups.map((label,i)=>`${label}: ${i===0?'below '+edges[0]:i===groups.length-1?'at least '+edges[i-1]:edges[i-1]+' to below '+edges[i]}`).join('; ');return `<tr><td>${esc(labels[name])}</td><td style="text-align:left">${esc(bins)}</td><td style="text-align:left">${esc(DATA.features.definitions[column]||column)}</td><td>${available?`${pct(available.fraction)}<span class="delta">${count(available.available)} / ${count(DATA.features.featureRows)}</span>`:'Unavailable'}</td></tr>`;}).join('');
+}
+function renderCompanies(){
+ const query=$('company-search').value.trim().toLocaleLowerCase();
+ const rows=DATA.companies.filter(r=>!query||r.slice(0,4).some(x=>String(x??'').toLocaleLowerCase().includes(query)));
+ $('company-count').textContent=`${count(rows.length)} matching FY2024 histories; showing ${count(Math.min(100,rows.length))}.`;
+ $('company-table').tBodies[0].innerHTML=rows.slice(0,100).map(r=>`<tr><td><strong>${esc(r[1])}</strong> <span class="tag">${esc(r[0])}</span><span class="delta">${esc(r[2])} / ${esc(r[3])}</span></td><td>${esc(String(r[4]??'Unavailable').replaceAll('_',' '))}</td><td>${fmt(r[5])}</td><td>${fmt(r[6])}</td><td>${fmt(r[7])}${r[7]===null?`<span class="delta">${esc(String(r[8]??'missing').replaceAll('_',' '))}</span>`:''}</td><td>${pct(r[9])}</td><td>${pct(r[10])}</td></tr>`).join('')||'<tr><td colspan="7">No company histories match this search.</td></tr>';
+}
+function protocol(){
+ const reference={model:'linear',horizon:1,scope:'operating_and_property',weighting:'listing_balanced'},year=R.metrics.find(r=>match(r,{...reference,period:'FY2022'})&&r.candidate==='cash_dispersion'),recent=R.metrics.find(r=>match(r,{...reference,period:'recent'})&&r.candidate==='cash_dispersion');
+ $('drift-note').textContent=year&&recent?`Calibration changes across periods: in the default one-year trend test, cash-dispersion ranges captured ${pct(year.coverage)} of FY2022 outcomes and ${pct(recent.coverage)} in FY2024–2025. An 80% target did not hold equally across these regimes. Use the annual period selector to inspect this variation.`:'Inspect annual periods as well as pooled years: a historical 80% target need not hold equally across market regimes.';
+ $('protocol-summary').textContent=`Ranges use a weighted 80th percentile of absolute older errors, normalized by each forecast's mean absolute five-year cash. Calibration targets end in FY${P.calibrationLastTargetYear}, with a nominal freeze of ${P.nominalCalibrationCutoff}. A group needs at least ${P.minimumCalibrationRows} rows, ${P.minimumCalibrationListings} listings and ${P.minimumCalibrationHistories} distinct origin histories; otherwise it uses a parent or pooled calibration group. Fixed bins are chosen research settings.`;
+ const ul=$('limitations');for(const line of P.limitations){const li=document.createElement('li');li.textContent=line;ul.append(li);}
+ for(const [name,hash] of Object.entries(DATA.inputHashes)){const p=document.createElement('p');p.className='mono';p.textContent=`${name}: ${hash}`;$('hashes').append(p);}
+}
+for(const id of ['model','horizon','period','scope','weighting','candidate'])$(id).addEventListener('change',render);
+$('comparison-table').addEventListener('click',event=>{const button=event.target.closest('button[data-candidate]');if(button){$('candidate').value=button.dataset.candidate;render();}});
+$('group-search').addEventListener('input',()=>renderGroups(state()));
+$('company-search').addEventListener('input',renderCompanies);
+renderDefinitions();renderCompanies();protocol();render();
+window.__segmentationReport={state,render,comparisonRows:R.metrics.length,groupRows:R.groupMetrics.length,companyRows:DATA.companies.length};
+</script>
+</body>
+</html>

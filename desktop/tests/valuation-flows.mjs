@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { scaValuationFlows } from './sca-valuation-flows.mjs';
+import { empiricalUniverseValuationFlows } from './empirical-universe-valuation-flows.mjs';
+import { valuationRangeFlows } from './valuation-range-flows.mjs';
+import { terminalValuationFlows } from './terminal-valuation-flows.mjs';
+import { purchaseRangeFlows } from './purchase-range-flows.mjs';
 
 export async function valuationFlows(page, project, { native = false } = {}) {
   const checks = [];
@@ -23,6 +28,8 @@ export async function valuationFlows(page, project, { native = false } = {}) {
   await page.screenshot({ path: resolve(project, 'test-results/holmen-automatic-valuation.png') });
   await page.locator('.valuation-charts').scrollIntoViewIfNeeded();
   await page.getByRole('img', { name: 'Discounted cash flow: low, mid and high scenarios', exact: true }).locator('canvas').waitFor();
+  await page.getByRole('img', { name: 'Cash flow over time: history and forecast scenarios', exact: true }).locator('canvas').waitFor();
+  assert.equal(await page.locator('.cash-flow-forecast').getAttribute('data-forecast-count'), '20');
   await page.screenshot({ path: resolve(project, 'test-results/holmen-automatic-charts.png') });
   checks.push('Holmen opens with sourced price, three complete researched scenarios, charts and payback without entering inputs');
 
@@ -128,7 +135,7 @@ export async function valuationFlows(page, project, { native = false } = {}) {
   await page.getByLabel('Macro and branch evidence → company exposure → forecast assumption').fill('Svenska räntor; verified customer exposure is required.');
   await page.getByRole('button', { name: 'Save study revision', exact: true }).click();
   await page.getByRole('status').filter({ hasText: 'Study revision saved' }).waitFor();
-  checks.push('Missing inputs remove charts; capital and Swedish evidence notes persist with the study');
+  checks.push('Missing inputs remove DCF/NPV charts; capital and Swedish evidence notes persist with the study');
 
   await page.reload();
   await page.locator('[data-business-ready="true"]').waitFor();
@@ -163,12 +170,23 @@ export async function valuationFlows(page, project, { native = false } = {}) {
   await page.screenshot({ path: resolve(project, 'test-results/valuation-compact.png') });
   await page.setViewportSize({ width: 1500, height: 960 });
   await openCompany('Stora');
-  assert.equal(await page.getByLabel('Equity market value', { exact: true }).inputValue(), '');
+  await page.locator('[data-valuation-kind="starter"][data-valuation-ready="true"]').waitFor();
+  assert.match(await page.locator('.valuation-starter-banner').innerText(), /historical|cash.flow/i);
   await openCompany('Holmen');
   await page.locator('[data-valuation-ready="true"]').waitFor();
   assert.equal(await text('mid', 'value'), '1,228.91 SEK');
   await page.getByRole('button', { name: 'Company profile', exact: true }).click();
   await page.locator('[data-business-ready="true"]').waitFor();
   checks.push('Company switching isolates drafts, restores prior work and fits the compact viewport');
+  const sca = await scaValuationFlows(page, project, { native });
+  checks.push(...sca.checks);
+  const universe = await empiricalUniverseValuationFlows(page, project, { native });
+  checks.push(...universe.checks);
+  const ranges = await valuationRangeFlows(page, project, { native });
+  checks.push(...ranges.checks);
+  const terminal = await terminalValuationFlows(page, project, { native });
+  checks.push(...terminal.checks);
+  const purchase = await purchaseRangeFlows(page, project, { native });
+  checks.push(...purchase.checks);
   return { checks };
 }

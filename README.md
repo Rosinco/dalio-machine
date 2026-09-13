@@ -1,5 +1,35 @@
 # dalio-machine — Macro History & Risk Observatory
 
+Macro Atlas 0.19.0 expands the company list with verified values from the already
+collected provider KPI data, named watchlists, column presets, richer conditions,
+multiple sorting priorities, company comparison and CSV export. See
+[ADR 0042](decisions/0042-expanded-kpi-catalogue-and-list-tools.md) and the desktop
+handoff for actual validation and installation status.
+
+Macro Atlas 0.18.0 adds **Companies → Lists**: choose and reorder KPI columns,
+compare actual saved values, filter research candidates, star a watchlist and
+save named views. Periods, units and source dates remain explicit. See
+[ADR 0041](decisions/0041-customizable-company-lists.md) and the
+[desktop handoff](desktop/HANDOFF.md) for validation and installation status.
+
+Macro Atlas 0.17.0 adds **Companies → Screen** and a read-only company research
+gauge across all 19,140 saved listings. Historical cash/profit evidence, recent
+quarterly changes, data gaps and business research routes stay separate from
+optional dated starter valuation context. Browsing preserves working valuations.
+See [ADR 0040](decisions/0040-universe-research-screen.md) and the
+[desktop handoff](desktop/HANDOFF.md) for verification and installation.
+
+Macro Atlas 0.16.0 adds editable purchase-price ceilings, starting at 30% below
+Mid equity value, and an NPV-versus-price chart with explicit ownership units.
+Annual cash and terminal assumptions remain unchanged. See
+[ADR 0039](decisions/0039-editable-purchase-price-range.md)
+and the [desktop handoff](desktop/HANDOFF.md) for verification/installation. Earlier
+releases below describe their historical defaults.
+
+Macro Atlas 0.13 adds a cash-flow-over-time chart and weighted historical trend forecasts using five or ten annual observations. Sensitivity bands widen from ±10% in Year 1 to ±20%, ±30% and onward; history weights, projection and widening remain editable. Existing studies and edits are preserved, with a saved revision before upgrading an exact untouched legacy default. See [the standard model](docs/standard-company-valuation.md) and [desktop handoff](desktop/HANDOFF.md) for release verification and installation status.
+
+Version 0.12 introduced standardized weighted historical cash-flow DCF/NPV starters across the company universe, with 30/25/20/15/10 history weights and a constant ±20% sensitivity range. Deep dives refine the same workspace; Holmen and SCA have reviewed numerical studies.
+
 **Offline desktop viewer:** [Macro Atlas](desktop/README.md) provides Macro,
 Sectors & branches, and Company observatories on a Windows world map. It connects
 saved Dalio country profiles, charts and liquidity diagnostics with a first

@@ -33,3 +33,10 @@ always-loaded state lives in `project_context.md` (Decision Log has one line per
 | [0026](0026-branch-history-comparisons.md) | Historical branch bubbles, whole-cohort medians and IQR, synchronized charts/table and source-bound saved comparisons | 2026-09-10 |
 | [0034](0034-app-country-evidence.md) | Independently dated offline country assessments, original-source monitoring, native histories and conditional scenarios | 2026-09-11 |
 | [0035](0035-company-value-and-price.md) | Company value versus price, high/mid/low DCF and NPV charts, and scenario payback | 2026-09-11 |
+| [0036](0036-standard-company-cash-flow-scenarios.md) | Standard weighted cash-flow DCF/NPV scenarios for every company, refined by reviewed deep dives | 2026-09-12 |
+| [0037](0037-empirical-company-cash-flow-starters.md) | Latest-cash starters, dated historical-error ranges, explicit later-year assumptions and separate crisis scenarios | 2026-09-13 |
+| [0038](0038-separate-sustainable-terminal-cash.md) | Independent sustainable terminal cash, component evidence and frozen universe verification | 2026-09-13 |
+| [0039](0039-editable-purchase-price-range.md) | Editable margin-of-safety ceilings, NPV versus purchase price and explicit ownership units | 2026-09-13 |
+| [0040](0040-universe-research-screen.md) | Read-only universe and company research screens with separate history, data gaps and dated starter valuation context | 2026-09-13 |
+| [0041](0041-customizable-company-lists.md) | Configurable KPI columns, saved views, personal watchlists and explicit dated candidate screens | 2026-09-13 |
+| [0042](0042-expanded-kpi-catalogue-and-list-tools.md) | Verified provider KPI catalogue, named watchlists, comparison, richer conditions and CSV export | 2026-09-13 |
