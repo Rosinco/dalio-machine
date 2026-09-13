@@ -1,5 +1,11 @@
 # dalio-machine — Macro History & Risk Observatory
 
+Macro Atlas 0.19.0 expands the company list with verified values from the already
+collected provider KPI data, named watchlists, column presets, richer conditions,
+multiple sorting priorities, company comparison and CSV export. See
+[ADR 0042](decisions/0042-expanded-kpi-catalogue-and-list-tools.md) and the desktop
+handoff for actual validation and installation status.
+
 One auditable, point-in-time account of the world economy, growing from a macro-cycle dashboard built on Ray Dalio's economic-machine framework. It tracks cycles and fundamentals today and is expanding into institutional reports, sovereign debt, large-allocator positions, capital flows, commodity pressure and monetary liquidity for a SEK-based household investor. It is a decision-support tool, **not** a market-timing signal generator.
 
 ## Company value and price
