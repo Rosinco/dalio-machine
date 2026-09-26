@@ -1,3 +1,73 @@
+# Survival and portfolio review handoff — 2026-09-26
+
+## Current source checkpoint
+
+Company → Research notes now contains separate survival/permanent-loss and
+shared-shock portfolio worksheets; Valuation reads the saved company-review
+status. DCF/NPV arithmetic, historical starter calibration, valuation drafts,
+structural vetoes and existing position-size policy are preserved. The canonical
+template/framework and Börsdata method v27 record the same research sequence.
+See the review workflow and portable verification record under `docs/`.
+
+Evidence, assumptions and review conclusions are separate. Unknown numbers stay
+missing. Reviews save explicitly to separate records, preserve incompatible data,
+retain edits during navigation and become stale when source identities change.
+A later cash recovery does not erase an earlier modeled breach. Permanent-loss
+cash belongs to the existing equity claim after rescue dilution; terminal proceeds
+enter once. Portfolio weights are disjoint; unmodeled residual exposure is held
+flat for the calculation. A reviewed scenario is not a formal gate pass, a maximum
+loss, a probability or an automatic investment verdict.
+
+## Commits and remote verification
+
+The following source commits were pushed and exact remote branch refs verified on
+2026-09-26. This containing handoff commit adds documentation only.
+
+| Repository | Branch | Verified source commit |
+|---|---|---|
+| Rosinco/dalio-machine | feat/offline-atlas | `5be1448e836b165f0aff086725007d5f66dc069a` |
+| Rosinco/dalio-machine | main | `9f82684ee2d3cd6aba1d7c01fbba6a3400f84631` |
+| Rosinco/claude-config | stock-analysis/survival-review-2026-09-26 | `2c5f7f23836793e00811701ad26166fe6d72c209` |
+
+The app prerequisite commit `1e6e059` and canonical prerequisite `b8144af`
+checkpoint the previously uncommitted 0.20–0.22.1 work separately from this review.
+Keep desktop `feat/offline-atlas` and canonical `main` distinct. The method branch
+starts at remote master `181a0ef`; six unrelated local configuration commits were
+not published. The local active session handoff records final handoff branch heads.
+
+## Verification
+
+- 334 frontend/unit/transport tests across 39 files and production build passed.
+- 74 browser checks passed: 9 review, 10 navigation and 55 valuation; isolated
+  profiles, production CSP, no runtime errors and no external requests.
+- Full Python suites passed: 1,206 tests in the desktop worktree and 1,690 on
+  canonical main. Desktop exporters passed 138 tests plus 19 subtests.
+- `ruff check src tests` passed in both roots. Scoped whitespace checks passed.
+- All 79 changed app source/dependency/test files match the tested tree byte for
+  byte. The 257-file inventory and 508 relative references contain no missing or
+  ignored prerequisites. Shared methodology/verification copies match.
+- Portable evidence: `docs/survival-review-verification-2026-09-26.json`.
+  Browser reports/screenshots and original checkpoint remain in the desktop
+  worktree's ignored `desktop/test-results/`. Python logs are retained under
+  `desktop/test-results/closeout-2026-09-26/`. Build-size/import warnings remain.
+
+## Installation and next step
+
+This is a source checkpoint. No new Windows binary was built, native-tested or
+installed; no normal-profile user records or research source packs changed.
+The prior 0.22.1 installation evidence is dated 2026-09-13 and remains historical.
+Package metadata still says 0.22.1; do not overwrite that installed version with an
+unverified build. If a native release is requested, choose the next version,
+build Windows, run the native checks and verify the actual installed executable.
+Save worksheets explicitly before closing/reloading. Company-specific survival
+assumptions and catastrophe probabilities still require evidence.
+
+## Earlier handoffs — historical records
+
+The following records retain their original dates, installation claims and
+then-current uncommitted status. The source publication status above supersedes
+their old statements that 0.20–0.22.1 remained uncommitted/unpushed.
+
 # Macro Atlas 0.22.1 handoff — 2026-09-13
 
 ## Current slice — Back and Forward through analysis
