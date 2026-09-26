@@ -11,6 +11,37 @@ Project-specific guidance. See `project_context.md` for full architecture and in
 
 ## Company analysis
 
+User direction (2026-09-13, Macro Atlas 0.22.1): analysis requires actual Back and
+Forward navigation, not only fixed destination links. Keep route changes atomic
+and preserve the originating company/branch, screen controls and scroll. Returning
+must never undo financial inputs or notebook edits. Session history stays separate
+from authored data and clears at a research-release change.
+
+User direction (2026-09-13, Macro Atlas 0.22): navigation and research workflow
+need a coherent business overview before valuation. Financials presents sales,
+profitability, cash/investment and assets/financing in that order, with charts and
+plain explanations. Use downloaded capex KPIs with their own date/currency limits;
+never substitute investing cash or invent maintenance/growth splits. Keep a
+company notebook separate from reviewed research and valuation storage. Lists
+leads discovery; analysis keeps a direct return and restores the chosen section.
+
+User direction (2026-09-13, Macro Atlas 0.21): every numeric Lists column has
+inclusive Min/Max filters, with exact variant/currency and saved-view persistence.
+Keep them independent of advanced conditions and company Value drafts. Blank
+bounds are unrestricted; missing/invalid observations cannot match active bounds.
+The interface must explain the economic meaning where needed and support the
+journey from discovery to financials, valuation and saved research. Preserve source
+facts and scenario assumptions while improving navigation, readability and charts.
+
+User direction (2026-09-13, Macro Atlas 0.20; ADR 0043): Lists may sort explicit
+valuation attractiveness as NPV relative to dated saved price. DCF includes
+terminal once; DCF/price and NPV/price are the same ordering, not independent
+scores. Preserve full DCF and expose 100/75/50/25/0% terminal-credit sensitivities,
+with 100/50/0 side by side. No calibrated weight, expected-return claim or opaque
+quality score follows. Keep each column/filter/view's exact credit, dated source,
+missing reasons and frozen starter basis; reviewed Value and provider quotes remain
+separate. A 30% discount to value requires 42.857% NPV/price, not 30%.
+
 User direction (2026-09-13, Macro Atlas 0.19; ADR 0042): expand both the KPI catalogue
 and list features using already downloaded KPI data. Import through the source-bound,
 hash-verified exporter. Preserve exact provider variant IDs, corrected units and

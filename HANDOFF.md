@@ -1,3 +1,127 @@
+# Macro Atlas 0.22.1 — Back and Forward, 2026-09-13
+
+Desktop feat/offline-atlas now has actual session history across company,
+industry and Macro research, including valuation tabs and chart anchors. Back
+restores the originating company/branch, controls and scroll. Presentation cache
+is separate from authored financial and notebook data; it never undoes edits.
+Last-screen preferences persist, while restart/release changes begin new history.
+
+**0.22.1 is installed and independently verified** through the existing
+`C:\Users\Adamb\OneDrive\Desktop\Macro Atlas.lnk` shortcut, targeting
+`C:\Users\Adamb\AppData\Local\MacroAtlas\0.22.1\Macro Atlas.exe`.
+The normal-profile app is running and 0.22.0 is retained.
+
+Verification: 314 unit/transport tests, 105 browser checks and 30 Windows checks,
+including full process restarts. Final executable SHA-256:
+`743293388822a27b6d31b016292a100947932483a0f80911e2edc062406204bb`. Detailed scope and local receipts are in the desktop handoff and
+test-results/navigation-release-verification-0.22.1.json. Workflow documentation
+is mirrored in docs/usability-workflow-2026-09-13.md.
+
+Canonical guidance remains on main; do not merge the desktop branch into it.
+0.20.0 through 0.22.1 changes remain uncommitted/unpushed. No financial source,
+calculation, starter default or reviewed study changed in this navigation fix.
+
+## Earlier canonical handoffs — historical
+
+# Macro Atlas 0.22.0 — business overview and research workflow, 2026-09-13
+
+The desktop implementation remains on `feat/offline-atlas`; this canonical
+worktree keeps guidance, method documents and continuity on `main`. Do not merge
+the branches. The 0.20.0, 0.21.0 and 0.22.0 slices remain uncommitted/unpushed;
+no new commit/push request was made.
+
+0.22.0 makes Companies → Lists the entry point, exposes primary desktop
+navigation and keeps company identity/Back to Lists across analysis pages.
+Financials presents six ordered business charts: revenue; profit/cash margins;
+operating/free cash; investing cash; assets; and equity/net debt/cash. Headlines,
+units and short explanations precede detailed measures and statements. Saved
+KPI64 capex appears with its own dated snapshot and undated annual positions;
+no fiscal years or maintenance/growth split are invented. Lists has labelled
+optional tool panels and removable filter chips. Valuation leads with values
+and charts, keeping assumptions and sources accessible. Four-part company
+research notes save locally without modifying reviewed studies or valuations.
+
+Desktop 0.22.0 is installed through the existing shortcut, with 0.21.0 retained.
+The installed executable and copied documentation were independently verified.
+
+Verification: 310 unit/transport tests, 103 core browser checks, 10 financial
+browser checks, 14 whole-app workflow checks and 19 Windows checks pass. Both
+Windows suites run the final binary and verify full restart persistence. Final
+SHA-256 is `9819032c62066e6189a0ff45953d05ebe46dfb4e58f53980e4f7709d6f4c2e7d`.
+See the desktop handoff and local test-results/usability-release-verification-0.22.0.json
+for detailed scope, installation receipt and source identities. The workflow
+document is mirrored at docs/usability-workflow-2026-09-13.md. No valuation
+calculation, source pack, starter defaults or authored study changed this slice.
+
+Start at Companies → Lists → company → Financials, then Valuation and Research
+notes. The overview explains saved evidence; company underwriting still needs
+primary reports, cash reconciliation, current inputs and reviewed assumptions.
+
+## Earlier canonical handoffs — historical
+
+# Macro Atlas 0.21.0 — KPI ranges and usability, 2026-09-13
+
+Desktop implementation is in `/home/rosinco/workspace/dalio-atlas-desktop` on
+`feat/offline-atlas`; this canonical worktree remains on `main`. Do not merge the
+branches. The 0.20.0 and 0.21.0 slices are uncommitted/unpushed; no new closeout was
+requested. The earlier records below retain their original checkpoint scope.
+
+0.21.0 adds inclusive Min/Max filters to every numeric Lists column and preserves
+exact variants/currencies, saved views, exports and valuation-draft boundaries.
+The user also requested a calmer, understandable GUI and a coherent research
+workflow. Start here → Lists → Financials → Valuation/Research now has guides,
+KPI explanations, larger readable charts, section links and responsive navigation.
+Financial source packs and valuation calculations/defaults are unchanged.
+
+Method and behavior: `docs/company-list-kpi-ranges.md` and
+`docs/usability-workflow-2026-09-13.md`, identical in both worktrees. The separate
+four-company source review remains in
+`docs/terminal-stress-candidate-review-2026-09-13.md`.
+
+Validation: 305 app unit tests, 99 browser checks and 14 final Windows checks pass.
+Desktop 0.21.0 is installed through the existing shortcut, with 0.20.0 retained.
+Executable SHA-256:
+`a624843a5fa52ec4e7209a35da52d803bc5d37e33c87580433bff39485de24b9`.
+The desktop handoff and local `test-results/usability-release-verification-0.21.0.json`
+record installation, exact scope, source identities and retained evidence. Raw
+packs/binaries/receipts are ignored by Git. Older macro/Python suites were not
+rerun for this frontend-only slice.
+
+---
+
+# Macro Atlas / dalio-machine handoff — 2026-09-13, valuation attractiveness
+
+Macro Atlas 0.20.0 implementation is in the desktop worktree on `feat/offline-atlas`.
+**0.20.0 is installed and verified** through the existing OneDrive Desktop shortcut;
+0.19.0 is retained. Its executable SHA-256 is
+`609160d97d94c1043dc968d326a6cbbb12f5e3dae3bb859609fbaafa07483075`.
+Validation passes: 295 unit tests, eight new browser checks, 23 existing list browser
+checks and 20 final Windows checks including full restarts and actual CSV export.
+This canonical `main` worktree carries ADR 0043, the dated
+terminal sensitivity study and targeted company-methodology updates. Its unrelated
+macro and source-priority guidance remains intact. This slice is uncommitted.
+
+Companies → Lists adds sortable NPV relative to dated saved price, with selectable
+100/75/50/25/0% terminal credit. Full credit reproduces the original DCF comparison;
+**Terminal sensitivities** shows 100/50/0% side by side. The 50% setting is a stress,
+not an optimized risk weight. Each column/filter/view retains its exact assumption.
+DCF includes terminal once; the 30% discount threshold is 42.857% NPV/price.
+
+Independent evaluation covers all 19,140 listings and 95,700 row/setting combinations.
+13,002 have eligible dated comparisons. Within the existing positive five-year
+cash/EBIT lens, 506 meet the 30% margin with full terminal credit, 337 with half,
+and 183 without terminal value. Median eligible price age is 216 days. This is a
+snapshot sensitivity experiment, not a return backtest or owner-cash reconciliation.
+The frozen gauge, provider packs, reviewed Value studies and authored drafts remain
+unchanged. Full implementation, checks and installation evidence are in the local
+`/home/rosinco/workspace/dalio-atlas-desktop/desktop/HANDOFF.md`.
+
+Prior source checkpoint: desktop `614d6bcb5c39688705d456f6d342dc5e68b85c02`, canonical
+`a4872be08092d9f1359d820e48479dceafb6e345`. Their previous source closeout remains
+historical below. No new commit/push or branch merge has been performed.
+
+## Earlier canonical handoffs — historical
+
 # Macro Atlas / dalio-machine handoff — 2026-09-13
 
 **Macro Atlas 0.19.0 is installed and verified.** Implementation lives in

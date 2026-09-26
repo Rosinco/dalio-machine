@@ -16,6 +16,26 @@ in that workspace. Reviewed studies currently exist for Holmen and SCA and open
 as the default refinements. The standard historical baseline remains available
 alongside them. Applying it preserves the preceding draft as a saved revision.
 
+## Valuation attractiveness in Lists
+
+Version 0.20.0 compares each frozen starter with its dated saved equity price:
+`100 × ((cash PV + terminal credit / 100 × terminal PV) / equity price − 1)`.
+At 100% terminal credit this is Mid NPV / price; DCF / price has the same order.
+Terminal value enters once. The selectable 75%, 50%, 25% and 0% credits are
+sensitivities, not probabilities or calibrated company-quality weights.
+**Column preset → Terminal sensitivities** shows 100%, 50% and 0% side by side.
+The full DCF remains the baseline comparison. Cash-only value excludes all
+post-forecast value and is not a recovery estimate or a universal purchase rule.
+
+Use the existing positive-cash/EBIT lens and inspect terminal dependence, Low NPV,
+coverage and saved price dates before prioritizing a deep dive. Financial/manual,
+unclassified/conflicting, unreconciled and no-history cases have no generic
+ranking. Partial evidence stays labelled; missing comparisons are never zero.
+The credit persists separately for every column, condition and saved view.
+Reviewed/edited Value and newer provider quotes do not change this frozen ranking.
+See [ADR 0043](../decisions/0043-valuation-attractiveness-comparisons.md) and the
+[dated sensitivity experiment](valuation-attractiveness-sensitivity-2026-09-13.md).
+
 ## Purchase price and margin of safety
 
 The user-selected default is **30% below the Mid scenario's equity value**,
