@@ -17,6 +17,7 @@ import { valuationAttractivenessFlows } from './valuation-attractiveness-flows.m
 import { companyListRangeFlows } from './company-list-range-flows.mjs';
 import { usabilityFlows } from './usability-flows.mjs';
 import { navigationFlows } from './navigation-flows.mjs';
+import { resilienceFlows } from './resilience-flows.mjs';
 
 const base = process.env.ATLAS_URL || 'http://127.0.0.1:1420';
 await mkdir('test-results', { recursive: true });
@@ -41,10 +42,17 @@ page.on('console', e => { if (e.type() === 'error') console.error('Browser:', e.
 const start = performance.now();
 await page.goto(base);
 await page.locator('.app[data-active-release]').waitFor();
-if (!process.argv.includes('--usability-only') && !process.argv.includes('--navigation-only')) {
+if (!process.argv.includes('--usability-only') && !process.argv.includes('--navigation-only') && !process.argv.includes('--resilience-only')) {
   await selectObservatory(page, 'macro');
   await page.locator('[data-country="SE"][data-ready="true"]').waitFor();
   await page.locator('[data-map-ready="true"]').waitFor();
+}
+if (process.argv.includes('--resilience-only')) {
+  const result = await resilienceFlows(page, process.cwd());
+  assert.deepEqual(external, []); assert.deepEqual(errors, []);
+  await writeFile('test-results/resilience-browser-report.json', JSON.stringify({ ...result, status: 'PASS', external, errors }, null, 2));
+  console.log(JSON.stringify(result));
+  await browser.close(); process.exit(0);
 }
 if (process.argv.includes('--navigation-only')) {
   const result = await navigationFlows(page, process.cwd());

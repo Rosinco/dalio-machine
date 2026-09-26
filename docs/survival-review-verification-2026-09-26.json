@@ -1,0 +1,71 @@
+{
+  "verified_at": "2026-09-26T07:23:27.632049+00:00",
+  "scope": "Survival and portfolio review implementation; source checkpoint, not a native release",
+  "app_branch": "feat/offline-atlas",
+  "unit_tests": {
+    "command": "npm test",
+    "passed": 334,
+    "files": 39
+  },
+  "production_build": {
+    "command": "npm run build",
+    "status": "PASS"
+  },
+  "browser_checks": {
+    "passed": 74,
+    "profile": "isolated",
+    "build": "stable production preview with app CSP",
+    "reports": {
+      "resilience-browser-report.json": {
+        "checks": 9,
+        "externalRequests": 0,
+        "runtimeErrors": 0,
+        "sha256": "5d1eac1e6dbd8f4d77eb63dc15bd3737efa0378e0c897f84cb628bfc108967e5"
+      },
+      "navigation-browser-report.json": {
+        "checks": 10,
+        "externalRequests": 0,
+        "runtimeErrors": 0,
+        "sha256": "2c2469a53cbf6f61bdf0c44c0674941d6193e149059a3f41ae2f9351a0df7743"
+      },
+      "valuation-browser-report.json": {
+        "checks": 55,
+        "externalRequests": 0,
+        "runtimeErrors": 0,
+        "sha256": "4f7bcff40457ae001b83e0f2beff5ef54f152cd6d7092331b205cc04fd8a823e"
+      }
+    }
+  },
+  "source_sha256": {
+    "desktop/src/BusinessWorkspace.tsx": "774f5180ee7cb1e13c3ea46a77b48d1fa1a3adc90b89df3c63125878fbd6df70",
+    "desktop/src/ValuationWorkspace.tsx": "042c5faaca830b35b7de5e21c92af22cbe294ddaa11b9a3948f9ec6d34501a3f",
+    "desktop/src/AtlasGuide.tsx": "6353fbc90678a1b639bb47cbaf103c4317cfdb04bde9649e5822efc4c187d12d",
+    "desktop/src/resilienceReview.ts": "cbb4d972daae2c51c81e40b7806a1ac3a9d105b790a837736d56d7023f24cd27",
+    "desktop/src/resilienceReview.test.ts": "89b34fe649d87c63aed408dbe553828f62d59e8409cd6a2693ae3b00c231c0ef",
+    "desktop/src/CompanyResilienceReview.tsx": "c1a041b082561fc368cc17fabf3597e8ae8a07fbf74282a66a5216467009236e",
+    "desktop/src/resilienceReview.css": "47e5352a5657d05e69182240ef2624495a592cfbce8e858ec9d3cca200a8318c",
+    "desktop/src/ResilienceReviewSummary.tsx": "90ae4dfc0704a868398bafa0b36f7744847272edbbc3e44365b6af8c4b7b462c",
+    "desktop/src/portfolioStress.ts": "a9705b67ed21d1b0ff1ec24be459f1e79ffc1558871cc3b5bf9bad40852afe4c",
+    "desktop/src/portfolioStress.test.ts": "c3de98546e5fbcc4cdd6a5e7dd73a7148097368855062622c5ec5d42df0954ad",
+    "desktop/src/PortfolioStressReview.tsx": "ab16843a64571541d31bc66e9a96533de3e77425b398f0ea1f21ffedfb73ffde",
+    "desktop/src/portfolioStress.css": "7c961f45aff4d70139470685fc6b48f946e09a6b7143500db34e07512ddd48c4",
+    "desktop/tests/browser.mjs": "736df1380be94537f3a302c8f50bc30b8179aea2ff0db75ff49047b0a274c902",
+    "desktop/tests/resilience-flows.mjs": "ce1640a223e494e448e9fc2f0e7cea2b53c9e3c9a206f803fb3b82d97598f97f"
+  },
+  "method_sha256": {
+    "stock_analysis_method.md": "f7e6527a54a1efc912466dc13319b932af95d96acb8395348945b7be789bd814",
+    "stock_analysis_method_history.md": "4ed3fd7e49efef14d8f28bc79680c850e450733cc2f610f8e30e2789d8965ff4"
+  },
+  "local_original_receipt": {
+    "path": "desktop/test-results/survival-review-verification-2026-09-26.json",
+    "sha256": "94ee44fa5fc59ebd67bea0433414f15466255550801942774a826bcc8dfe7cbd",
+    "status_fields": "Historical pre-commit checkpoint; later publication is recorded in HANDOFF.md"
+  },
+  "limits": [
+    "No new Windows package, native validation or installation.",
+    "No normal-profile user records modified.",
+    "Generated source packs, browser profiles, raw reports and screenshots remain local and ignored by Git.",
+    "Existing bundle-size/import warnings remain.",
+    "Closeout documentation edits occurred after the implementation verification; implementation source hashes above are unchanged."
+  ]
+}

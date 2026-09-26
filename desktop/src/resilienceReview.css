@@ -1,0 +1,38 @@
+.company-resilience { margin-top: 1.5rem; padding: clamp(1rem, 3vw, 1.75rem); border: 1px solid #cddbd5; border-radius: 12px; background: #fbfcfa; color: #243a32; }
+.company-resilience h2, .company-resilience h3, .company-resilience h4 { color: #243a32; }
+.company-resilience h3 { margin-top: 1.8rem; }
+.company-resilience p { line-height: 1.55; }
+.resilience-heading { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; }
+.resilience-heading h2 { margin: .35rem 0; }
+.resilience-status { display: inline-block; border-radius: 7px; background: #edf0eb; padding: .5rem .65rem; font-size: .83rem; max-width: 100%; }
+.resilience-status-material-failure { background: #f4ddd6; color: #782f21; }
+.resilience-status-stale, .resilience-status-unresolved { background: #f7edda; color: #715018; }
+.resilience-status-reviewed-for-stated-scenario { background: #e5eeeb; color: #294d42; }
+.resilience-fieldset { padding: 0; margin: 0; border: 0; min-width: 0; }
+.company-resilience label { display: flex; flex-direction: column; gap: .4rem; margin: .7rem 0; font-size: .9rem; min-width: 0; }
+.company-resilience input, .company-resilience select, .company-resilience textarea { box-sizing: border-box; width: 100%; min-width: 0; padding: .65rem; color: #233c32; background: white; border: 1px solid #aabeb4; border-radius: 6px; font: inherit; }
+.company-resilience input:focus, .company-resilience select:focus, .company-resilience textarea:focus { outline: 2px solid #386d59; outline-offset: 2px; }
+.company-resilience textarea { resize: vertical; }
+.resilience-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: .2rem 1rem; }
+.resilience-help { color: #50655b; font-size: .84rem; font-weight: normal; line-height: 1.5; }
+.resilience-periods { display: grid; gap: .7rem; }
+.resilience-period { padding: .7rem 1rem; border: 1px solid #d4dfd8; border-radius: 8px; background: white; }
+.resilience-period h4 { margin: .3rem 0; }
+.resilience-period-result { font-size: .9rem; }
+.resilience-actions { display: flex; flex-wrap: wrap; gap: .7rem; align-items: center; margin: 1rem 0; }
+.company-resilience button { padding: .6rem .85rem; min-height: 40px; border: 1px solid #8ba89a; background: #f0f5f1; border-radius: 6px; color: #254b3b; cursor: pointer; font: inherit; }
+.company-resilience button:disabled { opacity: .6; cursor: default; }
+.resilience-actions span { font-size: .85rem; }
+.resilience-results { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: .5rem 1.1rem; padding: .5rem 1rem; background: #eef3ef; border-radius: 8px; }
+.resilience-results p { margin: .5rem 0; font-size: .88rem; }
+.resilience-results strong { display: block; margin-top: .35rem; font-size: 1rem; }
+.resilience-caution { padding: .8rem 1rem; background: #f7f0df; border-left: 3px solid #b29657; border-radius: 4px; }
+.resilience-error { color: #8b3129; background: #fbece7; padding: .7rem; border-radius: 5px; overflow-wrap: anywhere; }
+.resilience-source-basis { margin-top: 1rem; color: #53665d; font-size: .84rem; overflow-wrap: anywhere; }
+.resilience-source-basis summary { cursor: pointer; }
+@media (max-width: 520px) { .company-resilience { padding: .9rem; } .resilience-period { padding: .7rem; } .resilience-actions button { flex-grow: 1; } }
+
+.research-risk-review { margin: 1rem 0; border: 1px solid #cddbd5; border-radius: 8px; background: #fbfcfa; }
+.research-risk-review > summary { padding: 1rem; color: #243a32; font-weight: 600; cursor: pointer; }
+.research-risk-review > summary:focus-visible { outline: 2px solid #386d59; outline-offset: 2px; }
+.research-risk-review > .company-resilience, .research-risk-review > .portfolio-stress { margin: 0; border: 0; border-top: 1px solid #cddbd5; border-radius: 0 0 8px 8px; }

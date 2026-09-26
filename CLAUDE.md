@@ -11,6 +11,17 @@ Project-specific guidance. See `project_context.md` for full architecture and in
 
 ## Company analysis
 
+User direction (2026-09-26; ADR 0044): preserve DCF/NPV arithmetic and existing
+sizing policy while making survival, reverse stress, permanent impairment and
+portfolio common-cause losses explicit. Use the separate company and portfolio
+review in Research notes before accepting a valuation case. Keep observations,
+assumptions and review conclusions distinct; unknown inputs remain missing and
+probabilities remain unset without support. A period-end liquidity calculation
+is not a covenant/default simulator. Reviews save only on explicit action under
+separate keys, preserve incompatible records and show stale source identities.
+The Valuation status reads this review without changing any valuation draft.
+See `docs/survival-and-portfolio-review.md` and the version 2 company template.
+
 User direction (2026-09-13, Macro Atlas 0.22.1): analysis requires actual Back and
 Forward navigation, not only fixed destination links. Keep route changes atomic
 and preserve the originating company/branch, screen controls and scroll. Returning

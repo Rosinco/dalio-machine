@@ -20,6 +20,7 @@ import { resolveTerminalSale } from './terminalValue';
 import TerminalValueInputs from './TerminalValueInputs';
 import TerminalValueSummary from './TerminalValueSummary';
 import PurchaseRangePanel from './PurchaseRangePanel';
+import ResilienceReviewSummary from './ResilienceReviewSummary';
 import { getPurchaseShareReference } from './purchaseShareBasis';
 import './valuation.css';
 
@@ -28,7 +29,7 @@ const paybackLabel = (p: Payback, years: number) => p.year === null ? `Not reach
 function NumberInput({ label, value, onChange, min, max, step = 'any' }: { label: string; value: number | null; onChange: (n: number | null) => void; min?: number; max?: number; step?: string }) {
   return <input type="number" aria-label={label} value={value ?? ''} min={min} max={max} step={step} onChange={e => onChange(e.target.value === '' || !Number.isFinite(e.target.valueAsNumber) ? null : e.target.valueAsNumber)} />;
 }
-export default function ValuationWorkspace({ entry, classification, financial, history, release, researched, onProfile, tab, onTab: setTab, onAnchor }: { entry: CompanyEntry; classification?: { sector_id: string | null; branch_id: string | null }; financial: FinancialIndex | null; history: FinancialCompany | null; release: ResearchRelease; researched: ResearchedStudy | null; onProfile: () => void; tab: 'scenarios' | 'evidence'; onTab: (tab: 'scenarios' | 'evidence') => void; onAnchor: (anchor: string) => void }) {
+export default function ValuationWorkspace({ entry, classification, financial, history, release, researched, onProfile, onReview, tab, onTab: setTab, onAnchor }: { entry: CompanyEntry; classification?: { sector_id: string | null; branch_id: string | null }; financial: FinancialIndex | null; history: FinancialCompany | null; release: ResearchRelease; researched: ResearchedStudy | null; onProfile: () => void; onReview: () => void; tab: 'scenarios' | 'evidence'; onTab: (tab: 'scenarios' | 'evidence') => void; onAnchor: (anchor: string) => void }) {
   const valuationEntry = classification ? { ...entry, ...classification } : entry;
   const basis = { company: entry.id, release: release.id, financial: financial?.id ?? null, taxonomy: release.taxonomy_sha256 ?? null };
   const [starterDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -173,6 +174,7 @@ export default function ValuationWorkspace({ entry, classification, financial, h
       <div><strong>Saved price {d.priceDate || 'unavailable'}</strong><span>{money(d.marketCap)} total equity · not a live quote</span></div>
       <div><strong>Your investment {d.investment === null ? 'unavailable' : `${format(d.investment, 0)} ${d.currency}`}</strong><span>Results below use your investment; forecasts use company millions.</span></div>
     </section>
+    <ResilienceReviewSummary companyId={entry.id} releaseId={release.id} financialId={financial?.id ?? null} sourceAsOf={entry.source_as_of} onReview={onReview} />
     <div className="valuation-context-tools">
       <details className="valuation-provenance"><summary>Model, sources &amp; historical baseline</summary>
         {researched && <section className="valuation-research-banner"><div><div className="eyebrow">RESEARCHED VALUATION · {researched.asOf}</div><strong>{d.researchOrigin?.id === researched.id ? changedFromResearch ? `Your edited ${entry.display_name} study` : `${entry.display_name} scenarios are ready` : `A researched ${entry.display_name} study is available`}</strong><p>Reported figures and analyst assumptions are included. <button onClick={() => setTab('evidence')}>Inspect sources and calculations</button></p></div><button className="valuation-research-reset" onClick={() => startingStudy && useStartingDraft(startingStudy, 'Researched scenarios opened.')}>Start from researched assumptions</button></section>}

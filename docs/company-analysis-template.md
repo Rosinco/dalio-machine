@@ -1,6 +1,6 @@
 # Company analysis — [company / listing ID]
 
-Use the [value and price framework](company-valuation-framework.md), version 1.
+Use the [value and price framework](company-valuation-framework.md), version 2.
 Replace placeholders with sourced facts or labelled assumptions. Leave unavailable
 values as `unavailable` with a reason; do not use zero to fill a gap.
 
@@ -45,6 +45,27 @@ Separate historical observations from assumptions about future durability.
 
 Explain maturity/refinancing risk, interest coverage, covenants, cash restrictions
 and contingent claims. Mark unsuitable capital-return denominators unavailable.
+
+## Survival and reverse stress before valuation
+
+Review date and source cutoff: [ ]. Conclusion: [unassessed / unresolved /
+material survival failure / supported only for the stated scenario]. Keep formal
+Börsdata structural-gate decisions separate from this working review.
+
+| Input or failure boundary | Dated source / verified fact | Stress assumption | Result and unresolved evidence |
+|---|---|---|---|
+| Unrestricted cash and minimum operating liquidity | [ ] | [ ] | [ ] |
+| Cash after mandatory spending, capex, interest, taxes and leases | [ ] | [ ] | [ ] |
+| Principal maturities, collateral calls and covenants | [ ] | [ ] | [ ] |
+| Committed funding actually drawable during the shock | [ ] | [ ] | [ ] |
+| Combined demand, margin, working-capital and financing shock | [ ] | [ ] | [ ] |
+| First liquidity/covenant breach and financing or dilution response | [ ] | [ ] | [ ] |
+| Reverse stress: conditions reaching each failure boundary | [ ] | [ ] | [ ] |
+
+Attach a timed cash/claims schedule, including intra-period needs. Do not count
+restricted cash or assumed refinancing as available funding. A recovery after a
+breach does not restore the original shareholder claim automatically. Evidence
+gaps stay unresolved; a price discount cannot cure a hard structural failure.
 
 ## Macro and branch transmission
 
@@ -97,6 +118,15 @@ realize the proceeds? [ ]
 Describe potential zero recovery and reasons recovery could deteriorate. Do not
 add this scenario to the full going-concern valuation or label it a price floor.
 
+### 1.3 Permanent impairment of the existing shareholder claim
+
+Failure mechanism and duration: [ ]. Reasons recovery could remain incomplete: [ ].
+Cash/funding/dilution path: [ ]. Annual net payments to the existing common equity
+claim: [ ]. Final net proceeds and timing: [ ]. Required return and rationale: [ ].
+Dated ownership/price basis if calculating NPV: [ ]. Evidence versus assumptions: [ ].
+Include zero recovery where plausible. Count final proceeds once; keep this
+alternative separate from the continuing-business and recovery scenarios.
+
 ## 2. Price and comparison
 
 Equity price: [market capitalization and per-share price, date, source and
@@ -120,6 +150,22 @@ Optional SEK 1,000 ownership illustration: [ownership fraction, tangible book
 equity, TCE, gross debt, surplus cash, attributed earnings/FCF and actual
 distributions]. Use consistent FX and periods; distinguish attributed company
 earnings from cash paid to the shareholder.
+
+## Portfolio common-cause stress
+
+Dated holdings/exposure basis: [ ]. Shared shock and transmission: [ ].
+
+| Disjoint position | Starting portfolio weight | Shared exposures | Assumed loss of position value | Loss of starting portfolio capital |
+|---|---|---|---|---|
+| [ ] | [ ] | [ ] | [ ] | [weight × loss] |
+
+Total entered weight: [ ]. Unmodeled remainder and its treatment: [ ].
+Total assumed loss: [ ]. Investor's stated tolerable loss: [ ].
+Conclusion, unknowns and next review trigger: [ ].
+Do not assume normal-period correlations persist. Include investor funding and
+forced-sale needs; long-only percentage loss arithmetic does not model leverage
+or derivatives. Retain existing position-size policy and record any unresolved
+conflict with loss tolerance. No probability or recommended allocation follows.
 
 ## Assessment and follow-up
 

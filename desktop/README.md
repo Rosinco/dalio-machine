@@ -6,7 +6,19 @@ requires no terminal, Python environment, WSL, account or network connection.
 Windows WebView2 must be installed; it is present on Adam's PC. The Tauri installer
 configuration can also bundle its offline installer when distributing to another PC.
 
-## Version 0.22.1 — return to the previous screen
+## Source update — survival and portfolio review, 2026-09-26
+
+Company → Research notes now has separate survival/permanent-loss and shared-shock
+portfolio worksheets. Valuation shows the saved company-review status. The reviews
+keep evidence, assumptions, missing inputs and conclusions separate, save explicitly,
+and leave valuation drafts and the existing position-size policy unchanged.
+
+See the [review workflow](../docs/survival-and-portfolio-review.md) and
+[handoff](HANDOFF.md). Verification passed: 334 unit/transport tests, production
+build and 74 browser checks. This source update has not been packaged or installed
+on Windows; the installation records below describe earlier releases.
+
+## Earlier release: 0.22.1 — return to the previous screen
 
 **0.22.1 is installed and independently verified** through the existing
 `C:\Users\Adamb\OneDrive\Desktop\Macro Atlas.lnk` shortcut, targeting

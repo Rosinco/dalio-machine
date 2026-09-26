@@ -1,5 +1,12 @@
 # Standard company DCF and NPV
 
+Survival review added 2026-09-26: Research notes now holds separate liquidity,
+permanent-impairment and shared portfolio-shock worksheets. Valuation displays
+the saved company review status. These do not change starter cash, DCF/NPV,
+terminal credit, purchase settings or historical calibration. Follow the
+[survival review guide](survival-and-portfolio-review.md) before relying on a
+valuation case. Reviews are conditional research, not buy verdicts or loss bounds.
+
 Adopted 12 September 2026 and extended on 13 September for Macro Atlas 0.14.0,
 with chart presentation clarified in 0.14.1, separate terminal cash in 0.15.0
 (ADR 0038), and editable purchase-price ranges in 0.16.0 (ADR 0039).
