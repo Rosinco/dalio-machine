@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import { useScreenState } from './NavigationContext';
 import { ArrowLeft, ArrowRight, Search, X } from 'lucide-react';
 import { normalizeSearch } from './listingCatalogue';
 import { ResearchGaugeEvidence, researchNumber, researchPercent, researchPeriod, researchPositive, researchQuestions, researchReadinessLabels, researchRouteLabels } from './ResearchGaugeCard';
@@ -14,11 +15,11 @@ const matchesLens = (row: ResearchGaugeRow, lens: EvidenceLens) => lens === 'all
 export default function ResearchGaugeWorkspace({ data, ready, error, initialBranchId, onCompany, onBack }: {
   data: ResearchGaugeArtifact | null; ready: boolean; error: string; initialBranchId?: string; onCompany: (id: string) => void; onBack: () => void;
 }) {
-  const [query, setQuery] = useState(''), [route, setRoute] = useState<ResearchGaugeRoute | 'all'>('all');
-  const [readiness, setReadiness] = useState<ResearchGaugeReadiness | 'all'>('all'), [presence, setPresence] = useState('all');
-  const [country, setCountry] = useState('all'), [sector, setSector] = useState('all'), [branch, setBranch] = useState(initialBranchId ?? 'all');
-  const [lens, setLens] = useState<EvidenceLens>('all'), [page, setPage] = useState(0), [showValuation, setShowValuation] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [query, setQuery] = useScreenState('research-query', ''), [route, setRoute] = useScreenState<ResearchGaugeRoute | 'all'>('research-route', 'all');
+  const [readiness, setReadiness] = useScreenState<ResearchGaugeReadiness | 'all'>('research-readiness', 'all'), [presence, setPresence] = useScreenState('research-presence', 'all');
+  const [country, setCountry] = useScreenState('research-country', 'all'), [sector, setSector] = useScreenState('research-sector', 'all'), [branch, setBranch] = useScreenState('research-branch', initialBranchId ?? 'all');
+  const [lens, setLens] = useScreenState<EvidenceLens>('research-lens', 'all'), [page, setPage] = useScreenState('research-page', 0), [showValuation, setShowValuation] = useScreenState('research-show-valuation', false);
+  const [selectedId, setSelectedId] = useScreenState<string | null>('research-selected-listing', null);
   const inspector = useRef<HTMLElement>(null);
   const available = ready && !error ? data : null;
   const rows = useMemo(() => [...available?.rows ?? []].sort((a, b) => alphabetical.compare(a.name, b.name) || Number(a.id) - Number(b.id)), [available]);
@@ -34,9 +35,12 @@ export default function ResearchGaugeWorkspace({ data, ready, error, initialBran
   const pages = Math.max(1, Math.ceil(matches.length / 50)), selectedPage = Math.min(page, pages - 1);
   const visibleRows = matches.slice(selectedPage * 50, (selectedPage + 1) * 50);
   const selected = matches.find(row => row.id === selectedId);
-  useEffect(() => { setPage(0); }, [query, route, readiness, presence, country, sector, branch, lens, available]);
-  useEffect(() => { setBranch(initialBranchId ?? 'all'); setSelectedId(null); }, [initialBranchId]);
-  useEffect(() => { if (selectedId) inspector.current?.scrollIntoView({ block: 'start' }); }, [selectedId]);
+  const pageCriteria = JSON.stringify([query, route, readiness, presence, country, sector, branch, lens]);
+  const previousCriteria = useRef(pageCriteria), previousBranch = useRef(initialBranchId), previousSelection = useRef(selectedId);
+  // Returning to a screen must not reset its cached position while data reloads.
+  useEffect(() => { if (previousCriteria.current !== pageCriteria) { previousCriteria.current = pageCriteria; setPage(0); } }, [pageCriteria, setPage]);
+  useEffect(() => { if (previousBranch.current !== initialBranchId) { previousBranch.current = initialBranchId; setBranch(initialBranchId ?? 'all'); setSelectedId(null); } }, [initialBranchId, setBranch, setSelectedId]);
+  useEffect(() => { if (previousSelection.current !== selectedId) { previousSelection.current = selectedId; if (selectedId) inspector.current?.scrollIntoView({ block: 'start' }); } }, [selectedId]);
   const reset = () => { setQuery(''); setRoute('all'); setReadiness('all'); setPresence('all'); setCountry('all'); setSector('all'); setBranch('all'); setLens('all'); setSelectedId(null); setPage(0); };
   const pagination = <div className="research-gauge-pagination"><span role="status">{matches.length ? `${count(selectedPage * 50 + 1)}–${count(Math.min((selectedPage + 1) * 50, matches.length))}` : '0'} of {count(matches.length)} matching listings · alphabetical</span><div><button aria-label="Previous research page" disabled={!selectedPage} onClick={() => setPage(selectedPage - 1)}><ArrowLeft size={14} /></button><span>{selectedPage + 1} / {pages}</span><button aria-label="Next research page" disabled={selectedPage + 1 >= pages} onClick={() => setPage(selectedPage + 1)}><ArrowRight size={14} /></button></div></div>;
   return <main className="research-gauge-workspace" aria-label="Universe research screen workspace" data-research-gauge-ready={!!available} data-research-gauge-total={rows.length} data-research-gauge-matches={matches.length}>

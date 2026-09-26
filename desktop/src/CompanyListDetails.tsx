@@ -1,3 +1,4 @@
+import { CompanyKpiExplanation } from './CompanyKpiExplanation';
 import type { CompanyListCell, CompanyListColumn } from './companyListModel';
 import { columnLabel, companyListWindowLabel, companyListCalculationLabel } from './companyListModel';
 import type { ResearchGaugeRow } from './researchGaugeModel';
@@ -28,6 +29,7 @@ export function CompanyListValueDetails({ row, column, cell }: { row: ResearchGa
     <p>{row.name} · {row.ticker ?? row.id}</p>
     <h3>{columnLabel(column)}</h3>
     <div className="company-list-detail-value">{cell.display}</div>
+    <CompanyKpiExplanation column={column} compact />
     <dl>
       <div><dt>Period</dt><dd>{companyListWindowLabel(column)}</dd></div>
       <div><dt>Calculation</dt><dd>{companyListCalculationLabel(column)}</dd></div>

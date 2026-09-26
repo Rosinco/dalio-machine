@@ -1,3 +1,4 @@
+import { selectObservatory } from './workspace-navigation.mjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -14,8 +15,10 @@ export async function listingFlows(page, project) {
   const country = page.getByLabel('Company listing country', { exact: true });
   const coverage = page.getByLabel('Company snapshot coverage', { exact: true });
   const start = performance.now();
-  await page.getByLabel('Observatory', { exact: true }).selectOption('companies');
+  await selectObservatory(page, 'companies');
+  await page.getByLabel('Company financials', { exact: true }).click();
   await page.locator('[data-business-ready="true"]').waitFor();
+  await page.getByRole('button', { name: 'Show listing map', exact: true }).click();
   assert.equal(Number(await page.locator('[data-listing-count]').getAttribute('data-listing-count')), rows.length);
   for (const code of countries) {
     await country.selectOption(code);
@@ -62,7 +65,7 @@ export async function listingFlows(page, project) {
   await page.locator('[data-classification-status="sector_mismatch"]').waitFor();
   await page.locator('.classification-details summary').click();
   assert.match(await page.locator('.classification-details').innerText(), /sector 3, branch 16[\s\S]*sector 7, branch 16/);
-  await page.getByLabel('Observatory', { exact: true }).selectOption('sectors');
+  await selectObservatory(page, 'sectors');
   await page.locator('[data-taxonomy-ready="true"]').waitFor();
   const branchCounts = await page.locator('[data-branch-listings]').evaluateAll(elements => Object.fromEntries(elements.map(e => [e.dataset.branch, Number(e.dataset.branchListings)])));
   assert.equal(Object.keys(branchCounts).length, 94);

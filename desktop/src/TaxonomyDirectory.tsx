@@ -1,11 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import { useScreenState } from './NavigationContext';
 import { ArrowRight, BookOpen, Search } from 'lucide-react';
 import type { BusinessIndex } from './business';
 import type { BranchCounts } from './listingCatalogue';
 import { branchCompanies, branchDives, directoryTotals, findBranches, type Branch, type Taxonomy } from './taxonomy';
 
 export function TaxonomyDirectory({ taxonomy, index, counts, listingTotal, branchId, onBranch }: { taxonomy: Taxonomy; index: BusinessIndex | null; counts?: BranchCounts; listingTotal?: number; branchId: string; onBranch: (id: string) => void }) {
-  const [query, setQuery] = useState(''), [sector, setSector] = useState('all'), [coverage, setCoverage] = useState('all');
+  const [query, setQuery] = useScreenState('taxonomy-directory:query', ''), [sector, setSector] = useScreenState('taxonomy-directory:sector', 'all'), [coverage, setCoverage] = useScreenState('taxonomy-directory:coverage', 'all');
   const totals = useMemo(() => directoryTotals(taxonomy), [taxonomy]);
   const branches = useMemo(() => findBranches(taxonomy, query, sector, coverage, index, counts), [taxonomy, query, sector, coverage, index, counts]);
   const unassigned = listingTotal === undefined ? 0 : listingTotal - Object.values(counts ?? {}).reduce((n, c) => n + c.listings, 0);

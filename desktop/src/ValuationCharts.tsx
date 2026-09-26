@@ -40,10 +40,7 @@ export default function ValuationCharts({ draft, results, sale, onSale, evidence
     const checkpoints = rows.filter(row => [cumulative ? 0 : 1, Math.min(4, draft.years), draft.years].includes(row.year));
     return <section key={kind} className="valuation-card valuation-range-chart" data-valuation-chart={kind}>
       <div className="valuation-chart-heading"><h2>{title}</h2>{cumulative && <label className="valuation-checkbox"><input type="checkbox" checked={sale} onChange={e => onSale(e.target.checked)} />Include final sale</label>}</div>
-      <p>{cumulative ? `Discounted cash received through each year, less your initial ${format(draft.investment, 0)} ${draft.currency}. Crossing zero marks discounted payback.` : `Each year's forecast cash payment, expressed in today's ${draft.currency}, for an investment of ${format(draft.investment, 0)} ${draft.currency}.`}</p>
-      <div className="cash-flow-range-key valuation-range-key" aria-label={`${title} minimum and maximum by year`}>
-        {checkpoints.map(row => <span key={row.year}>Year {row.year}<strong>{money(row.min)} to {money(row.max)}</strong><small>{basis(row.year)}</small></span>)}
-      </div>
+      <p>{cumulative ? `Cash received so far, discounted to today, minus your ${format(draft.investment, 0)} ${draft.currency} investment. ${sale ? 'Final sale included in the last year.' : 'Final sale excluded from this chart.'}` : `Each year's forecast payment in today's ${draft.currency}, for your ${format(draft.investment, 0)} ${draft.currency} investment. Final sale is shown separately.`}</p>
       <Chart label={`${title}: low, mid and high scenarios`} height={340} option={{
         tooltip: { trigger: 'axis', formatter: (params: any) => {
           const point = (Array.isArray(params) ? params : [params]).find((p: any) => p.seriesType === 'line');
@@ -80,6 +77,13 @@ export default function ValuationCharts({ draft, results, sale, onSale, evidence
             ...(key === 'mid' ? { markLine: { silent: true, symbol: 'none', label: { formatter: cumulative ? 'Cost recovered' : 'Zero cash', position: 'insideEndTop', color: '#71827a', fontSize: 10 }, lineStyle: { color: '#93a398', type: 'dashed' }, data: [{ yAxis: 0 }] } } : {}) })),
         ],
       }} />
+      <div className="cash-flow-range-key valuation-range-key" aria-label={`${title} minimum and maximum by year`}>
+        {checkpoints.map(row => <span key={row.year}>Year {row.year}<strong>{money(row.min)} to {money(row.max)}</strong><small>{basis(row.year)}</small></span>)}
+      </div>
+      <details className="valuation-chart-explanation"><summary>How to read {cumulative ? 'NPV over time' : 'discounted cash flow'}</summary>
+      <p>{cumulative ? `Net present value (NPV) tracks discounted cash received so far, less your initial ${format(draft.investment, 0)} ${draft.currency}. The line starts below zero at your purchase cost; crossing zero marks discounted payback.` : `Discounted cash flow (DCF) expresses each year's forecast payment in today's money, for your investment of ${format(draft.investment, 0)} ${draft.currency}. Each point is one year's payment, rather than the total company value.`}</p>
+      <p className="valuation-chart-reading">{cumulative ? sale ? 'Final sale is included only in the last year. It can produce a large final step.' : 'Final sale is currently excluded from this chart. Select Include final sale to compare it with total value in the summary.' : 'The required return reduces the present value of later payments. This chart shows annual cash only; terminal value is explained separately below.'} The shaded range covers the scenarios, without an assigned probability.</p>
+      </details>
       <p className="chart-caption">{cumulative ? 'NPVₜ = −initial investment + discounted cash received through year t. Each named scenario is accumulated separately; the range covers their cumulative outcomes.' : 'DCFₜ = cash paymentₜ / (1 + required equity return)ᵗ, scaled to your investment. Each scenario uses its own required return; discounting can narrow the later-year span.'}</p>
       <p className="chart-caption">{cumulative ? sale ? `Includes the assumed equity sale at the end of year ${draft.years}; any resulting recovery depends on that sale.` : 'Cash distributions only. The full valuation can also include the separately assumed final sale.' : 'Final sale proceeds are shown separately in the value table.'} Shading and annual markers show the minimum and maximum across all three scenarios, including crossings and negative values. These are scenario bounds with no assigned confidence level.</p>
       <details className="cash-flow-range-table"><summary>{cumulative ? 'Inspect cumulative NPV ranges' : 'Inspect annual DCF ranges'}</summary>

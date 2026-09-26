@@ -1,3 +1,4 @@
+import { selectObservatory, openCompanyFinancials, openValuationModel } from './workspace-navigation.mjs';
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
@@ -25,7 +26,7 @@ async function openCompany(page, name, id) {
 }
 
 async function reopen(page, id = '696') {
-  await page.reload();
+  await page.reload(); await openCompanyFinancials(page);
   await page.locator(`[data-company="${id}"][data-business-ready="true"]`).waitFor();
   await page.getByLabel('Company valuation', { exact: true }).click();
   await page.locator(`[data-valuation-company="${id}"]`).waitFor();
@@ -60,6 +61,7 @@ async function inputs(page) {
 }
 
 async function settings(page) {
+  await openValuationModel(page);
   const panel = page.locator('.valuation-history-settings');
   if (await panel.getAttribute('open') === null) await panel.locator('summary').click();
   return panel;
@@ -141,10 +143,10 @@ async function assertDefault(page, calibration) {
 }
 
 async function legacyMigrations(page, project, checks) {
-  const heading = await page.locator('.valuation-heading h1').innerText();
+  const companyName = await page.locator('.company-location-identity > strong').innerText();
   const v1 = JSON.parse(await readFile(resolve(project, 'tests/fixtures/stora-weighted-cash-v1.json'), 'utf8'));
   const v2 = JSON.parse(await readFile(resolve(project, 'tests/fixtures/stora-weighted-cash-v2.json'), 'utf8'));
-  v1.title = `${heading} — weighted cash starter`; v2.title = `${heading} — weighted cash trend starter`;
+  v1.title = `${companyName} — weighted cash starter`; v2.title = `${companyName} — weighted cash trend starter`;
   for (const fixture of [v1, v2]) {
     fixture.investment = 2500;
     await setFixture(page, fixture);
@@ -414,8 +416,9 @@ async function standalone() {
   try {
     await page.goto(base);
     await page.locator('[data-country="SE"][data-ready="true"]').waitFor();
-    await page.getByLabel('Observatory', { exact: true }).selectOption('companies');
-    await page.locator('[data-business-ready="true"]').waitFor();
+    await selectObservatory(page, 'companies');
+    await page.getByLabel('Company financials', { exact: true }).click();
+  await page.locator('[data-business-ready="true"]').waitFor();
     const result = await empiricalUniverseValuationFlows(page, project);
     assert.deepEqual(external, []); assert.deepEqual(errors, []);
     await writeFile(resolve(project, 'test-results/empirical-valuation-browser-report.json'), JSON.stringify({ status: 'passed', ...result, external, errors }, null, 2) + '\n');

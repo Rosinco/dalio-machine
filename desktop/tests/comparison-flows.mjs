@@ -1,3 +1,4 @@
+import { selectObservatory } from './workspace-navigation.mjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -11,7 +12,7 @@ async function annualRows(page, pack, ids) {
   }, { pack, ids });
 }
 export async function restoreComparison(page, title = 'Skog – jämförelse med anteckningar') {
-  await page.getByLabel('Observatory', { exact: true }).selectOption('sectors');
+  await selectObservatory(page, 'sectors');
   await page.getByLabel('Branch comparison', { exact: true }).click();
   await page.getByLabel('Comparison branch', { exact: true }).selectOption('21');
   await page.locator('[data-comparison-branch="21"][data-comparison-ready="true"]').waitFor({ timeout: 60000 });
@@ -38,7 +39,7 @@ export async function comparisonFlows(page, project) {
   const catalog = JSON.parse(await readFile(resolve(project, 'financial-data/catalog.json'), 'utf8'));
   const pack = catalog.packs[0].id;
   const branchIds = Object.values(catalogue.listings).filter(c => (taxonomy.classifications[c.id]?.branch_id ?? c.branch_id) === '21').map(c => c.id);
-  await page.getByLabel('Observatory', { exact: true }).selectOption('sectors');
+  await selectObservatory(page, 'sectors');
   await page.getByLabel('Branch comparison', { exact: true }).click();
   await page.getByLabel('Comparison branch', { exact: true }).selectOption('21');
   const started = performance.now();

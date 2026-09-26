@@ -1,3 +1,4 @@
+import { selectObservatory, openCompanyFinancials, openValuationModel } from './workspace-navigation.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -33,7 +34,7 @@ async function openCompany(page, name, id) {
 }
 
 async function reopen(page, id) {
-  await page.reload();
+  await page.reload(); await openCompanyFinancials(page);
   await page.locator(`[data-company="${id}"][data-business-ready="true"]`).waitFor();
   await page.getByLabel('Company valuation', { exact: true }).click();
   await page.locator(`[data-valuation-company="${id}"]`).waitFor();
@@ -190,6 +191,7 @@ export async function terminalValuationFlows(page, project, { native = false } =
     assert.equal(oldWithExplicitTerminal.starterOrigin.terminalMethod, undefined);
     assert.equal(oldWithExplicitTerminal.scenarios.low.terminalCash, undefined);
     assert.equal(oldWithExplicitTerminal.scenarios.high.terminalCash, undefined);
+    await openValuationModel(page);
     const oldSettings = page.locator('.valuation-history-settings');
     if (await oldSettings.getAttribute('open') === null) await oldSettings.locator('summary').click();
     await page.getByLabel('Later-year widening (% of cash scale)', { exact: true }).fill('20');
@@ -204,6 +206,7 @@ export async function terminalValuationFlows(page, project, { native = false } =
     checks.push('An explicitly restored old-v3 study can adopt sustainable terminal cash without the median-origin flag; applying annual history settings preserves that cash/growth/return and the other scenarios’ manual sales');
     await installFixture(page, '696', standard); await inputs(page);
 
+    await openValuationModel(page);
     const settings = page.locator('.valuation-history-settings');
     if (await settings.getAttribute('open') === null) await settings.locator('summary').click();
     await page.getByLabel('Later-year widening (% of cash scale)', { exact: true }).fill('25');
@@ -324,7 +327,7 @@ export async function terminalValuationFlows(page, project, { native = false } =
         if (raw === null) localStorage.removeItem(key); else localStorage.setItem(key, raw);
       }
     }, { original, prefix, revisionKey, preferenceKey });
-    await page.reload();
+    await page.reload(); await openCompanyFinancials(page);
     await page.locator(`[data-company="${originalCompany}"][data-business-ready="true"]`).waitFor();
     if (original.valuationOpen) {
       await page.getByLabel('Company valuation', { exact: true }).click();
@@ -410,8 +413,9 @@ async function standalone() {
   const page = await context.newPage(); page.on('pageerror', error => errors.push(error.message));
   try {
     await page.goto(base); await page.locator('[data-country="SE"][data-ready="true"]').waitFor();
-    await page.getByLabel('Observatory', { exact: true }).selectOption('companies');
-    await page.locator('[data-business-ready="true"]').waitFor();
+    await selectObservatory(page, 'companies');
+    await page.getByLabel('Company financials', { exact: true }).click();
+  await page.locator('[data-business-ready="true"]').waitFor();
     const result = await terminalValuationFlows(page, project);
     assert.deepEqual(external, []); assert.deepEqual(errors, []);
     await writeFile(resolve(project, 'test-results/terminal-valuation-browser-report.json'), JSON.stringify({ status: 'passed', ...result, external, errors }, null, 2) + '\n');

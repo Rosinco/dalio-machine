@@ -124,7 +124,7 @@ export async function decodeExpandedArtifact(bytes: Uint8Array, descriptor: Expa
   fail(await researchGaugeHash(raw) === descriptor.uncompressedSha256, 'Decompressed KPI checksum failed.');
   return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(raw));
 }
-export function expandedKpiCell(row: ResearchGaugeRow, column: CompanyListColumn, context?: ExpandedKpiContext): CompanyListCell {
+export function expandedKpiCell(row: Pick<ResearchGaugeRow, 'id'>, column: CompanyListColumn, context?: ExpandedKpiContext): CompanyListCell {
   const variant = expandedVariant(column), metric = byMetric.get(column.kpiId), unit = expandedUnit(variant?.unit ?? metric?.unit ?? 'number', variant?.currencyBasis ?? metric?.currencyBasis);
   const base = `${metric?.description ?? 'Provider KPI.'} Saved provider snapshot ${EXPANDED_KPI_MANIFEST.snapshot}. ${variant?.label ?? 'Unsupported selection'}. This is a downloaded provider result, separate from the standard DCF starter. ${variant?.notes.join(' ') ?? ''}`;
   const missing = (reason: string, status: CompanyListCell['status'] = 'missing'): CompanyListCell => ({ value: null, display: status === 'loading' ? '…' : '—', unit, currency: null, date: null, detail: `${base} ${reason}`, status });

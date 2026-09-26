@@ -1,3 +1,4 @@
+import { openCompanyFinancials, openValuationModel } from './workspace-navigation.mjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -43,6 +44,7 @@ function csvRecords(csv) {
 }
 
 async function openHistorySettings(page) {
+  await openValuationModel(page);
   const settings = page.locator('.valuation-history-settings');
   if (await settings.getAttribute('open') === null) await settings.getByText('Adjust history weights & range', { exact: true }).click();
 }
@@ -112,14 +114,14 @@ async function preserveLegacyStarter(page) {
     }
     localStorage.setItem(key, JSON.stringify(stored));
   }, { legacyTitle });
-  await page.reload();
+  await page.reload(); await openCompanyFinancials(page);
   await page.locator('[data-company="696"][data-business-ready="true"]').waitFor();
   await page.getByLabel('Company valuation', { exact: true }).click();
   await page.locator('[data-valuation-starter="weighted-cash-starter-v1"][data-valuation-ready="true"]').waitFor();
   assert.equal(await page.locator('[data-scenario="mid"] [data-result="value"]').innerText(), '338.73 EUR');
   await page.getByRole('button', { name: 'Save study revision', exact: true }).click();
   await page.getByRole('status').filter({ hasText: 'Study revision saved' }).waitFor();
-  await page.reload();
+  await page.reload(); await openCompanyFinancials(page);
   await page.locator('[data-company="696"][data-business-ready="true"]').waitFor();
   await page.getByLabel('Company valuation', { exact: true }).click();
   await page.locator('[data-valuation-starter="weighted-cash-starter-v1"][data-valuation-ready="true"]').waitFor();
@@ -137,7 +139,7 @@ async function upgradeUntouchedLegacy(page, project) {
   const fixture = JSON.parse(await readFile(resolve(project, 'tests/fixtures/stora-weighted-cash-v1.json'), 'utf8'));
   // The curated profile uses "Stora Enso" while the directory calls the same
   // listing "Stora Enso R". Apply only the legacy default title template.
-  fixture.title = `${await page.locator('.valuation-heading h1').innerText()} — weighted cash starter`;
+  fixture.title = `${await page.locator('.company-location-identity > strong').innerText()} — weighted cash starter`;
   fixture.investment = 2500;
   await page.evaluate(fixture => {
     const keys = Object.keys(localStorage).filter(key => key.startsWith('macro-atlas-valuation-draft-v1:696:'));
@@ -145,7 +147,7 @@ async function upgradeUntouchedLegacy(page, project) {
     stored.draft = fixture;
     localStorage.setItem(key, JSON.stringify(stored));
   }, fixture);
-  await page.reload();
+  await page.reload(); await openCompanyFinancials(page);
   await page.locator('[data-company="696"][data-business-ready="true"]').waitFor();
   await page.getByLabel('Company valuation', { exact: true }).click();
   await page.locator(`[data-valuation-starter="${method}"][data-valuation-ready="true"]`).waitFor();
@@ -155,7 +157,7 @@ async function upgradeUntouchedLegacy(page, project) {
   near(await page.getByLabel('Mid year 1 cash payment', { exact: true }).inputValue(), 147);
   await page.locator('.valuation-saved button').filter({ hasText: fixture.title }).first().click();
   await page.locator('[data-valuation-starter="weighted-cash-starter-v1"][data-valuation-ready="true"]').waitFor();
-  await page.reload();
+  await page.reload(); await openCompanyFinancials(page);
   await page.locator('[data-company="696"][data-business-ready="true"]').waitFor();
   await page.getByLabel('Company valuation', { exact: true }).click();
   await page.locator('[data-valuation-starter="weighted-cash-starter-v1"][data-valuation-ready="true"]').waitFor();
@@ -175,6 +177,7 @@ export async function universeValuationFlows(page, project, { native = false } =
   await page.locator(`[data-valuation-kind="starter"][data-valuation-starter="${method}"][data-valuation-ready="true"]`).waitFor();
   assert.equal(await page.locator('.valuation-workspace').getAttribute('data-valuation-study'), '');
   assert.equal(await page.getByLabel('Equity market value', { exact: true }).count(), 0);
+  await openValuationModel(page);
   assert.match(await page.locator('.valuation-starter-banner').innerText(), /historical|cash.flow/i);
   assert.match(await page.locator('.valuation-price-summary').innerText(), /EUR[\s\S]*2026-02-04/);
   for (const [key, value] of [['low', '-100.4 EUR'], ['mid', '-40.7 EUR'], ['high', '18.99 EUR']]) {
@@ -205,6 +208,7 @@ export async function universeValuationFlows(page, project, { native = false } =
   await page.getByRole('button', { name: 'Hide input forms', exact: true }).click();
   await page.locator('.valuation-charts').scrollIntoViewIfNeeded();
   await page.screenshot({ path: resolve(project, 'test-results/stora-history-charts.png') });
+  await openValuationModel(page);
   await page.getByRole('button', { name: 'Inspect starter assumptions', exact: true }).click();
   const evidence = page.locator('.valuation-starter-evidence');
   await evidence.waitFor();
@@ -301,6 +305,7 @@ export async function universeValuationFlows(page, project, { native = false } =
 
   await openCompany(page, 'ABB', '3');
   await page.locator('[data-valuation-kind="starter"][data-valuation-ready="true"]').waitFor();
+  await openValuationModel(page);
   await page.getByRole('button', { name: 'Inspect starter assumptions', exact: true }).click();
   const quotedEvidence = page.locator('.valuation-starter-evidence');
   assert.match(await quotedEvidence.innerText(), /33,439\.25 SEK m/);
@@ -323,12 +328,13 @@ export async function universeValuationFlows(page, project, { native = false } =
   assert.equal(await page.locator('.valuation-chart-placeholders').count(), 1);
   await assertCashChart(page, 0, 0);
   assert.equal(await page.getByRole('button', { name: 'Export calculations', exact: true }).isDisabled(), true);
+  await openValuationModel(page);
   assert.match(await page.locator('.valuation-starter-banner').innerText(), /missing|unavailable|no usable|no saved/i);
   checks.push('Listings without reports retain unavailable inputs and chart placeholders without borrowing a previous company forecast');
 
   await openCompany(page, 'Stora Enso R', '696');
   await assertPreservedStarter(page);
-  await page.reload();
+  await page.reload(); await openCompanyFinancials(page);
   await page.locator('[data-company="696"][data-business-ready="true"]').waitFor();
   await page.getByLabel('Company valuation', { exact: true }).click();
   await assertPreservedStarter(page);

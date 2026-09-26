@@ -46,9 +46,10 @@ export default function PurchaseRangePanel({ draft: d, companyId, financialVersi
       }
     } catch (error) { setMessage(`Could not export purchase range: ${String(error)}`); }
   };
-  return <section className="valuation-card purchase-range" data-purchase-range="true" data-reference-ceiling={ceiling ?? ''} data-qualifying-range={qualifyingRange} data-purchase-qualifies={result.qualifies === null ? '' : String(result.qualifies)}>
+  return <section className="valuation-card purchase-range" id="valuation-purchase" data-purchase-range="true" data-reference-ceiling={ceiling ?? ''} data-qualifying-range={qualifyingRange} data-purchase-qualifies={result.qualifies === null ? '' : String(result.qualifies)}>
     <div className="valuation-chart-heading"><div><div className="eyebrow">PRICE FROM YOUR VALUATION</div><h2>Purchase price range</h2></div><button onClick={exportRange}>Export purchase range</button></div>
-    <p>A purchase is attractive under the selected assumptions when it meets your margin of safety. DCF includes forecast cash and terminal sale once; NPV is that value less the proposed price.</p>
+    <p>What price would leave room for your assumptions to be wrong? Choose a scenario and a margin below its estimated value. The purchase ceiling is the highest positive price that meets that rule; it is a research reference, not a buy decision.</p>
+    <p className="valuation-chart-reading">At a 30% margin, value of 100 gives a ceiling of 70. DCF includes forecast cash and terminal sale once. NPV subtracts your proposed price from that value. Here, every amount follows the Price units selection below.</p>
     <div className="purchase-controls">
       <label>Margin of safety · %<input type="number" min={0} max={100} step="any" aria-label="Purchase margin of safety (%)" value={settings.marginOfSafetyPercent ?? ''} onChange={e => change({ marginOfSafetyPercent: number(e) })} /></label>
       <label>Reference scenario<select aria-label="Purchase reference scenario" value={settings.referenceScenario} onChange={e => change({ referenceScenario: e.target.value as PurchaseRangeSettings['referenceScenario'] })}>{scenarioKeys.map(k => <option key={k} value={k}>{scenarioNames[k]}</option>)}</select></label>

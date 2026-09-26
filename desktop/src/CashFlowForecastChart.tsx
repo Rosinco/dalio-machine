@@ -29,17 +29,9 @@ export default function CashFlowForecastChart({ draft, evidence, matchesStarter 
   const amount = (value: number | null) => value === null ? 'Unavailable' : format(value, 2);
   const rangeKind = (year: number) => !matchesStarter ? 'edited' : evidence.forecast[year - 1]?.rangeBasis ?? (current ? 'unavailable' : 'percentage');
   const rangeLabel = (year: number) => ({ historical: 'Historical errors', 'assumed-tail': 'Assumed later years', percentage: 'Assumed percentage', unavailable: 'Unavailable', edited: 'Edited scenario' })[rangeKind(year)];
-  return <section className="valuation-card cash-flow-forecast" data-history-count={history.length} data-forecast-count={complete.length} data-range-mode={evidence.rangeMode} data-range-status={matchesStarter ? evidence.uncertainty.status : 'edited'} data-range-group={matchesStarter ? evidence.uncertainty.group ?? '' : ''} data-calibration-id={evidence.uncertainty.calibrationId ?? ''}>
+  return <section className="valuation-card cash-flow-forecast" id="valuation-cash" data-history-count={history.length} data-forecast-count={complete.length} data-range-mode={evidence.rangeMode} data-range-status={matchesStarter ? evidence.uncertainty.status : 'edited'} data-range-group={matchesStarter ? evidence.uncertainty.group ?? '' : ''} data-calibration-id={evidence.uncertainty.calibrationId ?? ''}>
     <div className="valuation-chart-heading"><div><div className="eyebrow">HISTORY → FUTURE CASH</div><h2>Cash flow over time</h2></div><span className="cash-flow-unit">Company cash · {unit}</span></div>
-    <p>Annual cash flow before discounting. The mid line follows your current forecast; the shaded span runs from the lowest to the highest scenario in each year.</p>
-    {matchesStarter && current && <div className="cash-flow-range-key" aria-label="Historical and assumed uncertainty by forecast year">
-      {[1, Math.min(4, draft.years), draft.years].filter((year, i, all) => all.indexOf(year) === i).map(year => <span key={year}>Year {year}<strong>{evidence.forecast[year - 1]?.halfWidth == null ? 'Unavailable' : `±${format(evidence.forecast[year - 1].halfWidth!, 1)} ${unit}`}</strong><small>{rangeLabel(year)}</small></span>)}
-      <small>{evidence.uncertainty.status === 'historical' ? `${evidence.uncertainty.group ?? 'Pooled'} historical cash variability · 80% research target` : evidence.uncertainty.reason ?? 'User-assumed sensitivity'}</small>
-    </div>}
-    {matchesStarter && draft.starterOrigin?.id === 'weighted-cash-starter-v2' && <div className="cash-flow-range-key" aria-label="Assumed uncertainty by forecast year">
-      {[1, Math.min(5, draft.years), draft.years].filter((year, i, all) => all.indexOf(year) === i).map(year => <span key={year}>Year {year}<strong>±{format(evidence.spreadPercent + (year - 1) * evidence.spreadStepPercent, 0)}%</strong></span>)}
-      <small>{evidence.spreadStepPercent === 0 ? 'Constant range' : `Widens by ${format(evidence.spreadStepPercent, 1)} percentage points per year`}</small>
-    </div>}
+    <p>Company cash in {draft.currency} millions before discounting. The lines are editable scenarios; the shaded range is not a guaranteed boundary.</p>
     {hasCash ? <Chart label="Cash flow over time: history and forecast scenarios" height={380} option={{
       tooltip: { trigger: 'axis', valueFormatter: (value: number) => `${format(value, 2)} ${unit}` },
       legend: { bottom: 0, data: [...(history.length ? ['Historical cash flow'] : []), ...(fitted ? ['Historical trend'] : []), ...scenarioKeys.map(key => scenarioNames[key])], textStyle: { color: '#60736b', fontSize: 11 } },
@@ -63,6 +55,14 @@ export default function CashFlowForecastChart({ draft, evidence, matchesStarter 
         ...scenarioKeys.map((key, i) => ({ type: 'line', name: scenarioNames[key], data: paths[i], connectNulls: false, showSymbol: draft.years <= 20, symbolSize: key === 'mid' ? 5 : 3, lineStyle: { width: key === 'mid' ? 3 : 1.5, color: scenarioColors[key] }, itemStyle: { color: scenarioColors[key] } })),
       ],
     }} /> : <div className="valuation-empty">Cash-flow history and forecast amounts are unavailable. Enter annual cash-flow assumptions to draw the forecast.</div>}
+    {matchesStarter && current && <div className="cash-flow-range-key" aria-label="Historical and assumed uncertainty by forecast year">
+      {[1, Math.min(4, draft.years), draft.years].filter((year, i, all) => all.indexOf(year) === i).map(year => <span key={year}>Year {year}<strong>{evidence.forecast[year - 1]?.halfWidth == null ? 'Unavailable' : `±${format(evidence.forecast[year - 1].halfWidth!, 1)} ${unit}`}</strong><small>{rangeLabel(year)}</small></span>)}
+      <small>{evidence.uncertainty.status === 'historical' ? `${evidence.uncertainty.group ?? 'Pooled'} historical cash variability · 80% research target` : evidence.uncertainty.reason ?? 'User-assumed sensitivity'}</small>
+    </div>}
+    {matchesStarter && draft.starterOrigin?.id === 'weighted-cash-starter-v2' && <div className="cash-flow-range-key" aria-label="Assumed uncertainty by forecast year">
+      {[1, Math.min(5, draft.years), draft.years].filter((year, i, all) => all.indexOf(year) === i).map(year => <span key={year}>Year {year}<strong>±{format(evidence.spreadPercent + (year - 1) * evidence.spreadStepPercent, 0)}%</strong></span>)}
+      <small>{evidence.spreadStepPercent === 0 ? 'Constant range' : `Widens by ${format(evidence.spreadStepPercent, 1)} percentage points per year`}</small>
+    </div>}
     <p className="chart-caption">Historical values are saved cash-flow proxies; future values are editable assumptions. Forecast years are full model years after {draft.valuationDate}. {current && matchesStarter && evidence.uncertainty.status === 'historical' ? 'Years 1–4 use historical forecast errors with an 80% coverage target. Year 5 onward uses assumed widening; evidence is strongest near term. The target is not a guarantee or a probability for the full cash path or DCF.' : 'The displayed scenario span has no assigned confidence level.'} DCF and NPV below discount these same future amounts. COVID and rebound years remain in the history.</p>
     {!currencyMatches && <p className="valuation-caution">Historical cash flow is available in {evidence.currency}; it is hidden while the forecast uses {draft.currency}. No currency conversion is inferred.</p>}
     <details className="cash-flow-range-table"><summary>Inspect annual cash-flow ranges</summary><div className="table-scroll"><table aria-label={`Annual cash-flow scenarios in ${unit}`}><thead><tr><th>Forecast year</th>{scenarioKeys.map(key => <th key={key}>{scenarioNames[key]} · {unit}</th>)}<th>Range basis</th></tr></thead><tbody>{forecast.map(row => <tr key={row.year} data-year={row.year} data-range-kind={rangeKind(row.year)}><td>Year {row.year}</td>{row.values.map((value, i) => <td key={i}>{amount(value)}</td>)}<td>{rangeLabel(row.year)}</td></tr>)}</tbody></table></div></details>

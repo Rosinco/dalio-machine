@@ -6,9 +6,133 @@ requires no terminal, Python environment, WSL, account or network connection.
 Windows WebView2 must be installed; it is present on Adam's PC. The Tauri installer
 configuration can also bundle its offline installer when distributing to another PC.
 
+## Version 0.22.1 — return to the previous screen
+
+**0.22.1 is installed and independently verified** through the existing
+`C:\Users\Adamb\OneDrive\Desktop\Macro Atlas.lnk` shortcut, targeting
+`C:\Users\Adamb\AppData\Local\MacroAtlas\0.22.1\Macro Atlas.exe`.
+The normal-profile app is running and 0.22.0 is retained.
+
+Use **Back** and **Forward** at the top left, or **Alt+Left / Alt+Right**, to
+retrace the analysis workflow. Return to the previous company, financial chart,
+valuation section, peer view, industry comparison or Macro screen with its
+controls and scroll position retained. Notes and valuation edits remain saved.
+
+The controls stay available on narrow screens while scrolling. Choosing another
+destination after Back starts a new forward path. The last screen reopens after
+restart; navigation history and temporary screen choices start a fresh session.
+See the [handoff](HANDOFF.md) for 314 unit, 105 browser and 30 Windows checks.
+
+## Earlier release: 0.22.0 — business overview and research workflow
+
+**0.22.0 was installed and verified** through the existing Macro Atlas shortcut;
+0.21.0 is retained. Validation: 310 unit tests, 127 browser checks and 19 Windows
+checks, including full process restarts. See the handoff for exact scope.
+
+Start with **Companies → Lists**, choose a company, then open **Financials**.
+Six default charts explain the business in order: sales and profitability, cash
+and investment, then assets and financing. Each section includes units and a
+short explanation. Saved capex KPIs now appear beside investing cash, with their
+separate source date and a clear distinction between capex and other investment.
+
+Lists puts search, saved views and Columns first, with optional filter/tool panels
+and removable active-filter chips. Min/Max controls stay under each numeric KPI.
+There are 18 additional plain-language explanations of financial fundamentals.
+Desktop navigation exposes Companies, Industries and Macro; every company screen
+keeps Back to Lists. The last company section reopens after a restart.
+
+Valuation leads with the current Low/Mid/High value and NPV, then the cash and
+DCF/NPV charts. Model/source details, payback breakdowns and input forms remain
+available through labelled controls. **Research notes** provides a personal
+notebook for business observations, financial reasoning, risks and next questions;
+notes save on this device as you type, separately from valuation drafts.
+
+Missing data remains unavailable. Undated provider capex observations are not
+assigned invented fiscal years or joined to dated statement charts. The saved
+data does not separate maintenance and growth capex. Financial calculations,
+reviewed assumptions and source packs are unchanged.
+
+See [workflow details](../docs/usability-workflow-2026-09-13.md) and the current
+[handoff](HANDOFF.md) for test scope and installation verification.
+
+## Earlier release: 0.21.0 — KPI ranges and a clearer research workflow
+
+**0.21.0 was installed** through the existing Macro Atlas shortcut; 0.20.0 was
+retained. Validation passes: 305 unit tests, 99 browser checks and 14 Windows
+checks, including a complete process restart and full filtered CSV export.
+
+**Companies → Lists** now places inclusive Min and Max inputs directly beneath
+numeric KPI headings. Blank bounds are unrestricted; all entered ranges must
+match. Currency amounts require a selected currency. Missing or invalid values
+cannot satisfy an active range, and controls remain visible when no rows match.
+
+Ranges save with views, survive restart and apply to CSV exports. Use the small
+clear button for one range or **Clear KPI ranges** for all of them. Changing a
+column's KPI, period or calculation clears its range; removing the column or
+applying a column preset removes its attached range. Advanced conditions remain
+separate. Valuation inputs and company drafts are unchanged.
+
+The top-bar **Start here** guide connects company discovery, financial history,
+valuation and saved research. Every KPI heading now opens a plain-language
+explanation. Financial charts receive more space; the listing map is optional.
+The interface uses calmer surfaces, clearer text and better small-screen layouts.
+Valuation explains DCF/NPV/terminal value and links the steps of the analysis.
+
+See the [workflow and usability changes](../docs/usability-workflow-2026-09-13.md),
+[KPI range behavior](../docs/company-list-kpi-ranges.md) and
+[HANDOFF.md](HANDOFF.md) for verification and installation status.
+
+```sh
+node tests/browser.mjs --company-list-range-only
+# Windows PowerShell: scripts/test-windows.ps1 -CompanyListRangeOnly
+```
+
+Earlier release sections record historical checkpoints.
+
+## Version 0.20.0 — valuation attractiveness and terminal sensitivities
+
+**0.20.0 was installed and verified** through the existing Macro Atlas shortcut;
+0.19.0 is retained. Verification passes: 295 unit tests, eight new browser checks,
+23 existing list browser checks and 20 Windows checks, including full restarts
+and actual CSV output. See the handoff for exact validation scope.
+
+**Companies → Lists → Column preset → Valuation attractiveness** adds a sortable
+percentage comparison with the dated saved price. Full terminal credit equals
+Mid NPV / price; DCF already includes terminal value once. Higher percentages
+mean more modeled value relative to price, not an annual return or quality score.
+A 30% discount to value requires at least 42.86% NPV / price.
+
+Choose **Terminal sensitivities** to show full, half and zero terminal credit
+side by side. Each column supports 100/75/50/25/0%; numeric conditions and saved
+views retain the exact selected setting. Full DCF is the baseline, while 50% is
+an explicit stress, not a calibrated probability. Supporting columns show cash
+coverage, terminal dependence, Low NPV, dates and evidence coverage. The catalogue
+now has 256 entries, including 223 with some observations; per-listing coverage varies.
+
+In the dated five-year positive cash/EBIT lens, 506 listings meet the 30% margin
+with full terminal credit, 337 with half and 183 without terminal value. Median
+eligible quote age is 216 days. These counts describe sensitivity of unreviewed
+starters and do not establish current investment opportunities.
+
+Existing filters/watchlists are kept when applying either column preset. No
+view changes until explicitly selected. New provider quotes do not reprice the
+frozen comparison, and reviewed or authored company Value studies remain separate.
+Click any cell for its formula, inputs and missing reason.
+
+See the [sensitivity study](../docs/valuation-attractiveness-sensitivity-2026-09-13.md),
+[ADR 0043](../decisions/0043-valuation-attractiveness-comparisons.md), and
+[HANDOFF.md](HANDOFF.md) for verification and installation status.
+
+```sh
+node tests/browser.mjs --valuation-attractiveness-only
+# Windows PowerShell: scripts/test-windows.ps1 -ValuationAttractivenessOnly
+```
+
+Earlier release sections below record historical checkpoints.
+
 ## Version 0.19.0 — expanded KPIs and list tools
 
-**0.19.0 is installed and verified** through the existing Macro Atlas shortcut;
+**0.19.0 was installed and verified** through the existing Macro Atlas shortcut;
 0.18.0 is retained. Validation passes: 280 unit tests, ten exporter tests, exact
 source reproduction, 35 browser checks and 11 Windows checks including restart
 and real CSV output. The catalogue contains 251 entries: 177 provider families
@@ -45,8 +169,8 @@ node tests/browser.mjs --expanded-company-list-only
 
 ## Version 0.18.0 — customizable company lists
 
-The sections below record earlier releases; the 0.19.0 section above describes
-the current installation and expanded KPI support.
+The sections below record earlier releases; the 0.22.0 section above describes
+the latest list features. See the handoff for current installation evidence.
 
 **0.18.0 was installed and verified** through the existing Macro Atlas shortcut;
 0.17.0 is retained. Validation passed: 250 unit tests, 13 company-list browser

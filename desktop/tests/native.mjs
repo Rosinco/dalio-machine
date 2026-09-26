@@ -1,3 +1,4 @@
+import { selectObservatory } from './workspace-navigation.mjs';
 import { countryEvidenceFlows } from './country-evidence-flows.mjs';
 import { transportDiagnostic } from './transport-diagnostics.mjs';
 import { uncompressedCdp } from './uncompressed-cdp.mjs';
@@ -25,12 +26,20 @@ import { seedPurchaseRestart, assertPurchaseRestart } from './purchase-range-flo
 import { researchGaugeFlows, assertResearchGaugeRestart } from './research-gauge-flows.mjs';
 import { expandedCompanyListFlows, assertExpandedCompanyListRestart } from './expanded-company-list-flows.mjs';
 import { companyListFlows, assertCompanyListRestart } from './company-list-flows.mjs';
+import { valuationAttractivenessFlows, assertValuationAttractivenessRestart } from './valuation-attractiveness-flows.mjs';
+import { companyListRangeFlows, assertCompanyListRangeRestart } from './company-list-range-flows.mjs';
+import { usabilityFlows } from './usability-flows.mjs';
+import { navigationFlows, assertNavigationRestart } from './navigation-flows.mjs';
 
 const project = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const financialOnly = process.argv.includes('--financial-only');
 const valuationOnly = process.argv.includes('--valuation-only');
 const researchGaugeOnly = process.argv.includes('--research-gauge-only');
 const expandedCompanyListOnly = process.argv.includes('--expanded-company-list-only');
+const valuationAttractivenessOnly = process.argv.includes('--valuation-attractiveness-only');
+const companyListRangeOnly = process.argv.includes('--company-list-range-only');
+const usabilityOnly = process.argv.includes('--usability-only');
+const navigationOnly = process.argv.includes('--navigation-only');
 const companyListOnly = process.argv.includes('--company-list-only');
 const noCdpCompression = !process.argv.includes('--compressed-cdp');
 const executable = process.argv.slice(2).find(arg => !arg.startsWith('--')) || resolve(project, 'src-tauri/target/x86_64-pc-windows-msvc/release/macro-atlas.exe');
@@ -129,7 +138,65 @@ try {
   console.log(`Windows app started for testing: ${await startApp()}`);
   await page.evaluate(() => localStorage.clear());
   await page.reload();
-  if (expandedCompanyListOnly) {
+  await page.locator('.app[data-active-release]').waitFor();
+  if (!usabilityOnly && !navigationOnly) await selectObservatory(page, 'macro');
+  if (navigationOnly) {
+    const result = await navigationFlows(page, project, { native: true });
+    const firstPid = app.pid;
+    await stopApp(); await startApp(); assert.notEqual(app.pid, firstPid);
+    await assertNavigationRestart(page, result.restart);
+    result.checks.push('A full native process restart restores the selected Research screen and authored work, with empty session navigation history');
+    assert.deepEqual(externalRequests, []); assert.deepEqual(runtimeErrors, []);
+    const report = { ...result, status: 'PASS', scope: 'navigation-only', externalRequests, runtimeErrors, executableSha256: createHash('sha256').update(await readFile(executable)).digest('hex') };
+    await writeFile(resolve(resultFolder, 'windows-native-navigation-report.json'), JSON.stringify(report, null, 2));
+    console.log(JSON.stringify(report, null, 2));
+  } else if (usabilityOnly) {
+    const catalogue = JSON.parse(await readFile(resolve(project, 'public/data/catalog.json'), 'utf8'));
+    await page.locator(`[data-active-release="${catalogue.default_id}"]`).waitFor();
+    const result = await usabilityFlows(page, project, { native: true });
+    await page.getByLabel('Company research', { exact: true }).click();
+    await page.getByLabel('1. Understand the business', { exact: true }).waitFor();
+    const readResearchState = target => target.evaluate(() => Object.fromEntries(Object.keys(localStorage).filter(key => key === 'atlas.preferences' || key === 'macro-atlas-company-lists-v2' || key === 'macro-atlas-valuations-v1' || key.startsWith('macro-atlas-company-notes-v1:') || key.startsWith('macro-atlas-valuation-draft-v1:')).sort().map(key => [key, localStorage.getItem(key)])));
+    const beforeRestart = await readResearchState(page);
+    assert.equal(JSON.parse(beforeRestart['atlas.preferences']).companyView, 'research');
+    const beforeBusinessNote = await page.getByLabel('1. Understand the business', { exact: true }).inputValue();
+    const beforeNextNote = await page.getByLabel('4. Decide what to investigate next', { exact: true }).inputValue();
+    assert.ok(beforeBusinessNote.startsWith('TEST FIXTURE')); assert.ok(beforeNextNote.startsWith('TEST FIXTURE'));
+    const firstPid = app.pid;
+    await stopApp(); await startApp(); assert.notEqual(app.pid, firstPid);
+    await page.locator('[data-business-view="research"]').waitFor();
+    await page.getByLabel('1. Understand the business', { exact: true }).waitFor();
+    assert.deepEqual(await readResearchState(page), beforeRestart, 'A complete native restart preserves exact notebook, selected-view, list and valuation bytes');
+    assert.equal(await page.getByLabel('1. Understand the business', { exact: true }).inputValue(), beforeBusinessNote);
+    assert.equal(await page.getByLabel('4. Decide what to investigate next', { exact: true }).inputValue(), beforeNextNote);
+    result.checks.push('A complete native process restart restores the selected Research screen, both company notebooks and exact list/valuation storage bytes');
+    assert.deepEqual(externalRequests, []); assert.deepEqual(runtimeErrors, []);
+    const report = { ...result, status: 'PASS', scope: 'usability-only', externalRequests, runtimeErrors, executableSha256: createHash('sha256').update(await readFile(executable)).digest('hex') };
+    await writeFile(resolve(resultFolder, 'windows-native-usability-report.json'), JSON.stringify(report, null, 2));
+    console.log(JSON.stringify(report, null, 2));
+  } else if (companyListRangeOnly) {
+    const catalogue = JSON.parse(await readFile(resolve(project, 'public/data/catalog.json'), 'utf8'));
+    await page.locator(`[data-active-release="${catalogue.default_id}"] [data-country="SE"][data-ready="true"]`).waitFor();
+    const result = await companyListRangeFlows(page, project, { native: true });
+    const firstPid = app.pid;
+    await stopApp(); await startApp(); assert.notEqual(app.pid, firstPid);
+    await assertCompanyListRangeRestart(page, result.restart);
+    assert.deepEqual(externalRequests, []); assert.deepEqual(runtimeErrors, []);
+    const report = { ...result, status: 'PASS', scope: 'company-list-range-only', checks: [...result.checks, 'Header ranges, combined matches and unchanged authored valuations survive a full native process restart'], externalRequests, runtimeErrors, executableSha256: createHash('sha256').update(await readFile(executable)).digest('hex') };
+    await writeFile(resolve(resultFolder, 'windows-native-company-list-range-report.json'), JSON.stringify(report, null, 2));
+    console.log(JSON.stringify(report, null, 2));
+  } else if (valuationAttractivenessOnly) {
+    const catalogue = JSON.parse(await readFile(resolve(project, 'public/data/catalog.json'), 'utf8'));
+    await page.locator(`[data-active-release="${catalogue.default_id}"] [data-country="SE"][data-ready="true"]`).waitFor();
+    const result = await valuationAttractivenessFlows(page, project, { native: true });
+    const firstPid = app.pid;
+    await stopApp(); await startApp(); assert.notEqual(app.pid, firstPid);
+    await assertValuationAttractivenessRestart(page, result.restart);
+    assert.deepEqual(externalRequests, []); assert.deepEqual(runtimeErrors, []);
+    const report = { ...result, status: 'PASS', scope: 'valuation-attractiveness-only', checks: [...result.checks, 'Pinned terminal credit, numeric conditions, quote dates and authored valuations survive a full native process restart'], externalRequests, runtimeErrors, executableSha256: createHash('sha256').update(await readFile(executable)).digest('hex') };
+    await writeFile(resolve(resultFolder, 'windows-native-valuation-attractiveness-report.json'), JSON.stringify(report, null, 2));
+    console.log(JSON.stringify(report, null, 2));
+  } else if (expandedCompanyListOnly) {
     const catalogue = JSON.parse(await readFile(resolve(project, 'public/data/catalog.json'), 'utf8'));
     await page.locator(`[data-active-release="${catalogue.default_id}"] [data-country="SE"][data-ready="true"]`).waitFor();
     const result = await expandedCompanyListFlows(page, project, { native: true });
@@ -167,7 +234,8 @@ try {
     // Skip unrelated research, directory and branch loops, never shrink the pack.
     const catalogue = JSON.parse(await readFile(resolve(project, 'public/data/catalog.json'), 'utf8'));
     await page.locator(`[data-active-release="${catalogue.default_id}"] [data-country="SE"][data-ready="true"]`).waitFor();
-    await page.getByLabel('Observatory', { exact: true }).selectOption('companies');
+    await selectObservatory(page, 'companies');
+    await page.getByLabel('Company financials', { exact: true }).click();
     await page.locator('[data-company="102"][data-business-ready="true"]').waitFor();
     diagnostic({ stage: 'focused_financial_flow_started', release: catalogue.default_id });
     const financial = await financialFlows(page, project, { native: true, archive, diagnostic });
@@ -257,7 +325,7 @@ try {
   await page.getByLabel('Open financials for Holmen', { exact: true }).click();
   await page.locator('[data-company="102"][data-business-ready="true"]').waitFor();
   await page.screenshot({ path: resolve(resultFolder, 'windows-holmen.png') });
-  await page.getByLabel('Observatory', { exact: true }).selectOption('macro');
+  await selectObservatory(page, 'macro');
   await page.getByLabel('Open data library').click();
   await page.locator(`[data-release-id="${research.older.id}"][data-storage="imported"]`).waitFor();
   await page.locator(`[data-release-id="${research.current.id}"][data-storage="imported"]`).waitFor();
@@ -312,7 +380,7 @@ try {
     const metadata = await stat(resolve(uploadFolder, name));
     financialFiles.push({ file: `financial-packs/${name}`, bytes: metadata.size, modified_at: metadata.mtime.toISOString() });
   }
-  await writeFile(diagnosticsPath, JSON.stringify({ runId, scope: expandedCompanyListOnly ? 'expanded-company-list-only' : companyListOnly ? 'company-list-only' : researchGaugeOnly ? 'research-gauge-only' : financialOnly ? 'financial-only' : valuationOnly ? 'valuation-only' : 'full', status: failed ? 'FAIL' : 'PASS', executableSha256: createHash('sha256').update(await readFile(executable)).digest('hex'), failure, isolatedProfile: failed ? profile : null, financialFiles, events, runtimeErrors, externalRequests }, null, 2));
+  await writeFile(diagnosticsPath, JSON.stringify({ runId, scope: navigationOnly ? 'navigation-only' : usabilityOnly ? 'usability-only' : companyListRangeOnly ? 'company-list-range-only' : valuationAttractivenessOnly ? 'valuation-attractiveness-only' : expandedCompanyListOnly ? 'expanded-company-list-only' : companyListOnly ? 'company-list-only' : researchGaugeOnly ? 'research-gauge-only' : financialOnly ? 'financial-only' : valuationOnly ? 'valuation-only' : 'full', status: failed ? 'FAIL' : 'PASS', executableSha256: createHash('sha256').update(await readFile(executable)).digest('hex'), failure, isolatedProfile: failed ? profile : null, financialFiles, events, runtimeErrors, externalRequests }, null, 2));
   console.log(`Native diagnostics: ${diagnosticsPath}`);
   if (failed) console.warn(`Preserved failed isolated test profile: ${profile}`);
   else await rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }).catch(() => console.warn(`Test profile still in use: ${profile}`));

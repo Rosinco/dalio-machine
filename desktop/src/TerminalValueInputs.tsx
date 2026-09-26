@@ -11,7 +11,7 @@ export default function TerminalValueInputs({ scenario: s, name, currency, years
       : { terminalCash: { cashFlow: null, growthRate: 0 } })}><option value="sustainable">Separate sustainable cash</option><option value="manual">Explicit sale proceeds</option></select></label>
     {s.terminalCash && <>
       <label>Year {years + 1} sustainable equity cash · {currency} m<input type="number" step="any" aria-label={`${name} sustainable terminal cash`} value={s.terminalCash.cashFlow ?? ''} onChange={e => onChange({ terminalCash: { ...s.terminalCash!, cashFlow: amount(e) } })} /></label>
-      <small>First annual cash after the forecast, after all required reinvestment and financing. It stays separate when forecast payments or range widths change.</small>
+      <small>Cash available to shareholders in the first year after the forecast, after the investment and financing the business needs to keep operating. It stays separate when forecast payments or range widths change.</small>
       <label>Mature cash growth · %<input type="number" step="any" aria-label={`${name} mature cash growth`} value={s.terminalCash.growthRate ?? ''} onChange={e => onChange({ terminalCash: { ...s.terminalCash!, growthRate: amount(e) } })} /></label>
       <small>Growth must be sustainable, supported by reinvestment, and below the required return. Review any jump from the last forecast payment ({format(s.cashFlows[years - 1], 2)} {currency} m).</small>
       {s.terminalCash.cashFlow !== null && s.terminalCash.cashFlow <= 0 && <p className="valuation-caution">Nonpositive sustainable cash gives zero assumed sale proceeds. Review a turnaround or finite-life case; this does not estimate recovery.</p>}

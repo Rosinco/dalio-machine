@@ -1,3 +1,4 @@
+import { selectObservatory, openListPanel, closeListPanel } from './workspace-navigation.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
@@ -96,7 +97,7 @@ async function openLists(page) {
 }
 
 async function openHolmen(page) {
-  await page.getByLabel('Observatory', { exact: true }).selectOption('companies');
+  await selectObservatory(page, 'companies');
   await page.getByLabel('Search companies or countries', { exact: true }).fill('Holmen');
   await page.locator('[data-search-listing="102"]').click();
   await page.locator('[data-research-card="102"][data-research-card-ready="true"]').waitFor();
@@ -214,9 +215,9 @@ async function verifySourceMismatch(page, expectedStorage, native) {
     return route.fulfill({ response, json: value ? { ...value, id: badPack } : value });
   });
   const resetIndex = async () => {
-    await page.getByLabel('Observatory', { exact: true }).selectOption('macro');
+    await selectObservatory(page, 'macro');
     await page.locator('[data-country="SE"][data-ready="true"]').waitFor();
-    await page.getByLabel('Observatory', { exact: true }).selectOption('companies');
+    await selectObservatory(page, 'companies');
   };
   try {
     await resetIndex();
@@ -251,11 +252,14 @@ export async function companyListFlows(page, project, { native = false } = {}) {
     await page.getByLabel('Previous company list page', { exact: true }).click();
     checked('All 19,140 exact source listing IDs remain available with distinct, bounded 50-row pages');
 
+    await openListPanel(page, 'filters');
     await page.getByLabel('Company list preset', { exact: true }).selectOption('cash_consistency');
     assert.equal(await matches(page), data.consistent.length);
+    await openListPanel(page, 'filters');
     await page.getByLabel('Company list preset', { exact: true }).selectOption('cash_and_margin');
     assert.equal(await matches(page), data.candidates.length);
     assert.deepEqual(await collectAllPages(page), data.candidates.map(item => item.id), 'Every candidate independently meets five positive FCF/EBIT observations, eligible operating evidence and price <=70% of Mid');
+    await openListPanel(page, 'filters');
     await page.getByLabel('Company list preset', { exact: true }).selectOption('all');
     checked(`Both declared candidate presets reconcile independently; all ${data.candidates.length} cash-and-margin listing IDs match without an opaque score`);
 
@@ -314,7 +318,7 @@ export async function companyListFlows(page, project, { native = false } = {}) {
     await verifyCell(page, '13', 'fcf', [...data.byId['13'].annual.cash.values.slice(0, 3)].sort((a, b) => a - b)[1], data.byId['13'].annual.currency);
     await verifyCell(page, '167', 'fcf', null);
     for (const direction of ['asc', 'desc']) {
-      await page.locator('th[data-company-list-column="ebit_margin"]').getByRole('button').click();
+      await page.locator('th[data-company-list-column="ebit_margin"]').getByRole('button', { name: /^Sort by / }).click();
       const ordered = [...watched].sort((a, b) => {
         const av = expectedMargin(a), bv = expectedMargin(b);
         return av === null || bv === null ? av === bv ? byName(a, b) : av === null ? 1 : -1 : (direction === 'asc' ? av - bv : bv - av) || byName(a, b);
@@ -323,7 +327,7 @@ export async function companyListFlows(page, project, { native = false } = {}) {
     }
     checked('Personal watchlist stores explicit listing choices; signed and zero KPIs remain numeric and missing values sort last in both directions');
 
-    await page.getByRole('button', { name: 'Show list filters', exact: true }).click();
+    await openListPanel(page, 'filters');
     await page.getByLabel('Add numeric KPI filter', { exact: true }).click();
     await page.getByLabel('KPI for condition 1', { exact: true }).selectOption('ebit_margin');
     await page.getByLabel('Value for condition 1', { exact: true }).fill('0');
@@ -355,7 +359,7 @@ export async function companyListFlows(page, project, { native = false } = {}) {
     await assertReadOnly(page, expectedStorage);
     await page.reload(); await openLists(page);
     assert.equal(await matches(page), 0, 'A cleared threshold remains fail-closed after restart');
-    await page.getByRole('button', { name: 'Show list filters', exact: true }).click();
+    await openListPanel(page, 'filters');
     assert.equal(await page.getByLabel('Value for condition 1', { exact: true }).inputValue(), '');
     await page.getByLabel('Value for condition 1', { exact: true }).fill('-40');
     assert.deepEqual(await rowIds(page), ['102']);
@@ -364,22 +368,22 @@ export async function companyListFlows(page, project, { native = false } = {}) {
     await assertReadOnly(page, expectedStorage);
     await page.reload(); await openLists(page);
     assert.equal(await matches(page), 0, 'Restart never silently drops an incomplete currency condition and broadens the list');
-    await page.getByRole('button', { name: 'Show list filters', exact: true }).click();
+    await openListPanel(page, 'filters');
     await page.getByLabel('Remove condition 1', { exact: true }).click();
-    await page.getByRole('button', { name: 'Show list filters', exact: true }).click();
+    await closeListPanel(page, 'filters');
     assert.equal(await matches(page), watched.length);
     checked('Numeric filters include exact signed/zero boundaries, exclude missing values and require the selected monetary currency');
 
     const starsBeforeBranch = JSON.parse(await readPreferences(page)).watchlistIds;
     await page.getByRole('button', { name: 'All listings', exact: true }).click();
-    await page.getByRole('button', { name: 'Show list filters', exact: true }).click();
+    await openListPanel(page, 'filters');
     await page.getByLabel('Company list sector', { exact: true }).selectOption('1');
     assert.equal(await matches(page), data.rows.filter(item => item.sectorId === '1').length);
     assert.equal(JSON.parse(await readPreferences(page)).filters.sectorId, '1', 'The incompatible sector must actually be saved before branch entry');
-    await page.getByLabel('Observatory', { exact: true }).selectOption('sectors');
+    await selectObservatory(page, 'sectors');
     await page.getByLabel('Branch company lists', { exact: true }).click();
     await list(page).waitFor();
-    await page.getByRole('button', { name: 'Show list filters', exact: true }).click();
+    await openListPanel(page, 'filters');
     assert.equal(await page.getByLabel('Company list sector', { exact: true }).inputValue(), 'all', 'Explicit branch entry clears the incompatible saved sector');
     const branchSelect = page.getByLabel('Company list branch', { exact: true });
     assert.equal(await branchSelect.inputValue(), holmen.branchId);
@@ -390,12 +394,13 @@ export async function companyListFlows(page, project, { native = false } = {}) {
     assert.deepEqual(new Set(await collectAllPages(page)), new Set(branchIds), 'Branch results contain exactly the source branch despite the saved Finance sector');
     assert.deepEqual(JSON.parse(await readPreferences(page)).watchlistIds, starsBeforeBranch, 'Branch navigation preserves every personal star');
     await assertReadOnly(page, expectedStorage);
-    await page.getByLabel('Observatory', { exact: true }).selectOption('companies');
+    await selectObservatory(page, 'companies');
+    await page.getByLabel('Company financials', { exact: true }).click();
     await page.locator('[data-research-card="102"][data-research-card-ready="true"]').waitFor();
     await openLists(page);
-    await page.getByRole('button', { name: 'Show list filters', exact: true }).click();
+    await openListPanel(page, 'filters');
     await page.getByLabel('Company list sector', { exact: true }).selectOption('all');
-    await page.getByRole('button', { name: 'Show list filters', exact: true }).click();
+    await closeListPanel(page, 'filters');
     await page.getByRole('button', { name: 'Watchlist', exact: true }).click();
     assert.equal(await matches(page), watched.length);
     assert.deepEqual(JSON.parse(await readPreferences(page)).watchlistIds, starsBeforeBranch);
@@ -464,7 +469,8 @@ export async function companyListFlows(page, project, { native = false } = {}) {
 }
 
 export async function assertCompanyListRestart(page, result) {
-  await page.getByLabel('Observatory', { exact: true }).selectOption('companies');
+  await selectObservatory(page, 'companies');
+  await page.getByLabel('Company financials', { exact: true }).click();
   await page.locator('[data-business-ready="true"]').waitFor();
   assert.deepEqual(await protectedStorage(page), result.protectedStorage, 'Full process restart preserves the authored valuation and revision bytes');
   assert.equal(await readPreferences(page), result.preferences, 'Full process restart preserves exact saved list preferences');

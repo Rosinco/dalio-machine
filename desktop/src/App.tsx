@@ -1,7 +1,8 @@
+import { version as appVersion } from '../package.json';
 import { useFinancialIndex } from './financialService';
 import './financial.css';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDownToLine, ArrowRight, BookOpen, Check, ChevronDown, Compass, Globe2, Info, Layers3, Search, Share2, TrendingUp, X } from 'lucide-react';
+import { ArrowDownToLine, ArrowLeft, ArrowRight, BookOpen, Check, ChevronDown, Compass, Globe2, Info, Layers3, Search, Share2, TrendingUp, X } from 'lucide-react';
 import WorldMap, { type Paint } from './WorldMap';
 import { Chart, HistoryChart, Radar } from './Charts';
 import { assessmentPalette, atYear, categories, finite, format, historyColor, historyPalette, indicatorDirection, latestTrade, missingColor, quantityPalette, quintile, seriesColors, sourceUrl, tradePalette, tradeSlices } from './model';
@@ -14,6 +15,8 @@ import LiquidityPanel from './LiquidityPanel';
 import CountryEvidencePanel, { useEvidenceIndex } from './CountryEvidencePanel';
 import { evidenceCode } from './countryEvidence';
 import BusinessWorkspace, { BusinessSearch } from './BusinessWorkspace';
+import { NavigationContext, ScreenPresentation, createScreenStore, useAtlasNavigation } from './NavigationContext';
+import { navigationScope, type NavigationRoute } from './navigation';
 import type { BusinessIndex, Observatory } from './business';
 import { useReleaseResource } from './useResearchResource';
 import { companyBranch, type Taxonomy } from './taxonomy';
@@ -23,11 +26,13 @@ import './research.css';
 import './business.css';
 import './taxonomy.css';
 import './listings.css';
+import AtlasGuide from './AtlasGuide';
+import './comfort.css';
 
 const PressureFlow = lazy(() => import('./PressureFlow'));
 const modes = [{ id: 'fundamentals', label: 'Fundamentals', icon: Globe2 }, { id: 'history', label: 'History & outlook', icon: TrendingUp }, { id: 'trade', label: 'Trade connections', icon: Share2 }] as const;
 const bands = ['Weakest', 'Weaker', 'Middle', 'Stronger', 'Strongest'];
-const preferences = (() => { try { return JSON.parse(localStorage.getItem('atlas.preferences') ?? '{}'); } catch { return {}; } })();
+const preferences = (() => { try { const saved = JSON.parse(localStorage.getItem('atlas.preferences') ?? '{}'); return saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {}; } catch { return {}; } })();
 
 function useCountry(code: string, index: AtlasIndex | null, release: ResearchRelease | undefined) {
   const result = useReleaseResource<Country>(index?.countries[code] ? release : undefined, `country:${code}`);
@@ -42,21 +47,37 @@ export default function App() {
   const [release, setRelease] = useState<ResearchRelease>();
   const [unreadable, setUnreadable] = useState(0);
   const switchSequence = useRef(0);
-  const [code, setCode] = useState<string>(preferences.code ?? 'SE');
-  const [unknownName, setUnknownName] = useState('');
-  const [mode, setMode] = useState<Mode>('fundamentals');
-  const [observatory, setObservatory] = useState<Observatory>(['macro', 'sectors', 'companies'].includes(preferences.observatory) ? preferences.observatory : 'macro');
-  const [companyId, setCompanyId] = useState<string>(/^[1-9][0-9]{0,9}$/.test(preferences.companyId ?? '') ? preferences.companyId : '102');
-  const [branchId, setBranchId] = useState<string>(/^(?:[1-9][0-9]{0,9}|unassigned)$/.test(preferences.branchId ?? '') ? preferences.branchId : '21');
-  const [category, setCategory] = useState<Category>('production');
-  const [metric, setMetric] = useState('gov_debt_pct_gdp');
-  const [compare, setCompare] = useState<string>('');
-  const [year, setYear] = useState(2025);
-  const [startYear, setStartYear] = useState(1990);
-  const [tab, setTab] = useState('overview');
+  const navigation = useAtlasNavigation({
+    code: /^[A-Z]{2}$/.test(preferences.code ?? '') ? preferences.code : 'SE',
+    unknownName: typeof preferences.unknownName === 'string' ? preferences.unknownName : '', mode: ['fundamentals', 'history', 'trade'].includes(preferences.mode) ? preferences.mode : 'fundamentals',
+    observatory: ['macro', 'sectors', 'companies'].includes(preferences.observatory) ? preferences.observatory : 'companies',
+    companyView: ['lists', 'financials', 'screen', 'valuation', 'peers', 'context', 'research'].includes(preferences.companyView) ? preferences.companyView : 'lists',
+    sectorView: ['browse', 'overview', 'companies', 'compare', 'context', 'research', 'screen', 'lists'].includes(preferences.sectorView) ? preferences.sectorView : 'browse',
+    companyId: /^[1-9][0-9]{0,9}$/.test(preferences.companyId ?? '') ? preferences.companyId : '102',
+    branchId: /^(?:[1-9][0-9]{0,9}|unassigned)$/.test(preferences.branchId ?? '') ? preferences.branchId : '21',
+    category: Object.keys(categories).includes(preferences.category) ? preferences.category : 'production',
+    metric: typeof preferences.metric === 'string' ? preferences.metric : 'gov_debt_pct_gdp',
+    compare: typeof preferences.compare === 'string' ? preferences.compare : '',
+    year: Number.isInteger(preferences.year) ? preferences.year : 2025,
+    startYear: [1960, 1990, 2010].includes(preferences.startYear) ? preferences.startYear : 1990,
+    tab: ['overview', 'assessments', 'indicators', 'liquidity', 'trade', 'evidence', 'score'].includes(preferences.tab) ? preferences.tab : 'overview',
+    valuationTab: preferences.valuationTab === 'evidence' ? 'evidence' : 'scenarios', anchor: '',
+  }, next => { try { localStorage.setItem('atlas.preferences', JSON.stringify(next)); } catch { /* Navigation remains available for this session. */ } });
+  const { code, unknownName, mode, observatory, companyView, sectorView, companyId, branchId, category, metric, compare, year, startYear, tab, valuationTab } = navigation.route;
+  const screenStore = useRef(createScreenStore());
+  const navigate = navigation.visit;
+  const setCode = (next: string | ((value: string) => string)) => navigation.replace({ code: typeof next === 'function' ? next(code) : next });
+  const setBranchId = (next: string) => navigation.replace({ branchId: next });
+  const setCategory = (next: Category) => navigation.replace({ category: next });
+  const setMetric = (next: string | ((value: string) => string)) => navigation.replace({ metric: typeof next === 'function' ? next(metric) : next });
+  const setCompare = (next: string | ((value: string) => string)) => navigation.replace({ compare: typeof next === 'function' ? next(compare) : next });
+  const setYear = (next: number | ((value: number) => number)) => navigation.replace({ year: typeof next === 'function' ? next(year) : next });
+  const setStartYear = (next: number) => navigation.replace({ startYear: next });
+  const setTab = (next: string) => navigate({ tab: next });
   const [query, setQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [pressureIndex, setPressureIndex] = useState(0);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -83,6 +104,7 @@ export default function App() {
     const nextIndex = await resource<AtlasIndex>(next, 'index');
     if (nextIndex.version !== 1 || !nextIndex.manifest?.sha256 || !nextIndex.countries?.SE) throw new Error('Unsupported or incomplete research release.');
     if (sequence !== switchSequence.current) return;
+    if (release && next.id !== release.id) { navigation.reset(); screenStore.current.values.clear(); }
     setIndex(nextIndex); setRelease(next); setError(''); setPressureIndex(0);
     setCode(current => /^[A-Z]{2}$/.test(current) ? current : 'SE');
     setCompare(current => nextIndex.countries[current] ? current : '');
@@ -107,10 +129,8 @@ export default function App() {
     }).catch(e => { if (!cancelled) setError(String(e)); });
     return () => { cancelled = true; switchSequence.current++; };
   }, []);
-  useEffect(() => { try { localStorage.setItem('atlas.preferences', JSON.stringify({ code, observatory, companyId, branchId })); } catch { /* View still works without persistent settings. */ } }, [code, observatory, companyId, branchId]);
   useEffect(() => { setPressureIndex(0); }, [code]);
   useEffect(() => { if (compare === code) setCompare(''); }, [compare, code]);
-  useEffect(() => { document.querySelector('.sidebar-content')?.scrollTo({ top: 0 }); }, [code, tab]);
   useEffect(() => { if (!message) return; const t = setTimeout(() => setMessage(''), 5000); return () => clearTimeout(t); }, [message]);
   useEffect(() => {
     const dismiss = (e: MouseEvent) => { if (!searchRef.current?.contains(e.target as Node)) setSearchOpen(false); };
@@ -162,9 +182,25 @@ export default function App() {
     return out;
   }, [countries, mode, category, histories, metric, year, historyRange, meta, directionLabel, rows, code, country]);
 
-  const selectCountry = (next: string, name = '') => { setCode(next); setUnknownName(name); setQuery(''); setSearchOpen(false); };
-  const selectCompany = (id: string) => { const company = companyEntry(id, business.data, taxonomy.data); if (!company) return; setCompanyId(id); setBranchId(companyBranch(company, taxonomy.data) ?? 'unassigned'); selectCountry(company.listing_country ?? 'ZZ', listingCountries(business.data, taxonomy.data)[company.listing_country ?? ''] ?? 'Country unavailable'); setObservatory('companies'); };
-  const changeMode = (next: Mode) => { setMode(next); setTab(next === 'trade' ? 'trade' : 'overview'); };
+  const selectCountry = (next: string, name = '') => { navigate({ code: next, unknownName: name || (next === code ? unknownName : '') }); setQuery(''); setSearchOpen(false); };
+  const selectCompany = (id: string) => { const company = companyEntry(id, business.data, taxonomy.data); if (!company) return; navigate({ observatory: 'companies', companyView: 'financials', companyId: id, branchId: companyBranch(company, taxonomy.data) ?? 'unassigned', code: company.listing_country ?? 'ZZ', unknownName: code === (company.listing_country ?? 'ZZ') ? unknownName : listingCountries(business.data, taxonomy.data)[company.listing_country ?? ''] ?? 'Country unavailable', valuationTab: observatory === 'companies' && companyId === id && companyView === 'financials' ? valuationTab : 'scenarios' }); setQuery(''); setSearchOpen(false); };
+  const explore = (next: Observatory) => { navigate({ observatory: next, ...(next === 'companies' ? { companyView: 'lists' as const } : next === 'sectors' ? { sectorView: 'browse' as const } : {}) }); setSearchOpen(false); setQuery(''); };
+  const changeMode = (next: Mode) => navigate({ mode: next, tab: next === 'trade' ? 'trade' : 'overview' });
+  const returnToHistory = (direction: -1 | 1) => { navigation.move(direction); setSearchOpen(false); setQuery(''); };
+  useEffect(() => {
+    const keys = (event: KeyboardEvent) => {
+      if (!event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+      if (document.querySelector('[role="dialog"]')) return;
+      event.preventDefault(); returnToHistory(event.key === 'ArrowLeft' ? -1 : 1);
+    };
+    window.addEventListener('keydown', keys); return () => window.removeEventListener('keydown', keys);
+  });
+  const destinationLabel = (route: NavigationRoute) => {
+    const labels: Record<string, string> = { lists: 'Lists', financials: 'Financials', valuation: 'Valuation', peers: 'Peers', context: 'Macro context', research: 'Research notes', screen: 'Evidence screen', browse: 'Industry directory', overview: 'Branch overview', companies: 'Branch companies', compare: 'Branch comparison' };
+    if (route.observatory === 'companies') return `${['lists', 'screen'].includes(route.companyView) ? '' : `${companyEntry(route.companyId, business.data, taxonomy.data)?.display_name ?? route.companyId} · `}${labels[route.companyView]}`;
+    if (route.observatory === 'sectors') return `${labels[route.sectorView]}${route.sectorView === 'browse' ? '' : ` · ${taxonomy.data?.branches[route.branchId]?.name_en ?? route.branchId}`}`;
+    return `${names[route.code] ?? route.code} · ${modes.find(item => item.id === route.mode)?.label ?? 'Macro'}`;
+  };
   const exportHistory = async () => {
     if (!country?.history || !meta) return;
     const quote = (s: unknown) => `"${String(s ?? '').replaceAll('"', '""')}"`;
@@ -189,17 +225,26 @@ export default function App() {
   const matches = searchableCountries.filter(([k, c]) => `${c.name} ${k} ${k === 'UK' ? 'GB' : ''} ${c.iso3}`.toLowerCase().includes(query.toLowerCase()));
   const pressure = country?.pressures[pressureIndex];
 
-  return <div className="app" data-active-release={release.id} data-active-observatory={observatory}>
+  return <NavigationContext.Provider value={{ scope: `${release.id}:${navigationScope(navigation.route)}`, store: screenStore.current }}><ScreenPresentation /><div className="app" data-active-release={release.id} data-active-observatory={observatory} onClickCapture={event => {
+    const link = (event.target as Element).closest<HTMLAnchorElement>('a[href^="#"]');
+    if (!link || !link.hash || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    const anchor = link.hash.slice(1); if (!document.getElementById(anchor)) return;
+    event.preventDefault(); navigate({ anchor });
+  }}>
     <header className="topbar">
-      <div className="brand"><div className="brand-mark"><Compass size={25} strokeWidth={1.3} /></div><div><strong>ATLAS<span> / </span></strong><select className="observatory-select" aria-label="Observatory" value={observatory} onChange={e => { setObservatory(e.target.value as Observatory); setSearchOpen(false); setQuery(''); }}><option value="macro">Macro observatory</option><option value="sectors">Sectors & branches</option><option value="companies">Company observatory</option></select></div></div>
+      <nav className="atlas-history-navigation" aria-label="Screen history"><button aria-label="Back" disabled={!navigation.history.past.length} title={navigation.history.past.length ? `Back to ${destinationLabel(navigation.history.past.at(-1)!.route)} (Alt+Left)` : 'No previous screen'} onClick={() => returnToHistory(-1)}><ArrowLeft size={18} /><span>Back</span></button><button aria-label="Forward" disabled={!navigation.history.future.length} title={navigation.history.future.length ? `Forward to ${destinationLabel(navigation.history.future[0].route)} (Alt+Right)` : 'No next screen'} onClick={() => returnToHistory(1)}><ArrowRight size={18} /></button></nav>
+      <div className="brand"><div className="brand-mark"><Compass size={25} strokeWidth={1.3} /></div><strong>ATLAS</strong></div>
+      <nav className="atlas-primary-navigation" aria-label="Main navigation">{([{ id: 'companies', label: 'Companies' }, { id: 'sectors', label: 'Industries' }, { id: 'macro', label: 'Macro' }] as const).map(item => <button key={item.id} aria-current={observatory === item.id ? 'page' : undefined} onClick={() => explore(item.id)}>{item.label}</button>)}</nav>
+      <select className="observatory-select" aria-label="Observatory" value={observatory} onChange={e => explore(e.target.value as Observatory)}><option value="companies">Companies</option><option value="sectors">Industries</option><option value="macro">Macro · countries</option></select>
       {observatory === 'macro' ? <div className="search" ref={searchRef}><Search size={16} /><input aria-label="Search countries" placeholder="Find a country…" value={query} onFocus={() => setSearchOpen(true)} onChange={e => { setQuery(e.target.value); setSearchOpen(true); }} onKeyDown={e => { if (e.key === 'Enter' && matches[0]) selectCountry(matches[0][0]); }} /><span className="search-hint">{searchableCountries.length} economies</span>
         {searchOpen && <div className="search-results">{matches.map(([k, c]) => <button key={k} onClick={() => selectCountry(k)}><span className="country-code">{k}</span>{c.name}<span className="result-note">{c.note}</span></button>)}{!matches.length && <p>No matching country in the saved coverage.</p>}</div>}
       </div> : <BusinessSearch index={business.data} taxonomy={taxonomy.data} financial={financial.data} onCompany={selectCompany} onCountry={selectCountry} />}
       <div className="release"><span className="status-dot" />Offline ready <span className="release-divider">|</span><button className="release-picker" aria-label="Choose research release" onClick={() => setLibraryOpen(true)}>Data release {index.as_of}<ChevronDown size={12} /></button></div>
-      <button className="header-icon" aria-label="Open data library" onClick={() => setLibraryOpen(true)}><BookOpen size={19} /></button>
+      <button className="atlas-guide-trigger" aria-label="Open getting started guide" onClick={() => setGuideOpen(true)}><Info size={17} /><span>Start here</span></button>
+      <button className="header-icon" title="Saved data and research releases" aria-label="Open data library" onClick={() => setLibraryOpen(true)}><BookOpen size={19} /></button>
     </header>
     {observatory === 'macro' ? <div className="workspace">
-      <nav className="rail" aria-label="Map modes"><div className="rail-label">EXPLORE</div>{modes.map(m => <button key={m.id} className={mode === m.id ? 'active' : ''} aria-label={m.label} aria-pressed={mode === m.id} onClick={() => changeMode(m.id)}><m.icon size={21} strokeWidth={1.5} /><span>{m.id === 'fundamentals' ? 'World' : m.id === 'history' ? 'History' : 'Trade'}</span></button>)}<div className="rail-spacer" /><button onClick={() => setLibraryOpen(true)} aria-label="About this release"><Layers3 size={20} strokeWidth={1.5} /><span>Library</span></button><span className="rail-version">V0.18.0</span></nav>
+      <nav className="rail" aria-label="Map modes"><div className="rail-label">EXPLORE</div>{modes.map(m => <button key={m.id} className={mode === m.id ? 'active' : ''} aria-label={m.label} aria-pressed={mode === m.id} onClick={() => changeMode(m.id)}><m.icon size={21} strokeWidth={1.5} /><span>{m.id === 'fundamentals' ? 'World' : m.id === 'history' ? 'History' : 'Trade'}</span></button>)}<div className="rail-spacer" /><button onClick={() => setLibraryOpen(true)} aria-label="About this release"><Layers3 size={20} strokeWidth={1.5} /><span>Library</span></button><span className="rail-version">V{appVersion}</span></nav>
       <main className="map-panel">
         <div className="map-heading"><div><div className="eyebrow">THE WORLD, IN CONTEXT</div><h1>{mode === 'fundamentals' ? 'World fundamentals' : mode === 'history' ? 'History & outlook' : 'Trade connections'}</h1><p>{mode === 'fundamentals' ? 'Explore the forces shaping each economy.' : mode === 'history' ? 'Follow the data through time, from one saved release.' : `Where ${country?.name ?? 'an economy'} sells its goods.`}</p></div><span className="coverage-pill">{countries.filter(([, c]) => c.on_map).length} countries <span>+ {countries.filter(([, c]) => !c.on_map).map(([, c]) => c.name).join(", ")}</span></span></div>
         <div className="map-filter"><span>{mode === 'fundamentals' ? 'COLOUR BY' : mode === 'history' ? 'INDICATOR' : 'MEASURE'}</span>{mode === 'fundamentals' ? <select aria-label="Map category" value={category} onChange={e => setCategory(e.target.value as Category)}>{index.categories.map(k => <option value={k} key={k}>{categories[k].label}</option>)}</select> : mode === 'history' ? <select aria-label="Map historical indicator" value={metric} onChange={e => setMetric(e.target.value)}>{index.indicators.map(i => <option key={i.name} value={i.name}>{i.name === 'gdp_growth_fwd5' ? 'GDP growth · annual' : i.label}</option>)}</select> : <strong>Share of selected country’s goods exports</strong>}<ChevronDown size={14} /></div>
@@ -223,7 +268,7 @@ export default function App() {
             {tab === 'overview' && <>
               {evidenceEntry && <button className="ce-callout" onClick={() => setTab('assessments')}><span><strong>Country assessment & monitoring</strong><small>Annual {evidenceEntry.assessment_as_of}{evidenceEntry.monitoring_as_of && ` · Monitoring ${evidenceEntry.monitoring_as_of}`} · separate evidence pack</small></span><ArrowRight size={16} /></button>}
               {mode !== 'history' && <section><div className="section-title"><h3>Fundamentals at a glance</h3><span className="micro">0–100</span></div><p className="section-note">Category scores · snapshot {index.as_of}</p><Radar country={country} comparison={other.country} index={index} /><CountryKey country={country.name} comparison={other.country?.name} /><p className="chart-caption">Inner red rings: weaker · middle yellow: mixed · outer green: stronger.</p>
-                <div className="category-list">{index.categories.map(k => { const s = country.categories[k]; const q = quintile(s?.score); return <button key={k} className={category === k && mode === 'fundamentals' ? 'selected' : ''} onClick={() => { setCategory(k); setMode('fundamentals'); setTab('score'); }}><span>{categories[k].label}<small>{s?.n_available ?? 0}/{s?.n_total ?? 0} indicators</small></span><div className="mini-track"><i style={{ width: `${s?.score ?? 0}%`, background: q === null ? missingColor : assessmentPalette[q] }} /></div><strong>{finite(s?.score) ? format(s.score, 0) : '—'}</strong></button>; })}</div><p className="chart-caption">Select a category to see its calculation and changes since the previous release.</p>
+                <div className="category-list">{index.categories.map(k => { const s = country.categories[k]; const q = quintile(s?.score); return <button key={k} className={category === k && mode === 'fundamentals' ? 'selected' : ''} onClick={() => navigate({ category: k, mode: 'fundamentals', tab: 'score' })}><span>{categories[k].label}<small>{s?.n_available ?? 0}/{s?.n_total ?? 0} indicators</small></span><div className="mini-track"><i style={{ width: `${s?.score ?? 0}%`, background: q === null ? missingColor : assessmentPalette[q] }} /></div><strong>{finite(s?.score) ? format(s.score, 0) : '—'}</strong></button>; })}</div><p className="chart-caption">Select a category to see its calculation and changes since the previous release.</p>
               </section>}
               <section><div className="section-title"><h3>Through time</h3><button className="icon-button" aria-label="Export selected history as CSV" disabled={!detail.ready} onClick={exportHistory}><ArrowDownToLine size={15} /></button></div><select className="metric-select" aria-label="Chart indicator" value={metric} onChange={e => setMetric(e.target.value)}>{index.indicators.map(i => <option key={i.name} value={i.name}>{i.name === 'gdp_growth_fwd5' ? 'GDP growth · annual history & forecast' : i.label}</option>)}</select>
                 <div className="metric-readout"><strong>{format(mode === 'history' ? atYear(points, year)?.value : cell?.value, 2)}</strong><span>{mode === 'history' && metric === 'gdp_growth_fwd5' ? '% annual growth' : meta?.unit}<small>{mode === 'history' ? `Historical observation · ${year}` : cell?.date ? `${cell.is_forecast ? 'Forecast · ' : ''}${cell.date}` : 'No current value'}</small></span></div>
@@ -235,7 +280,7 @@ export default function App() {
               {country.cycle && <section><div className="section-title"><h3>Cycle context</h3></div><div className="cycle-grid"><div><small>SHORT CYCLE</small><strong>{country.cycle.short_term_label}</strong><span>Rule-match confidence {format(country.cycle.short_term_confidence * 100, 0)}%</span></div><div><small>LONG CYCLE</small><strong>{country.cycle.long_term_label}</strong><span>Rule-match confidence {format(country.cycle.long_term_confidence * 100, 0)}%</span></div></div></section>}
               <section><div className="section-title"><h3>Pressure pathways</h3><span className="micro">Rule output</span></div>{!pressure ? <p className="section-note">No pressure rules triggered for this economy in the saved snapshot.</p> : <><select className="metric-select" aria-label="Pressure pathway" value={pressureIndex} onChange={e => setPressureIndex(Number(e.target.value))}>{country.pressures.map((p, i) => <option key={p.rule_id} value={i}>{p.title}</option>)}</select><Suspense fallback={<div className="empty">Opening diagram…</div>}><PressureFlow pressure={pressure} /></Suspense><p className="chart-caption">{pressure.uncertainty}. These are modelled pathways.</p></>}</section>
             </>}
-            {tab === 'score' && <ScoreDetails index={index} country={country} category={category} previous={prior.data} previousError={prior.error} previousRelease={priorRelease} onBack={() => setTab('overview')} onIndicator={name => { setMetric(name); setMode('history'); setTab('overview'); }} />}
+            {tab === 'score' && <ScoreDetails index={index} country={country} category={category} previous={prior.data} previousError={prior.error} previousRelease={priorRelease} onBack={() => setTab('overview')} onIndicator={name => navigate({ metric: name, mode: 'history', tab: 'overview' })} />}
             {tab === 'liquidity' && (liquidity.error ? <p className="validation-error">{liquidity.error}</p> : !liquidity.ready ? <div className="empty">Opening saved liquidity diagnostics…</div> : liquidity.data ? <LiquidityPanel key={`${release.id}:${code}`} report={liquidity.data} code={code} currency={country.currency} name={country.name} /> : <div className="empty">No liquidity report is included in this release. Choose a newer research release from the library.</div>)}
             {tab === 'indicators' && <><div className="section-title"><h3>The underlying indicators</h3><span className="micro">{totalIndicators} available</span></div><p className="section-note">Select an indicator to explore its history. Dates and evidence tiers belong to each observation.</p>{index.categories.map(k => <section key={k}><h4>{categories[k].label}</h4>{index.indicators.filter(i => i.category === k && i.scored).map(i => <IndicatorRow key={i.name} meta={i} country={country} onSelect={() => { setMetric(i.name); setTab('overview'); }} />)}</section>)}</>}
             {tab === 'trade' && <>
@@ -254,10 +299,11 @@ export default function App() {
           </div>
         </>}
       </aside>
-    </div> : <BusinessWorkspace key={release.id} observatory={observatory} index={business.data} taxonomy={taxonomy.data} financial={financial.data} financialReady={financial.ready} financialError={financial.error} ready={business.ready && taxonomy.ready} error={business.error || taxonomy.error} macro={index} release={release} code={code} selectedName={unknownName} companyId={companyId} branchId={branchId} onBranch={setBranchId} onCountry={selectCountry} onCompany={selectCompany} onMacro={() => { setObservatory('macro'); changeMode('fundamentals'); }} onSector={() => { const selected = companyEntry(companyId, business.data, taxonomy.data); if (observatory === 'companies' && selected) setBranchId(companyBranch(selected, taxonomy.data) ?? 'unassigned'); setObservatory('sectors'); }} onLibrary={() => setLibraryOpen(true)} />}
+    </div> : <BusinessWorkspace key={release.id} observatory={observatory} companyView={companyView} sectorView={sectorView} onCompanyView={next => navigate({ companyView: next })} onSectorView={next => navigate({ sectorView: next })} valuationTab={valuationTab} onValuationTab={next => navigate({ valuationTab: next })} onAnchor={anchor => navigate({ valuationTab: 'scenarios', anchor })} index={business.data} taxonomy={taxonomy.data} financial={financial.data} financialReady={financial.ready} financialError={financial.error} ready={business.ready && taxonomy.ready} error={business.error || taxonomy.error} macro={index} release={release} code={code} selectedName={unknownName} companyId={companyId} branchId={branchId} onBranch={(id, view) => navigate({ branchId: id, ...(view ? { sectorView: view } : {}) })} onCountry={selectCountry} onCompany={selectCompany} onMacro={() => navigate({ observatory: 'macro', mode: 'fundamentals', tab: 'overview' })} onSector={() => { const selected = companyEntry(companyId, business.data, taxonomy.data); navigate({ observatory: 'sectors', sectorView: 'browse', ...(observatory === 'companies' && selected ? { branchId: companyBranch(selected, taxonomy.data) ?? 'unassigned' } : {}) }); }} onLibrary={() => setLibraryOpen(true)} />}
     {message && <div className="toast" role="status"><Check size={16} />{message}<button aria-label="Dismiss message" onClick={() => setMessage('')}><X size={14} /></button></div>}
+    {guideOpen && <AtlasGuide onClose={() => setGuideOpen(false)} onExplore={next => { explore(next); setGuideOpen(false); }} />}
     {libraryOpen && <ResearchLibrary financial={financial.data} financialReady={financial.ready} financialError={financial.error} onFinancialImported={() => setFinancialRevision(n => n + 1)} releases={releases} active={release} unreadable={unreadable} onUse={openRelease} onImported={refreshLibrary} onClose={() => setLibraryOpen(false)} />}
-  </div>;
+  </div></NavigationContext.Provider>;
 }
 
 function IndicatorRow({ meta, country, onSelect }: { meta: Indicator; country: Country; onSelect: () => void }) {

@@ -4,13 +4,16 @@ import { EXPANDED_KPIS, expandedKpiCell, expandedVariant, expandedUnit, provider
 import type { ExpandedKpiContext } from './expandedKpis';
 import { defaultCompanyListFeatures, parseCompanyListFeatures, matchesNumericCondition } from './companyListFeatures';
 import type { CompanyListFeatures, CompanyListNumericCondition, CompanyListNumericOperator } from './companyListFeatures';
+import { calculateValuationAttractiveness } from './valuationAttractiveness';
+import { parseCompanyListRange } from './companyListRanges';
+import type { CompanyListRange } from './companyListRanges';
 
 export type CompanyListWindow = 'latest' | '3' | '5' | `provider:${string}`;
-export type CompanyListCalculation = 'latest' | 'average' | 'median' | 'min' | 'max' | 'growth' | `provider:${string}`;
+export type CompanyListCalculation = 'latest' | 'average' | 'median' | 'min' | 'max' | 'growth' | `provider:${string}` | `terminal_${0 | 25 | 50 | 75 | 100}`;
 export type CompanyKpiUnit = 'text' | 'date' | 'money' | 'price' | 'percent' | 'points' | 'multiple' | 'count' | 'number' | 'shares_millions';
 export type CompanyKpi = { id: string; label: string; category: string; description: string; formula: string; unit: CompanyKpiUnit; windows: CompanyListWindow[]; calculations: CompanyListCalculation[]; supportedVariants?: CompanyListVariant[]; coverage?: number; source?: string; snapshot?: string; searchTerms?: string[] };
 export type CompanyListVariant = { window: CompanyListWindow; calculation: CompanyListCalculation; windowLabel: string; calculationLabel: string };
-export type CompanyListColumn = { id: string; kpiId: string; window: CompanyListWindow; calculation: CompanyListCalculation };
+export type CompanyListColumn = { id: string; kpiId: string; window: CompanyListWindow; calculation: CompanyListCalculation; range?: CompanyListRange };
 export type CompanyListCell = { value: number | string | null; display: string; detail: string; unit: CompanyKpiUnit; currency: string | null; date: string | null; status?: 'loading' | 'error' | 'available' | 'missing' };
 export type CompanyListNumericRule = CompanyListNumericCondition & { column: CompanyListColumn };
 export type CompanyListFilters = { query: string; sectorId: string; branchId: string; country: string; route: ResearchGaugeRoute | 'all'; readiness: ResearchGaugeReadiness | 'all'; presence: 'all' | 'latest' | 'older'; watchlistOnly: boolean; preset: 'all' | 'cash_consistency' | 'cash_and_margin'; numericRules: CompanyListNumericRule[] };
@@ -25,6 +28,9 @@ const latest: CompanyListWindow[] = ['latest'];
 const history: CompanyListWindow[] = ['latest', '3', '5'];
 const aggregates: CompanyListCalculation[] = ['latest', 'average', 'median', 'min', 'max'];
 const kpi = (id: string, label: string, category: string, unit: CompanyKpiUnit, description: string, formula: string, windows = latest, calculations: CompanyListCalculation[] = ['latest']): CompanyKpi => ({ id, label, category, unit, description, formula, windows, calculations });
+const terminalCredits = [100, 75, 50, 25, 0] as const;
+const terminalCalculations: CompanyListCalculation[] = terminalCredits.map(credit => `terminal_${credit}` as const);
+export const VALUATION_RANKING_KPI_IDS = new Set(['valuation_attractiveness', 'mid_npv_percent', 'dcf_price_ratio', 'cash_price_coverage', 'low_npv_percent']);
 
 /** Only fields present in the verified research artifact, or same-period arithmetic on them. */
 export const COMPANY_KPIS: CompanyKpi[] = [
@@ -55,6 +61,13 @@ export const COMPANY_KPIS: CompanyKpi[] = [
   kpi('quarter_cash_change', 'Quarter FCF change YoY', 'Recent quarter', 'money', 'Signed FCF difference between compatible same-quarter reports, in that quarter pair’s currency.', 'Latest quarter provider FCF − prior-year quarter provider FCF'),
   kpi('mid_dcf', 'Starter Mid DCF', 'Starter valuation', 'money', 'Frozen standard starter whole-equity value; reviewed studies and local edits are separate.', 'Mid annual cash PV + Mid terminal PV'),
   kpi('mid_npv', 'Starter Mid NPV', 'Starter valuation', 'money', 'Mid value less the dated saved derived equity price. Terminal contributes once through value.', 'Mid DCF − saved derived equity price'),
+  { ...kpi('valuation_attractiveness', 'Valuation attractiveness', 'Starter valuation', 'percent', 'Sort high to low to compare scenario value with the dated saved equity price. Count all terminal value for the original Mid NPV / price, or explicitly discount terminal value as a sensitivity. Not an expected return, probability or business-quality score.', '100 × ((Mid cash PV + (selected terminal credit / 100) × Mid terminal PV) / saved equity price − 1)', latest, terminalCalculations),
+    searchTerms: ['rank', 'ranking', 'attractive', 'NPV', 'DCF', 'terminal', 'surplus'],
+    supportedVariants: terminalCredits.map(credit => ({ window: 'latest', calculation: `terminal_${credit}`, windowLabel: 'Standard starter snapshot', calculationLabel: `Count ${credit}% of terminal value` })) },
+  kpi('mid_npv_percent', 'Starter NPV / price', 'Starter valuation', 'percent', 'Unweighted Mid NPV relative to the dated saved equity price. A 30% discount to value requires at least 42.86% NPV / price. This is not an annualized return.', '100 × (Mid DCF − saved equity price) / saved equity price'),
+  kpi('dcf_price_ratio', 'Starter DCF / price', 'Starter valuation', 'multiple', 'Mid value for each unit of dated saved equity price. Produces the same ordering as Mid NPV / price; it is not an independent signal.', 'Mid DCF / saved equity price'),
+  kpi('cash_price_coverage', 'Starter cash PV / price', 'Starter valuation', 'percent', 'How much of the saved equity price is covered by the Mid explicit forecast cash PV, before any terminal sale. Signed funding needs are retained.', '100 × Mid annual cash PV / saved equity price'),
+  kpi('low_npv_percent', 'Starter Low NPV / price', 'Starter valuation', 'percent', 'Low scenario NPV relative to dated saved equity price. The Low scenario is a sensitivity, not a probability bound or guaranteed floor.', '100 × (Low DCF − saved equity price) / saved equity price'),
   kpi('low_npv', 'Starter Low NPV', 'Starter valuation', 'money', 'Low scenario value less the dated saved derived equity price. No scenario probability is assigned.', 'Low DCF − saved derived equity price'),
   kpi('low_dcf', 'Starter Low DCF', 'Starter valuation', 'money', 'Low whole-equity scenario value; a sensitivity, not a guaranteed floor.', 'Low annual cash PV + Low terminal PV'),
   kpi('purchase_ceiling', 'Starter 30% ceiling', 'Starter valuation', 'money', 'Fixed screen policy of 30% below positive Mid whole-equity value; editable in working Value.', '0.70 × positive Mid DCF'),
@@ -95,6 +108,7 @@ export function companyListWindowLabel(column: CompanyListColumn): string {
   return category === 'Company' ? 'Saved directory' : category === 'Market' ? 'Saved quote' : category === 'Starter valuation' ? 'Standard starter snapshot' : category === 'Recent quarter' ? 'Saved quarter comparison' : 'Latest annual report';
 }
 export function companyListCalculationLabel(column: CompanyListColumn): string {
+  if (column.kpiId === 'valuation_attractiveness' && terminalCalculations.includes(column.calculation)) return `Count ${column.calculation.slice('terminal_'.length)}% of terminal value`;
   const provider = expandedVariant(column as CompanyListColumn);
   return provider ? providerCalculationLabel(provider) : column.calculation === 'growth' ? 'CAGR' : column.calculation === 'latest' ? counts.has(column.kpiId) ? 'Positive observations' : 'Saved value' : column.calculation;
 }
@@ -150,6 +164,16 @@ export function companyListCell(row: ResearchGaugeRow, column: CompanyListColumn
     return finish(`${value === null ? v.reason ?? 'Dated saved quote or currency unavailable.' : `Quote dated ${date}.`} Source ${v.priceBasis?.sourceId ?? 'unavailable'}, saved ${v.priceBasis?.sourceAsOf ?? 'unavailable'}.`);
   }
   if (metric.category === 'Starter valuation') {
+    if (VALUATION_RANKING_KPI_IDS.has(id)) {
+      date = v.priceDate;
+      const credit = id === 'valuation_attractiveness' ? Number(column.calculation.slice('terminal_'.length)) : 100;
+      const result = calculateValuationAttractiveness(row, credit);
+      const values: Record<string, number | null> = { valuation_attractiveness: result.surplusPercent, mid_npv_percent: result.midNpvPercent, dcf_price_ratio: result.dcfPriceRatio, cash_price_coverage: result.cashCoveragePercent, low_npv_percent: result.lowNpvPercent };
+      value = values[id];
+      const input = (amount: number | null) => amount === null ? 'unavailable' : `${formatter.format(amount)} ${v.currency} m`;
+      const comparison = id === 'valuation_attractiveness' ? `Terminal credit ${credit}% is an explicit assumption. Adjusted value ${input(result.adjustedValue)}; adjusted NPV ${input(result.adjustedNpv)}.` : id === 'low_npv_percent' ? `Low scenario DCF ${input(v.lowValue)}; this scenario is not a guaranteed floor. Mid cash and terminal components below are context, not the Low scenario inputs.` : 'Full terminal value is included once in Mid DCF.';
+      return { ...finish(`${result.reason ?? (value === null ? 'Required scenario comparison unavailable.' : 'Higher values mean more modeled value relative to the saved price.')} ${comparison} Inputs: cash PV ${input(v.cashPV)}; terminal PV ${input(v.terminalPV)}; equity price ${input(v.candidateEquity)}. Saved price ${v.priceDate ?? 'unavailable'}; source ${v.priceBasis?.sourceId ?? 'unavailable'}, saved ${v.priceBasis?.sourceAsOf ?? 'unavailable'}. ${coverageLabels[row.readiness]}. Frozen standard starter; reviewed studies and edited Value assumptions are separate. These percentages are neither annualized returns nor probabilities. A 30% discount to the compared value requires NPV / price of at least 42.86%, not 30%. ${row.issues.join(' ')}`), status: value === null ? 'missing' : 'available' };
+    }
     currency = unit === 'money' ? v.currency || null : null;
     date = ['mid_npv', 'low_npv', 'saved_equity_price', 'cash_factor', 'cash_factor_30'].includes(id) ? v.priceDate : null;
     const values: Record<string, number | null> = { mid_dcf: v.value, mid_npv: finite(v.value) && finite(v.candidateEquity) ? calculated(v.value - v.candidateEquity) : null, low_npv: v.lowNPV, low_dcf: v.lowValue, purchase_ceiling: v.ceiling, saved_equity_price: v.candidateEquity, cash_pv: v.cashPV, terminal_pv: v.terminalPV, terminal_share: finite(v.terminalShare) ? calculated(v.terminalShare * 100) : null, cash_factor: v.reverseCashFactor, cash_factor_30: v.reverseCashFactor30 };
@@ -224,7 +248,12 @@ const validId = (input: unknown): input is string => typeof input === 'string' &
 const text = (input: unknown, fallback: string, limit: number) => typeof input === 'string' ? input.replace(/[\u0000-\u001f\u007f]/g, '').slice(0, limit) : fallback;
 function parseColumns(input: unknown): CompanyListColumn[] {
   const seen = new Set<string>(), result: CompanyListColumn[] = [];
-  if (Array.isArray(input)) for (const candidate of input.slice(0, 128)) if (validColumn(candidate) && !seen.has(candidate.id)) { seen.add(candidate.id); result.push({ id: candidate.id, kpiId: candidate.kpiId, window: candidate.window, calculation: candidate.calculation }); if (result.length === COMPANY_LIST_MAX_COLUMNS) break; }
+  if (Array.isArray(input)) for (const candidate of input.slice(0, 128)) if (validColumn(candidate) && !seen.has(candidate.id)) {
+    seen.add(candidate.id);
+    const unit = companyListUnit(candidate), range = unit === 'text' || unit === 'date' ? undefined : parseCompanyListRange(candidate.range);
+    result.push({ id: candidate.id, kpiId: candidate.kpiId, window: candidate.window, calculation: candidate.calculation, ...(range ? { range } : {}) });
+    if (result.length === COMPANY_LIST_MAX_COLUMNS) break;
+  }
   return result.length ? result : DEFAULT_COMPANY_LIST_COLUMNS.map(c => ({ ...c }));
 }
 function parseFilters(input: unknown): CompanyListFilters {

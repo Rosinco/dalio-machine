@@ -1,4 +1,4 @@
-param([string]$Executable, [switch]$FinancialOnly, [switch]$ValuationOnly, [switch]$ResearchGaugeOnly, [switch]$CompanyListOnly, [switch]$ExpandedCompanyListOnly, [switch]$CompressedCdp)
+param([string]$Executable, [switch]$FinancialOnly, [switch]$ValuationOnly, [switch]$ResearchGaugeOnly, [switch]$CompanyListOnly, [switch]$ExpandedCompanyListOnly, [switch]$ValuationAttractivenessOnly, [switch]$CompanyListRangeOnly, [switch]$UsabilityOnly, [switch]$NavigationOnly, [switch]$CompressedCdp)
 $ErrorActionPreference = 'Stop'
 $project = Split-Path (Split-Path $PSCommandPath -Parent) -Parent
 if (-not $Executable) { $Executable = Join-Path $project 'src-tauri\target\x86_64-pc-windows-msvc\release\macro-atlas.exe' }
@@ -20,6 +20,10 @@ $runner.StartInfo.FileName = $node
 $runner.StartInfo.Arguments = '--eval "' + $bootstrap + '" "' + $test + '" "' + $Executable + '"'
 if ($FinancialOnly) { $runner.StartInfo.Arguments += ' --financial-only' }
 if ($ValuationOnly) { $runner.StartInfo.Arguments += ' --valuation-only' }
+if ($ValuationAttractivenessOnly) { $runner.StartInfo.Arguments += ' --valuation-attractiveness-only' }
+if ($CompanyListRangeOnly) { $runner.StartInfo.Arguments += ' --company-list-range-only' }
+if ($UsabilityOnly) { $runner.StartInfo.Arguments += ' --usability-only' }
+if ($NavigationOnly) { $runner.StartInfo.Arguments += ' --navigation-only' }
 if ($ExpandedCompanyListOnly) { $runner.StartInfo.Arguments += ' --expanded-company-list-only' }
 if ($CompanyListOnly) { $runner.StartInfo.Arguments += ' --company-list-only' }
 if ($ResearchGaugeOnly) { $runner.StartInfo.Arguments += ' --research-gauge-only' }

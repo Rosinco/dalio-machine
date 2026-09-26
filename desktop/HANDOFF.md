@@ -1,3 +1,403 @@
+# Macro Atlas 0.22.1 handoff — 2026-09-13
+
+## Current slice — Back and Forward through analysis
+
+The user found that fixed Back to Lists/Company profile links did not provide a
+way to return to the actual preceding analysis screen. The top-left Back and
+Forward buttons now retrace company sections, peer companies, industry screens,
+branch comparisons, country Macro screens, valuation tabs and chart anchors.
+Alt+Left/Right do the same; tooltips name the destination. Empty directions are
+disabled. Repeated chart links still scroll without creating duplicate history.
+Reselecting the same company/country from search adds no invisible duplicate.
+
+App owns atomic route changes, including sectorView. Compound actions no longer
+write through the previous observatory's closure. History restores entity,
+section, Macro controls and scroll, allowing asynchronous content to appear.
+Presentation choices are cached separately per release and screen: financial
+frequency/metric/currency/statement/period, peer metric, directory filters/pages,
+Lists panels/pages/picker choices, research-screen filters/selection and branch
+comparison controls/search/title/unsaved notes. Disclosures and valuation display
+choices reopen. The mobile header stays available while scrolling; chart headings
+land below it. The guide explains these controls.
+
+This is navigation history, not financial Undo. Authored valuations, saved
+revisions, persisted list preferences and company notebooks are not rolled back.
+Navigation preserves the existing valuation remount autosave behavior; tests
+compare authored draft/source content while allowing regenerated envelope IDs.
+History/presentation cache last for this app session, with 80 past/forward entries.
+The last screen persists; reload/restart begins empty history. Research-release
+changes clear history/cache so Back cannot cross into another release.
+
+## Verification and installation
+
+**0.22.1 is installed and independently verified** through the existing
+`C:\Users\Adamb\OneDrive\Desktop\Macro Atlas.lnk` shortcut, targeting
+`C:\Users\Adamb\AppData\Local\MacroAtlas\0.22.1\Macro Atlas.exe`.
+The normal-profile app is running and 0.22.0 is retained.
+
+**314 unit/transport tests** pass across 37 files. **105 browser checks** pass:
+10 navigation, 10 usability, 7 ranges, 13 original Lists, 10 expanded Lists and
+55 valuation checks. **30 Windows checks** pass on the final executable:
+11 navigation, 11 usability and 8 ranges, including full process restarts.
+These browser/Windows reports record no runtime errors or external requests.
+Final navigation/usability runs cover the final source. The broader list/value
+regressions precede the final same-destination guard; those checks retain their
+exact scope rather than implying a second complete run.
+
+Navigation evidence verifies a 420px financial scroll position, quarterly FCF,
+statement periods, peer metric, full branch comparison settings and unsaved notes,
+directory filters/page, repeated anchors, modified-key shortcuts, mobile Back
+after scrolling, forward-path branching and protected storage. Lists additionally
+verifies all 6,319 filtered CSV rows and provider loading/checksum failure behavior.
+
+Final executable SHA-256: `743293388822a27b6d31b016292a100947932483a0f80911e2edc062406204bb`.
+Frontend and Windows builds pass; existing chunk-size and Microsoft CRT PDB
+warnings remain. Reports/logs/screenshots are local under desktop/test-results,
+including navigation-browser-report.json, windows-native-navigation-report.json,
+windows-installation-0.22.1.json and navigation-release-verification-0.22.1.json.
+The 0.22.0 executable/docs/receipts were retained in test-results/releases/0.22.0/.
+
+## Source state
+
+No source pack, financial calculation, starter defaults or reviewed study changed.
+Workflow documentation is mirrored to canonical main. Desktop stays on
+feat/offline-atlas; canonical stays main. The 0.20.0, 0.21.0, 0.22.0 and 0.22.1
+slices remain uncommitted/unpushed; no new commit or push request was made.
+New navigation files must be included when a later scoped closeout is requested:
+src/navigation.ts, src/navigation.test.ts, src/NavigationContext.tsx and
+tests/navigation-flows.mjs, alongside the earlier untracked desktop files.
+
+## Earlier release handoffs — historical
+
+# Macro Atlas 0.22.0 handoff — 2026-09-13
+
+## Current slice — business overview and research workflow
+
+The user found the 0.21.0 changes insufficient, particularly navigation and the
+lack of business figures before valuation. This slice restructures discovery,
+company analysis and research continuity around that workflow.
+
+Fresh profiles open Companies → Lists. Desktop has visible Companies, Industries
+and Macro navigation; mobile retains a selector. Lists leads with search,
+watchlist, saved view and Columns; filters, column sets and view tools open in
+labelled panels. Active constraints are removable chips. Numeric header ranges,
+exact variants/currencies, saved views and full filtered CSV remain intact.
+The selected saved view is marked edited when its settings differ. Global Lists
+no longer offers an ambiguous return to an arbitrary company.
+
+Company navigation separates discovery from analysis and keeps a shared company
+identity/Back to Lists bar, including Valuation. App owns the company section
+state directly; explicit section changes persist synchronously, avoiding a race
+when opening Research and immediately restarting. Macro and sector navigation
+retain their existing data and tools. Small screens reset page scroll when a
+company section changes. The directory map remains optional for company pages.
+
+Financials is now an ordered business overview with six default charts:
+revenue; operating-profit/operating-cash margins; operating/provider-free cash;
+investing cash; total/tangible/intangible assets; and equity/net debt/cash.
+Each group has a headline and short explanation. Annual/quarterly controls,
+actual periods, reporting currencies and source dates remain available.
+Negative cash, zeroes, missing periods and currency gaps stay intact. Total
+assets includes components, net debt already reflects cash, and book values
+are not selling prices. The detailed selector, statements and market history
+remain below; coverage and technical source details are expandable.
+
+ProviderCapexPanel reuses the verified additional-KPI loader for KPI64 latest,
+five-year mean and ten annual history positions. It preserves currency and
+missing/error boundaries. Exact fiscal dates are unavailable for these provider
+variants, so they are kept separate from dated statement charts and do not
+follow the statement frequency selector. Maintenance/growth capex is not split;
+investing cash must not substitute for capex. The panel also renders when a
+listing lacks usable financial statements. Available business descriptions
+reuse saved profile segments/prose/source dates; no descriptions are invented.
+
+Valuation opens with its current basis, Low/Mid/High value and NPV, then cash
+and DCF/NPV charts. Model/source details and payback breakdowns expand when
+needed; assumptions remain reachable through Edit price & assumptions and
+section navigation. Personal-investment values and company-millions forecasts
+stay explicit. No financial calculation, starter default, terminal credit,
+source pack or authored valuation was changed by this slice.
+
+Research notes adds a four-part company notebook for the business model,
+financial reasoning, risks and next questions. Explicit typing saves locally
+under macro-atlas-company-notes-v1:<listing-id>, recording release/source context.
+Opening notes writes nothing. Unreadable/future/wrong-company records are
+preserved and disabled; write failures remain visible. Notes do not mark a
+company reviewed or replace its valuation. Archived research remains below.
+KPI explanations now cover 18 more financial fundamentals, with verified IDs,
+examples and exact growth/per-share variant handling.
+
+## Verification and installation
+
+**0.22.0 is installed** at
+`C:\Users\Adamb\AppData\Local\MacroAtlas\0.22.0\Macro Atlas.exe`.
+The existing OneDrive Desktop shortcut targets this version; 0.21.0 is retained.
+Independent verification checks executable identity and version, shortcut,
+running normal-profile process, financial packs and copied documentation.
+
+**310 unit/transport tests** pass across 36 files. **103 core browser checks**
+pass: 10 usability, 7 ranges, 13 original Lists, 10 expanded Lists, 8 attractiveness
+and 55 valuation checks. Another 10 financial-history checks and 14 whole-app
+workflow checks pass. **19 Windows checks** pass on the final executable:
+11 usability and 8 KPI ranges, including full process restarts. The six core
+browser reports and both Windows reports contain no runtime errors or external
+requests. The separate financial-history harness lacks those same global arrays.
+
+Tests cover real saved capex values, charts with negative/zero/missing observations,
+source/currency boundaries, all 6,319 filtered CSV rows, saved views and exact
+per-company notebook/list/valuation persistence. Malformed and future notebook
+records are preserved without writes. Macro/Industry navigation returns to the
+same saved company list. Native tests use isolated profiles, leaving the user's
+normal profile separate. The final browser usability and both Windows suites
+use the final build; numerical and other browser regressions preceded the last
+Financials spacing-only correction.
+
+Final executable SHA-256:
+`9819032c62066e6189a0ff45953d05ebe46dfb4e58f53980e4f7709d6f4c2e7d`.
+
+Six browser text samples are 12–14px with contrast 5.21–10.58. Default Lists
+shows 11 complete desktop rows in Chrome; the terminal preset shows eight.
+The Windows default view shows ten desktop and two narrow-screen rows.
+The first narrow Financials chart exposes 149px in Chrome and 79px in Windows.
+The narrow Financials layout was additionally corrected for the actual Windows
+scrollbar width after native checks found the first chart below the viewport.
+Mobile Value shows all three scenario amounts; its cash chart requires scrolling.
+This is targeted usability validation, not a full accessibility certification.
+
+Reports are in desktop/test-results: the six core browser reports, the financial
+workflow report, workflow-context-0.22.0/, business-overview-review-2026-09-13/,
+Windows range/usability reports and the versioned installation/release receipts.
+The final frontend and Windows builds pass. Existing chunk-size and Microsoft
+CRT PDB warnings remain. Earlier failed development runs exposed stale test
+selectors, a navigation persistence race and real narrow-layout issues; their
+final reruns are recorded separately. Older Python/macro numerical suites were
+not rerun because this slice changes the desktop presentation and navigation.
+
+The research gauge remains
+`fcbcccadbdd86da4a6521a64c2be8907ceff91f23dc1aa2e7fcfd2f991ba0e2b`;
+the expanded-KPI manifest remains
+`d1e1b005547a9be95173250b4a1bcf747c0149a69a7504dc2539b5f825f1c569`.
+0.21.0 binary/docs/reports were retained in test-results/releases/0.21.0/ before
+replacement builds. The installed old version is retained as well. Binaries,
+data packs and local verification reports are ignored by Git.
+
+## Source state and next use
+
+0.20.0, 0.21.0 and 0.22.0 changes remain uncommitted and unpushed; no new closeout
+was requested. Desktop remains feat/offline-atlas, canonical guidance remains
+main, and the prior committed refs below are unchanged. Workflow documentation
+is mirrored in docs/usability-workflow-2026-09-13.md. Start with Companies →
+Lists → a company → Financials, then move to Valuation and Research notes.
+The business overview explains the saved evidence; further underwriting still
+needs company reports, cash reconciliation, current price/share checks and
+explicitly reviewed assumptions.
+
+## Earlier release handoffs — historical
+
+# Macro Atlas 0.21.0 handoff — 2026-09-13
+
+## Current slice — KPI ranges and usability
+
+Companies → Lists now has inclusive Min and Max inputs beneath every numeric
+KPI heading, including provider variants and each terminal-credit comparison.
+Blank bounds are unrestricted; all active ranges and advanced conditions must
+match. Missing/loading/failed observations cannot satisfy an active range.
+Monetary ranges require a selected currency and use displayed units, without FX
+conversion. Signed decimals and Swedish decimal commas are supported. Partial,
+invalid and inverted bounds remain visible and match no rows; the table headers
+stay available at zero results. Clear one range, all ranges or all list filters.
+
+Ranges retain exact column identity in v2 preferences and saved views. Reordering
+preserves a range; changing the KPI/period/calculation clears it. Removal/presets
+remove attached ranges while keeping independently authored advanced conditions.
+Up to 32 column ranges are separate from the 12-condition limit. Changing bounds
+reuses cached numeric observations rather than formatting every source cell again.
+CSV exports the full filtered population, not just the current page.
+
+The top-bar Start here guide links company discovery, industries and macro data.
+Its company route opens Lists directly. KPI heading information buttons explain
+meaning, period, calculation, units and source, even with zero matches. Common
+metrics include plain examples; growth/aggregate/per-share variants remain distinct.
+Visible terminal headings are shorter, with full assumptions retained in help and
+accessible names. Terminal preset comparisons precede contextual columns.
+
+Company Financials gets the main content width; Show listing map retains optional
+directory geography. A workflow bar connects Lists, Financials, Valuation and
+Research. Financial trends precede market observations and all 29 selected financial
+measures have explanations. Valuation adds DCF/NPV/terminal definitions, top section
+links, keyboard tabs, nearby units and clearer missing-input actions. DCF/NPV charts
+follow the value summary. Calmer surfaces and stronger text improve readability.
+Small screens use horizontal section navigation and a correctly sized chart area;
+Lists unpins the company column so it cannot cover KPI inputs. Macro axis labels
+now distinguish millions from billions correctly.
+
+Cash-flow explanations no longer claim that all provider FCF excludes lease
+interest: lease, interest and investment classifications require reconciliation.
+Provider publication dates are explicitly unverified metadata. No financial source,
+valuation calculation, starter default, reviewed study or draft-write logic changed.
+
+See `docs/company-list-kpi-ranges.md` and
+`docs/usability-workflow-2026-09-13.md`, mirrored to canonical main.
+
+## Verification and installation
+
+**0.21.0 is installed** at
+`C:\Users\Adamb\AppData\Local\MacroAtlas\0.21.0\Macro Atlas.exe`.
+The existing OneDrive Desktop shortcut targets this version; 0.20.0 is retained.
+The version-specific installation receipt records executable/version metadata,
+shortcut, running process, financial-pack and copied-document verification.
+
+**305 unit/transport tests** pass across 34 files. **99 production-browser checks**
+pass: 7 ranges, 6 usability, 13 original Lists, 10 expanded Lists, 8 attractiveness and
+55 valuation regressions. **14 Windows checks** pass on the final executable:
+8 ranges (including complete process restart) and 6 usability. All focused reports
+show no runtime errors or external requests. Native tests use isolated profiles;
+the normal installed profile is not seeded with test preferences.
+
+Tests verify all 6,319 filtered CSV rows, provider loading/checksum failure/recovery,
+blank/inverted/comma bounds, currency separation, saved views, exact variant
+identity and unchanged protected valuation bytes. UI checks cover guide focus,
+zero-result help, company/list return navigation, actual 390px input hit-testing,
+financial/valuation anchors and keyboard tabs. Six text samples meet 12px and 4.5:1
+contrast (observed minimum 5.21:1); this is not a full accessibility certification.
+Independent desktop/mobile screenshot review confirms financial charts fit 390px.
+
+Final Windows executable SHA-256:
+`a624843a5fa52ec4e7209a35da52d803bc5d37e33c87580433bff39485de24b9`.
+The final frontend build and Windows build pass. Existing large-chunk and missing
+Microsoft CRT PDB warnings remain. Earlier overlapping preview rebuilds invalidated
+one browser run; the complete valuation suite subsequently passed on stable files.
+Older macro/Python suites were not rerun for this frontend-only slice.
+
+Research gauge SHA-256 remains
+`fcbcccadbdd86da4a6521a64c2be8907ceff91f23dc1aa2e7fcfd2f991ba0e2b`;
+provider manifest remains
+`d1e1b005547a9be95173250b4a1bcf747c0149a69a7504dc2539b5f825f1c569`.
+0.20.0 executable/docs/reports were retained under `test-results/releases/0.20.0/`
+before replacement builds. Test evidence, exported data and binaries are local and
+Git-ignored. Current reports: `company-list-range-browser-report.json`,
+`usability-browser-report.json`, `windows-native-company-list-range-report.json`,
+`windows-native-usability-report.json`, existing list/valuation browser reports,
+`windows-installation-0.21.0.json` and `usability-release-verification-0.21.0.json`.
+Screenshots include `usability-value-financial-2026-09-13/` and
+`usability-browser-*.png` / `company-list-range-browser-*.png`.
+
+## Source state and continuation
+
+0.20.0 and 0.21.0 remain uncommitted and unpushed. No new closeout was requested.
+Desktop stays on `feat/offline-atlas`; canonical guidance/docs remain on `main`.
+The prior content/handoff commit refs in the 0.20.0 record below are unchanged.
+Use Start here → Find companies to research → Lists, choose useful KPIs and set
+ranges, then open a company and review its source dates before valuation work.
+The separate four-company source check is in
+`docs/terminal-stress-candidate-review-2026-09-13.md`; it did not rewrite app values.
+
+## Earlier release handoffs — historical
+
+The following 0.20.0 and earlier records describe those checkpoints.
+
+# Macro Atlas 0.20.0 handoff — 2026-09-13
+
+## Current slice — valuation attractiveness and terminal sensitivities
+
+The user requested sortable attractiveness fields for NPV, DCF and terminal value,
+then asked to compare terminal settings before choosing a preference. Companies →
+Lists now offers **Column preset → Valuation attractiveness**, sorted by full Mid
+NPV / dated saved equity price. **Terminal sensitivities** shows 100%, 50% and 0%
+terminal credit together; 75% and 25% are also independently selectable per column.
+
+Formula: `100 × ((cash PV + credit / 100 × terminal PV) / equity price − 1)`.
+Terminal enters once. Supporting fields show Mid NPV/price, DCF/price, annual cash
+PV/price and Low NPV/price. The full DCF is the original comparison; half credit
+is an explicit stress, not a calibrated risk weight. No score/probability/annual
+return or investment verdict is inferred. A 30% discount to value corresponds
+to 42.857142…% NPV/price, not 30%. The catalogue now contains 256 fields, including
+223 with some observations; provider inputs and their coverage are unchanged.
+
+Dated source guards withhold incomplete, unsuitable or nonfinite comparisons.
+Manual financial, no-history, unreconciled and classification-conflict cases stay
+unranked. Partial history is labelled; negative/funding values are retained.
+Percentages sort across currencies, with source currency in details. Price dates
+remain visible even after removing the explicit price-date column. Every filter
+and saved view retains its own terminal-credit identity; v2 needs no migration.
+No provider quote reprices the frozen starter and no list action writes Value
+or reviewed-study drafts. Both app sidebars read version from package metadata.
+
+The independent experiment checks 95,700 combinations across 19,140 listings;
+13,002 have eligible dated comparisons and 6,138 are withheld. Within the existing
+five-year positive cash/EBIT lens, 506 match the 30% margin at full terminal credit,
+337 at half and 183 at zero. Median eligible quote age is 216 days. The experiment
+is sensitivity analysis on saved data, not a point-in-time investment backtest.
+See `docs/valuation-attractiveness-sensitivity-2026-09-13.md` and ADR 0043.
+
+## Verification and installation
+
+**0.20.0 is installed and verified** at
+`C:\Users\Adamb\AppData\Local\MacroAtlas\0.20.0\Macro Atlas.exe`.
+The existing OneDrive Desktop Macro Atlas shortcut targets this executable and
+working folder. Normal-profile process 2760 was running at verification; 0.19.0
+is retained. Executable hashes/version metadata, financial packs, shortcut and
+copied documentation match the tested release.
+
+The final Windows executable passes nine dedicated attractiveness checks and
+11 expanded-list regression checks. Each includes a full process restart and
+unchanged authored valuation bytes. Actual CSV output verifies all 89 and 955
+filtered rows respectively. No external requests, runtime errors or cleanup
+warnings occurred. Desktop and narrow-screen views were inspected. Native checks
+use isolated profiles; the ordinary profile was not seeded with test preferences.
+
+Final executable SHA-256:
+`609160d97d94c1043dc968d326a6cbbb12f5e3dae3bb859609fbaafa07483075`.
+The final frontend and Windows builds pass; the latter took 1m30s and retains
+the existing missing Microsoft CRT PDB linker warning. The frontend retains the
+existing large-chunk warning. Neither warning represents a failed build.
+
+Current evidence: 295 unit/transport tests pass across 33 files. Eight new
+production-browser checks pass on the final frontend, including exact source
+formulas, both presets, retained assumptions, signed/missing results, saved views,
+all 89 filtered Swedish CSV rows and unchanged authored valuation bytes. Existing
+expanded-list (10) and original company-list (13) browser checks also pass; the
+only later changes clarify formula text, Low inputs and the app version label.
+No external requests or runtime errors occurred in these flows.
+
+Research gauge SHA-256 remains
+`fcbcccadbdd86da4a6521a64c2be8907ceff91f23dc1aa2e7fcfd2f991ba0e2b`.
+Provider manifest SHA-256 remains
+`d1e1b005547a9be95173250b4a1bcf747c0149a69a7504dc2539b5f825f1c569`.
+No raw source, generated financial/KPI artifact or valuation method was changed.
+
+Evidence lives under desktop `test-results/`: `unit-tests-0.20.0.log`,
+`frontend-build-0.20.0.log`, `windows-build-0.20.0.log`,
+`valuation-attractiveness-browser-report.json`,
+`windows-native-valuation-attractiveness-report.json`,
+`windows-native-expanded-company-list-report.json`,
+`windows-installation-0.20.0.json`,
+`valuation-attractiveness-release-verification-0.20.0.json` and
+`valuation-attractiveness-sensitivity-2026-09-13/`. Prior 0.19.0 executable,
+receipts and documentation are retained under `test-results/releases/0.19.0/`.
+Generated inputs, receipts and executables remain local and gitignored.
+The final release receipt binds tests, source identities, executable and installation.
+Older macro/Python and full valuation suites were not rerun for this list-only slice.
+The task preview is stopped; the installed Windows app remains running.
+
+## Source state and continuation
+
+This 0.20.0 slice is not committed or pushed. It follows desktop handoff commit
+`614d6bcb5c39688705d456f6d342dc5e68b85c02` on `feat/offline-atlas` and canonical
+handoff commit `a4872be08092d9f1359d820e48479dceafb6e345` on `main`.
+Methodology/ADR and company-specific guidance are mirrored into canonical main;
+its other macro and source-priority text is preserved. No branch merge is intended.
+
+Use **Terminal sensitivities** with the historical cash/EBIT lens to form a small
+research list. Review sustainable owner cash, financing, ownership, reinvestment
+and current price before changing company Value assumptions. A terminal haircut
+alone cannot repair distorted cash definitions or historical price/share proxies.
+
+## Earlier release handoffs — historical
+
+The following checkpoint records 0.19.0 and earlier work. Its source closeout and
+installation claims apply to those releases, not the uncommitted 0.20.0 slice.
+
 # Macro Atlas 0.19.0 handoff — 2026-09-13
 
 ## Source closeout — 2026-09-13

@@ -1,3 +1,4 @@
+import { selectObservatory, openCompanyFinancials } from './workspace-navigation.mjs';
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
@@ -20,7 +21,7 @@ async function openCompany(page, name, id) {
 }
 
 async function reopen(page, id) {
-  await page.reload();
+  await page.reload(); await openCompanyFinancials(page);
   await page.locator(`[data-company="${id}"][data-business-ready="true"]`).waitFor();
   await page.getByLabel('Company valuation', { exact: true }).click();
   await page.locator(`[data-valuation-company="${id}"]`).waitFor();
@@ -57,8 +58,8 @@ function modelPaths(draft, sale = false) {
 
 async function rangeTable(page, kind) {
   const card = page.locator(`section[data-valuation-chart="${kind}"]`);
-  const summary = card.getByText(kind === 'dcf' ? 'Inspect annual DCF ranges' : 'Inspect cumulative NPV ranges', { exact: true });
-  const details = summary.locator('..');
+  const details = card.locator('details.cash-flow-range-table');
+  const summary = details.getByText(kind === 'dcf' ? 'Inspect annual DCF ranges' : 'Inspect cumulative NPV ranges', { exact: true });
   if (await details.getAttribute('open') === null) await summary.click();
   return card;
 }
@@ -132,8 +133,8 @@ export async function valuationRangeFlows(page, project, { native = false } = {}
     // Close both tables before measuring either card: desktop cards share a grid
     // row, so the other card's expanded table otherwise stretches its screenshot.
     for (const kind of ['dcf', 'npv']) {
-      const details = page.locator(`section[data-valuation-chart="${kind}"] details`);
-      if (await details.getAttribute('open') !== null) await details.locator('summary').click();
+      const details = page.locator(`section[data-valuation-chart="${kind}"] details.cash-flow-range-table`);
+      if (await details.getAttribute('open') !== null) await details.locator(':scope > summary').click();
     }
     for (const viewport of [{ width: 1440, height: 960 }, { width: 390, height: 844 }]) {
       await page.setViewportSize(viewport);
@@ -225,7 +226,7 @@ export async function valuationRangeFlows(page, project, { native = false } = {}
       for (const [key, value] of Object.entries(original.drafts)) if (touchedKey(key)) localStorage.setItem(key, value);
       if (original.preferences === null) localStorage.removeItem(preferenceKey); else localStorage.setItem(preferenceKey, original.preferences);
     }, { original, touched, draftPrefix, preferenceKey });
-    await page.reload();
+    await page.reload(); await openCompanyFinancials(page);
     await page.locator(`[data-company="${originalCompany}"][data-business-ready="true"]`).waitFor();
     if (original.valuationOpen) {
       await page.getByLabel('Company valuation', { exact: true }).click();
@@ -267,8 +268,9 @@ async function standalone() {
   const page = await context.newPage(); page.on('pageerror', error => errors.push(error.message));
   try {
     await page.goto(base); await page.locator('[data-country="SE"][data-ready="true"]').waitFor();
-    await page.getByLabel('Observatory', { exact: true }).selectOption('companies');
-    await page.locator('[data-business-ready="true"]').waitFor();
+    await selectObservatory(page, 'companies');
+    await page.getByLabel('Company financials', { exact: true }).click();
+  await page.locator('[data-business-ready="true"]').waitFor();
     const result = await valuationRangeFlows(page, project);
     assert.deepEqual(external, []); assert.deepEqual(errors, []);
     await writeFile(resolve(project, 'test-results/valuation-range-browser-report.json'), JSON.stringify({ status: 'passed', ...result, external, errors }, null, 2) + '\n');

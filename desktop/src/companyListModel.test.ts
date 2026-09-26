@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { companyListCell, compareCompanyListRows, defaultCompanyListPreferences, matchesCompanyListFilters, parseCompanyListPreferences, type CompanyListColumn } from './companyListModel';
 import { researchGaugeSeries, type ResearchGaugeRow } from './researchGaugeModel';
+import { companyListRangeActive, matchesCompanyListRange } from './companyListRanges';
 
 const column = (kpiId: string, window: CompanyListColumn['window'] = 'latest', calculation: CompanyListColumn['calculation'] = 'latest'): CompanyListColumn => ({ id: 'test', kpiId, window, calculation });
 function row(): ResearchGaugeRow {
@@ -70,6 +71,65 @@ describe('custom company list KPIs', () => {
 });
 
 describe('company list preferences and explicit filters', () => {
+  it('round-trips exact column ranges in current and saved views while retaining variant identities', () => {
+    const state = defaultCompanyListPreferences();
+    state.columns = [{ ...column('valuation_attractiveness', 'latest', 'terminal_50'), range: { min: ' -0,5 ', max: '42,86' } }];
+    state.savedViews = [{ id: 'ranged-view', name: 'Terminal stress range', columns: [{ ...column('valuation_attractiveness', 'latest', 'terminal_0'), range: { min: '-', max: '' } }, { ...column('fcf', '5', 'median'), id: 'cash-median', range: { min: '0', max: '100', currency: 'SEK' } }], filters: state.filters, sort: { columnId: 'test', direction: 'desc' } }];
+    const reopened = parseCompanyListPreferences(JSON.stringify(state));
+    expect(reopened).toEqual(state);
+    expect(matchesCompanyListRange(companyListCell(row(), reopened.columns[0]), reopened.columns[0].range)).toBe(true);
+    expect(matchesCompanyListRange(companyListCell(row(), reopened.savedViews[0].columns[0]), reopened.savedViews[0].columns[0].range)).toBe(false);
+  });
+  it('keeps up to32 column ranges independent from the12 retained numeric conditions', () => {
+    const state = defaultCompanyListPreferences();
+    state.columns = Array.from({ length: 32 }, (_, i) => ({ ...column('ebit_margin'), id: `range-${i}`, range: { min: '0', max: '50' } }));
+    state.filters.numericRules = Array.from({ length: 12 }, () => ({ column: column('mid_npv_percent'), operator: 'gte' as const, value: 10 }));
+    const reopened = parseCompanyListPreferences(JSON.stringify(state));
+    expect(reopened.columns.filter(c => companyListRangeActive(c.range))).toHaveLength(32);
+    expect(reopened.filters.numericRules).toHaveLength(12);
+    expect(matchesCompanyListFilters(row(), reopened.filters, new Set())).toBe(true);
+    expect(reopened.columns.every(c => matchesCompanyListRange(companyListCell(row(), c), c.range))).toBe(true);
+    reopened.columns[0].range!.max = '39';
+    expect(matchesCompanyListFilters(row(), reopened.filters, new Set())).toBe(true);
+    expect(reopened.columns.every(c => matchesCompanyListRange(companyListCell(row(), c), c.range))).toBe(false);
+  });
+  it('discards unsupported text/date ranges but retains invalid active numeric ranges', () => {
+    const state = defaultCompanyListPreferences();
+    const parsed = parseCompanyListPreferences({ ...state, columns: [
+      { ...column('country'), id: 'country', range: { min: '1', max: '5' } },
+      { ...column('price_date'), id: 'date', range: { min: '1', max: '5' } },
+      { ...column('fcf'), id: 'cash', range: { min: '20', max: '10', currency: 'SEK' } },
+      { ...column('mid_npv_percent'), id: 'npv', range: 'bad shape' },
+    ] });
+    expect(parsed.columns[0]).not.toHaveProperty('range'); expect(parsed.columns[1]).not.toHaveProperty('range');
+    expect(parsed.columns[2].range).toEqual({ min: '20', max: '10', currency: 'SEK' });
+    for (const c of parsed.columns.slice(2)) expect(matchesCompanyListRange(companyListCell(row(), c), c.range)).toBe(false);
+  });
+  it('preserves terminal credit independently in columns, conditions and saved views', () => {
+    const state = defaultCompanyListPreferences();
+    const half = column('valuation_attractiveness', 'latest', 'terminal_50');
+    state.columns = [{ ...half, calculation: 'terminal_0' }];
+    state.filters.numericRules = [{ column: { ...half }, operator: 'gte', value: 0 }];
+    state.savedViews = [{ id: 'sensitivity', name: 'Half terminal', columns: [half], filters: structuredClone(state.filters), sort: { columnId: half.id, direction: 'desc' } }];
+    const reopened = parseCompanyListPreferences(JSON.stringify(state));
+    expect(reopened.columns[0].calculation).toBe('terminal_0');
+    expect(reopened.filters.numericRules[0].column.calculation).toBe('terminal_50');
+    expect(reopened.savedViews[0].columns[0].calculation).toBe('terminal_50');
+    expect(matchesCompanyListFilters(row(), reopened.filters, new Set())).toBe(true);
+    expect(companyListCell(row(), reopened.columns[0]).value).toBeCloseTo(-42.857142857);
+  });
+  it('compares valuation percentages across currencies while retaining source dates and missing reasons', () => {
+    const a = row(), b = row(), missing = row();
+    b.id = '2'; b.valuation.currency = 'USD'; b.valuation.candidateEquity = 600;
+    missing.valuation.priceDate = null;
+    const c = column('valuation_attractiveness', 'latest', 'terminal_100');
+    expect(companyListCell(a, c)).toMatchObject({ currency: null, date: '2026-02-15', unit: 'percent', status: 'available' });
+    expect(compareCompanyListRows(a, b, c, 'desc')).toBeGreaterThan(0);
+    expect(companyListCell(missing, c)).toMatchObject({ value: null, status: 'missing' });
+    expect(companyListCell(missing, c).detail).toMatch(/dated saved equity-price source/);
+    for (const direction of ['asc', 'desc'] as const) expect(compareCompanyListRows(missing, a, c, direction)).toBeGreaterThan(0);
+    expect(companyListCell(a, column('valuation_attractiveness', 'latest', 'latest')).value).toBeNull();
+  });
   it('round-trips selected columns, filters, named views, and personal research list ids', () => {
     const state = defaultCompanyListPreferences(); state.watchlistIds = ['1', '2']; state.features.watchlists[0].listingIds = ['1', '2']; state.filters.query = 'Tools';
     state.savedViews = [{ id: 'view-1', name: 'Cash ideas', columns: [column('fcf', '3', 'median')], filters: state.filters, sort: { columnId: 'test', direction: 'desc' } }];

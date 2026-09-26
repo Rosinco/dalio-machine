@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile, stat } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
+import { openFinancialCoverage } from './workspace-navigation.mjs';
 
 async function financialRead(page, operation, args) {
   return page.evaluate(async ({ operation, args }) => {
@@ -28,6 +29,7 @@ export async function financialFlows(page, project, { native = false, archive, d
     await page.locator(`[data-search-listing="${id}"]`).click();
     await page.locator(`[data-company="${id}"][data-business-ready="true"] [data-financial-history="${id}"]`).waitFor();
     timings.push(Math.round(performance.now() - start));
+    await openFinancialCoverage(page);
   };
   await choose('20');
   assert.match(await page.locator('[data-coverage="annual"]').innerText(), /21[\s\S]*2005–2025/);
@@ -41,7 +43,7 @@ export async function financialFlows(page, project, { native = false, archive, d
   await page.screenshot({ path: resolve(project, 'test-results/company-balance-sheet.png') });
   await page.getByRole('button', { name: 'Cash flow', exact: true }).click();
   assert.equal(await page.locator('[data-statement-field]').count(), 5);
-  assert.match(await page.locator('.financial-statements').innerText(), /not owner earnings/);
+  assert.match(await page.locator('.financial-statements').innerText(), /need review before treating it as owner earnings/);
   await page.getByRole('button', { name: 'Quarterly', exact: true }).click();
   assert.match(await page.getByLabel('Statement period', { exact: true }).innerText(), /Q2 2026/);
   // This foreign listing's stored amounts are scaled into trading currency.
@@ -66,6 +68,7 @@ export async function financialFlows(page, project, { native = false, archive, d
   assert.ok(mixed); await choose(mixed);
   const currencies = index.companies[mixed].currencies;
   await page.getByLabel('Chart reporting currency', { exact: true }).selectOption(currencies[0]);
+  await page.getByText('Calculation, currency and chart controls', { exact: true }).click();
   assert.match(await page.locator('.company-financial-history').innerText(), /one reporting currency at a time/);
   await choose('102');
   const market = page.locator('[data-market-history="102"]');

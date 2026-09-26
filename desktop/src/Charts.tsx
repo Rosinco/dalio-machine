@@ -38,7 +38,7 @@ export function Radar({ country, comparison, index }: { country: Country; compar
   if (comparison && complete(comparison)) data.push({ name: comparison.name, value: index.categories.map(k => Math.round(comparison.categories[k].score!)), lineStyle: { width: 1.5, color: seriesColors.comparison }, itemStyle: { color: seriesColors.comparison }, areaStyle: { color: seriesColors.comparison, opacity: .06 } });
   return <Chart label={`${country.name} fundamentals radar; five category scores out of 100`} option={{
     tooltip: { trigger: 'item' },
-    radar: { center: ['50%', '49%'], radius: '65%', splitNumber: 5, indicator: index.categories.map(k => ({ name: categories[k].short, max: 100 })), axisName: { color: '#63706a', fontSize: 10 }, splitLine: { lineStyle: { color: '#dfe5dc' } }, splitArea: { areaStyle: { color: ['#f8e5e5', '#faebdf', '#faf3d7', '#edf3df', '#e1f0e8'] } }, axisLine: { lineStyle: { color: '#dfe5dc' } } },
+    radar: { center: ['50%', '49%'], radius: '65%', splitNumber: 5, indicator: index.categories.map(k => ({ name: categories[k].short, max: 100 })), axisName: { color: '#52665b', fontSize: 11 }, splitLine: { lineStyle: { color: '#dfe5dc' } }, splitArea: { areaStyle: { color: ['#f8e5e5', '#faebdf', '#faf3d7', '#edf3df', '#e1f0e8'] } }, axisLine: { lineStyle: { color: '#dfe5dc' } } },
     series: [{ type: 'radar', symbol: 'circle', symbolSize: 4, data }],
   }} />;
 }
@@ -54,9 +54,9 @@ export function HistoryChart({ points, comparison, name, otherName, meta, startY
   if (!points.some(p => p.year >= startYear && finite(p.value))) return <div className="empty">No saved history in this period.</div>;
   return <Chart label={`${meta.label} history for ${name}. Dashed lines are forecasts.`} option={{
     tooltip: { trigger: 'axis', valueFormatter: (v: number) => format(v, 2) },
-    grid: { left: 52, right: 18, top: 20, bottom: 34 },
-    xAxis: { type: 'value', min: 'dataMin', max: 'dataMax', minInterval: 1, axisLabel: { formatter: '{value}', color: '#7a837b', fontSize: 10 }, axisLine: { lineStyle: { color: '#dfe3da' } }, splitLine: { show: false } },
-    yAxis: { type: 'value', scale: true, axisLabel: { color: '#7a837b', fontSize: 10, formatter: (v: number) => Math.abs(v) >= 1000000 ? `${format(v / 1e9, 1)}B` : Math.abs(v) >= 10000 ? `${format(v / 1000, 0)}k` : format(v) }, splitLine: { lineStyle: { color: '#e9ece5', type: 'dashed' } } },
+    grid: { left: 65, right: 18, top: 30, bottom: 34 },
+    xAxis: { type: 'value', min: 'dataMin', max: 'dataMax', minInterval: 1, axisLabel: { formatter: '{value}', color: '#52665b', fontSize: 11 }, axisLine: { lineStyle: { color: '#dfe3da' } }, splitLine: { show: false } },
+    yAxis: { type: 'value', name: meta.unit, nameTextStyle: { color: '#52665b', fontSize: 11 }, scale: true, axisLabel: { color: '#52665b', fontSize: 11, formatter: (v: number) => Math.abs(v) >= 1e9 ? `${format(v / 1e9, 1)}B` : Math.abs(v) >= 1e6 ? `${format(v / 1e6, 1)}M` : Math.abs(v) >= 10000 ? `${format(v / 1000, 0)}k` : format(v) }, splitLine: { lineStyle: { color: '#e9ece5', type: 'dashed' } } },
     series: [...series(points, name, seriesColors.selected), ...(comparison && otherName ? series(comparison, otherName, seriesColors.comparison) : [])],
   }} />;
 }

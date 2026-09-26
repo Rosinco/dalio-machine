@@ -1,3 +1,4 @@
+import { selectObservatory, openFinancialCoverage } from './workspace-navigation.mjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
@@ -10,7 +11,7 @@ export async function taxonomyFlows(page, project) {
   const current = catalogue.releases.find(r => r.id === catalogue.default_id);
   const listings = Object.values(taxonomy.catalogue.listings);
   const countryCount = (branch, country) => listings.filter(c => taxonomy.classifications[c.id].branch_id === branch && c.listing_country === country).length;
-  await page.getByLabel('Observatory', { exact: true }).selectOption('sectors');
+  await selectObservatory(page, 'sectors');
   await page.locator('[data-taxonomy-ready="true"]').waitFor();
   await page.getByLabel('Company listing country', { exact: true }).selectOption('SE');
   assert.equal(await page.locator('.branch-choice').count(), 94);
@@ -115,12 +116,13 @@ export async function taxonomyFlows(page, project) {
   await page.getByRole('button', { name: 'Import and use', exact: true }).click();
   await page.locator(`[data-active-release="${legacyId}"]`).waitFor();
   await page.keyboard.press('Escape');
-  await page.getByLabel('Observatory', { exact: true }).selectOption('sectors');
+  await selectObservatory(page, 'sectors');
   await page.getByRole('heading', { name: 'No full branch directory in this release', exact: true }).waitFor();
   assert.equal(await page.locator('.branch-choice').count(), 0);
   await page.getByRole('button', { name: 'Open saved branch', exact: true }).click();
   await page.getByLabel('Open Holmen', { exact: true }).click();
   await page.locator('[data-company="102"][data-business-ready="true"]').waitFor();
+  await openFinancialCoverage(page);
   assert.match(await page.locator('.period-overview').innerText(), /FY 2025/);
   await page.getByLabel('Open data library').click();
   await page.locator(`[data-release-id="${current.id}"] button`).click();

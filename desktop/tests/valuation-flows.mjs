@@ -1,3 +1,4 @@
+import { selectObservatory, openCompanyFinancials, openValuationModel, openValuationPayback } from './workspace-navigation.mjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -9,21 +10,26 @@ import { purchaseRangeFlows } from './purchase-range-flows.mjs';
 
 export async function valuationFlows(page, project, { native = false } = {}) {
   const checks = [];
+  const scenarios = () => page.getByRole('tab', { name: 'Value, price & payback', exact: true }).click();
   const openCompany = async name => {
     await page.getByLabel('Search companies or countries').fill(name);
     await page.getByLabel('Search companies or countries').press('Enter');
     await page.locator('[data-business-ready="true"]').waitFor();
     await page.getByLabel('Company valuation', { exact: true }).click();
     await page.locator('.valuation-workspace').waitFor();
+    await scenarios();
   };
-  await page.getByLabel('Observatory', { exact: true }).selectOption('companies');
+  await selectObservatory(page, 'companies');
+  await page.getByLabel('Company financials', { exact: true }).click();
   await page.locator('[data-business-ready="true"]').waitFor();
   await openCompany('Holmen');
   assert.equal(await page.locator('.valuation-workspace').getAttribute('data-valuation-company'), '102');
   await page.locator('[data-valuation-ready="true"][data-valuation-study="holmen-2026-09-11-v1"]').waitFor();
   assert.equal(await page.getByLabel('Equity market value', { exact: true }).count(), 0);
   assert.equal(await page.locator('[data-scenario="mid"] [data-result="value"]').innerText(), '401.38 SEK');
+  await openValuationPayback(page);
   assert.equal(await page.locator('[data-scenario="high"] [data-result="payback"]').innerText(), 'Year 16');
+  await openValuationModel(page);
   assert.match(await page.locator('.valuation-price-summary').innerText(), /2026-08-07/);
   await page.screenshot({ path: resolve(project, 'test-results/holmen-automatic-valuation.png') });
   await page.locator('.valuation-charts').scrollIntoViewIfNeeded();
@@ -33,6 +39,7 @@ export async function valuationFlows(page, project, { native = false } = {}) {
   await page.screenshot({ path: resolve(project, 'test-results/holmen-automatic-charts.png') });
   checks.push('Holmen opens with sourced price, three complete researched scenarios, charts and payback without entering inputs');
 
+  await openValuationModel(page);
   await page.getByRole('button', { name: 'Inspect sources and calculations', exact: true }).click();
   await page.locator('[data-research-study="holmen-2026-09-11-v1"]').waitFor();
   assert.match(await page.locator('.valuation-research-evidence').innerText(), /1,243 SEK m/);
@@ -53,18 +60,21 @@ export async function valuationFlows(page, project, { native = false } = {}) {
     for (const k of Object.keys(d.notes)) d.notes[k] = '';
     localStorage.setItem(key, JSON.stringify(previous));
   });
-  await page.reload();
+  await page.reload(); await openCompanyFinancials(page);
   await page.locator('[data-business-ready="true"]').waitFor();
   await page.getByLabel('Company valuation', { exact: true }).click();
   await page.locator('[data-valuation-ready="true"]').waitFor();
+  await scenarios();
   assert.match(await page.locator('.valuation-saved').innerText(), /PREVIOUS USER DRAFT/);
   await page.locator('.valuation-saved').getByRole('button', { name: /PREVIOUS USER DRAFT/ }).click();
   assert.equal(await page.getByLabel('Equity market value', { exact: true }).inputValue(), '58000');
-  await page.reload();
+  await page.reload(); await openCompanyFinancials(page);
   await page.locator('[data-business-ready="true"]').waitFor();
   await page.getByLabel('Company valuation', { exact: true }).click();
+  await scenarios();
   assert.equal(await page.getByLabel('Equity market value', { exact: true }).inputValue(), '58000');
   assert.equal(await page.locator('[data-valuation-ready="false"]').count(), 1);
+  await openValuationModel(page);
   await page.getByRole('button', { name: 'Start from researched assumptions', exact: true }).click();
   await page.locator('[data-valuation-ready="true"]').waitFor();
   checks.push('Old empty forecasts migrate automatically with a saved backup; explicitly restored drafts are not overwritten after reload');
@@ -72,9 +82,10 @@ export async function valuationFlows(page, project, { native = false } = {}) {
   await page.getByRole('button', { name: 'Edit price & assumptions', exact: true }).click();
   await page.getByLabel('Mid year 1 cash payment', { exact: true }).fill('');
   await page.locator('[data-valuation-ready="false"]').waitFor();
-  await page.reload();
+  await page.reload(); await openCompanyFinancials(page);
   await page.locator('[data-business-ready="true"]').waitFor();
   await page.getByLabel('Company valuation', { exact: true }).click();
+  await scenarios();
   assert.equal(await page.getByLabel('Mid year 1 cash payment', { exact: true }).inputValue(), '');
   checks.push('Clearing a researched input persists; automatic defaults never refill a user edit');
 
@@ -94,7 +105,7 @@ export async function valuationFlows(page, project, { native = false } = {}) {
     await page.getByRole('button', { name: `Fill ${name} path`, exact: true }).click();
   }
   await page.locator('[data-valuation-ready="true"]').waitFor();
-  const text = (key, field) => page.locator(`[data-scenario="${key}"] [data-result="${field}"]`).innerText();
+  const text = async (key, field) => { if (field.includes('payback')) await openValuationPayback(page); return page.locator(`[data-scenario="${key}"] [data-result="${field}"]`).innerText(); };
   assert.equal(await text('mid', 'value'), '1,228.91 SEK');
   assert.equal(await text('mid', 'npv'), '228.91 SEK');
   assert.equal(await text('low', 'payback'), 'Year 9');
@@ -137,10 +148,11 @@ export async function valuationFlows(page, project, { native = false } = {}) {
   await page.getByRole('status').filter({ hasText: 'Study revision saved' }).waitFor();
   checks.push('Missing inputs remove DCF/NPV charts; capital and Swedish evidence notes persist with the study');
 
-  await page.reload();
+  await page.reload(); await openCompanyFinancials(page);
   await page.locator('[data-business-ready="true"]').waitFor();
   await page.getByLabel('Company valuation', { exact: true }).click();
   await page.locator('[data-valuation-ready="true"]').waitFor();
+  await scenarios();
   assert.equal(await text('mid', 'value'), '1,228.91 SEK');
   assert.match(await page.locator('.valuation-saved').innerText(), /TEST FIXTURE/);
   await page.getByRole('tab', { name: 'Business, capital & evidence', exact: true }).click();
@@ -171,6 +183,7 @@ export async function valuationFlows(page, project, { native = false } = {}) {
   await page.setViewportSize({ width: 1500, height: 960 });
   await openCompany('Stora');
   await page.locator('[data-valuation-kind="starter"][data-valuation-ready="true"]').waitFor();
+  await openValuationModel(page);
   assert.match(await page.locator('.valuation-starter-banner').innerText(), /historical|cash.flow/i);
   await openCompany('Holmen');
   await page.locator('[data-valuation-ready="true"]').waitFor();

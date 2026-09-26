@@ -1,3 +1,4 @@
+import { selectObservatory, openListPanel } from './workspace-navigation.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile, unlink } from 'node:fs/promises';
@@ -89,8 +90,7 @@ async function seed(page, project, data) {
   return { legacy, protectedStorage: await protectedStorage(page), columns };
 }
 async function openLists(page) {
-  await page.getByLabel('Observatory', { exact: true }).selectOption('companies');
-  await page.locator('[data-business-ready="true"]').waitFor();
+  await selectObservatory(page, 'companies');
   await page.getByLabel('Company lists', { exact: true }).click(); await list(page).waitFor();
 }
 async function assertReadOnly(page, expected) {
@@ -131,6 +131,7 @@ async function ensureFilters(page) {
   if (!await panel.isVisible()) await page.getByRole('button', { name: 'Show list filters', exact: true }).click();
 }
 async function ensureSorts(page) {
+  await openListPanel(page, 'tools');
   const details = page.locator('.company-list-sort-controls');
   if (!await details.evaluate(node => node.open)) await details.locator('summary').click();
 }
@@ -288,6 +289,7 @@ export async function expandedCompanyListFlows(page, project, { native = false }
     assert.equal(Number(await page.locator(columnSelector('102', seedState.columns.find(column => column.kpiId === 'cash_factor_30'))).getAttribute('data-company-list-value')), holmen.valuation.reverseCashFactor30);
     checked('The first explicit edit migrates to a separate v2 key; latest and five-year provider P/E match exact source values while frozen valuation context remains unchanged');
 
+    await openListPanel(page, 'tools');
     await page.getByRole('button', { name: 'Manage watchlists', exact: true }).click();
     dialog = page.getByRole('dialog', { name: 'Manage watchlists', exact: true });
     await dialog.getByLabel('Watchlist name', { exact: true }).fill('Potential compounders');
@@ -298,6 +300,7 @@ export async function expandedCompanyListFlows(page, project, { native = false }
     for (const item of watched) { await search(page, item.name); await row(page, item.id).getByRole('button', { name: `Add ${item.name} to watchlist`, exact: true }).click(); }
     await search(page, ''); await page.getByRole('button', { name: 'Watchlist', exact: true }).click(); await waitMatches(page, watched.length);
     assert.deepEqual(new Set(await rowIds(page)), new Set(watched.map(item => item.id)));
+    await openListPanel(page, 'tools');
     await page.getByRole('button', { name: 'Manage watchlists', exact: true }).click();
     dialog = page.getByRole('dialog', { name: 'Manage watchlists', exact: true });
     await dialog.getByRole('button', { name: 'Rename watchlist Potential compounders', exact: true }).click();
@@ -339,6 +342,7 @@ export async function expandedCompanyListFlows(page, project, { native = false }
     assert.equal(await page.getByRole('button', { name: 'Add sort priority', exact: true }).isDisabled(), true);
     const expectedWatched = [...watched].sort((a, b) => collator.compare(a.country ?? '', b.country ?? '') || (peValues.get(b.id) ?? -Infinity) - (peValues.get(a.id) ?? -Infinity) || compareName(a, b));
     assert.deepEqual(await rowIds(page), expectedWatched.map(item => item.id));
+    await openListPanel(page, 'tools');
     await page.getByLabel('Table density', { exact: true }).selectOption('compact');
     await page.getByRole('button', { name: 'Save view', exact: true }).click();
     dialog = page.getByRole('dialog', { name: 'Save company list view', exact: true });
@@ -377,19 +381,23 @@ export async function expandedCompanyListFlows(page, project, { native = false }
     checked(`CSV exports all ${exportRows.length} filtered Swedish listings beyond the visible page, with exact values, units, separate dates and source explanations`);
 
     await page.getByRole('button', { name: 'Clear list filters', exact: true }).click();
+    await openListPanel(page, 'columns');
     await page.getByLabel('Column preset', { exact: true }).selectOption('valuation');
     preferences = await saved(page); assert.ok(preferences.columns.some(column => column.kpiId === 'provider_2')); assert.ok(preferences.columns.some(column => column.kpiId === 'provider_4')); assert.ok(preferences.columns.some(column => column.kpiId === 'cash_factor_30'));
+    await openListPanel(page, 'tools');
     await page.getByLabel('Table density', { exact: true }).selectOption('comfortable');
     await page.getByLabel('Active watchlist', { exact: true }).selectOption('default');
     await page.getByLabel('Saved company list view', { exact: true }).selectOption(view.id);
     await waitMatches(page, watched.length);
     assert.equal(await page.getByLabel('Active watchlist', { exact: true }).inputValue(), namedId);
+    await openListPanel(page, 'tools');
     assert.equal(await page.getByLabel('Table density', { exact: true }).inputValue(), 'compact');
     assert.deepEqual((await saved(page)).columns, view.columns);
     await page.waitForFunction(() => !document.querySelector('button[aria-label="Export company list CSV"]')?.disabled);
     assert.deepEqual(await rowIds(page), expectedWatched.map(item => item.id));
     checked('The valuation column preset adds supported choices; restoring a saved view restores its original columns, named list and complete sort setup');
 
+    await openListPanel(page, 'tools');
     await page.getByRole('button', { name: 'Manage watchlists', exact: true }).click();
     dialog = page.getByRole('dialog', { name: 'Manage watchlists', exact: true });
     await dialog.getByLabel('Watchlist name', { exact: true }).fill('Temporary list');
@@ -427,6 +435,7 @@ export async function assertExpandedCompanyListRestart(page, result) {
   assert.equal(await savedBytes(page), result.preferences); assert.equal(await page.evaluate(oldKey => localStorage.getItem(oldKey), oldKey), result.legacy);
   assert.deepEqual(await protectedStorage(page), result.protectedStorage); assert.deepEqual(await rowIds(page), result.ids);
   assert.equal(await page.getByLabel('Active watchlist', { exact: true }).inputValue(), result.activeWatchlistId);
+  await openListPanel(page, 'tools');
   assert.equal(await page.getByLabel('Table density', { exact: true }).inputValue(), 'compact');
   assert.deepEqual((await saved(page)).features.comparisonIds, result.comparisonIds);
   assert.equal(await page.locator('.valuation-workspace').count(), 0);

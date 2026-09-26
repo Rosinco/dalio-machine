@@ -1,3 +1,4 @@
+import { selectObservatory } from './workspace-navigation.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -265,9 +266,9 @@ async function failClosedFlows(page, project, data, expectedStorage, native) {
     if (native) {
       // Leaving Companies disables the index resource. Await the real Macro
       // view before returning, so a new native index read is deterministic.
-      await page.getByLabel('Observatory', { exact: true }).selectOption('macro');
+      await selectObservatory(page, 'macro');
       await page.locator('[data-country="SE"][data-ready="true"]').waitFor();
-      await page.getByLabel('Observatory', { exact: true }).selectOption('companies');
+      await selectObservatory(page, 'companies');
       await page.waitForFunction(() => window.__researchGaugeMismatchProbe?.responses > 0);
     } else {
       await switchRelease(page, older.as_of);
@@ -282,9 +283,9 @@ async function failClosedFlows(page, project, data, expectedStorage, native) {
   } finally {
     if (native) {
       await page.evaluate(() => { window.__researchGaugeIndexRestore?.(); delete window.__researchGaugeIndexRestore; delete window.__researchGaugeMismatchProbe; });
-      await page.getByLabel('Observatory', { exact: true }).selectOption('macro');
+      await selectObservatory(page, 'macro');
       await page.locator('[data-country="SE"][data-ready="true"]').waitFor();
-      await page.getByLabel('Observatory', { exact: true }).selectOption('companies');
+      await selectObservatory(page, 'companies');
     } else {
       await page.unroute('**/api/financials/index?*');
       await switchRelease(page, older.as_of);
@@ -302,7 +303,7 @@ export async function researchGaugeFlows(page, project, { native = false } = {})
   const recordResponse = response => { if (response.url().endsWith('/' + data.manifest.artifact.path)) assetResponses.push({ status: response.status(), contentEncoding: response.headers()['content-encoding'] ?? null }); };
   page.on('request', recordRequest);
   page.on('response', recordResponse);
-  await page.getByLabel('Observatory', { exact: true }).selectOption('companies');
+  await selectObservatory(page, 'companies');
   await openCompany(page, 'Holmen', '102');
   await page.locator('[data-research-card="102"][data-research-card-ready="true"]').waitFor();
   const work = await seedAuthoredWork(page, project, data.manifest);
@@ -404,7 +405,7 @@ export async function researchGaugeFlows(page, project, { native = false } = {})
     await page.setViewportSize(viewport ?? { width: 1500, height: 960 });
     checked('Research table, evidence inspector and company card fit desktop and 390-pixel viewports with internal table scrolling');
 
-    await page.getByLabel('Observatory', { exact: true }).selectOption('sectors');
+    await selectObservatory(page, 'sectors');
     await page.getByLabel('Branch research screen', { exact: true }).click();
     await page.locator('[data-research-gauge-ready="true"]').waitFor();
     assert.equal(await page.getByLabel('Research branch', { exact: true }).inputValue(), data.byId['102'].branchId);

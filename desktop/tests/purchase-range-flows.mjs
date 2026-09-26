@@ -1,3 +1,4 @@
+import { selectObservatory, openCompanyFinancials, openValuationModel } from './workspace-navigation.mjs';
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
@@ -19,7 +20,7 @@ async function openCompany(page, name, id) {
 }
 
 async function reopen(page, id) {
-  await page.reload();
+  await page.reload(); await openCompanyFinancials(page);
   await page.locator(`[data-company="${id}"][data-business-ready="true"]`).waitFor();
   await page.getByLabel('Company valuation', { exact: true }).click();
   await page.locator(`[data-valuation-company="${id}"]`).waitFor();
@@ -301,6 +302,7 @@ export async function purchaseRangeFlows(page, project, { native = false } = {})
 
     if (viewport) await page.setViewportSize(viewport);
     await openCompany(page, 'SCA', '197');
+    await openValuationModel(page);
     await page.getByRole('button', { name: 'Start from researched assumptions', exact: true }).click();
     const researched = (await savedDraft(page, '197')).saved.draft;
     assert.equal(researched.researchOrigin.id, 'sca-2026-09-12-v1');
@@ -320,10 +322,12 @@ export async function purchaseRangeFlows(page, project, { native = false } = {})
     assert.deepEqual((await savedDraft(page, '197')).saved.draft.scenarios, researched.scenarios, 'Purchase settings do not edit the researched cash, terminal or recovery model');
     await reopen(page, '197');
     assert.deepEqual((await savedDraft(page, '197')).saved.draft.purchaseRange, purchasePolicy);
+    await openValuationModel(page);
     const history = page.locator('.valuation-history-settings');
     if (!await history.evaluate(el => el.open)) await history.locator('summary').click();
     await page.getByRole('button', { name: 'Apply history assumptions', exact: true }).click();
     assert.deepEqual((await savedDraft(page, '197')).saved.draft.purchaseRange, purchasePolicy, 'Applying a historical baseline preserves the authored purchase policy and denominator');
+    await openValuationModel(page);
     await page.getByRole('button', { name: 'Start from researched assumptions', exact: true }).click();
     assert.deepEqual((await savedDraft(page, '197')).saved.draft.purchaseRange, purchasePolicy, 'A deliberate researched reset preserves the separate purchase policy');
     assert.deepEqual((await savedDraft(page, '197')).saved.draft.scenarios, researched.scenarios);
@@ -340,7 +344,7 @@ export async function purchaseRangeFlows(page, project, { native = false } = {})
         if (raw === null) localStorage.removeItem(key); else localStorage.setItem(key, raw);
       }
     }, { original, prefix, revisionKey, preferenceKey });
-    await page.reload(); await page.locator(`[data-company="${originalCompany}"][data-business-ready="true"]`).waitFor();
+    await page.reload(); await openCompanyFinancials(page); await page.locator(`[data-company="${originalCompany}"][data-business-ready="true"]`).waitFor();
     if (original.valuationOpen) {
       await page.getByLabel('Company valuation', { exact: true }).click();
       await page.locator(`[data-valuation-company="${originalCompany}"]`).waitFor();
@@ -406,7 +410,8 @@ async function standalone() {
   const page = await context.newPage(); page.on('pageerror', error => errors.push(error.message));
   try {
     await page.goto(base); await page.locator('[data-country="SE"][data-ready="true"]').waitFor();
-    await page.getByLabel('Observatory', { exact: true }).selectOption('companies'); await page.locator('[data-business-ready="true"]').waitFor();
+    await selectObservatory(page, 'companies'); await page.getByLabel('Company financials', { exact: true }).click();
+  await page.locator('[data-business-ready="true"]').waitFor();
     const result = await purchaseRangeFlows(page, project); assert.deepEqual(external, []); assert.deepEqual(errors, []);
     await writeFile(resolve(project, 'test-results/purchase-range-browser-report.json'), JSON.stringify({ status: 'passed', ...result, external, errors }, null, 2) + '\n');
     console.log(JSON.stringify(result));

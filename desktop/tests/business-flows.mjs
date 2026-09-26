@@ -1,3 +1,4 @@
+import { selectObservatory, openFinancialCoverage } from './workspace-navigation.mjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -17,7 +18,7 @@ export async function businessFlows(page, project) {
     await page.keyboard.press('Escape');
   };
   await selectRelease(current);
-  await page.getByLabel('Observatory', { exact: true }).selectOption('sectors');
+  await selectObservatory(page, 'sectors');
   await page.locator('[data-business-ready="true"]').waitFor();
   await page.getByLabel('Company listing country', { exact: true }).selectOption('SE');
   await page.getByLabel('Branch overview', { exact: true }).click();
@@ -27,9 +28,12 @@ export async function businessFlows(page, project) {
   await page.getByLabel('Open Holmen', { exact: true }).click();
   await page.locator('[data-company="102"][data-business-ready="true"]').waitFor();
   assert.equal(await page.getByLabel('Observatory', { exact: true }).inputValue(), 'companies');
+  await openFinancialCoverage(page);
   assert.match(await page.locator('.period-overview').innerText(), /FY 2025[\s\S]*Q1 2026/);
   assert.match(await page.locator('[data-financial="revenues"]').innerText(), new RegExp(number(holmen.annual.at(-1).values.revenues)));
+  await page.getByRole('button', { name: 'Show listing map', exact: true }).click();
   assert.match(await page.locator('.business-map-bottom').innerText(), /no good\/bad rating[\s\S]*physical resources have not been mapped/);
+  await page.getByRole('button', { name: 'Hide listing map', exact: true }).click();
   await page.screenshot({ path: resolve(project, 'test-results/holmen-financials.png') });
   await page.getByRole('button', { name: 'Quarterly', exact: true }).click();
   assert.match(await page.locator('[data-financial="revenues"]').innerText(), new RegExp(number(holmen.quarterly.at(-1).values.revenues)));
@@ -51,7 +55,8 @@ export async function businessFlows(page, project) {
   await page.getByLabel('Search companies or countries').fill('Stora');
   await page.getByLabel('Search companies or countries').press('Enter');
   await page.locator('[data-company="696"][data-business-ready="true"]').waitFor();
-  assert.match(await page.locator('.business-heading').innerText(), /Finland[\s\S]*EUR reporting currency/);
+  assert.match(await page.locator('.company-location').innerText(), /Stora Enso[\s\S]*Finland/);
+  assert.match(await page.locator('[data-financial="revenues"]').innerText(), /EUR million/);
   await page.getByLabel('Company macro context', { exact: true }).click();
   assert.match(await page.locator('.business-content').innerText(), /No Finland country profile/);
   await page.getByRole('button', { name: 'Open Finland in Macro', exact: true }).click();
@@ -80,7 +85,7 @@ export async function businessFlows(page, project) {
   assert.equal(await page.locator('[data-country-evidence]').count(), 0);
   await page.getByLabel('Search countries').fill('Sweden');
   await page.getByLabel('Search countries').press('Enter');
-  await page.getByLabel('Observatory', { exact: true }).selectOption('companies');
+  await selectObservatory(page, 'companies');
   await page.getByLabel('Search companies or countries').fill('Holmen');
   await page.getByLabel('Search companies or countries').press('Enter');
   await page.locator('[data-company="102"][data-business-ready="true"]').waitFor();

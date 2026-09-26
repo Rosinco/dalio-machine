@@ -1,3 +1,4 @@
+import { openCompanyFinancials, openValuationModel, openValuationPayback } from './workspace-navigation.mjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -49,6 +50,7 @@ async function assertPreservedScaDraft(page) {
   assert.equal(await page.getByLabel('Low net equity recovery', { exact: true }).inputValue(), '');
   assert.equal(await page.locator('.valuation-charts').count(), 0);
   assert.equal(await page.getByRole('button', { name: 'Export calculations', exact: true }).isDisabled(), true);
+  await openValuationModel(page);
   assert.match(await page.locator('.valuation-research-banner').innerText(), /edited SCA/i);
   assert.match(await page.locator('.valuation-saved').innerText(), /TEST FIXTURE — SCA preserved edits/);
   assert.doesNotMatch(await page.locator('.valuation-saved').innerText(), /Swedish scenario study|PREVIOUS USER DRAFT/);
@@ -84,6 +86,7 @@ export async function scaValuationFlows(page, project, { native = false } = {}) 
   await openCompany(page, 'SCA', '197');
   await page.locator(`[data-valuation-ready="true"][data-valuation-study="${studyId}"]`).waitFor();
   assert.equal(await page.getByLabel('Equity market value', { exact: true }).count(), 0);
+  await openValuationModel(page);
   assert.match(await page.locator('.valuation-research-banner').innerText(), /SCA.*scenarios are ready/);
   assert.match(await page.locator('.valuation-price-summary').innerText(), /2026-08-07/);
   assert.match(await page.locator('.valuation-price-summary').innerText(), /2026-09-12/);
@@ -91,6 +94,7 @@ export async function scaValuationFlows(page, project, { native = false } = {}) 
   assert.doesNotMatch(await page.locator('.valuation-workspace').innerText(), /Holmen/i);
   await page.getByRole('img', { name: 'Cash flow over time: history and forecast scenarios', exact: true }).locator('canvas').waitFor();
   assert.equal(await page.locator('.cash-flow-forecast').getAttribute('data-forecast-count'), '20');
+  await openValuationPayback(page);
   for (const [key, value, recovery, year] of [['low', '84.83 SEK', 9828, 5], ['mid', '210.28 SEK', 39435.7, 3], ['high', '427.77 SEK', 68351.45, 2]]) {
     const result = page.locator(`[data-scenario="${key}"]`), name = key[0].toUpperCase() + key.slice(1);
     assert.equal(await result.locator('[data-result="value"]').innerText(), value);
@@ -107,6 +111,7 @@ export async function scaValuationFlows(page, project, { native = false } = {}) 
   await page.screenshot({ path: resolve(project, 'test-results/sca-automatic-valuation.png') });
   checks.push('SCA opens directly with its own reviewed study, three complete scenarios and DCF/NPV charts');
 
+  await openValuationModel(page);
   await page.getByRole('button', { name: 'Inspect sources and calculations', exact: true }).click();
   await page.locator(`[data-research-study="${studyId}"]`).waitFor();
   const evidence = page.locator('.valuation-research-evidence');
@@ -152,7 +157,7 @@ export async function scaValuationFlows(page, project, { native = false } = {}) 
   await restoreHolmenProfile(page);
   await openCompany(page, 'SCA', '197');
   await assertPreservedScaDraft(page);
-  await page.reload();
+  await page.reload(); await openCompanyFinancials(page);
   await page.locator('[data-company="197"][data-business-ready="true"]').waitFor();
   await page.getByLabel('Company valuation', { exact: true }).click();
   await assertPreservedScaDraft(page);

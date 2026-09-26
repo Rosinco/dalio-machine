@@ -1,5 +1,18 @@
 # Project Context
 
+Macro Atlas 0.22.1 adds session Back/Forward history across company, industry and
+Macro screens, valuation tabs and chart anchors. Atomic route changes preserve
+source-screen controls and scroll, with a separate presentation cache for lists,
+financial charts, directories and branch comparison notes. History never rolls
+back authored valuations or saved notebook/list data; restart and release changes
+begin a new navigation history. See docs/usability-workflow-2026-09-13.md.
+
+Macro Atlas 0.22.0 restructures navigation and the research workflow: discovery
+in Lists, an ordered six-chart business overview, separately source-bound capex
+KPIs, valuation results before assumptions, and locally saved company notebooks.
+Existing financial and valuation source/calculation boundaries remain unchanged.
+See `docs/usability-workflow-2026-09-13.md` for the presentation/data distinction.
+
 ## Overview
 
 dalio-machine is the canonical data and reasoning engine behind the user-facing **Macro History & Risk Observatory**. It is expanding from a macro-cycle dashboard into one point-in-time history of economic observations, institutional reports and communications, debt, large-allocator positions, financial flows, risk pathways and their implications for a SEK-based household investor. The existing product covers 8 cycle economies (US, CN, EU, UK, JP, SE, IN, BR), pulls macro indicators from FRED, BIS, Riksbank, SCB, IMF, OECD and World Bank, and classifies cycle stage with transparent rules.
@@ -9,6 +22,22 @@ Since slice 18 it also hosts the **World Fundamentals Map**: 21 countries + the 
 The framework is treated as a descriptive lens, not a predictive oracle. The product surfaces state, constraints, alternative pathways and portfolio fragilities with explicit evidence and confidence — it does not output market-timing or automatic buy/sell signals. `dalio-machine` is the sole upstream macro source; Börsdata/company analysis consumes versioned exports and never writes verdicts back into the macro fact base (ADR 0004).
 
 ## Company valuation standard
+
+Version 0.21.0 adds inclusive Min/Max ranges beneath every numeric Lists KPI,
+with currency-safe matching, saved-view persistence and full filtered CSV export.
+A Start here guide, per-KPI explanations and explicit company research steps
+connect discovery, financial history, valuation and saved research. Financial
+charts receive the main company-view width; the listing map is optional. Calmer
+surfaces, stronger text contrast, section links and responsive navigation improve
+reading without changing source packs or valuation assumptions. See
+`docs/company-list-kpi-ranges.md` and `docs/usability-workflow-2026-09-13.md`.
+
+Version 0.20.0 adds sortable valuation attractiveness and explicit terminal
+sensitivities (ADR 0043). Full terminal credit reproduces Mid NPV / saved price;
+optional 75/50/25/0% credits stress only the terminal component. A dedicated preset
+shows 100/50/0% together. The same dated starter basis, source guards and exact
+column/filter/view identities apply; no composite score or predictive calibration
+is implied. See the sensitivity study and desktop handoff for evidence and status.
 
 Version 0.19.0 expands both the provider KPI catalogue and list features (ADR 0042).
 It imports existing screener/relative-history downloads with source bindings,

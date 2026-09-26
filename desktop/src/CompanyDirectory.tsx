@@ -1,5 +1,6 @@
 import { hasFinancialHistory, type FinancialIndex } from './financialData';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useScreenState } from './NavigationContext';
 import { ArrowLeft, ArrowRight, Search } from 'lucide-react';
 import type { BusinessIndex } from './business';
 import type { Taxonomy } from './taxonomy';
@@ -27,8 +28,10 @@ export function DirectorySearch({ index, taxonomy, financial, onCompany, onCount
 }
 
 export function CompanyList({ companies, taxonomy, onCompany }: { companies: CompanyEntry[]; taxonomy: Taxonomy | null; onCompany: (id: string) => void }) {
-  const [query, setQuery] = useState(''), [page, setPage] = useState(0);
-  useEffect(() => { setPage(0); setQuery(''); }, [companies]);
+  // Recreated/enriched rows retain the same criteria; a different ordered
+  // listing set starts fresh, while Back can restore a previous set's search.
+  const stateKey = useMemo(() => `company-directory:${companies.map(company => company.id).join(',')}`, [companies]);
+  const [query, setQuery] = useScreenState(`${stateKey}:query`, ''), [page, setPage] = useScreenState(`${stateKey}:page`, 0);
   const matches = companies.filter(c => c.search.includes(normalizeSearch(query)));
   const pages = Math.max(1, Math.ceil(matches.length / 50)), selectedPage = Math.min(page, pages - 1);
   const rows = matches.slice(selectedPage * 50, (selectedPage + 1) * 50);

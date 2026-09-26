@@ -1,3 +1,4 @@
+import { selectObservatory } from './workspace-navigation.mjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -9,7 +10,7 @@ export async function countryEvidenceFlows(page, project) {
   const catalogue = JSON.parse(await readFile(resolve(root, 'catalog.json'), 'utf8'));
   const document = async code => JSON.parse(await readFile(resolve(root, 'country-evidence', index.countries[code].file), 'utf8'));
   const checks = [];
-  await page.getByLabel('Observatory', { exact: true }).selectOption('macro');
+  await selectObservatory(page, 'macro');
   async function select(query, code) {
     await page.getByLabel('Search countries').fill(query);
     await page.getByLabel('Search countries').press('Enter');

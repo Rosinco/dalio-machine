@@ -1,3 +1,4 @@
+import { selectObservatory } from './workspace-navigation.mjs';
 import { comparisonFlows } from './comparison-flows.mjs';
 import { financialFlows } from './financial-flows.mjs';
 import { chromium } from 'playwright';
@@ -12,6 +13,10 @@ import { valuationFlows } from './valuation-flows.mjs';
 import { researchGaugeFlows } from './research-gauge-flows.mjs';
 import { expandedCompanyListFlows } from './expanded-company-list-flows.mjs';
 import { companyListFlows } from './company-list-flows.mjs';
+import { valuationAttractivenessFlows } from './valuation-attractiveness-flows.mjs';
+import { companyListRangeFlows } from './company-list-range-flows.mjs';
+import { usabilityFlows } from './usability-flows.mjs';
+import { navigationFlows } from './navigation-flows.mjs';
 
 const base = process.env.ATLAS_URL || 'http://127.0.0.1:1420';
 await mkdir('test-results', { recursive: true });
@@ -35,8 +40,40 @@ page.on('pageerror', e => errors.push(e.message));
 page.on('console', e => { if (e.type() === 'error') console.error('Browser:', e.text()); });
 const start = performance.now();
 await page.goto(base);
-await page.locator('[data-country="SE"][data-ready="true"]').waitFor();
-await page.locator('[data-map-ready="true"]').waitFor();
+await page.locator('.app[data-active-release]').waitFor();
+if (!process.argv.includes('--usability-only') && !process.argv.includes('--navigation-only')) {
+  await selectObservatory(page, 'macro');
+  await page.locator('[data-country="SE"][data-ready="true"]').waitFor();
+  await page.locator('[data-map-ready="true"]').waitFor();
+}
+if (process.argv.includes('--navigation-only')) {
+  const result = await navigationFlows(page, process.cwd());
+  assert.deepEqual(external, []); assert.deepEqual(errors, []);
+  await writeFile('test-results/navigation-browser-report.json', JSON.stringify({ ...result, status: 'PASS', external, errors }, null, 2));
+  console.log(JSON.stringify(result));
+  await browser.close(); process.exit(0);
+}
+if (process.argv.includes('--usability-only')) {
+  const result = await usabilityFlows(page, process.cwd());
+  assert.deepEqual(external, []); assert.deepEqual(errors, []);
+  await writeFile('test-results/usability-browser-report.json', JSON.stringify({ ...result, status: 'PASS', external, errors }, null, 2));
+  console.log(JSON.stringify(result));
+  await browser.close(); process.exit(0);
+}
+if (process.argv.includes('--company-list-range-only')) {
+  const result = await companyListRangeFlows(page, process.cwd());
+  assert.deepEqual(external, []); assert.deepEqual(errors, []);
+  await writeFile('test-results/company-list-range-browser-report.json', JSON.stringify({ ...result, status: 'PASS', external, errors }, null, 2));
+  console.log(JSON.stringify(result));
+  await browser.close(); process.exit(0);
+}
+if (process.argv.includes('--valuation-attractiveness-only')) {
+  const result = await valuationAttractivenessFlows(page, process.cwd());
+  assert.deepEqual(external, []); assert.deepEqual(errors, []);
+  await writeFile('test-results/valuation-attractiveness-browser-report.json', JSON.stringify({ ...result, status: 'PASS', external, errors }, null, 2));
+  console.log(JSON.stringify(result));
+  await browser.close(); process.exit(0);
+}
 if (process.argv.includes('--expanded-company-list-only')) {
   const result = await expandedCompanyListFlows(page, process.cwd());
   assert.deepEqual(external, []); assert.deepEqual(errors, []);
@@ -76,7 +113,8 @@ if (process.argv.includes('--comparison-only')) {
   await browser.close(); process.exit(0);
 }
 if (process.argv.includes('--financial-only')) {
-  await page.getByLabel('Observatory', { exact: true }).selectOption('companies');
+  await selectObservatory(page, 'companies');
+  await page.getByLabel('Company financials', { exact: true }).click();
   await page.locator('[data-business-ready="true"]').waitFor();
   console.log(JSON.stringify(await financialFlows(page, process.cwd()), (key, value) => key === 'index' ? undefined : value));
   await browser.close(); process.exit(0);
@@ -163,7 +201,7 @@ taxonomy.checks.push(...comparison.checks); timing.branch_forestry_ms = comparis
 await page.setViewportSize({ width: 1100, height: 760 });
 await page.screenshot({ path: 'test-results/company-compact.png' });
 assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
-await page.getByLabel('Observatory', { exact: true }).selectOption('macro');
+await selectObservatory(page, 'macro');
 await page.getByLabel('Open data library').click();
 if (await page.locator('.app').getAttribute('data-active-release') !== research.current.id) await page.getByLabel(`Use release ${research.current.as_of}`, { exact: true }).click();
 await page.locator(`[data-active-release="${research.current.id}"]`).waitFor();
