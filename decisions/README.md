@@ -35,3 +35,4 @@ always-loaded state lives in `project_context.md` (Decision Log has one line per
 | [0041](0041-customizable-company-lists.md) | Configurable KPI columns, saved views, personal watchlists and explicit dated candidate screens | 2026-09-13 |
 | [0042](0042-expanded-kpi-catalogue-and-list-tools.md) | Verified provider KPI catalogue, named watchlists, comparison, richer conditions and CSV export | 2026-09-13 |
 | [0043](0043-valuation-attractiveness-comparisons.md) | Explicit valuation attractiveness and terminal-credit sensitivities | 2026-09-13 |
+| [0044](0044-survival-and-portfolio-stress-review.md) | Separate survival, permanent-loss and portfolio shared-shock reviews | 2026-09-26 |

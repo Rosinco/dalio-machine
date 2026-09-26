@@ -1,6 +1,6 @@
 # Company analysis: value and price
 
-Adopted for Macro Atlas company analysis on 2026-09-11. Methodology version 1.
+Adopted for Macro Atlas company analysis on 2026-09-11. Methodology version 2 (survival and uncertainty review, 2026-09-26).
 Start each new analysis with the [company analysis template](company-analysis-template.md).
 The adoption decision is [ADR 0035](../decisions/0035-company-value-and-price.md).
 
@@ -68,15 +68,46 @@ See [the standard model](standard-company-valuation.md) and
    change, cyclicality, capital allocation and reinvestment requirements.
 3. Reconcile tangible capital, cash, debt and other claims. Normalize earnings
    and cash flows using the original financial statements where needed.
-4. Connect dated macro and branch evidence to verified company exposures and
-   explicit cash-flow assumptions.
-5. Estimate pessimistic, base and optimistic continuing-business values. Use a
-   liquidation, breakup or run-off scenario where meaningful; explain omissions.
-6. Compare equity values with the dated equity price. Explain the discount,
+4. Check structural fragility and survival before accepting a valuation case:
+   available cash, mandatory spending, maturities, covenants and financing under
+   combined shocks. Record evidence gaps and the conditions that would exhaust
+   liquidity or force dilution. A later recovery does not erase an earlier breach.
+5. Connect dated macro and branch evidence to verified company exposures and
+   explicit cash-flow assumptions. Reconcile owner cash and financing consistently.
+6. Estimate pessimistic, base and optimistic continuing-business values and an
+   explicit permanent-impairment alternative for the existing shareholder claim.
+   Use liquidation, breakup or run-off where meaningful; explain omissions.
+7. Compare equity values with the dated equity price. Explain the discount,
    adverse outcomes, realization mechanism, holding horizon and unresolved evidence.
+8. Review portfolio losses under shared funding, demand, customer, jurisdiction
+   and liquidity shocks. Compare against the investor's stated loss tolerance;
+   company-level valuation does not establish independence between holdings.
 
 An incomplete evidence base is a valid outcome. Historical profitability or a
 high value/price estimate alone does not establish an attractive investment.
+
+## Survival, reverse stress and permanent impairment
+
+Use the [survival and portfolio review](survival-and-portfolio-review.md) before
+promoting a discovery candidate to a supported investment assessment. DCF/NPV
+remain conditional arithmetic; historical coverage and terminal haircuts cannot
+supply a catastrophe probability. A material unassessed survival risk leaves the
+assessment unresolved. A hard structural failure cannot be offset by cheapness
+or an aggregate quality score. Macro Atlas does not issue automatic buy verdicts
+or replace the formal Börsdata gates.
+
+Trace combined operating and financing shocks through time. Separate unrestricted
+cash from restricted cash, committed drawable funding from hoped-for refinancing,
+and unavoidable spending from discretionary investment. Record covenant thresholds,
+collateral calls and intra-period needs alongside the period-end calculation.
+Reverse stress asks what change reaches a failure boundary, not how probable it is.
+
+Model cash accruing to the existing shareholder claim after any rescue dilution,
+funding and prior claims. Include permanent competitive impairment and zero equity
+recovery when plausible; recovery is not automatic. Each alternative counts net
+terminal proceeds once and stays separate from continuing-business value. A
+higher discount rate or wider symmetric band does not replace this cash/claims path.
+Retain unknowable outcomes explicitly instead of inventing probabilities.
 
 ## Continuing-business valuation
 
@@ -210,7 +241,9 @@ risk, not time, on its horizontal axis and promises no realized return.
 
 Pessimistic/base/optimistic cases are analyst scenarios, not confidence intervals
 or guaranteed bounds. Assign probabilities only with an explicit rationale;
-otherwise leave them unset. Show sensitivity to the assumptions that matter.
+otherwise leave them unset. A fitted normal, fat-tailed or power-law distribution
+is a model choice, not knowledge of future extremes. Show sensitivity to the
+assumptions that matter and distinguish modeled bear-case loss from maximum loss.
 Avoid applying several unexplained penalties for the same risk through cash
 flows, discount rates and a final valuation haircut.
 
