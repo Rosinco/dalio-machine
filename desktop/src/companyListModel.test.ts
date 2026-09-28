@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { companyListCell, compareCompanyListRows, defaultCompanyListPreferences, matchesCompanyListFilters, parseCompanyListPreferences, type CompanyListColumn } from './companyListModel';
 import { researchGaugeSeries, type ResearchGaugeRow } from './researchGaugeModel';
 import { companyListRangeActive, matchesCompanyListRange } from './companyListRanges';
+import { NORMAL_YEAR_WINDOW } from './normalYearScreen';
 
 const column = (kpiId: string, window: CompanyListColumn['window'] = 'latest', calculation: CompanyListColumn['calculation'] = 'latest'): CompanyListColumn => ({ id: 'test', kpiId, window, calculation });
 function row(): ResearchGaugeRow {
@@ -11,6 +12,67 @@ function row(): ResearchGaugeRow {
     quarter: { latest: null, comparison: null, revenueChangePercent: null, ebitMarginChangePoints: null, cashChange: null, reason: 'No quarter comparison.' },
     valuation: { status: 'positive-priced', currency: 'SEK', value: 1000, cashPV: 400, terminalPV: 600, terminalShare: .6, candidateEquity: 700, priceDate: '2026-02-15', priceAgeDays: 210, priceBasis: { sourceId: 'market', sourceAsOf: '2026-08-10', reportDate: '2026-02-01', reportEnd: '2025-12-31', shares: 7, close: 100, currency: 'SEK', method: 'local', fxRate: null, fxDate: null }, ceiling: 700, lowValue: 650, lowNPV: -50, reverseCashFactor: .7, reverseCashFactor30: 1, hasSignedCash: false, annualHistoryCount: 5, rangeStatus: 'historical', reason: null }, issues: [] };
 }
+
+function normalRow(): ResearchGaugeRow {
+  const r = row(), periods = Array.from({ length: 10 }, (_, i) => ({ ...r.annual.periods[0], year: 2025 - i, start: `${2025 - i}-01-01`, end: `${2025 - i}-12-31`, published: `${2026 - i}-02-01` }));
+  r.screeningAnnual = { asOf: '2026-09-13', periods, cash: [40, 20, -1000, 1000, null, 0, 10, 5, 2, 1], operatingCash: [50, 30, 0, -100, null, 0, 20, 10, 5, 1], ebit: periods.map(() => 30), revenue: [200, 150, 10, 10, 10, 10, 100, 75, 50, 25], equity: periods.map(() => 100), netDebt: periods.map(() => -20), assets: periods.map(() => 300), intangibleAssets: periods.map(() => 50), tangibleAssets: periods.map(() => 20), profit: periods.map(() => 25), reason: null };
+  r.valuation.priceBasis!.currency = 'SEK'; return r;
+}
+
+describe('normal fiscal-year list variants', () => {
+  it('calculates native normal-year metrics while keeping raw five-report columns unchanged', () => {
+    const r = normalRow(), before = structuredClone(r);
+    expect(companyListCell(r, column('fcf', NORMAL_YEAR_WINDOW, 'median')).value).toBe(10);
+    expect(companyListCell(r, column('positive_fcf', NORMAL_YEAR_WINDOW)).display).toBe('5 / 5');
+    expect(companyListCell(r, column('normal_roce', NORMAL_YEAR_WINDOW, 'median')).value).toBe(37.5);
+    expect(companyListCell(r, column('normal_rota', NORMAL_YEAR_WINDOW, 'min')).value).toBe(10);
+    expect(companyListCell(r, column('tangible_assets_revenue', NORMAL_YEAR_WINDOW, 'median')).value).toBe(.2);
+    expect(companyListCell(r, column('fcf', '5', 'median')).value).toBe(10);
+    const detail = companyListCell(r, column('fcf', NORMAL_YEAR_WINDOW, 'median')).detail;
+    expect(detail).toContain('2017-12-31'); expect(detail).toContain('provider FCF -1000'); expect(detail).toContain('provider FCF 1000');
+    expect(r).toEqual(before);
+  });
+  it('uses elapsed endpoint years including the exception gap for CAGR, never a compressed five-report interval', () => {
+    const r = normalRow(), cell = companyListCell(r, column('revenue', NORMAL_YEAR_WINDOW, 'growth'));
+    const years = (Date.parse('2025-12-31') - Date.parse('2017-12-31')) / (365.25 * 86400000);
+    expect(cell.value).toBeCloseTo(100 * (4 ** (1 / years) - 1));
+    expect(cell.detail).toMatch(/exception gap/i);
+    r.screeningAnnual!.revenue[6] = 0;
+    expect(companyListCell(r, column('revenue', NORMAL_YEAR_WINDOW, 'growth')).value).toBeNull();
+  });
+  it('keeps missing normal observations unavailable and excludes unsupported native/provider window pairs', () => {
+    const r = normalRow(); r.screeningAnnual!.cash[6] = null;
+    expect(companyListCell(r, column('fcf', NORMAL_YEAR_WINDOW, 'median')).value).toBeNull();
+    expect(companyListCell(r, column('positive_fcf', NORMAL_YEAR_WINDOW)).value).toBeNull();
+    expect(companyListCell(r, column('normal_roce', '5', 'median')).value).toBeNull();
+    expect(companyListCell(r, column('provider_36', NORMAL_YEAR_WINDOW, 'median')).value).toBeNull();
+  });
+  it('does not apply the raw all-year cash-consistency rule to the explicit normal-year preset', () => {
+    const r = normalRow(), filters = { ...defaultCompanyListPreferences().filters, preset: 'normal_quality' as const };
+    r.annual.cash.values[2] = -1000; r.readiness = 'limited_history';
+    expect(matchesCompanyListFilters(r, filters, new Set())).toBe(true);
+    expect(matchesCompanyListFilters(r, { ...filters, preset: 'cash_consistency' }, new Set())).toBe(false);
+    for (const mutate of [(r: ResearchGaugeRow) => { r.classificationConflict = true; }, (r: ResearchGaugeRow) => { r.route = 'financial'; }, (r: ResearchGaugeRow) => { r.presence = 'older'; }]) { const r = normalRow(); mutate(r); expect(matchesCompanyListFilters(r, filters, new Set())).toBe(false); }
+  });
+  it('round-trips exact exception windows, separate terminal sensitivity, numeric conditions and saved views', () => {
+    const state = defaultCompanyListPreferences();
+    state.columns = [{ ...column('normal_roce', NORMAL_YEAR_WINDOW, 'median'), range: { min: '20', max: '' } }, { id: 'normal-value', kpiId: 'normal_npv_percent', window: 'latest', calculation: 'terminal_50', range: { min: '0', max: '' } }];
+    state.filters.preset = 'normal_quality'; state.filters.numericRules = [{ column: column('positive_fcf', NORMAL_YEAR_WINDOW), operator: 'eq', value: 5 }];
+    state.savedViews = [{ id: 'normal-screen', name: 'Normal quality', columns: structuredClone(state.columns), filters: structuredClone(state.filters), sort: { columnId: 'normal-value', direction: 'desc' } }];
+    expect(parseCompanyListPreferences(JSON.stringify(state))).toEqual(state);
+    expect(companyListCell(normalRow(), state.columns[1]).detail).toMatch(/10% annual discount/);
+  });
+  it('keeps the separate normal-year valuation independent of the frozen starter result', () => {
+    const r = normalRow(), old = companyListCell(r, column('mid_npv_percent')).value;
+    const normal = companyListCell(r, column('normal_npv_percent', 'latest', 'terminal_100'));
+    expect(normal.value).toBeCloseTo(100 * (100 / 700 - 1));
+    expect(companyListCell(r, column('normal_cash_pv')).currency).toBe('SEK');
+    expect(companyListCell(r, column('normal_terminal_pv')).value).toBeCloseTo(100 / 1.1 ** 10);
+    expect(companyListCell(r, column('mid_npv_percent')).value).toBe(old);
+    r.valuation.value = null; r.valuation.cashPV = null; r.valuation.terminalPV = null;
+    expect(companyListCell(r, column('normal_npv_percent', 'latest', 'terminal_100')).value).toBe(normal.value);
+  });
+});
 
 describe('custom company list KPIs', () => {
   it('uses exactly the selected latest annual observations and preserves signs and zero', () => {

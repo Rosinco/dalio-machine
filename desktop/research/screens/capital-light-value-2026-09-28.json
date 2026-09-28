@@ -1,0 +1,383 @@
+{
+  "format": "macro-atlas-saved-screen-record",
+  "version": 1,
+  "created": "2026-09-28",
+  "installedAppVersion": "0.22.1",
+  "view": {
+    "id": "list-mulnxm7l-igypska",
+    "name": "Capital-light value candidates",
+    "columns": [
+      {
+        "id": "sector",
+        "kpiId": "sector",
+        "window": "latest",
+        "calculation": "latest"
+      },
+      {
+        "id": "branch",
+        "kpiId": "branch",
+        "window": "latest",
+        "calculation": "latest"
+      },
+      {
+        "id": "npv_full",
+        "kpiId": "valuation_attractiveness",
+        "window": "latest",
+        "calculation": "terminal_100"
+      },
+      {
+        "id": "npv_half",
+        "kpiId": "valuation_attractiveness",
+        "window": "latest",
+        "calculation": "terminal_50",
+        "range": {
+          "min": "42.85714285714286",
+          "max": ""
+        }
+      },
+      {
+        "id": "npv_no_terminal",
+        "kpiId": "valuation_attractiveness",
+        "window": "latest",
+        "calculation": "terminal_0"
+      },
+      {
+        "id": "low_npv_percent",
+        "kpiId": "low_npv_percent",
+        "window": "latest",
+        "calculation": "latest",
+        "range": {
+          "min": "0",
+          "max": ""
+        }
+      },
+      {
+        "id": "rota_5y",
+        "kpiId": "provider_35",
+        "window": "provider:screener:5year",
+        "calculation": "provider:mean",
+        "range": {
+          "min": "10",
+          "max": ""
+        }
+      },
+      {
+        "id": "roic_5y",
+        "kpiId": "provider_37",
+        "window": "provider:screener:5year",
+        "calculation": "provider:mean",
+        "range": {
+          "min": "15",
+          "max": ""
+        }
+      },
+      {
+        "id": "capex_cfo_5y",
+        "kpiId": "provider_25",
+        "window": "provider:screener:5year",
+        "calculation": "provider:mean",
+        "range": {
+          "min": "0",
+          "max": "40"
+        }
+      },
+      {
+        "id": "tangible_assets_revenue",
+        "kpiId": "tangible_assets_revenue",
+        "window": "latest",
+        "calculation": "latest",
+        "range": {
+          "min": "0",
+          "max": "0.5"
+        }
+      },
+      {
+        "id": "ebit_margin_median",
+        "kpiId": "ebit_margin",
+        "window": "5",
+        "calculation": "median",
+        "range": {
+          "min": "10",
+          "max": ""
+        }
+      },
+      {
+        "id": "net_debt_ebitda",
+        "kpiId": "provider_42",
+        "window": "provider:screener:last",
+        "calculation": "provider:latest",
+        "range": {
+          "min": "",
+          "max": "2"
+        }
+      },
+      {
+        "id": "ebitda_margin",
+        "kpiId": "provider_32",
+        "window": "provider:screener:last",
+        "calculation": "provider:latest"
+      },
+      {
+        "id": "positive_fcf",
+        "kpiId": "positive_fcf",
+        "window": "5",
+        "calculation": "latest"
+      },
+      {
+        "id": "positive_ebit",
+        "kpiId": "positive_ebit",
+        "window": "5",
+        "calculation": "latest"
+      },
+      {
+        "id": "price_date",
+        "kpiId": "price_date",
+        "window": "latest",
+        "calculation": "latest"
+      },
+      {
+        "id": "annual_date",
+        "kpiId": "annual_date",
+        "window": "latest",
+        "calculation": "latest"
+      }
+    ],
+    "filters": {
+      "query": "",
+      "sectorId": "all",
+      "branchId": "all",
+      "country": "all",
+      "route": "operating",
+      "readiness": "history_available",
+      "presence": "latest",
+      "watchlistOnly": false,
+      "preset": "cash_consistency",
+      "numericRules": [
+        {
+          "column": {
+            "id": "ebitda_margin_positive",
+            "kpiId": "provider_32",
+            "window": "provider:screener:last",
+            "calculation": "provider:latest"
+          },
+          "operator": "gt",
+          "value": 0
+        }
+      ]
+    },
+    "sort": {
+      "columnId": "npv_half",
+      "direction": "desc"
+    }
+  },
+  "evidence": {
+    "viewFile": "/tmp/atlas-capital-light-view.json",
+    "method": "Independent Python arithmetic from SHA-256 and byte-verified bundled research gauge and expanded KPI artifacts; no thresholds fitted to company names. Application parser/run verification remains separate.",
+    "researchSnapshot": "2026-09-13",
+    "providerSnapshot": "2026-08-10",
+    "financialPackId": "1f1534d48fc30c1e3769cb7f1e9060c85fb1dc63ec39b06ada40fb6e11d2c69a",
+    "researchGaugeSha256": "fcbcccadbdd86da4a6521a64c2be8907ceff91f23dc1aa2e7fcfd2f991ba0e2b",
+    "expectedListingCount": 4,
+    "counts": [
+      {
+        "condition": "cash_consistency + latest presence",
+        "before": 19140,
+        "after": 3460
+      },
+      {
+        "condition": "half-terminal NPV / price >= 42.85714285714286%",
+        "before": 3460,
+        "after": 336
+      },
+      {
+        "condition": "Low NPV / price >= 0%",
+        "before": 336,
+        "after": 135
+      },
+      {
+        "condition": "ROA-G five-year mean >= 10%",
+        "before": 135,
+        "after": 25
+      },
+      {
+        "condition": "ROIC five-year mean >= 15%",
+        "before": 25,
+        "after": 16
+      },
+      {
+        "condition": "Capex / CFO five-year mean between 0 and 40%",
+        "before": 16,
+        "after": 10
+      },
+      {
+        "condition": "Five-report EBIT margin median >= 10%",
+        "before": 10,
+        "after": 8
+      },
+      {
+        "condition": "Latest Net debt / EBITDA <= 2",
+        "before": 8,
+        "after": 7
+      },
+      {
+        "condition": "Latest EBITDA margin > 0",
+        "before": 7,
+        "after": 7
+      },
+      {
+        "condition": "Latest tangible assets / revenue between 0 and 0.5",
+        "before": 7,
+        "after": 4
+      }
+    ],
+    "rows": [
+      {
+        "id": "65822",
+        "name": "Huuuge Inc",
+        "country": "DE",
+        "isin": null,
+        "priceDate": "2026-02-09",
+        "annualEnd": "2025-12-31",
+        "halfTerminalSurplusPercent": 89.80250389210357,
+        "lowNpvPercent": 48.57871361863307,
+        "tangibleAssetsRevenue": 0.019234606159658694,
+        "rota5y": 35.666839599609375,
+        "roic5y": 230.85440063476562,
+        "capexCfo5y": 6.159814834594727,
+        "ebitMargin5Median": 28.27013471651324,
+        "netDebtEbitda": -1.3763959407806396,
+        "ebitdaMargin": 39.718841552734375,
+        "allFiveAnnualCfoPositive": true
+      },
+      {
+        "id": "32498",
+        "name": "Huuuge Inc",
+        "country": "PL",
+        "isin": null,
+        "priceDate": "2026-02-09",
+        "annualEnd": "2025-12-31",
+        "halfTerminalSurplusPercent": 82.34524539891498,
+        "lowNpvPercent": 42.88304861754493,
+        "tangibleAssetsRevenue": 0.01923460615965869,
+        "rota5y": 35.666839599609375,
+        "roic5y": 230.85440063476562,
+        "capexCfo5y": 6.159814834594727,
+        "ebitMargin5Median": 28.27013471651323,
+        "netDebtEbitda": -1.3763959407806396,
+        "ebitdaMargin": 39.718841552734375,
+        "allFiveAnnualCfoPositive": true
+      },
+      {
+        "id": "48939",
+        "name": "Kowa Co Ltd",
+        "country": "DE",
+        "isin": "JP3292900002",
+        "priceDate": "2026-04-09",
+        "annualEnd": "2026-02-28",
+        "halfTerminalSurplusPercent": 59.378899926340736,
+        "lowNpvPercent": 27.695918410231425,
+        "tangibleAssetsRevenue": 0.1420780700154854,
+        "rota5y": 10.597029685974121,
+        "roic5y": 29.61591911315918,
+        "capexCfo5y": 23.21232032775879,
+        "ebitMargin5Median": 11.692674262254526,
+        "netDebtEbitda": -1.8413130044937134,
+        "ebitdaMargin": 15.296090126037598,
+        "allFiveAnnualCfoPositive": true
+      },
+      {
+        "id": "69960",
+        "name": "Aerostar SA",
+        "country": "DE",
+        "isin": "ROAEROACNOR5",
+        "priceDate": "2026-02-09",
+        "annualEnd": "2025-12-31",
+        "halfTerminalSurplusPercent": 56.63736279335383,
+        "lowNpvPercent": 4.624301551578845,
+        "tangibleAssetsRevenue": 0.23105427030732756,
+        "rota5y": 12.068280220031738,
+        "roic5y": 23.080429077148438,
+        "capexCfo5y": 18.697479248046875,
+        "ebitMargin5Median": 16.507185901441414,
+        "netDebtEbitda": -2.549264907836914,
+        "ebitdaMargin": 21.06616973876953,
+        "allFiveAnnualCfoPositive": true
+      }
+    ],
+    "limitations": [
+      "All results use saved historical quotes, not current prices.",
+      "Provider ROA-G is profit / (total assets - intangible assets), not normalized NOPAT / average operating tangible capital. True ROTCE remains a company research task.",
+      "Vendor tangible_assets field is not reconciled PP&E. Repository requires checking leases, property, biological assets, accounting age and replacement costs.",
+      "Provider Capex / CFO includes acquisitions and disposals; it does not establish maintenance spending.",
+      "A 50% terminal credit and 30% margin to that value are explicit screening policies, not calibrated probabilities.",
+      "Historical margins are a screening proxy only; pricing power needs evidence on realized prices, volume, customer retention and competition.",
+      "Rows count listings; multiple listings of the same issuer can remain."
+    ],
+    "sources": [
+      {
+        "title": "Borsdata ROA-G definition",
+        "url": "https://borsdata.se/en/info/ratios/roa-g"
+      },
+      {
+        "title": "Borsdata ROIC definition",
+        "url": "https://borsdata.se/info/nyckeltal/roic"
+      },
+      {
+        "title": "Borsdata Capex definition",
+        "url": "https://borsdata.se/en/info/ratios/capex"
+      },
+      {
+        "title": "Berkshire 1981 letter inflation characteristics",
+        "url": "https://www.berkshirehathaway.com/letters/1981.html"
+      }
+    ]
+  },
+  "verification": {
+    "mode": "save",
+    "savedViewId": "list-mulnxm7l-igypska",
+    "name": "Capital-light value candidates",
+    "count": 4,
+    "ids": [
+      "65822",
+      "32498",
+      "48939",
+      "69960"
+    ],
+    "unrelatedKeysPreserved": 61,
+    "previousSavedViewsPreserved": 1,
+    "columns": 17,
+    "verifiedAt": "2026-09-28T19:51:11.746Z"
+  },
+  "restartVerification": {
+    "mode": "verify",
+    "savedViewId": "list-mulnxm7l-igypska",
+    "name": "Capital-light value candidates",
+    "count": 4,
+    "ids": [
+      "65822",
+      "32498",
+      "48939",
+      "69960"
+    ],
+    "unrelatedKeysPreserved": 61,
+    "previousSavedViewsPreserved": 1,
+    "columns": 17,
+    "verifiedAt": "2026-09-28T19:52:35.252Z"
+  },
+  "normalLaunchVerification": {
+    "At": "2026-09-28T19:53:41.5515077Z",
+    "Status": "PASS",
+    "PreviousProcessId": 26684,
+    "FinalProcessId": 8440,
+    "Executable": "C:\\Users\\Adamb\\AppData\\Local\\MacroAtlas\\0.22.1\\Macro Atlas.exe",
+    "ExecutableVersion": "0.22.1",
+    "ExecutableSHA256": "743293388822A27B6D31B016292A100947932483A0F80911E2EDC062406204BB",
+    "WindowTitle": "Macro Atlas",
+    "WebViewProcessId": 37084,
+    "RemoteDebuggingEnabled": false,
+    "Port9335ListenerCount": 0,
+    "Cdp9335Closed": true,
+    "ProfileRecordsMutated": false,
+    "GracefulExit": true
+  }
+}

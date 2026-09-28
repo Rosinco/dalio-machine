@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { FinancialIndex } from './financialData';
 import type { ResearchGaugeArtifact, ResearchGaugeManifest, ResearchGaugeRow } from './researchGaugeModel';
+import { researchGaugeSeries } from './researchGaugeModel';
 import { decodeResearchGauge, readResearchGaugeBytes, researchGaugeHash, validateResearchGaugeArtifact, validateResearchGaugeManifest } from './researchGauge';
 
 const pack = 'a'.repeat(64), taxonomy = 'b'.repeat(64), companyHash = 'c'.repeat(64);
@@ -21,6 +22,44 @@ function fixture() {
 }
 
 describe('source-bound research screen', () => {
+  function screeningFixture() {
+    const f = fixture();
+    f.financial.sources.push({ id: 'annual-2026-08-10', as_of: '2026-08-10', frequency: 'annual' } as FinancialIndex['sources'][number]);
+    const periods = Array.from({ length: 10 }, (_, i) => { const year = 2025 - i; return { year, period: 5, start: `${year}-01-01`, end: `${year}-12-31`, published: `${year + 1}-02-15`, currency: 'SEK', sourceId: 'annual-2026-08-10', sourceAsOf: '2026-08-10' }; });
+    f.row.screeningAnnual = { asOf: f.manifest.asOf, periods, cash: [null, 0, -1, ...Array(7).fill(10)], operatingCash: Array(10).fill(20), ebit: Array(10).fill(15), revenue: Array(10).fill(100), equity: Array(10).fill(50), netDebt: Array(10).fill(-10), assets: Array(10).fill(80), intangibleAssets: Array(10).fill(5), tangibleAssets: Array(10).fill(20), profit: Array(10).fill(12), reason: null };
+    Object.assign(f.row.annual, { currency: 'SEK', latest: structuredClone(periods[0]), periods: structuredClone(periods.slice(0, 5)), reason: null });
+    for (const key of ['cash', 'operatingCash', 'ebit', 'revenue'] as const) f.row.annual[key] = researchGaugeSeries(f.row.screeningAnnual[key].slice(0, 5));
+    f.row.annual.margins = researchGaugeSeries(Array(5).fill(15));
+    Object.assign(f.row.annual.latestValues, { cash: null, operatingCash: 20, ebit: 15, revenues: 100 });
+    return f;
+  }
+  it('accepts optional ten-year screening evidence and keeps older artifacts without it readable', () => {
+    const f = screeningFixture();
+    expect(validateResearchGaugeArtifact(f.data, f.manifest, f.financial, taxonomy)).toBe(f.data);
+    expect(f.row.screeningAnnual!.cash.slice(0, 3)).toEqual([null, 0, -1]);
+    delete f.row.screeningAnnual;
+    expect(validateResearchGaugeArtifact(f.data, f.manifest, f.financial, taxonomy)).toBe(f.data);
+  });
+  it('rejects unbound, incompatible, misaligned and nonfinite screening observations', () => {
+    const mutations: ((f: ReturnType<typeof screeningFixture>) => void)[] = [
+      f => { f.row.screeningAnnual!.asOf = '2026-09-14'; },
+      f => { f.row.screeningAnnual!.periods[0].sourceId = 'other-source'; },
+      f => { f.row.screeningAnnual!.periods[5].currency = 'EUR'; },
+      f => { f.row.screeningAnnual!.periods[5].year -= 1; },
+      f => { f.row.screeningAnnual!.periods[5].end = '2021-01-05'; },
+      f => { f.row.screeningAnnual!.cash.pop(); },
+      f => { f.row.screeningAnnual!.cash[0] = Infinity; },
+      f => { f.row.screeningAnnual!.periods.push(structuredClone(f.row.screeningAnnual!.periods[9])); },
+    ];
+    for (const mutate of mutations) { const f = screeningFixture(); mutate(f); expect(() => validateResearchGaugeArtifact(f.data, f.manifest, f.financial, taxonomy)).toThrow(); }
+  });
+  it('rejects a valid but shifted screening window or changed cash against the existing report prefix', () => {
+    const shifted = screeningFixture();
+    shifted.row.screeningAnnual!.periods.forEach(p => { p.year--; p.start = `${p.year}-01-01`; p.end = `${p.year}-12-31`; p.published = `${p.year + 1}-02-15`; });
+    expect(() => validateResearchGaugeArtifact(shifted.data, shifted.manifest, shifted.financial, taxonomy)).toThrow(/prefix/);
+    const modified = screeningFixture(); modified.row.screeningAnnual!.cash[1] = 100;
+    expect(() => validateResearchGaugeArtifact(modified.data, modified.manifest, modified.financial, taxonomy)).toThrow(/prefix/);
+  });
   it('keeps a listing with no history and no valuation visible as missing', () => {
     const f = fixture();
     expect(validateResearchGaugeArtifact(f.data, f.manifest, f.financial, taxonomy).rows[0].valuation.value).toBeNull();

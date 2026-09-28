@@ -1,0 +1,653 @@
+{
+  "format": "macro-atlas-saved-screen-record",
+  "version": 1,
+  "created": "2026-09-28",
+  "installedAppVersion": "0.22.1",
+  "view": {
+    "id": "list-mulqbv5h-32qefoa",
+    "name": "Exceptionella bolag – rimligt pris",
+    "columns": [
+      {
+        "id": "sector",
+        "kpiId": "sector",
+        "window": "latest",
+        "calculation": "latest"
+      },
+      {
+        "id": "branch",
+        "kpiId": "branch",
+        "window": "latest",
+        "calculation": "latest"
+      },
+      {
+        "id": "roic_floor",
+        "kpiId": "provider_37",
+        "window": "provider:screener:5year",
+        "calculation": "provider:low",
+        "range": {
+          "min": "15",
+          "max": ""
+        }
+      },
+      {
+        "id": "roic_mean",
+        "kpiId": "provider_37",
+        "window": "provider:screener:5year",
+        "calculation": "provider:mean",
+        "range": {
+          "min": "25",
+          "max": ""
+        }
+      },
+      {
+        "id": "rota_mean",
+        "kpiId": "provider_35",
+        "window": "provider:screener:5year",
+        "calculation": "provider:mean",
+        "range": {
+          "min": "10",
+          "max": ""
+        }
+      },
+      {
+        "id": "ebit_margin_median",
+        "kpiId": "ebit_margin",
+        "window": "5",
+        "calculation": "median",
+        "range": {
+          "min": "15",
+          "max": ""
+        }
+      },
+      {
+        "id": "ebit_margin_min",
+        "kpiId": "ebit_margin",
+        "window": "5",
+        "calculation": "min",
+        "range": {
+          "min": "10",
+          "max": ""
+        }
+      },
+      {
+        "id": "revenue_growth_5",
+        "kpiId": "revenue",
+        "window": "5",
+        "calculation": "growth",
+        "range": {
+          "min": "5",
+          "max": ""
+        }
+      },
+      {
+        "id": "revenue_growth_3",
+        "kpiId": "revenue",
+        "window": "3",
+        "calculation": "growth",
+        "range": {
+          "min": "3",
+          "max": ""
+        }
+      },
+      {
+        "id": "cfo_growth_5",
+        "kpiId": "cfo",
+        "window": "5",
+        "calculation": "growth",
+        "range": {
+          "min": "0",
+          "max": ""
+        }
+      },
+      {
+        "id": "capex_cfo_mean",
+        "kpiId": "provider_25",
+        "window": "provider:screener:5year",
+        "calculation": "provider:mean",
+        "range": {
+          "min": "0",
+          "max": "35"
+        }
+      },
+      {
+        "id": "tangible_assets_revenue",
+        "kpiId": "tangible_assets_revenue",
+        "window": "latest",
+        "calculation": "latest",
+        "range": {
+          "min": "0",
+          "max": "0.5"
+        }
+      },
+      {
+        "id": "net_debt_ebitda",
+        "kpiId": "provider_42",
+        "window": "provider:screener:last",
+        "calculation": "provider:latest",
+        "range": {
+          "min": "",
+          "max": "1.5"
+        }
+      },
+      {
+        "id": "ebitda_margin",
+        "kpiId": "provider_32",
+        "window": "provider:screener:last",
+        "calculation": "provider:latest"
+      },
+      {
+        "id": "npv_full",
+        "kpiId": "valuation_attractiveness",
+        "window": "latest",
+        "calculation": "terminal_100",
+        "range": {
+          "min": "0",
+          "max": ""
+        }
+      },
+      {
+        "id": "npv_half",
+        "kpiId": "valuation_attractiveness",
+        "window": "latest",
+        "calculation": "terminal_50"
+      },
+      {
+        "id": "npv_no_terminal",
+        "kpiId": "valuation_attractiveness",
+        "window": "latest",
+        "calculation": "terminal_0"
+      },
+      {
+        "id": "low_npv_percent",
+        "kpiId": "low_npv_percent",
+        "window": "latest",
+        "calculation": "latest"
+      },
+      {
+        "id": "terminal_share",
+        "kpiId": "terminal_share",
+        "window": "latest",
+        "calculation": "latest"
+      },
+      {
+        "id": "quarter_revenue_change",
+        "kpiId": "quarter_revenue_change",
+        "window": "latest",
+        "calculation": "latest"
+      },
+      {
+        "id": "positive_fcf",
+        "kpiId": "positive_fcf",
+        "window": "5",
+        "calculation": "latest"
+      },
+      {
+        "id": "positive_ebit",
+        "kpiId": "positive_ebit",
+        "window": "5",
+        "calculation": "latest"
+      },
+      {
+        "id": "price_date",
+        "kpiId": "price_date",
+        "window": "latest",
+        "calculation": "latest"
+      },
+      {
+        "id": "annual_date",
+        "kpiId": "annual_date",
+        "window": "latest",
+        "calculation": "latest"
+      }
+    ],
+    "filters": {
+      "query": "",
+      "sectorId": "all",
+      "branchId": "all",
+      "country": "all",
+      "route": "operating",
+      "readiness": "history_available",
+      "presence": "latest",
+      "watchlistOnly": false,
+      "preset": "cash_consistency",
+      "numericRules": [
+        {
+          "column": {
+            "id": "ebitda_positive",
+            "kpiId": "provider_32",
+            "window": "provider:screener:last",
+            "calculation": "provider:latest"
+          },
+          "operator": "gt",
+          "value": 0
+        }
+      ]
+    },
+    "sort": {
+      "columnId": "roic_floor",
+      "direction": "desc"
+    }
+  },
+  "evidence": {
+    "researchSnapshot": "2026-09-13",
+    "providerSnapshot": "2026-08-10",
+    "financialPackId": "1f1534d48fc30c1e3769cb7f1e9060c85fb1dc63ec39b06ada40fb6e11d2c69a",
+    "counts": [
+      {
+        "condition": "Five comparable positive annual FCF and EBIT, operating, latest directory, no classification conflict",
+        "before": 19140,
+        "after": 3460
+      },
+      {
+        "condition": "roic_floor [15, infinity]",
+        "before": 3460,
+        "after": 528
+      },
+      {
+        "condition": "roic_mean [25, infinity]",
+        "before": 528,
+        "after": 394
+      },
+      {
+        "condition": "rota_mean [10, infinity]",
+        "before": 394,
+        "after": 339
+      },
+      {
+        "condition": "ebit_margin_median [15, infinity]",
+        "before": 339,
+        "after": 254
+      },
+      {
+        "condition": "ebit_margin_min [10, infinity]",
+        "before": 254,
+        "after": 249
+      },
+      {
+        "condition": "revenue_growth_5 [5, infinity]",
+        "before": 249,
+        "after": 181
+      },
+      {
+        "condition": "revenue_growth_3 [3, infinity]",
+        "before": 181,
+        "after": 165
+      },
+      {
+        "condition": "cfo_growth_5 [0, infinity]",
+        "before": 165,
+        "after": 140
+      },
+      {
+        "condition": "capex_cfo_mean [0, 35]",
+        "before": 140,
+        "after": 75
+      },
+      {
+        "condition": "tangible_assets_revenue [0, 0.5]",
+        "before": 75,
+        "after": 73
+      },
+      {
+        "condition": "net_debt_ebitda [-infinity, 1.5]",
+        "before": 73,
+        "after": 64
+      },
+      {
+        "condition": "npv_full [0, infinity]",
+        "before": 64,
+        "after": 3
+      },
+      {
+        "condition": "Latest EBITDA margin strictly positive",
+        "before": 3,
+        "after": 3
+      }
+    ],
+    "count": 3,
+    "ids": [
+      "20313",
+      "40664",
+      "750"
+    ],
+    "verifiedArtifacts": [
+      {
+        "path": "data/research-gauge/gauge.bin",
+        "sha256": "fcbcccadbdd86da4a6521a64c2be8907ceff91f23dc1aa2e7fcfd2f991ba0e2b",
+        "bytes": 11272132,
+        "uncompressedSha256": "825391361a89ad37b28b32803b6617a64ee14f0f7108b9c4ecb5b8a1b52eb64c",
+        "uncompressedBytes": 77849515
+      },
+      {
+        "path": "data/expanded-kpis/index.bin",
+        "sha256": "f3bd80ba04a9eb5fca351de9a8353f0148410d2abce3d08e59dad7ecef06857b",
+        "bytes": 59495,
+        "uncompressedSha256": "16a71d1a100aae43f2479549d307a44870bbcb465d1a7449505a9b9ba4137fc2",
+        "uncompressedBytes": 377400
+      },
+      {
+        "path": "data/expanded-kpis/shard-061.bin",
+        "sha256": "ecaae30d137eb62351dd3ab56ac055c2de1b429a57767bccf0d52792137a12e5",
+        "bytes": 1940615,
+        "uncompressedSha256": "e285e53b10638bd2827d0ba9a3cf26f9f69b507d7cb4c6d0b7ef226f4937b778",
+        "uncompressedBytes": 4763214
+      },
+      {
+        "path": "data/expanded-kpis/shard-061.bin",
+        "sha256": "ecaae30d137eb62351dd3ab56ac055c2de1b429a57767bccf0d52792137a12e5",
+        "bytes": 1940615,
+        "uncompressedSha256": "e285e53b10638bd2827d0ba9a3cf26f9f69b507d7cb4c6d0b7ef226f4937b778",
+        "uncompressedBytes": 4763214
+      },
+      {
+        "path": "data/expanded-kpis/shard-058.bin",
+        "sha256": "93778877b3557c76544de13b71280cb89b64a04b6a636390d6ea40d9743bb15b",
+        "bytes": 2117926,
+        "uncompressedSha256": "22d8b9e50e5a62195264ec92e0daf1131d1a89fdd4cf93ea195cc41e844f015d",
+        "uncompressedBytes": 5060943
+      },
+      {
+        "path": "data/expanded-kpis/shard-043.bin",
+        "sha256": "febf2f44872521643a6fb5ed25e64d9c2c80c744d4caded1f198c895977dc0b6",
+        "bytes": 1121009,
+        "uncompressedSha256": "9451ea4357b8914802812b068bed12b870fc56bd0b98e55d3c4ecac6d9dc5f4e",
+        "uncompressedBytes": 3395210
+      },
+      {
+        "path": "data/expanded-kpis/shard-069.bin",
+        "sha256": "7a13fe3898660b9da0f957cafd5fb7748b2d866b3696e0413462c97523864c51",
+        "bytes": 1770455,
+        "uncompressedSha256": "6fd7ffba9575f57b160d330445cf41a1fb09ac6745467ac2ab5a02ba69db6c1c",
+        "uncompressedBytes": 4330187
+      },
+      {
+        "path": "data/expanded-kpis/shard-054.bin",
+        "sha256": "72be162d121a95b30a692b3f01ba98506ca6727f8281def76229911ba7dbe710",
+        "bytes": 1613548,
+        "uncompressedSha256": "7f1a51f545fa4d9b01285d0cebe6c510356d3b40f89311df228c420dd60beba2",
+        "uncompressedBytes": 4190836
+      }
+    ],
+    "variants": [
+      {
+        "id": "provider_37_5year_low_screener",
+        "metricId": "provider_37",
+        "calcGroup": "5year",
+        "calculation": "low",
+        "source": "screener",
+        "label": "Return on Invested capital  low  5year",
+        "unit": "percent",
+        "currencyBasis": "none",
+        "availableCount": 15487,
+        "conflictCount": 0,
+        "scopeAvailabilityDifferenceCount": 0,
+        "invalidValueCount": 0,
+        "withheldCurrencyCount": 0,
+        "notes": [],
+        "shard": 61,
+        "offset": 11
+      },
+      {
+        "id": "provider_37_5year_mean_screener",
+        "metricId": "provider_37",
+        "calcGroup": "5year",
+        "calculation": "mean",
+        "source": "screener",
+        "label": "Return on Invested capital  mean  5year",
+        "unit": "percent",
+        "currencyBasis": "none",
+        "availableCount": 15496,
+        "conflictCount": 0,
+        "scopeAvailabilityDifferenceCount": 0,
+        "invalidValueCount": 0,
+        "withheldCurrencyCount": 0,
+        "notes": [],
+        "shard": 61,
+        "offset": 12
+      },
+      {
+        "id": "provider_35_5year_mean_screener",
+        "metricId": "provider_35",
+        "calcGroup": "5year",
+        "calculation": "mean",
+        "source": "screener",
+        "label": "Return on tangible assets   mean  5year",
+        "unit": "percent",
+        "currencyBasis": "none",
+        "availableCount": 15954,
+        "conflictCount": 0,
+        "scopeAvailabilityDifferenceCount": 0,
+        "invalidValueCount": 0,
+        "withheldCurrencyCount": 0,
+        "notes": [],
+        "shard": 58,
+        "offset": 10
+      },
+      {
+        "id": "provider_25_5year_mean_screener",
+        "metricId": "provider_25",
+        "calcGroup": "5year",
+        "calculation": "mean",
+        "source": "screener",
+        "label": "Capex %  mean  5year",
+        "unit": "percent",
+        "currencyBasis": "none",
+        "availableCount": 15399,
+        "conflictCount": 0,
+        "scopeAvailabilityDifferenceCount": 0,
+        "invalidValueCount": 0,
+        "withheldCurrencyCount": 0,
+        "notes": [
+          "Provider cash flow is not reconciled owner cash; leases and investment classification require review."
+        ],
+        "shard": 43,
+        "offset": 0
+      },
+      {
+        "id": "provider_42_last_latest_screener",
+        "metricId": "provider_42",
+        "calcGroup": "last",
+        "calculation": "latest",
+        "source": "screener",
+        "label": "Net Debt / EBITDA  latest",
+        "unit": "multiple",
+        "currencyBasis": "none",
+        "availableCount": 12298,
+        "conflictCount": 0,
+        "scopeAvailabilityDifferenceCount": 0,
+        "invalidValueCount": 0,
+        "withheldCurrencyCount": 0,
+        "notes": [],
+        "shard": 69,
+        "offset": 14
+      },
+      {
+        "id": "provider_32_last_latest_screener",
+        "metricId": "provider_32",
+        "calcGroup": "last",
+        "calculation": "latest",
+        "source": "screener",
+        "label": "EBITDA margin  latest",
+        "unit": "percent",
+        "currencyBasis": "none",
+        "availableCount": 13977,
+        "conflictCount": 0,
+        "scopeAvailabilityDifferenceCount": 0,
+        "invalidValueCount": 0,
+        "withheldCurrencyCount": 0,
+        "notes": [],
+        "shard": 54,
+        "offset": 4
+      }
+    ],
+    "rows": [
+      {
+        "id": "20313",
+        "name": "Moury Construct SA",
+        "country": "BE",
+        "isin": "BE0003602134",
+        "priceDate": "2026-02-09",
+        "annualEnd": "2025-12-31",
+        "metrics": {
+          "roic_floor": 69.0543212890625,
+          "roic_mean": 112.56629943847656,
+          "rota_mean": 12.785909652709961,
+          "ebit_margin_median": 15.367964252397865,
+          "ebit_margin_min": 12.421563246354452,
+          "revenue_growth_5": 16.640687924654696,
+          "revenue_growth_3": 13.399741117632091,
+          "cfo_growth_5": 37.05868395754817,
+          "capex_cfo_mean": 10.27439022064209,
+          "tangible_assets_revenue": 0.07185676732705007,
+          "net_debt_ebitda": -3.744173049926758,
+          "ebitda_margin": 16.17738914489746,
+          "npv_full": 6.624848911230363,
+          "npv_half": -5.964196382208742,
+          "npv_no_terminal": -18.553241675647847,
+          "low_npv_percent": -95.51269847392743,
+          "terminal_share": 23.613717481410003,
+          "quarter_revenue_change": null
+        }
+      },
+      {
+        "id": "40664",
+        "name": "Moury Construct SA",
+        "country": "DE",
+        "isin": "BE0003602134",
+        "priceDate": "2026-02-09",
+        "annualEnd": "2025-12-31",
+        "metrics": {
+          "roic_floor": 69.0543212890625,
+          "roic_mean": 112.56629943847656,
+          "rota_mean": 12.785909652709961,
+          "ebit_margin_median": 15.367964252397865,
+          "ebit_margin_min": 12.421563246354452,
+          "revenue_growth_5": 16.640687924654696,
+          "revenue_growth_3": 13.399741117632091,
+          "cfo_growth_5": 37.05868395754817,
+          "capex_cfo_mean": 10.27439022064209,
+          "tangible_assets_revenue": 0.07185676732705007,
+          "net_debt_ebitda": -3.744173049926758,
+          "ebitda_margin": 16.17738914489746,
+          "npv_full": 11.817617527037028,
+          "npv_half": -1.3845306216020203,
+          "npv_no_terminal": -14.58667877024109,
+          "low_npv_percent": -95.29416106194337,
+          "terminal_share": 23.613717481410003,
+          "quarter_revenue_change": null
+        }
+      },
+      {
+        "id": "750",
+        "name": "Evolution",
+        "country": "SE",
+        "isin": "SE0012673267",
+        "priceDate": "2026-02-05",
+        "annualEnd": "2025-12-31",
+        "metrics": {
+          "roic_floor": 24.725290298461914,
+          "roic_mean": 31.11479949951172,
+          "rota_mean": 51.54167175292969,
+          "ebit_margin_median": 62.33534261846853,
+          "ebit_margin_min": 59.3570883298941,
+          "revenue_growth_5": 18.636827454081196,
+          "revenue_growth_3": 8.503564066367474,
+          "cfo_growth_5": 20.305941940858574,
+          "capex_cfo_mean": 17.937660217285156,
+          "tangible_assets_revenue": 0.12417766535565221,
+          "net_debt_ebitda": -0.7849022150039673,
+          "ebitda_margin": 66.01526641845703,
+          "npv_full": 7.7138615706418445,
+          "npv_half": -12.449109546317915,
+          "npv_no_terminal": -32.612080663277695,
+          "low_npv_percent": -32.19522205560179,
+          "terminal_share": 37.438024824198365,
+          "quarter_revenue_change": -1.235625222929441
+        }
+      }
+    ]
+  },
+  "modelVerification": {
+    "status": "PASS",
+    "count": 3,
+    "ids": [
+      "20313",
+      "40664",
+      "750"
+    ],
+    "columns": 24,
+    "parserPreservesView": true,
+    "independentArithmeticMatches": true,
+    "at": "2026-09-28T20:54:57.053Z"
+  },
+  "verification": {
+    "mode": "save",
+    "savedViewId": "list-mulqbv5h-32qefoa",
+    "name": "Exceptionella bolag – rimligt pris",
+    "count": 3,
+    "ids": [
+      "20313",
+      "40664",
+      "750"
+    ],
+    "unrelatedKeysPreserved": 63,
+    "previousSavedViewsPreserved": 2,
+    "columns": 24,
+    "verifiedAt": "2026-09-28T20:58:16.127Z"
+  },
+  "restartVerification": {
+    "mode": "verify",
+    "savedViewId": "list-mulqbv5h-32qefoa",
+    "name": "Exceptionella bolag – rimligt pris",
+    "count": 3,
+    "ids": [
+      "20313",
+      "40664",
+      "750"
+    ],
+    "unrelatedKeysPreserved": 63,
+    "previousSavedViewsPreserved": 2,
+    "columns": 24,
+    "verifiedAt": "2026-09-28T20:59:03.277Z"
+  },
+  "normalLaunchVerification": {
+    "At": "2026-09-28T20:59:36.5675450Z",
+    "Mode": "finish",
+    "Status": "PASS",
+    "PreviousProcessId": 35668,
+    "Backup": null,
+    "GracefulExit": true,
+    "ProfileRecordsWrittenByHelper": false,
+    "Launch": {
+      "ProcessId": 44528,
+      "Executable": "C:\\Users\\Adamb\\AppData\\Local\\MacroAtlas\\0.22.1\\Macro Atlas.exe",
+      "ExecutableVersion": "0.22.1",
+      "ExecutableSHA256": "743293388822A27B6D31B016292A100947932483A0F80911E2EDC062406204BB",
+      "WindowTitle": "Macro Atlas",
+      "WebViewProcessId": 44688,
+      "RemoteDebuggingEnabled": false,
+      "Port9335ListenerCount": 0
+    }
+  },
+  "limitations": [
+    "Quality thresholds are research choices, not proof of exceptional business quality or pricing power.",
+    "Fair means full-terminal Starter Mid NPV / dated saved price >= 0%; half/zero-terminal and Low scenarios remain visible, with no extra valuation thresholds.",
+    "Five annual reports normally span about four elapsed years, three span about two. Native CAGR uses actual fiscal dates and strictly positive complete comparable histories.",
+    "CFO CAGR >= 0 also enforces all five operating cash flow observations positive; it is an explicit non-declining cash-flow condition.",
+    "Provider ROIC and ROA-G are not normalized NOPAT / average operating tangible capital; provider five-year summary coverage may differ from the five retained annual reports.",
+    "Low recorded tangible assets and capex ratios do not prove low replacement capital, maintenance investment or intangible reinvestment; capex can include acquisitions/disposals.",
+    "All three matches have negative half-terminal and Low sensitivity values; these sensitivities are not probabilities or guaranteed loss limits.",
+    "Frozen quotes are from February 2026. No updated valuation or recommendation follows; reconcile current price/share basis, owner cash, replacement costs, moat and survival separately.",
+    "Multiple listings can represent one issuer. Existing valuation and purchase/sizing policies remain unchanged."
+  ],
+  "sources": [
+    {
+      "title": "Borsdata ROIC definition",
+      "url": "https://borsdata.se/info/nyckeltal/roic"
+    },
+    {
+      "title": "Borsdata Capex definition",
+      "url": "https://borsdata.se/en/info/ratios/capex"
+    }
+  ]
+}

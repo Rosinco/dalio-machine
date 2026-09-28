@@ -19,6 +19,30 @@ function history(): FinancialCompany { return { id: '200', annual: [2021, 2022, 
 const build = (h = history(), t = taxonomy) => buildResearchGaugeRow(entry, h, index, t, asOf);
 
 describe('offline research evidence model', () => {
+  it('retains ten dated screening reports including exceptional years without extending the existing five-report series', () => {
+    const h = history(); h.annual = Array.from({ length: 12 }, (_, i) => report(2014 + i, i === 8 ? -7 : i === 7 ? null : 10));
+    h.annual.at(-1)!.values.profit_to_equity_holders = 13;
+    const before = structuredClone(h), row = build(h), screening = row.screeningAnnual!;
+    expect(screening.asOf).toBe(asOf);
+    expect(screening.periods.map(p => p.year)).toEqual([2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016]);
+    expect(screening.cash).toEqual([10, 10, 10, -7, null, 10, 10, 10, 10, 10]);
+    expect(screening.profit).toEqual([13, null, null, null, null, null, null, null, null, null]);
+    expect(screening.netDebt).toEqual(Array(10).fill(-10));
+    expect(screening.reason).toBeNull();
+    expect(row.annual.periods.map(p => p.year)).toEqual([2025, 2024, 2023, 2022, 2021]);
+    expect(row.annual.cash.values).toEqual(screening.cash.slice(0, 5));
+    expect(h).toEqual(before);
+  });
+  it('stops the longer screening window at an older gap, placeholder or currency change without changing the shorter window', () => {
+    for (const changed of [report(2019), report(2020, 0, { raw: { revenues: 0 }, values: { revenues: 0 } }), report(2020, 10, { currency: 'SEK' })]) {
+      const h = history(); h.annual = [report(2018), report(2019), changed, ...h.annual];
+      const row = build(h);
+      expect(row.annual.periods).toHaveLength(5); expect(row.annual.reason).toBeNull();
+      expect(row.screeningAnnual!.periods).toHaveLength(5); expect(row.screeningAnnual!.reason).not.toBeNull();
+    }
+    const h = history(); h.withheld = [{ year: 2026, period: 5, source_id: 'annual-2026-08-10', start: '', end: '', published: '', reason: 'Invalid dates' }];
+    expect(build(h).screeningAnnual!.periods).toEqual([]);
+  });
   it('keeps signed cash, zero and missing observations distinct, including a missing latest value', () => {
     const s = researchGaugeSeries([null, -10, 0, 10, 20]);
     expect(s).toMatchObject({ count: 4, positive: 2, negative: 1, zero: 1, latest: null, median: 5 });

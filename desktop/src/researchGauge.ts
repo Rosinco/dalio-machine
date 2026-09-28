@@ -77,6 +77,23 @@ function validateRow(row: ResearchGaugeRow, manifest: ResearchGaugeManifest, fin
   for (const key of ['cash', 'operatingCash', 'ebit', 'revenue', 'margins'] as const) validateSeries(a[key], a.periods.length);
   fail(object(a.latestValues) && ['revenues', 'ebit', 'cash', 'operatingCash', 'financingCash', 'cashBalance', 'netDebt', 'equity', 'assets', 'netDebtToAssetsPercent', 'equityToAssetsPercent', 'tangibleAssetsToRevenue', 'intangibleAssetsToAssetsPercent', 'cashComponentDifference'].every(k => numeric(a.latestValues[k as keyof typeof a.latestValues])));
   fail(a.latestValues.cash === a.cash.latest && a.latestValues.operatingCash === a.operatingCash.latest && a.latestValues.ebit === a.ebit.latest && a.latestValues.revenues === a.revenue.latest);
+  if (row.screeningAnnual !== undefined) {
+    const screening = row.screeningAnnual;
+    fail(object(screening) && screening.asOf === manifest.asOf && Array.isArray(screening.periods) && screening.periods.length <= 10 && (screening.reason === null || text(screening.reason)), 'Invalid dated screening history.');
+    for (const [i, period] of screening.periods.entries()) {
+      validatePeriod(period, manifest.asOf, true, financial);
+      fail(period.currency === screening.periods[0].currency && differenceDays(period.end, period.start) >= 329 && differenceDays(period.end, period.start) <= 399, 'Screening reports are not comparable annual periods.');
+      if (i > 0) fail(period.year === screening.periods[i - 1].year - 1 && differenceDays(screening.periods[i - 1].start, period.end) >= 1 && differenceDays(screening.periods[i - 1].start, period.end) <= 35, 'Screening reports contain a gap or overlap.');
+    }
+    for (const key of ['cash', 'operatingCash', 'ebit', 'revenue', 'equity', 'netDebt', 'assets', 'intangibleAssets', 'tangibleAssets', 'profit'] as const)
+      fail(Array.isArray(screening[key]) && screening[key].length === screening.periods.length && screening[key].every(numeric), 'Screening values do not match their dated reports.');
+    const prefix = screening.periods.slice(0, 5);
+    fail(prefix.length === a.periods.length && prefix.every((period, i) =>
+      (['year', 'period', 'start', 'end', 'published', 'currency', 'sourceId', 'sourceAsOf'] as const).every(key => period[key] === a.periods[i][key])),
+    'Screening report prefix differs from the existing annual evidence.');
+    for (const key of ['cash', 'operatingCash', 'ebit', 'revenue'] as const)
+      fail(screening[key].slice(0, 5).every((value, i) => value === a[key].values[i]), 'Screening value prefix differs from the existing annual evidence.');
+  }
   const q = row.quarter;
   fail(object(q) && [q.revenueChangePercent, q.ebitMarginChangePoints, q.cashChange].every(numeric) && (q.reason === null || text(q.reason)));
   validatePeriod(q.latest, manifest.asOf, false, financial); validatePeriod(q.comparison, manifest.asOf, false, financial);

@@ -1,0 +1,69 @@
+{
+  "version": "0.23.0",
+  "status": "installed-and-verified",
+  "executableSha256": "5b7c27a0f3137e5df1328d029cbf4d4d2122f92b3fdd4fd16dea5b856b8d1c5b",
+  "normalLaunch": {
+    "ProcessId": 42284,
+    "Executable": "C:\\Users\\Adamb\\AppData\\Local\\MacroAtlas\\0.23.0\\Macro Atlas.exe",
+    "ExecutableVersion": "0.23.0",
+    "ExecutableSHA256": "5B7C27A0F3137E5DF1328D029CBF4D4D2122F92B3FDD4FD16DEA5B856B8D1C5B",
+    "WindowTitle": "Macro Atlas",
+    "WebViewProcessId": 29624,
+    "RemoteDebuggingEnabled": false,
+    "Port9335ListenerCount": 0
+  },
+  "screens": [
+    {
+      "name": "Kvalitetsbolag med rabatt – normalår",
+      "id": "list-mulslkos-wor8qyb",
+      "count": 0,
+      "record": "normal-years-quality-value-2026-09-28.json"
+    },
+    {
+      "name": "Kvalitetsbolag – normalår, prisbevakning",
+      "id": "list-mulsmf8a-29lpba0",
+      "count": 248,
+      "record": "normal-years-quality-watch-2026-09-28.json"
+    }
+  ],
+  "preserved": {
+    "localStorageKeysOtherThanLists": 64,
+    "valuationDrafts": 61,
+    "previousSavedViews": 3
+  },
+  "verification": {
+    "unitTests": 354,
+    "unitFiles": 40,
+    "normalBrowserChecks": 6,
+    "resilienceBrowserChecks": 9,
+    "normalNativeChecks": 7,
+    "fullNativeChecks": 149,
+    "fullNativeDiagnostics": "windows-native-diagnostics-2026-09-28T21-51-34.789Z.json",
+    "fullNativeDiagnosticsSha256": "b8033bf2f1ac65fe1969fb3a928e5bdb88f5af0b7672bb9ce5046c3b0de3ba33"
+  },
+  "data": {
+    "status": "passed",
+    "oldGzipSha256": "fcbcccadbdd86da4a6521a64c2be8907ceff91f23dc1aa2e7fcfd2f991ba0e2b",
+    "newGzipSha256": "4b7d4298e0f1b5e74c2cad03e53900f746287829ce6113c45851ff75cfe65645",
+    "unchangedLegacyRows": 19140,
+    "method": "Independent Python decoded-object comparison of all row fields except the additive screeningAnnual property."
+  },
+  "restartEvidence": {
+    "path": "lifecycle-restart-20260928T220247258Z-85578c39.json",
+    "sha256": "fad5838b18d547c29ecaee72413e762ec88699e84973d17a3d4a06796ce1d840"
+  },
+  "shortcutVerification": {
+    "Status": "PASS",
+    "At": "2026-09-28T22:04:05.7511903Z",
+    "Shortcut": "C:\\Users\\Adamb\\OneDrive\\Desktop\\Macro Atlas.lnk",
+    "TargetPath": "C:\\Users\\Adamb\\AppData\\Local\\MacroAtlas\\0.23.0\\Macro Atlas.exe",
+    "WorkingDirectory": "C:\\Users\\Adamb\\AppData\\Local\\MacroAtlas\\0.23.0",
+    "Version": "0.23.0",
+    "SHA256": "5B7C27A0F3137E5DF1328D029CBF4D4D2122F92B3FDD4FD16DEA5B856B8D1C5B",
+    "PriorReleaseRetained": true
+  },
+  "notes": [
+    "Earlier full native attempts exposed stale taxonomy expectations for restored overview, a hidden optional map and recovery navigation, plus test-only corruption-injection transport issues. Test navigation and failure injection were corrected without changing app behavior; failed logs, diagnostics and isolated profiles were retained.",
+    "No commit or remote publication was performed."
+  ]
+}

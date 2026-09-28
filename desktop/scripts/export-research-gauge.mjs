@@ -56,6 +56,7 @@ try {
     "export {buildResearchGaugeRow} from './src/researchGaugeModel';",
     "export {buildStarterValuation} from './src/starterValuations';",
     "export {decodeFinancialCompany,validateFinancialIndex} from './src/financialData';",
+    "export {validateResearchGaugeArtifact} from './src/researchGauge';",
     "export {companyEntries} from './src/listingCatalogue';",
   ].join('\n'), resolveDir: desktop }, outfile: runtimePath, bundle: true, platform: 'node', format: 'esm', logLevel: 'silent', metafile: true };
   const discovery = await build({ ...bundleOptions, write: false });
@@ -73,7 +74,16 @@ try {
   assert.equal(db.prepare('SELECT COUNT(*) n FROM companies').get().n, entries.length);
   const priorPath = resolve(desktop, 'test-results/purchase-range-2026-09-13/purchase-ledger.jsonl.gz');
   const prior = existsSync(priorPath) ? new Map(gunzipSync(readFileSync(priorPath)).toString().trim().split('\n').map(line => { const r = JSON.parse(line); return [r.company, r]; })) : null;
-  const counts = { listings: 0, independentMid: 0, independentLow: 0, reverseEquations: 0, frozenMidReconciliations: 0, nonmutatedHistories: 0, route: {}, readiness: {}, valuation: {}, quarterRevenue: 0 };
+  const priorGaugeIdentity = existsSync(artifactPath) ? identity(artifactPath) : null;
+  const priorGauge = priorGaugeIdentity ? JSON.parse(gunzipSync(readFileSync(artifactPath))) : null;
+  if (priorGauge) {
+    assert.equal(priorGauge.financialPackId, pack.sha256, 'Previous research screen belongs to a different pack');
+    assert.equal(priorGauge.asOf, asOf, 'Previous research screen has a different snapshot date');
+  }
+  const priorRows = priorGauge ? new Map(priorGauge.rows.map(row => [row.id, row])) : null;
+  const counts = { listings: 0, independentMid: 0, independentLow: 0, reverseEquations: 0, frozenMidReconciliations: 0, nonmutatedHistories: 0,
+    unchangedAnnualWindows: 0, unchangedValuations: 0, unchangedLegacyRows: 0, screeningHistories: 0, screeningAnnualReports: 0,
+    route: {}, readiness: {}, valuation: {}, quarterRevenue: 0 };
   const bump = (dict, key) => { dict[key] = (dict[key] ?? 0) + 1; };
   const rows = [], select = db.prepare('SELECT payload,sha256 FROM companies WHERE id=?');
   for (const entry of entries) {
@@ -81,6 +91,18 @@ try {
     assert.equal(sha(payload), packed.sha256); assert.equal(packed.sha256, index.companies[entry.id].sha256);
     const history = runtime.decodeFinancialCompany(JSON.parse(payload), index, entry.id), snapshot = JSON.stringify(history);
     const row = runtime.buildResearchGaugeRow(entry, history, index, taxonomy, asOf);
+    if (priorRows) {
+      const previous = priorRows.get(entry.id); assert.ok(previous, `${entry.id}: missing previous research row`);
+      assert.deepEqual(row.annual, previous.annual, `${entry.id}: existing annual evidence changed`); counts.unchangedAnnualWindows++;
+      assert.deepEqual(row.valuation, previous.valuation, `${entry.id}: existing valuation changed`); counts.unchangedValuations++;
+      const { screeningAnnual: previousScreening, ...previousLegacy } = previous;
+      const { screeningAnnual, ...legacy } = row;
+      assert.deepEqual(legacy, previousLegacy, `${entry.id}: existing research evidence changed`); counts.unchangedLegacyRows++;
+    }
+    assert.equal(row.screeningAnnual.asOf, asOf); assert.ok(row.screeningAnnual.periods.length <= 10);
+    for (const key of ['cash', 'operatingCash', 'ebit', 'revenue', 'equity', 'netDebt', 'assets', 'intangibleAssets', 'tangibleAssets', 'profit'])
+      assert.equal(row.screeningAnnual[key].length, row.screeningAnnual.periods.length);
+    counts.screeningHistories++; counts.screeningAnnualReports += row.screeningAnnual.periods.length;
     assert.equal(JSON.stringify(history), snapshot, `${entry.id}: history mutated`); counts.nonmutatedHistories++;
     const draft = runtime.buildStarterValuation({ ...entry, ...taxonomy.classifications[entry.id] }, history, index, asOf).draft;
     const mid = scalar(draft, 'mid'), low = scalar(draft, 'low');
@@ -118,11 +140,14 @@ try {
   }
   const artifact = { format: 'macro-atlas-research-gauge', version: 1, asOf, financialPackId: pack.sha256, taxonomySha256: taxonomyFile.sha256, calibrationId: calibration.id, model: 'research-gauge-v1', rows };
   const bytes = Buffer.from(JSON.stringify(artifact)), zipped = gzipSync(bytes, { level: 9 });
-  assert.ok(bytes.length <= 96 * 1024 * 1024, 'Research gauge uncompressed budget exceeded');
-  assert.ok(zipped.length <= 12 * 1024 * 1024, 'Research gauge compressed budget exceeded');
+  // Match the existing reader's explicit bounds; ten dated screening reports are
+  // independent of the unchanged five-report evidence and all-year valuation.
+  assert.ok(bytes.length <= 128 * 1024 * 1024, 'Research gauge uncompressed budget exceeded');
+  assert.ok(zipped.length <= 32 * 1024 * 1024, 'Research gauge compressed budget exceeded');
   const manifest = { format: 'macro-atlas-research-gauge-manifest', version: 1, asOf, model: 'research-gauge-v1', financialPackId: pack.sha256, financialPackBytes: pack.bytes, taxonomySha256: taxonomyFile.sha256, calibrationId: calibration.id, rows: rows.length,
     artifact: { path: 'data/research-gauge/gauge.bin', sha256: sha(zipped), bytes: zipped.length, uncompressedSha256: sha(bytes), uncompressedBytes: bytes.length } };
   const manifestBytes = Buffer.from(JSON.stringify(manifest, null, 2) + '\n');
+  runtime.validateResearchGaugeArtifact(artifact, manifest, index, taxonomyFile.sha256);
   assert.deepEqual(inputs.map(identity), before, 'Source inputs changed during export');
   if (checkOnly) {
     assert.deepEqual(readFileSync(artifactPath), zipped, 'Generated artifact is stale');
@@ -133,8 +158,8 @@ try {
     // This exporter owns the superseded generated transport asset only.
     rmSync(resolve(desktop, 'public/data/research-gauge/gauge.json.gz'), { force: true });
     mkdirSync(dirname(receiptPath), { recursive: true });
-    writeFileSync(receiptPath, JSON.stringify({ status: 'passed', asOf, inputs: before, manifest, counts, priorLedger: prior ? identity(priorPath) : null,
-      notes: ['Generic unedited starters only; no app profile or personal studies opened.', 'Counts describe listings, not distinct issuers.', 'Derived cash/asset ratios do not establish shareholder cash or investment quality.', 'No whole-universe financial history is fetched at runtime.'] }, null, 2) + '\n');
+    writeFileSync(receiptPath, JSON.stringify({ status: 'passed', asOf, inputs: before, manifest, counts, priorLedger: prior ? identity(priorPath) : null, priorGauge: priorGaugeIdentity,
+      notes: ['Generic unedited starters only; no app profile or personal studies opened.', 'Counts describe listings, not distinct issuers.', 'Derived cash/asset ratios do not establish shareholder cash or investment quality.', 'No whole-universe financial history is fetched at runtime.', 'Optional screening history retains up to ten comparable annual reports without removing exceptional years or altering existing annual evidence, starter valuations or calibration.'] }, null, 2) + '\n');
   }
   console.log(JSON.stringify({ status: checkOnly ? 'verified-identical' : 'exported', manifest, counts }, null, 2));
 } finally { db?.close(); rmSync(scratch, { recursive: true, force: true }); }

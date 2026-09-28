@@ -1,0 +1,452 @@
+{
+  "format": "macro-atlas-saved-screen-record",
+  "version": 1,
+  "created": "2026-09-28",
+  "installedAppVersion": "0.23.0",
+  "view": {
+    "name": "Kvalitetsbolag med rabatt – normalår",
+    "columns": [
+      {
+        "id": "sector",
+        "kpiId": "sector",
+        "window": "latest",
+        "calculation": "latest"
+      },
+      {
+        "id": "branch",
+        "kpiId": "branch",
+        "window": "latest",
+        "calculation": "latest"
+      },
+      {
+        "id": "normal_npv_full",
+        "kpiId": "normal_npv_percent",
+        "window": "latest",
+        "calculation": "terminal_100",
+        "range": {
+          "min": "42.85714285714286",
+          "max": ""
+        }
+      },
+      {
+        "id": "normal_npv_half",
+        "kpiId": "normal_npv_percent",
+        "window": "latest",
+        "calculation": "terminal_50",
+        "range": {
+          "min": "0",
+          "max": ""
+        }
+      },
+      {
+        "id": "normal_npv_cash_only",
+        "kpiId": "normal_npv_percent",
+        "window": "latest",
+        "calculation": "terminal_0"
+      },
+      {
+        "id": "normal_roce_median",
+        "kpiId": "normal_roce",
+        "window": "normal_2020_2023:5",
+        "calculation": "median",
+        "range": {
+          "min": "20",
+          "max": ""
+        }
+      },
+      {
+        "id": "normal_roce_min",
+        "kpiId": "normal_roce",
+        "window": "normal_2020_2023:5",
+        "calculation": "min",
+        "range": {
+          "min": "10",
+          "max": ""
+        }
+      },
+      {
+        "id": "normal_rota_median",
+        "kpiId": "normal_rota",
+        "window": "normal_2020_2023:5",
+        "calculation": "median",
+        "range": {
+          "min": "8",
+          "max": ""
+        }
+      },
+      {
+        "id": "normal_ebit_margin_median",
+        "kpiId": "ebit_margin",
+        "window": "normal_2020_2023:5",
+        "calculation": "median",
+        "range": {
+          "min": "12",
+          "max": ""
+        }
+      },
+      {
+        "id": "normal_ebit_margin_min",
+        "kpiId": "ebit_margin",
+        "window": "normal_2020_2023:5",
+        "calculation": "min",
+        "range": {
+          "min": "8",
+          "max": ""
+        }
+      },
+      {
+        "id": "normal_revenue_growth",
+        "kpiId": "revenue",
+        "window": "normal_2020_2023:5",
+        "calculation": "growth",
+        "range": {
+          "min": "3",
+          "max": ""
+        }
+      },
+      {
+        "id": "normal_cfo_growth",
+        "kpiId": "cfo",
+        "window": "normal_2020_2023:5",
+        "calculation": "growth",
+        "range": {
+          "min": "0",
+          "max": ""
+        }
+      },
+      {
+        "id": "normal_tangible_revenue",
+        "kpiId": "tangible_assets_revenue",
+        "window": "normal_2020_2023:5",
+        "calculation": "median",
+        "range": {
+          "min": "0",
+          "max": "0.5"
+        }
+      },
+      {
+        "id": "normal_positive_fcf",
+        "kpiId": "positive_fcf",
+        "window": "normal_2020_2023:5",
+        "calculation": "latest",
+        "range": {
+          "min": "5",
+          "max": ""
+        }
+      },
+      {
+        "id": "normal_positive_ebit",
+        "kpiId": "positive_ebit",
+        "window": "normal_2020_2023:5",
+        "calculation": "latest"
+      },
+      {
+        "id": "net_debt_ebitda",
+        "kpiId": "provider_42",
+        "window": "provider:screener:last",
+        "calculation": "provider:latest",
+        "range": {
+          "min": "",
+          "max": "1.5"
+        }
+      },
+      {
+        "id": "ebitda_margin",
+        "kpiId": "provider_32",
+        "window": "provider:screener:last",
+        "calculation": "provider:latest"
+      },
+      {
+        "id": "normal_fcf_median",
+        "kpiId": "fcf",
+        "window": "normal_2020_2023:5",
+        "calculation": "median"
+      },
+      {
+        "id": "normal_cash_pv",
+        "kpiId": "normal_cash_pv",
+        "window": "latest",
+        "calculation": "latest"
+      },
+      {
+        "id": "normal_terminal_pv",
+        "kpiId": "normal_terminal_pv",
+        "window": "latest",
+        "calculation": "latest"
+      },
+      {
+        "id": "all_year_npv_full",
+        "kpiId": "valuation_attractiveness",
+        "window": "latest",
+        "calculation": "terminal_100"
+      },
+      {
+        "id": "all_year_low_npv",
+        "kpiId": "low_npv_percent",
+        "window": "latest",
+        "calculation": "latest"
+      },
+      {
+        "id": "price_date",
+        "kpiId": "price_date",
+        "window": "latest",
+        "calculation": "latest"
+      },
+      {
+        "id": "annual_date",
+        "kpiId": "annual_date",
+        "window": "latest",
+        "calculation": "latest"
+      }
+    ],
+    "filters": {
+      "query": "",
+      "sectorId": "all",
+      "branchId": "all",
+      "country": "all",
+      "route": "operating",
+      "readiness": "all",
+      "presence": "latest",
+      "watchlistOnly": false,
+      "preset": "normal_quality",
+      "numericRules": [
+        {
+          "column": {
+            "id": "ebitda_positive",
+            "kpiId": "provider_32",
+            "window": "provider:screener:last",
+            "calculation": "provider:latest"
+          },
+          "operator": "gt",
+          "value": 0
+        }
+      ]
+    },
+    "sort": {
+      "columnId": "normal_npv_half",
+      "direction": "desc"
+    },
+    "id": "list-mulslkos-wor8qyb"
+  },
+  "independentEvidence": {
+    "researchSnapshot": "2026-09-13",
+    "providerSnapshot": "2026-08-10",
+    "financialPackId": "1f1534d48fc30c1e3769cb7f1e9060c85fb1dc63ec39b06ada40fb6e11d2c69a",
+    "exclusionPolicy": "Annual reports ending in 2020–2023 inclusive",
+    "counts": [
+      {
+        "condition": "Operating, latest listing, no classification conflict; five normal reports and recent post-2023 evidence",
+        "before": 19140,
+        "after": 9178
+      },
+      {
+        "condition": "normal_roce_median [20, inf]",
+        "before": 9178,
+        "after": 1148
+      },
+      {
+        "condition": "normal_roce_min [10, inf]",
+        "before": 1148,
+        "after": 884
+      },
+      {
+        "condition": "normal_rota_median [8, inf]",
+        "before": 884,
+        "after": 711
+      },
+      {
+        "condition": "normal_ebit_margin_median [12, inf]",
+        "before": 711,
+        "after": 551
+      },
+      {
+        "condition": "normal_ebit_margin_min [8, inf]",
+        "before": 551,
+        "after": 514
+      },
+      {
+        "condition": "normal_revenue_growth [3, inf]",
+        "before": 514,
+        "after": 412
+      },
+      {
+        "condition": "normal_cfo_growth [0, inf]",
+        "before": 412,
+        "after": 381
+      },
+      {
+        "condition": "normal_tangible_revenue [0, 0.5]",
+        "before": 381,
+        "after": 331
+      },
+      {
+        "condition": "normal_positive_fcf [5, inf]",
+        "before": 331,
+        "after": 309
+      },
+      {
+        "condition": "net_debt_ebitda [-inf, 1.5]",
+        "before": 309,
+        "after": 248
+      },
+      {
+        "condition": "normal_npv_full [42.85714285714286, inf]",
+        "before": 248,
+        "after": 0
+      },
+      {
+        "condition": "normal_npv_half [0, inf]",
+        "before": 0,
+        "after": 0
+      },
+      {
+        "condition": "Latest provider EBITDA margin >0",
+        "before": 0,
+        "after": 0
+      }
+    ],
+    "count": 0,
+    "ids": [],
+    "verifiedArtifacts": [
+      {
+        "path": "data/research-gauge/gauge.bin",
+        "sha256": "4b7d4298e0f1b5e74c2cad03e53900f746287829ce6113c45851ff75cfe65645",
+        "bytes": 17592905,
+        "uncompressedSha256": "acb28e559741e419f841aa0e2228fbd462ca4f25c37df9af1e42ede55cc4e681",
+        "uncompressedBytes": 119525270
+      },
+      {
+        "path": "data/expanded-kpis/index.bin",
+        "sha256": "f3bd80ba04a9eb5fca351de9a8353f0148410d2abce3d08e59dad7ecef06857b",
+        "bytes": 59495,
+        "uncompressedSha256": "16a71d1a100aae43f2479549d307a44870bbcb465d1a7449505a9b9ba4137fc2",
+        "uncompressedBytes": 377400
+      },
+      {
+        "path": "data/expanded-kpis/shard-069.bin",
+        "sha256": "7a13fe3898660b9da0f957cafd5fb7748b2d866b3696e0413462c97523864c51",
+        "bytes": 1770455,
+        "uncompressedSha256": "6fd7ffba9575f57b160d330445cf41a1fb09ac6745467ac2ab5a02ba69db6c1c",
+        "uncompressedBytes": 4330187
+      },
+      {
+        "path": "data/expanded-kpis/shard-054.bin",
+        "sha256": "72be162d121a95b30a692b3f01ba98506ca6727f8281def76229911ba7dbe710",
+        "bytes": 1613548,
+        "uncompressedSha256": "7f1a51f545fa4d9b01285d0cebe6c510356d3b40f89311df228c420dd60beba2",
+        "uncompressedBytes": 4190836
+      }
+    ],
+    "variants": [
+      {
+        "id": "provider_42_last_latest_screener",
+        "metricId": "provider_42",
+        "calcGroup": "last",
+        "calculation": "latest",
+        "source": "screener",
+        "label": "Net Debt / EBITDA  latest",
+        "unit": "multiple",
+        "currencyBasis": "none",
+        "availableCount": 12298,
+        "conflictCount": 0,
+        "scopeAvailabilityDifferenceCount": 0,
+        "invalidValueCount": 0,
+        "withheldCurrencyCount": 0,
+        "notes": [],
+        "shard": 69,
+        "offset": 14
+      },
+      {
+        "id": "provider_32_last_latest_screener",
+        "metricId": "provider_32",
+        "calcGroup": "last",
+        "calculation": "latest",
+        "source": "screener",
+        "label": "EBITDA margin  latest",
+        "unit": "percent",
+        "currencyBasis": "none",
+        "availableCount": 13977,
+        "conflictCount": 0,
+        "scopeAvailabilityDifferenceCount": 0,
+        "invalidValueCount": 0,
+        "withheldCurrencyCount": 0,
+        "notes": [],
+        "shard": 54,
+        "offset": 4
+      }
+    ],
+    "rows": []
+  },
+  "modelVerification": {
+    "status": "PASS",
+    "count": 0,
+    "ids": [],
+    "columns": 24,
+    "parserPreservesView": true,
+    "independentArithmeticMatches": true,
+    "at": "2026-09-28T21:38:08.499Z"
+  },
+  "verification": {
+    "mode": "save",
+    "savedViewId": "list-mulslkos-wor8qyb",
+    "name": "Kvalitetsbolag med rabatt – normalår",
+    "count": 0,
+    "ids": [],
+    "unrelatedKeysPreserved": 64,
+    "previousSavedViewsPreserved": 3,
+    "columns": 24,
+    "verifiedAt": "2026-09-28T22:01:51.239Z"
+  },
+  "restartVerification": {
+    "mode": "verify",
+    "savedViewId": "list-mulslkos-wor8qyb",
+    "name": "Kvalitetsbolag med rabatt – normalår",
+    "count": 0,
+    "ids": [],
+    "unrelatedKeysPreserved": 64,
+    "previousSavedViewsPreserved": 3,
+    "columns": 24,
+    "verifiedAt": "2026-09-28T22:03:29.976Z"
+  },
+  "normalLaunchVerification": {
+    "At": "2026-09-28T22:03:51.7089137Z",
+    "Mode": "finish",
+    "Status": "PASS",
+    "PreviousProcessId": 12400,
+    "Backup": null,
+    "GracefulExit": true,
+    "ProfileRecordsWrittenByHelper": false,
+    "Launch": {
+      "ProcessId": 42284,
+      "Executable": "C:\\Users\\Adamb\\AppData\\Local\\MacroAtlas\\0.23.0\\Macro Atlas.exe",
+      "ExecutableVersion": "0.23.0",
+      "ExecutableSHA256": "5B7C27A0F3137E5DF1328D029CBF4D4D2122F92B3FDD4FD16DEA5B856B8D1C5B",
+      "WindowTitle": "Macro Atlas",
+      "WebViewProcessId": 29624,
+      "RemoteDebuggingEnabled": false,
+      "Port9335ListenerCount": 0
+    }
+  },
+  "limitations": [
+    "Fiscal periods ending in 2020–2023 are excluded from these normal-year columns only. Raw observations and prior all-year models remain intact.",
+    "Five normal reports are selected before examining missing values. No older substitution fills a missing selected metric.",
+    "The two capital-return ratios are closing-balance accounting proxies, not normalized ROIC or ROTCE.",
+    "Tangible-asset intensity and historical margins do not establish maintenance investment, inflation protection or pricing power.",
+    "Normal value is a separate flat median-provider-FCF projection: ten years, 10% required return, zero growth. Provider FCF is not reconciled owner cash.",
+    "Old nominal cash can underrepresent a larger modern business. No inflation or scale adjustment is inferred.",
+    "A 30% discount to full modeled value requires 42.857142857% NPV/price. Half-terminal >=0 is redundant under this fixed flat-cash model, not an independent signal.",
+    "Missing or mismatched-currency price comparisons are withheld. Cash PV remains in reporting currency.",
+    "The companion watch screen has no discount condition and does not identify all matches as undervalued.",
+    "Quotes are frozen observations, not current prices. Multiple listings may represent the same issuer; no return probability or purchase recommendation follows."
+  ],
+  "sources": [
+    {
+      "title": "Borsdata ROIC definition",
+      "url": "https://borsdata.se/info/nyckeltal/roic"
+    },
+    {
+      "title": "Borsdata capex definition",
+      "url": "https://borsdata.se/en/info/ratios/capex"
+    }
+  ]
+}

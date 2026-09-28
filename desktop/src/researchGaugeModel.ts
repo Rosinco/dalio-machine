@@ -9,6 +9,13 @@ export type ResearchGaugeRoute = 'operating' | 'property' | 'financial' | 'uncla
 export type ResearchGaugeReadiness = 'history_available' | 'limited_history' | 'reconcile_data' | 'no_history';
 export type ResearchGaugePeriod = { year: number; period: number; start: string; end: string; published: string | null; currency: string; sourceId: string; sourceAsOf: string };
 export type ResearchGaugeSeries = { values: (number | null)[]; count: number; positive: number; negative: number; zero: number; latest: number | null; median: number | null; dispersion: number | null };
+/** Dated evidence for optional screening policies; does not alter the starter valuation or five-report display. */
+export type ResearchGaugeScreeningAnnual = {
+  asOf: string; periods: ResearchGaugePeriod[]; reason: string | null;
+  cash: (number | null)[]; operatingCash: (number | null)[]; ebit: (number | null)[]; revenue: (number | null)[];
+  equity: (number | null)[]; netDebt: (number | null)[]; assets: (number | null)[];
+  intangibleAssets: (number | null)[]; tangibleAssets: (number | null)[]; profit: (number | null)[];
+};
 export type ResearchGaugeAnnualValues = {
   revenues: number | null; ebit: number | null; cash: number | null; operatingCash: number | null;
   financingCash: number | null; cashBalance: number | null; netDebt: number | null; equity: number | null; assets: number | null;
@@ -21,6 +28,7 @@ export type ResearchGaugeRow = {
   sectorId: string | null; sectorName: string | null; branchId: string | null; branchName: string | null;
   sourceAsOf: string; presence: 'latest' | 'older'; sourceCompanySha256: string;
   route: ResearchGaugeRoute; classificationConflict: boolean; readiness: ResearchGaugeReadiness;
+  screeningAnnual?: ResearchGaugeScreeningAnnual;
   annual: {
     currency: string | null; latest: ResearchGaugePeriod | null; periods: ResearchGaugePeriod[];
     excluded: { outsideWindow: number; placeholder: number; missingPublication: number; withheld: number };
@@ -60,6 +68,22 @@ const period = (r: SourcedReport): ResearchGaugePeriod => ({ year: r.year, perio
 const known = (r: SourcedReport, asOf: string) => r.end <= asOf && r.source_as_of <= asOf && (r.report_date === null || r.report_date <= asOf);
 const newestFirst = (a: SourcedReport, b: SourcedReport) => b.end.localeCompare(a.end) || b.year - a.year || b.period - a.period;
 
+function comparableAnnualWindow(reports: SourcedReport[], newerWithheld: boolean, limit: number) {
+  const latest = reports[0] ?? null, included: SourcedReport[] = [];
+  let reason: string | null = null;
+  if (!latest) reason = 'No retained annual report is available.';
+  else if (newerWithheld) reason = 'A same or newer annual report was withheld; older figures are not substituted.';
+  else for (const report of reports.slice(0, limit)) {
+    const previous = included.at(-1), length = days(report.end, report.start) + 1;
+    if (length < 330 || length > 400) { reason = 'A report is outside 330–400 days; the comparable annual window stops before it.'; break; }
+    if (placeholder(report)) { reason = 'All saved monetary fields in a report are zero or missing; the annual window stops before this possible placeholder.'; break; }
+    if (!(report.currency_ratio !== null && report.currency_ratio > 0) || report.currency !== latest.currency) { reason = 'Missing currency conversion or changed reporting currency prevents a comparable annual window.'; break; }
+    if (previous && (report.year !== previous.year - 1 || days(previous.start, report.end) < 1 || days(previous.start, report.end) > 35)) { reason = 'An annual gap or overlapping period stops the comparable history window.'; break; }
+    included.push(report);
+  }
+  return { reports: included, reason };
+}
+
 /** Signed population dispersion / mean absolute value. No scale means no ratio, not zero risk. */
 export function researchGaugeSeries(values: (number | null)[]): ResearchGaugeSeries {
   const included = values.filter(finite), ordered = [...included].sort((a, b) => a - b), count = included.length;
@@ -78,19 +102,18 @@ export function buildResearchGaugeRow(entry: CompanyEntry, history: FinancialCom
   const conflict = ['sector_mismatch', 'needs_review'].includes(classification.status);
   const route: ResearchGaugeRoute = !sectorId || !branchId ? 'unclassified' : ['75', '76'].includes(branchId) ? 'property' : sectorId === '1' ? 'financial' : 'operating';
   const reports = history.annual.filter(r => known(r, asOf)).sort(newestFirst), latest = reports[0] ?? null;
-  const annualReports: SourcedReport[] = [], issues: string[] = [];
-  let annualReason: string | null = null;
+  const issues: string[] = [];
   const newerWithheld = history.withheld.some(r => r.period === 5 && (!latest || r.year >= latest.year || (r.end && r.end >= latest.end)));
-  if (!latest) annualReason = 'No retained annual report is available.';
-  else if (newerWithheld) annualReason = 'A same or newer annual report was withheld; older figures are not substituted.';
-  else for (const report of reports.slice(0, 5)) {
-    const previous = annualReports.at(-1), length = days(report.end, report.start) + 1;
-    if (length < 330 || length > 400) { annualReason = 'A report is outside 330–400 days; the comparable annual window stops before it.'; break; }
-    if (placeholder(report)) { annualReason = 'All saved monetary fields in a report are zero or missing; the annual window stops before this possible placeholder.'; break; }
-    if (!(report.currency_ratio !== null && report.currency_ratio > 0) || report.currency !== latest!.currency) { annualReason = 'Missing currency conversion or changed reporting currency prevents a comparable annual window.'; break; }
-    if (previous && (report.year !== previous.year - 1 || days(previous.start, report.end) < 1 || days(previous.start, report.end) > 35)) { annualReason = 'An annual gap or overlapping period stops the comparable history window.'; break; }
-    annualReports.push(report);
-  }
+  const { reports: annualReports, reason: annualReason } = comparableAnnualWindow(reports, newerWithheld, 5);
+  const screeningWindow = comparableAnnualWindow(reports, newerWithheld, 10);
+  const screeningValues = (key: string) => screeningWindow.reports.map(r => value(r, key));
+  const screeningAnnual: ResearchGaugeScreeningAnnual = {
+    asOf, periods: screeningWindow.reports.map(period), reason: screeningWindow.reason,
+    cash: screeningValues('free_cash_flow'), operatingCash: screeningValues('cash_flow_from_operating_activities'),
+    ebit: screeningValues('operating_income'), revenue: screeningValues('revenues'), equity: screeningValues('total_equity'),
+    netDebt: screeningValues('net_debt'), assets: screeningValues('total_assets'), intangibleAssets: screeningValues('intangible_assets'),
+    tangibleAssets: screeningValues('tangible_assets'), profit: screeningValues('profit_to_equity_holders'),
+  };
   if (annualReason) issues.push(annualReason);
   if (latest && days(asOf, latest.end) > 550) issues.push('Latest annual period ended more than 550 days before this snapshot; historical evidence is stale.');
   if (annualReports.some(r => r.report_date === null)) issues.push('At least one included annual publication date is unavailable; historical timing is not established.');
@@ -155,5 +178,5 @@ export function buildResearchGaugeRow(entry: CompanyEntry, history: FinancialCom
   return { id: entry.id, name: entry.display_name, ticker: entry.ticker, isin: entry.isin, country: entry.listing_country,
     sectorId, sectorName: sectorId ? taxonomy.sectors[sectorId]?.name_en ?? null : null, branchId, branchName: branchId ? taxonomy.branches[branchId]?.name_en ?? null : null,
     sourceAsOf: entry.source_as_of, presence: entry.source_as_of === taxonomy.catalogue?.as_of ? 'latest' : 'older', sourceCompanySha256: index.companies[entry.id].sha256,
-    route, classificationConflict: conflict, readiness, annual, quarter, valuation, issues };
+    route, classificationConflict: conflict, readiness, annual, quarter, valuation, issues, screeningAnnual };
 }

@@ -6,7 +6,82 @@ requires no terminal, Python environment, WSL, account or network connection.
 Windows WebView2 must be installed; it is present on Adam's PC. The Tauri installer
 configuration can also bundle its offline installer when distributing to another PC.
 
-## Source update — survival and portfolio review, 2026-09-26
+## Version 0.23.2 — five-year NPV carries 60% of the ranking
+
+**0.23.2 is installed and verified** through the existing desktop shortcut;
+0.23.1 is retained. Both existing normal-year views save the 60/40 score descending,
+with five-year NPV/price as the tie-breaker and the raw value beside the score.
+Their names, IDs, previous columns, filter bounds and three other saved views
+are preserved. All 63 current valuation drafts and 66 unrelated storage records
+remain byte-identical to the fresh pre-save snapshot. Verification passed:
+383 unit tests, independent arithmetic, focused production-browser and Windows
+checks, and a full restart of the actual installed profile. See the
+[saved-view verification record](research/screens/normal-years-five-year-ranking-verification-2026-09-29.json).
+
+**NPV5/quality rank · 60/40** uses 60% five-year cash-only NPV percentile and
+40% quality points. NPV includes only years 1–5 discounted at 10%, with no terminal
+value, using the same median normal-year FCF outside fiscal ends 2020–2023.
+The new **Five-year cash-only NPV / price** column displays the signed raw result
+beside the score; separate NPV and quality points expose the weighting.
+
+The quality reference remains 180 priced listings; 68 other quality listings
+remain unranked. No priced candidate has nonnegative five-year cash-only NPV in
+the frozen data. The higher value weight changes the combined order, while the
+flat-cash model keeps the valuation percentile order unchanged. Earlier ten-year
+comparisons remain visible without being counted again. Filter thresholds and
+authored valuations are unchanged.
+
+See the [five-year ranking method](research/screens/normal-years-five-year-ranking-2026-09-29.md).
+
+## Earlier release: 0.23.1 — equal weight for quality and discount
+
+**0.23.1 was installed and verified** through the existing desktop shortcut;
+0.23.0 is retained. Both existing normal-year views now save the combined rank
+descending, with half-terminal NPV/price as the tie-breaker. Their names, IDs,
+original columns and ranges remain intact. The normal app opens on the ranked
+price-watch view, with raw NPV beside the score and separate quality/discount points.
+All 61 valuation drafts and three earlier views are unchanged. Verification passed:
+374 unit tests, independent arithmetic and focused production-browser/Windows tests,
+including full process restart. See the [saved-view verification record](research/screens/normal-years-ranking-verification-2026-09-29.json).
+
+**Quality/value rank · 50/50** combines 50% normal-year discount rank with 50%
+quality points. Quality equally weights capital return, minimum EBIT margin,
+operating cash-flow growth and lower debt. Separate Discount points and Quality
+points columns expose the two contributions. All scores use the same fixed
+reference before display filters: 180 priced quality listings in the pinned data;
+68 other quality listings remain unranked. Existing quality and discount bounds,
+exception years, raw financial observations and valuation models are unchanged.
+
+See the [ranking method and fixed reference](research/screens/normal-years-ranking-2026-09-29.md).
+
+## Earlier release: 0.23.0 — quality and value excluding 2020–2023
+
+**0.23.0 was installed and verified** through the existing Macro Atlas desktop
+shortcut, retaining 0.22.1. Both named views below were saved in
+**Companies → Lists → Saved view** and verified after a full process
+restart. All 61 valuation drafts and three earlier saved views remain unchanged.
+Validation passed: 354 unit tests, 149 full Windows checks and seven focused
+normal-year Windows checks, plus browser and independent arithmetic checks.
+See the [installation and preservation record](research/screens/normal-years-release-verification-2026-09-28.json).
+
+Companies → Lists now offers **Quality & value excluding 2020–2023** as a column
+set and **Comparable history excluding 2020–2023** as an evidence filter. The new
+time window selects five comparable reports outside those fiscal end years. Dates,
+excluded observations and missing-data reasons remain visible in each value's details.
+
+Normal-year NPV uses a separate screening projection: median provider FCF held flat
+for ten years, a 10% required return, zero growth and explicit full/half/zero terminal
+credit. Original all-year starter valuations, local drafts and reviewed cases remain
+unchanged. Capital-return measures are labelled accounting proxies, not normalized
+ROIC/ROTCE or evidence of pricing power.
+
+The saved policy **Kvalitetsbolag med rabatt – normalår** combines quality, cash,
+capital-intensity and debt bounds with a 30% discount requirement. The companion
+**Kvalitetsbolag – normalår, prisbevakning** omits only the valuation bounds. In
+the pinned data they match **0** and **248 listings**, respectively; the second
+list is not represented as undervalued. See the [formulas and screening policy](research/screens/normal-years-quality-value-2026-09-28.md).
+
+## Included source update — survival and portfolio review, 2026-09-26
 
 Company → Research notes now has separate survival/permanent-loss and shared-shock
 portfolio worksheets. Valuation shows the saved company-review status. The reviews
@@ -15,15 +90,15 @@ and leave valuation drafts and the existing position-size policy unchanged.
 
 See the [review workflow](../docs/survival-and-portfolio-review.md) and
 [handoff](HANDOFF.md). Verification passed: 334 unit/transport tests, production
-build and 74 browser checks. This source update has not been packaged or installed
-on Windows; the installation records below describe earlier releases.
+build and 74 browser checks. This previously source-only update is included in
+the 0.23.0 package; the installation records below describe earlier releases.
 
 ## Earlier release: 0.22.1 — return to the previous screen
 
-**0.22.1 is installed and independently verified** through the existing
+**0.22.1 was installed and independently verified** through the existing
 `C:\Users\Adamb\OneDrive\Desktop\Macro Atlas.lnk` shortcut, targeting
 `C:\Users\Adamb\AppData\Local\MacroAtlas\0.22.1\Macro Atlas.exe`.
-The normal-profile app is running and 0.22.0 is retained.
+That installation retained 0.22.0; the current release is described above.
 
 Use **Back** and **Forward** at the top left, or **Alt+Left / Alt+Right**, to
 retrace the analysis workflow. Return to the previous company, financial chart,

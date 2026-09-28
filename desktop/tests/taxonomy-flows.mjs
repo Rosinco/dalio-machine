@@ -51,10 +51,11 @@ export async function taxonomyFlows(page, project) {
   assert.equal(await page.locator('.study-list').count(), 0);
   await page.getByLabel('Branch overview', { exact: true }).click();
   await page.screenshot({ path: resolve(project, 'test-results/branch-pending.png') });
-  // Branch choice persists even with no company profile in that branch.
+  // Reload restores the selected overview and branch, including a branch with
+  // no company research profile. The directory exists only in the Browse view.
   await page.reload();
-  await page.locator('[data-taxonomy-ready="true"]').waitFor();
-  await page.getByLabel('Branch overview', { exact: true }).click();
+  await page.locator(`[data-business-view="overview"] .business-sidebar[data-branch="${biotech.id}"][data-business-ready="true"]`).waitFor();
+  assert.equal(await page.getByLabel('Branch overview', { exact: true }).getAttribute('aria-pressed'), 'true');
   assert.equal(await page.locator('.business-sidebar').getAttribute('data-branch'), biotech.id);
   await page.getByLabel('Browse sectors and branches', { exact: true }).click();
   await search.fill('Forsakring'); // Accent-insensitive Swedish search.
@@ -70,7 +71,9 @@ export async function taxonomyFlows(page, project) {
   await page.locator('[data-company="102"][data-branch="21"][data-business-ready="true"]').waitFor();
   await page.locator('.classification-details summary').click();
   assert.match(await page.locator('.classification-details').innerText(), /Börsdata default[\s\S]*sector 7, branch 21/);
-  await page.getByLabel('Choose a sector or branch').click();
+  // Company analysis hides the listing map by default; its header retains the
+  // visible route to the selected company's industry directory.
+  await page.getByRole('button', { name: 'Open industry', exact: true }).click();
   await page.locator('.branch-choice[data-branch="21"][aria-pressed="true"]').waitFor();
   await page.setViewportSize({ width: 1100, height: 760 });
   await page.screenshot({ path: resolve(project, 'test-results/directory-compact.png') });

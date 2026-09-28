@@ -10,9 +10,9 @@
   "rows": 19140,
   "artifact": {
     "path": "data/research-gauge/gauge.bin",
-    "sha256": "fcbcccadbdd86da4a6521a64c2be8907ceff91f23dc1aa2e7fcfd2f991ba0e2b",
-    "bytes": 11272132,
-    "uncompressedSha256": "825391361a89ad37b28b32803b6617a64ee14f0f7108b9c4ecb5b8a1b52eb64c",
-    "uncompressedBytes": 77849515
+    "sha256": "4b7d4298e0f1b5e74c2cad03e53900f746287829ce6113c45851ff75cfe65645",
+    "bytes": 17592905,
+    "uncompressedSha256": "acb28e559741e419f841aa0e2228fbd462ca4f25c37df9af1e42ede55cc4e681",
+    "uncompressedBytes": 119525270
   }
 }

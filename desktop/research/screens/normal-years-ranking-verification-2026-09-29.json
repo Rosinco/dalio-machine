@@ -1,0 +1,825 @@
+{
+  "format": "macro-atlas-ranking-update-record",
+  "version": 1,
+  "appVersion": "0.23.1",
+  "status": "installed-and-verified",
+  "installedAt": "2026-09-28T22:30:59.0510144Z",
+  "executableSha256": "3a355301ef7a850c05a3361e4e4eb3f77d7f48d204899676efa22ba6ac33eb9b",
+  "policy": "normal-quality-watch-50-50-v1",
+  "method": "50% half-terminal normal-year NPV/price percentile + 50% mean of capital-return, minimum-margin, CFO-growth and lower-debt percentiles; fixed listing reference; integer doubled midranks preserve exact ties",
+  "counts": {
+    "qualityListings": 248,
+    "rankedListings": 180,
+    "unrankedListings": 68,
+    "strictDiscountMatches": 0
+  },
+  "savedViews": [
+    {
+      "id": "list-mulslkos-wor8qyb",
+      "name": "Kvalitetsbolag med rabatt – normalår",
+      "columns": [
+        {
+          "id": "normal_quality_value_score",
+          "kpiId": "normal_quality_value_score",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "normal_npv_half",
+          "kpiId": "normal_npv_percent",
+          "window": "latest",
+          "calculation": "terminal_50",
+          "range": {
+            "min": "0",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_quality_rank",
+          "kpiId": "normal_quality_rank",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "normal_discount_rank",
+          "kpiId": "normal_discount_rank",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "sector",
+          "kpiId": "sector",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "branch",
+          "kpiId": "branch",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "normal_npv_full",
+          "kpiId": "normal_npv_percent",
+          "window": "latest",
+          "calculation": "terminal_100",
+          "range": {
+            "min": "42.85714285714286",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_npv_cash_only",
+          "kpiId": "normal_npv_percent",
+          "window": "latest",
+          "calculation": "terminal_0"
+        },
+        {
+          "id": "normal_roce_median",
+          "kpiId": "normal_roce",
+          "window": "normal_2020_2023:5",
+          "calculation": "median",
+          "range": {
+            "min": "20",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_roce_min",
+          "kpiId": "normal_roce",
+          "window": "normal_2020_2023:5",
+          "calculation": "min",
+          "range": {
+            "min": "10",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_rota_median",
+          "kpiId": "normal_rota",
+          "window": "normal_2020_2023:5",
+          "calculation": "median",
+          "range": {
+            "min": "8",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_ebit_margin_median",
+          "kpiId": "ebit_margin",
+          "window": "normal_2020_2023:5",
+          "calculation": "median",
+          "range": {
+            "min": "12",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_ebit_margin_min",
+          "kpiId": "ebit_margin",
+          "window": "normal_2020_2023:5",
+          "calculation": "min",
+          "range": {
+            "min": "8",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_revenue_growth",
+          "kpiId": "revenue",
+          "window": "normal_2020_2023:5",
+          "calculation": "growth",
+          "range": {
+            "min": "3",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_cfo_growth",
+          "kpiId": "cfo",
+          "window": "normal_2020_2023:5",
+          "calculation": "growth",
+          "range": {
+            "min": "0",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_tangible_revenue",
+          "kpiId": "tangible_assets_revenue",
+          "window": "normal_2020_2023:5",
+          "calculation": "median",
+          "range": {
+            "min": "0",
+            "max": "0.5"
+          }
+        },
+        {
+          "id": "normal_positive_fcf",
+          "kpiId": "positive_fcf",
+          "window": "normal_2020_2023:5",
+          "calculation": "latest",
+          "range": {
+            "min": "5",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_positive_ebit",
+          "kpiId": "positive_ebit",
+          "window": "normal_2020_2023:5",
+          "calculation": "latest"
+        },
+        {
+          "id": "net_debt_ebitda",
+          "kpiId": "provider_42",
+          "window": "provider:screener:last",
+          "calculation": "provider:latest",
+          "range": {
+            "min": "",
+            "max": "1.5"
+          }
+        },
+        {
+          "id": "ebitda_margin",
+          "kpiId": "provider_32",
+          "window": "provider:screener:last",
+          "calculation": "provider:latest"
+        },
+        {
+          "id": "normal_fcf_median",
+          "kpiId": "fcf",
+          "window": "normal_2020_2023:5",
+          "calculation": "median"
+        },
+        {
+          "id": "normal_cash_pv",
+          "kpiId": "normal_cash_pv",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "normal_terminal_pv",
+          "kpiId": "normal_terminal_pv",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "all_year_npv_full",
+          "kpiId": "valuation_attractiveness",
+          "window": "latest",
+          "calculation": "terminal_100"
+        },
+        {
+          "id": "all_year_low_npv",
+          "kpiId": "low_npv_percent",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "price_date",
+          "kpiId": "price_date",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "annual_date",
+          "kpiId": "annual_date",
+          "window": "latest",
+          "calculation": "latest"
+        }
+      ],
+      "filters": {
+        "query": "",
+        "sectorId": "all",
+        "branchId": "all",
+        "country": "all",
+        "route": "operating",
+        "readiness": "all",
+        "presence": "latest",
+        "watchlistOnly": false,
+        "preset": "normal_quality",
+        "numericRules": [
+          {
+            "column": {
+              "id": "ebitda_positive",
+              "kpiId": "provider_32",
+              "window": "provider:screener:last",
+              "calculation": "provider:latest"
+            },
+            "operator": "gt",
+            "value": 0
+          }
+        ]
+      },
+      "sort": {
+        "columnId": "normal_quality_value_score",
+        "direction": "desc"
+      }
+    },
+    {
+      "id": "list-mulsmf8a-29lpba0",
+      "name": "Kvalitetsbolag – normalår, prisbevakning",
+      "columns": [
+        {
+          "id": "normal_quality_value_score",
+          "kpiId": "normal_quality_value_score",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "normal_npv_half",
+          "kpiId": "normal_npv_percent",
+          "window": "latest",
+          "calculation": "terminal_50"
+        },
+        {
+          "id": "normal_quality_rank",
+          "kpiId": "normal_quality_rank",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "normal_discount_rank",
+          "kpiId": "normal_discount_rank",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "sector",
+          "kpiId": "sector",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "branch",
+          "kpiId": "branch",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "normal_npv_full",
+          "kpiId": "normal_npv_percent",
+          "window": "latest",
+          "calculation": "terminal_100"
+        },
+        {
+          "id": "normal_npv_cash_only",
+          "kpiId": "normal_npv_percent",
+          "window": "latest",
+          "calculation": "terminal_0"
+        },
+        {
+          "id": "normal_roce_median",
+          "kpiId": "normal_roce",
+          "window": "normal_2020_2023:5",
+          "calculation": "median",
+          "range": {
+            "min": "20",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_roce_min",
+          "kpiId": "normal_roce",
+          "window": "normal_2020_2023:5",
+          "calculation": "min",
+          "range": {
+            "min": "10",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_rota_median",
+          "kpiId": "normal_rota",
+          "window": "normal_2020_2023:5",
+          "calculation": "median",
+          "range": {
+            "min": "8",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_ebit_margin_median",
+          "kpiId": "ebit_margin",
+          "window": "normal_2020_2023:5",
+          "calculation": "median",
+          "range": {
+            "min": "12",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_ebit_margin_min",
+          "kpiId": "ebit_margin",
+          "window": "normal_2020_2023:5",
+          "calculation": "min",
+          "range": {
+            "min": "8",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_revenue_growth",
+          "kpiId": "revenue",
+          "window": "normal_2020_2023:5",
+          "calculation": "growth",
+          "range": {
+            "min": "3",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_cfo_growth",
+          "kpiId": "cfo",
+          "window": "normal_2020_2023:5",
+          "calculation": "growth",
+          "range": {
+            "min": "0",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_tangible_revenue",
+          "kpiId": "tangible_assets_revenue",
+          "window": "normal_2020_2023:5",
+          "calculation": "median",
+          "range": {
+            "min": "0",
+            "max": "0.5"
+          }
+        },
+        {
+          "id": "normal_positive_fcf",
+          "kpiId": "positive_fcf",
+          "window": "normal_2020_2023:5",
+          "calculation": "latest",
+          "range": {
+            "min": "5",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_positive_ebit",
+          "kpiId": "positive_ebit",
+          "window": "normal_2020_2023:5",
+          "calculation": "latest"
+        },
+        {
+          "id": "net_debt_ebitda",
+          "kpiId": "provider_42",
+          "window": "provider:screener:last",
+          "calculation": "provider:latest",
+          "range": {
+            "min": "",
+            "max": "1.5"
+          }
+        },
+        {
+          "id": "ebitda_margin",
+          "kpiId": "provider_32",
+          "window": "provider:screener:last",
+          "calculation": "provider:latest"
+        },
+        {
+          "id": "normal_fcf_median",
+          "kpiId": "fcf",
+          "window": "normal_2020_2023:5",
+          "calculation": "median"
+        },
+        {
+          "id": "normal_cash_pv",
+          "kpiId": "normal_cash_pv",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "normal_terminal_pv",
+          "kpiId": "normal_terminal_pv",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "all_year_npv_full",
+          "kpiId": "valuation_attractiveness",
+          "window": "latest",
+          "calculation": "terminal_100"
+        },
+        {
+          "id": "all_year_low_npv",
+          "kpiId": "low_npv_percent",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "price_date",
+          "kpiId": "price_date",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "annual_date",
+          "kpiId": "annual_date",
+          "window": "latest",
+          "calculation": "latest"
+        }
+      ],
+      "filters": {
+        "query": "",
+        "sectorId": "all",
+        "branchId": "all",
+        "country": "all",
+        "route": "operating",
+        "readiness": "all",
+        "presence": "latest",
+        "watchlistOnly": false,
+        "preset": "normal_quality",
+        "numericRules": [
+          {
+            "column": {
+              "id": "ebitda_positive",
+              "kpiId": "provider_32",
+              "window": "provider:screener:last",
+              "calculation": "provider:latest"
+            },
+            "operator": "gt",
+            "value": 0
+          }
+        ]
+      },
+      "sort": {
+        "columnId": "normal_quality_value_score",
+        "direction": "desc"
+      }
+    }
+  ],
+  "savedViewFeatures": {
+    "list-mulsmf8a-29lpba0": {
+      "secondarySorts": [
+        {
+          "columnId": "normal_npv_half",
+          "direction": "desc"
+        }
+      ],
+      "density": "comfortable",
+      "activeWatchlistId": "default"
+    },
+    "list-mulslkos-wor8qyb": {
+      "secondarySorts": [
+        {
+          "columnId": "normal_npv_half",
+          "direction": "desc"
+        }
+      ],
+      "density": "comfortable",
+      "activeWatchlistId": "default"
+    }
+  },
+  "preservation": {
+    "earlierSavedViews": 3,
+    "targetViewIdsUnchanged": true,
+    "originalColumnsAndRangesUnchanged": true,
+    "unrelatedStorageKeys": 64,
+    "valuationDrafts": 61
+  },
+  "verification": {
+    "unitTests": 374,
+    "unitFiles": 42,
+    "focusedBrowserChecks": 5,
+    "focusedNativeChecks": 6,
+    "independent": {
+      "status": "passed",
+      "sourceRows": 19140,
+      "eligibleCount": 248,
+      "cohortSize": 180,
+      "unrankedCount": 68,
+      "strictCount": 0,
+      "checkedValues": 3448,
+      "legacyMetricsChecked": 4960,
+      "orderedIds": [
+        "22133",
+        "23935",
+        "22347",
+        "22238",
+        "16362",
+        "40059",
+        "206",
+        "11357",
+        "16554",
+        "34039",
+        "15824",
+        "12903",
+        "20277",
+        "30115",
+        "17587",
+        "12703",
+        "17452",
+        "10496",
+        "10973",
+        "14451",
+        "36910",
+        "16460",
+        "12692",
+        "22111",
+        "36661",
+        "17293",
+        "19583",
+        "12427",
+        "33308",
+        "17024",
+        "11224",
+        "39649",
+        "10140",
+        "36259",
+        "22034",
+        "19869",
+        "13611",
+        "14115",
+        "10844",
+        "14713",
+        "36340",
+        "13878",
+        "21889",
+        "36394",
+        "15103",
+        "17505",
+        "32735",
+        "11860",
+        "18691",
+        "13668",
+        "297",
+        "22446",
+        "18450",
+        "31144",
+        "12227",
+        "10569",
+        "10096",
+        "13737",
+        "17156",
+        "12416",
+        "40235",
+        "19490",
+        "36303",
+        "10534",
+        "13159",
+        "20575",
+        "16409",
+        "11819",
+        "39682",
+        "31167",
+        "12816",
+        "18541",
+        "11136",
+        "11187",
+        "33347",
+        "19769",
+        "13041",
+        "12763",
+        "36998",
+        "14022",
+        "10218",
+        "19522",
+        "36935",
+        "39369",
+        "13723",
+        "11184",
+        "10768",
+        "12225",
+        "11593",
+        "13519",
+        "13511",
+        "11202",
+        "12256",
+        "33297",
+        "35",
+        "18545",
+        "12673",
+        "34578",
+        "34639",
+        "10836",
+        "40026",
+        "11291",
+        "12559",
+        "20346",
+        "40665",
+        "11379",
+        "19933",
+        "21556",
+        "11274",
+        "31566",
+        "11293",
+        "51541",
+        "13983",
+        "20308",
+        "34546",
+        "11229",
+        "10962",
+        "689",
+        "18498",
+        "34788",
+        "11479",
+        "19357",
+        "12968",
+        "13783",
+        "20135",
+        "13953",
+        "17141",
+        "13758",
+        "13257",
+        "13518",
+        "10214",
+        "11909",
+        "33988",
+        "13802",
+        "821",
+        "13868",
+        "10853",
+        "12078",
+        "17723",
+        "34843",
+        "34814",
+        "20372",
+        "12292",
+        "11309",
+        "18734",
+        "66893",
+        "11203",
+        "38295",
+        "200",
+        "38531",
+        "36414",
+        "140",
+        "13979",
+        "11128",
+        "12607",
+        "1605",
+        "39017",
+        "12934",
+        "17183",
+        "10533",
+        "19",
+        "11474",
+        "34810",
+        "20637",
+        "11298",
+        "21533",
+        "10405",
+        "19990",
+        "11336",
+        "36964",
+        "19741",
+        "20538",
+        "13805",
+        "40238",
+        "12973",
+        "16848",
+        "12520",
+        "20158",
+        "31224",
+        "21649",
+        "32241",
+        "69960",
+        "32349",
+        "49001",
+        "59788",
+        "65843",
+        "61834",
+        "62373",
+        "32181",
+        "36663",
+        "51557",
+        "32",
+        "70254",
+        "61966",
+        "32370",
+        "73644",
+        "60734",
+        "14386",
+        "32152",
+        "58719",
+        "66508",
+        "71522",
+        "69811",
+        "750",
+        "13052",
+        "35549",
+        "47152",
+        "20064",
+        "65191",
+        "32955",
+        "63660",
+        "65736",
+        "67454",
+        "35246",
+        "20071",
+        "73153",
+        "71513",
+        "61272",
+        "72287",
+        "70054",
+        "20084",
+        "51451",
+        "69879",
+        "69737",
+        "51501",
+        "20634",
+        "71878",
+        "61835",
+        "69644",
+        "32959",
+        "65744",
+        "59790",
+        "60837",
+        "70076",
+        "34860",
+        "20322",
+        "67680",
+        "69905",
+        "66524",
+        "69856",
+        "65147",
+        "72907",
+        "72840",
+        "70129",
+        "69860",
+        "36565",
+        "66266",
+        "69681"
+      ],
+      "originalQualityFiltersPreserved": true,
+      "originalColumnsAndRangesPreserved": true,
+      "displayedCellsMatchIndependent": true,
+      "subsetScoresUnchanged": true,
+      "expectedSha256": "7cabedd7de6f6dcbeeab5764dfb86212f5f8bc51a8c3ffa28af7a1161f77145c",
+      "moduleSha256": "a5171462ad3ef1679592a2591f88fa1f1c02da2c04286f5d5344b4dd1a519e38"
+    },
+    "fullProcessRestart": true,
+    "normalDebugFreeLaunch": true,
+    "saveReceipt": "verification-save-20260928T222939203Z-58e2ed95.json",
+    "restartReceipt": "lifecycle-restart-20260928T223012034Z-ef3f48cd.json",
+    "verifyReceipt": "verification-verify-20260928T223028825Z-fe17348f.json",
+    "finishReceipt": "lifecycle-finish-20260928T223054863Z-aa53b41a.json",
+    "nativeReportSha256": "1e5dc7b65f9b0ead0c3aa7d2729fc100acd06c72aae2a0d6e0b5651772f3c78e",
+    "browserReportSha256": "f9d9979ff5d559d85c1ca1a7bc81e5dcb8efcede903e55fe7ce7bf8b9e762623",
+    "unitLogSha256": "ae0739803bedbc4961cad119ef12439fa3fba682e3e8e055085ae0f23cc45c1c"
+  },
+  "expectedRankingSha256": "7cabedd7de6f6dcbeeab5764dfb86212f5f8bc51a8c3ffa28af7a1161f77145c",
+  "referenceIdentity": "de0d97cf39752827f68cccdfb1f4b7cba4974070bcbe74a397ec4cd44e6f0596",
+  "shortcutVerification": {
+    "Status": "PASS",
+    "At": "2026-09-28T22:31:14.1114244Z",
+    "Shortcut": "C:\\Users\\Adamb\\OneDrive\\Desktop\\Macro Atlas.lnk",
+    "TargetPath": "C:\\Users\\Adamb\\AppData\\Local\\MacroAtlas\\0.23.1\\Macro Atlas.exe",
+    "WorkingDirectory": "C:\\Users\\Adamb\\AppData\\Local\\MacroAtlas\\0.23.1",
+    "Version": "0.23.1",
+    "SHA256": "3A355301EF7A850C05A3361E4E4EB3F77D7F48D204899676EFA22BA6AC33EB9B",
+    "PriorReleaseRetained": true
+  },
+  "limitations": [
+    "Rank points are relative to 180 priced quality listings, not expected returns or an assertion of undervaluation.",
+    "Multiple listings of the same business can affect the reference distribution.",
+    "Missing observations remain unranked; no weights are redistributed.",
+    "Saved quotes are not current prices. The existing 2020–2023 exclusion, original valuation arithmetic and quality/discount bounds are unchanged.",
+    "The 149-check broad Windows run belongs to 0.23.0. Version 0.23.1 is validated with the full unit suite and focused browser/native ranking and persistence tests."
+  ]
+}

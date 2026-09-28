@@ -222,19 +222,50 @@ async function failClosedFlows(page, project, data, expectedStorage, native) {
   const { manifest, compressed } = data;
   const asset = `**${manifest.artifact.path.startsWith('/') ? manifest.artifact.path : '/' + manifest.artifact.path}`;
   const damaged = Buffer.from(compressed); damaged[damaged.length - 1] ^= 1;
-  await page.route(asset, route => route.fulfill({ status: 200, contentType: 'application/gzip', body: damaged }));
+  const corruptionKey = '__atlas_test_corrupt_research_gauge';
+  if (native) {
+    // Native CDP Fetch routing can stall unrelated custom-protocol requests.
+    // Modify the actual local response in the isolated WebView instead. The
+    // same-length body still exercises the real compressed-byte hash check.
+    await page.addInitScript(({ assetUrl, key }) => {
+      if (sessionStorage.getItem(key) !== 'enabled') return;
+      const original = window.fetch;
+      window.__researchGaugeCorruptionRestore = () => { window.fetch = original; delete window.__researchGaugeCorruptionRestore; };
+      window.fetch = async function (input, ...rest) {
+        const response = await original.call(this, input, ...rest);
+        const url = new URL(typeof input === 'string' || input instanceof URL ? String(input) : input.url, location.href);
+        if (sessionStorage.getItem(key) !== 'enabled' || url.href !== assetUrl) return response;
+        const bytes = new Uint8Array(await response.arrayBuffer());
+        if (!bytes.length) throw new Error('The corruption test requires an actual nonempty local asset response');
+        bytes[bytes.length - 1] ^= 1;
+        sessionStorage.setItem(`${key}:responses`, String(Number(sessionStorage.getItem(`${key}:responses`) ?? 0) + 1));
+        return new Response(bytes, { status: response.status, statusText: response.statusText, headers: response.headers });
+      };
+    }, { assetUrl: new URL(manifest.artifact.path, page.url()).href, key: corruptionKey });
+    await page.evaluate(key => sessionStorage.setItem(key, 'enabled'), corruptionKey);
+  } else await page.route(asset, route => route.fulfill({ status: 200, contentType: 'application/gzip', body: damaged }));
   try {
     await page.reload();
     await page.locator('[data-research-card] [role="alert"]').waitFor();
+    if (native) assert.ok(await page.evaluate(key => Number(sessionStorage.getItem(`${key}:responses`)) > 0, corruptionKey), 'Native corruption injection must observe the actual asset response');
     assert.equal(await page.locator('[data-research-card-ready="true"]').count(), 0);
     await page.getByLabel('Universe research screen', { exact: true }).click();
     await page.locator('[data-research-gauge-ready] [role="alert"]').waitFor();
     assert.equal(await page.locator('[data-research-listing]').count(), 0);
     assert.deepEqual(await protectedStorage(page), expectedStorage);
   } finally {
-    await page.unroute(asset);
+    if (native) await page.evaluate(key => {
+      sessionStorage.removeItem(key); sessionStorage.removeItem(`${key}:responses`);
+      window.__researchGaugeCorruptionRestore?.();
+    }, corruptionKey);
+    else await page.unroute(asset);
     await page.reload();
   }
+  // Reload restores the selected universe screen. Verify its recovery before
+  // explicitly navigating back to the company card.
+  await page.locator('[data-research-gauge-ready="true"]').waitFor();
+  assert.ok(await page.locator('[data-research-listing]').count() > 0);
+  await openCompany(page, 'Holmen', '102');
   await page.locator('[data-research-card="102"][data-research-card-ready="true"]').waitFor();
   await watchReadOnly(page);
   const catalog = JSON.parse(await readFile(resolve(project, 'public/data/catalog.json'), 'utf8'));
@@ -274,6 +305,9 @@ async function failClosedFlows(page, project, data, expectedStorage, native) {
       await switchRelease(page, older.as_of);
       await switchRelease(page, current.as_of);
     }
+    // Top-level Companies navigation opens Lists; this assertion exercises the
+    // separate company evidence card, so select its visible Financials route.
+    await page.getByLabel('Company financials', { exact: true }).click();
     await page.locator('[data-research-card] [role="alert"]').waitFor();
     assert.equal(await page.locator('[data-research-card-ready="true"]').count(), 0);
     await page.getByLabel('Universe research screen', { exact: true }).click();
@@ -473,6 +507,7 @@ export async function assertResearchGaugeRestart(page, result) {
   assert.deepEqual(await protectedStorage(page), result.protectedStorage, 'Process restart retains original draft/revision bytes after read-only research browsing');
   assert.equal(await page.locator('.valuation-workspace').count(), 0);
   await openScreen(page);
+  // The last route persists; temporary research controls begin a fresh session.
   assert.equal(await matches(page), result.listings);
   assert.equal(await page.getByLabel('Show starter valuation context', { exact: true }).isChecked(), false);
   await page.getByRole('button', { name: 'Back to explorer', exact: true }).click();

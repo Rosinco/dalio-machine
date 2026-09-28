@@ -1,0 +1,103 @@
+{
+  "format": "macro-atlas-source-closeout-verification",
+  "version": 1,
+  "appVersion": "0.23.2",
+  "status": "PASS",
+  "checks": {
+    "rootPythonPytest": 1206,
+    "rootPythonRuff": "clean",
+    "desktopExporterPytest": 39,
+    "nodeCashFlowBacktest": 1,
+    "gaugeExporter": "verified-identical; 19140 listings; 154409 annual screening reports",
+    "dependencyAudit": {
+      "files": 227,
+      "missing": 0,
+      "hashOrSizeFailures": 0,
+      "intentionallyIgnoredAssetsAndPacks": 218
+    },
+    "windowsCodeExeWrapperCases": 4,
+    "portableIndependentRanking": {
+      "status": "passed",
+      "rankingValues": 1464,
+      "adapterValues": 3448,
+      "legacyMetrics": 4960,
+      "fiveYearValues": 1488,
+      "exactFixtureBytes": true,
+      "exactOrdering": true,
+      "historicalLegacyMetricsCompared": 4960
+    }
+  },
+  "notes": [
+    "The 383-test frontend suite and browser/native evidence for the unchanged 0.23.2 application were reused.",
+    "The application binary is unchanged. Subsequent changes are test-wrapper waiting, independent verification tools and documentation.",
+    "No normal user profile was opened or changed by this closeout validation.",
+    "Generated public data and financial packs remain outside Git; source clones need exact retained assets or regeneration from pinned inputs."
+  ],
+  "evidence": [
+    {
+      "path": "desktop/test-results/closeout-2026-09-29/pytest.log",
+      "sha256": "827ddbac1e022d2e8e71cbc7282dbf3028959504974f1c0811b4084ae51a3aa6",
+      "bytes": 1393
+    },
+    {
+      "path": "desktop/test-results/closeout-2026-09-29/ruff.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "bytes": 19
+    },
+    {
+      "path": "desktop/test-results/closeout-2026-09-29/desktop-exporters-pytest.log",
+      "sha256": "7296c49d3d20bb34d9a25034828bfa47cfd0b7cdc1e31ab22fcadbb924293d86",
+      "bytes": 99
+    },
+    {
+      "path": "desktop/test-results/closeout-2026-09-29/node-cash-flow-backtest.log",
+      "sha256": "31eb7b315b438738094567126eb5b5cc5e40d8fd4dbaf78844bf076783acc54f",
+      "bytes": 258
+    },
+    {
+      "path": "desktop/test-results/closeout-2026-09-29/export-research-gauge-check.log",
+      "sha256": "f5be02128cf9254668b51379ad128373de77998ec8c273581e9d40f5b7c07c8a",
+      "bytes": 1776
+    },
+    {
+      "path": "desktop/test-results/closeout-2026-09-29/publication-dependency-audit.json",
+      "sha256": "8593cf828eb4702ec283828df4597ab968b3ef5ada867845233434ddf41806ca",
+      "bytes": 78318
+    },
+    {
+      "path": "desktop/test-results/closeout-2026-09-29/windows-wrapper-harness/report.json",
+      "sha256": "e5a40d671785acd3a68239f21ba6a0c54566a4d06f01ef4bf4dcd157796155d2",
+      "bytes": 1947
+    },
+    {
+      "path": "desktop/test-results/closeout-2026-09-29/portable-ranking/ranking-receipt.json",
+      "sha256": "b367922a9ae40d29be54e47ac1e02d1c33d4e1995755bd9ee7c82e77b7eda5e0",
+      "bytes": 618
+    },
+    {
+      "path": "desktop/test-results/closeout-2026-09-29/portable-ranking/ranking-module-verification.json",
+      "sha256": "2cdb1b935e9b3a2443f12a76ed4b288a6d206781a287474c1ab91ba3229a0673",
+      "bytes": 312
+    },
+    {
+      "path": "desktop/test-results/closeout-2026-09-29/portable-ranking/model-verification.json",
+      "sha256": "97ce05b3abfdfe263f481e541f8e303f4e5ae86cd9856c5e74c36b1892a53fcd",
+      "bytes": 3785
+    },
+    {
+      "path": "desktop/test-results/closeout-2026-09-29/portable-ranking/historical-metrics-comparison.json",
+      "sha256": "e6c78c66dd38c4680c83350117511e546153ee81f0a5d40bae5d18a390cd4a4c",
+      "bytes": 302
+    }
+  ],
+  "portableEvidencePrivacy": {
+    "removedFields": [
+      "NormalProfile",
+      "WebViewCommandLine"
+    ],
+    "files": 5,
+    "fields": 10,
+    "allRemainingEvidenceValuesPreserved": true,
+    "originals": "desktop/test-results/closeout-2026-09-29/portable-record-originals/"
+  }
+}

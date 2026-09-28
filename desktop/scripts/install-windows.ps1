@@ -37,6 +37,22 @@ foreach ($relative in @('docs/company-valuation-framework.md', 'docs/company-ana
   New-Item -ItemType Directory -Path (Split-Path $target -Parent) -Force | Out-Null
   Copy-Item -LiteralPath $source -Destination $target
 }
+$screenDocs = Join-Path $folder 'research\screens'
+New-Item -ItemType Directory -Path $screenDocs -Force | Out-Null
+Copy-Item -LiteralPath (Join-Path $project 'research\screens\normal-years-quality-value-2026-09-28.md') -Destination $screenDocs
+Copy-Item -LiteralPath (Join-Path $project 'research\screens\normal-years-ranking-2026-09-29.md') -Destination $screenDocs
+Copy-Item -LiteralPath (Join-Path $project 'research\screens\normal-years-five-year-ranking-2026-09-29.md') -Destination $screenDocs
+# Completed user-profile verification records exist only after first installation.
+foreach ($record in @('normal-years-quality-value-2026-09-28.json', 'normal-years-quality-watch-2026-09-28.json', 'normal-years-release-verification-2026-09-28.json', 'normal-years-ranking-verification-2026-09-29.json', 'normal-years-five-year-ranking-verification-2026-09-29.json', 'normal-years-source-verification-2026-09-29.json')) {
+  $recordSource = Join-Path $project ('research\screens\' + $record)
+  if (Test-Path -LiteralPath $recordSource -PathType Leaf) { Copy-Item -LiteralPath $recordSource -Destination $screenDocs }
+}
+foreach ($relative in @('docs/survival-and-portfolio-review.md', 'decisions/0044-survival-and-portfolio-stress-review.md')) {
+  $source = Join-Path (Split-Path $project -Parent) $relative
+  $target = Join-Path $folder $relative
+  New-Item -ItemType Directory -Path (Split-Path $target -Parent) -Force | Out-Null
+  Copy-Item -LiteralPath $source -Destination $target
+}
 Copy-Item -LiteralPath (Join-Path $project 'HANDOFF.md') -Destination (Join-Path $folder 'HANDOFF.md')
 $desktop = [Environment]::GetFolderPath('Desktop')
 $shortcutPath = Join-Path $desktop 'Macro Atlas.lnk'

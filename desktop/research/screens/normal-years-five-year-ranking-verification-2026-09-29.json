@@ -1,0 +1,876 @@
+{
+  "format": "macro-atlas-ranking-update-record",
+  "version": 1,
+  "appVersion": "0.23.2",
+  "status": "installed-and-verified",
+  "installedAt": "2026-09-28T22:54:39.3101208Z",
+  "executableSha256": "6d8949b4d84674a322ad11e1993cf89ce4b0f96bb2339f0501115872bc6d3c31",
+  "policy": "normal-quality-watch-npv5-60-40-v2",
+  "method": "60% five-year cash-only normal-year NPV/price percentile + 40% mean of capital-return, minimum-margin, CFO-growth and lower-debt percentiles; years 1-5 at 10%, no terminal; fixed listing reference; integer doubled midranks preserve exact ties",
+  "assumptions": {
+    "discountYears": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "discountRatePercent": 10,
+    "terminalValue": 0,
+    "normalCash": "Median provider FCF from five selected normal reports",
+    "npvWeight": 0.6,
+    "qualityWeight": 0.4,
+    "exceptionFiscalEndYears": [
+      2020,
+      2021,
+      2022,
+      2023
+    ]
+  },
+  "policyConsequences": {
+    "fiveYearCashFactor": 3.7907867694084474,
+    "previousHalfTerminalFactor": 8.072283552852337,
+    "discountPercentilesUnchanged": true,
+    "qualityPercentilesUnchanged": true,
+    "nonnegativeFiveYearNPV": 0,
+    "bestFiveYearNPV": -47.599896573326305,
+    "worstFiveYearNPV": -99.00248369080488,
+    "changedRankPositions": 173
+  },
+  "counts": {
+    "qualityListings": 248,
+    "rankedListings": 180,
+    "unrankedListings": 68,
+    "strictDiscountMatches": 0
+  },
+  "savedViews": [
+    {
+      "id": "list-mulslkos-wor8qyb",
+      "name": "Kvalitetsbolag med rabatt – normalår",
+      "columns": [
+        {
+          "id": "normal_quality_value_score",
+          "kpiId": "normal_quality_value_score",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "normal_npv_5y_percent",
+          "kpiId": "normal_npv_5y_percent",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "normal_quality_rank",
+          "kpiId": "normal_quality_rank",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "normal_discount_rank",
+          "kpiId": "normal_discount_rank",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "normal_npv_half",
+          "kpiId": "normal_npv_percent",
+          "window": "latest",
+          "calculation": "terminal_50",
+          "range": {
+            "min": "0",
+            "max": ""
+          }
+        },
+        {
+          "id": "sector",
+          "kpiId": "sector",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "branch",
+          "kpiId": "branch",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "normal_npv_full",
+          "kpiId": "normal_npv_percent",
+          "window": "latest",
+          "calculation": "terminal_100",
+          "range": {
+            "min": "42.85714285714286",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_npv_cash_only",
+          "kpiId": "normal_npv_percent",
+          "window": "latest",
+          "calculation": "terminal_0"
+        },
+        {
+          "id": "normal_roce_median",
+          "kpiId": "normal_roce",
+          "window": "normal_2020_2023:5",
+          "calculation": "median",
+          "range": {
+            "min": "20",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_roce_min",
+          "kpiId": "normal_roce",
+          "window": "normal_2020_2023:5",
+          "calculation": "min",
+          "range": {
+            "min": "10",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_rota_median",
+          "kpiId": "normal_rota",
+          "window": "normal_2020_2023:5",
+          "calculation": "median",
+          "range": {
+            "min": "8",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_ebit_margin_median",
+          "kpiId": "ebit_margin",
+          "window": "normal_2020_2023:5",
+          "calculation": "median",
+          "range": {
+            "min": "12",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_ebit_margin_min",
+          "kpiId": "ebit_margin",
+          "window": "normal_2020_2023:5",
+          "calculation": "min",
+          "range": {
+            "min": "8",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_revenue_growth",
+          "kpiId": "revenue",
+          "window": "normal_2020_2023:5",
+          "calculation": "growth",
+          "range": {
+            "min": "3",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_cfo_growth",
+          "kpiId": "cfo",
+          "window": "normal_2020_2023:5",
+          "calculation": "growth",
+          "range": {
+            "min": "0",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_tangible_revenue",
+          "kpiId": "tangible_assets_revenue",
+          "window": "normal_2020_2023:5",
+          "calculation": "median",
+          "range": {
+            "min": "0",
+            "max": "0.5"
+          }
+        },
+        {
+          "id": "normal_positive_fcf",
+          "kpiId": "positive_fcf",
+          "window": "normal_2020_2023:5",
+          "calculation": "latest",
+          "range": {
+            "min": "5",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_positive_ebit",
+          "kpiId": "positive_ebit",
+          "window": "normal_2020_2023:5",
+          "calculation": "latest"
+        },
+        {
+          "id": "net_debt_ebitda",
+          "kpiId": "provider_42",
+          "window": "provider:screener:last",
+          "calculation": "provider:latest",
+          "range": {
+            "min": "",
+            "max": "1.5"
+          }
+        },
+        {
+          "id": "ebitda_margin",
+          "kpiId": "provider_32",
+          "window": "provider:screener:last",
+          "calculation": "provider:latest"
+        },
+        {
+          "id": "normal_fcf_median",
+          "kpiId": "fcf",
+          "window": "normal_2020_2023:5",
+          "calculation": "median"
+        },
+        {
+          "id": "normal_cash_pv",
+          "kpiId": "normal_cash_pv",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "normal_terminal_pv",
+          "kpiId": "normal_terminal_pv",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "all_year_npv_full",
+          "kpiId": "valuation_attractiveness",
+          "window": "latest",
+          "calculation": "terminal_100"
+        },
+        {
+          "id": "all_year_low_npv",
+          "kpiId": "low_npv_percent",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "price_date",
+          "kpiId": "price_date",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "annual_date",
+          "kpiId": "annual_date",
+          "window": "latest",
+          "calculation": "latest"
+        }
+      ],
+      "filters": {
+        "query": "",
+        "sectorId": "all",
+        "branchId": "all",
+        "country": "all",
+        "route": "operating",
+        "readiness": "all",
+        "presence": "latest",
+        "watchlistOnly": false,
+        "preset": "normal_quality",
+        "numericRules": [
+          {
+            "column": {
+              "id": "ebitda_positive",
+              "kpiId": "provider_32",
+              "window": "provider:screener:last",
+              "calculation": "provider:latest"
+            },
+            "operator": "gt",
+            "value": 0
+          }
+        ]
+      },
+      "sort": {
+        "columnId": "normal_quality_value_score",
+        "direction": "desc"
+      }
+    },
+    {
+      "id": "list-mulsmf8a-29lpba0",
+      "name": "Kvalitetsbolag – normalår, prisbevakning",
+      "columns": [
+        {
+          "id": "normal_quality_value_score",
+          "kpiId": "normal_quality_value_score",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "normal_npv_5y_percent",
+          "kpiId": "normal_npv_5y_percent",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "normal_quality_rank",
+          "kpiId": "normal_quality_rank",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "normal_discount_rank",
+          "kpiId": "normal_discount_rank",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "normal_npv_half",
+          "kpiId": "normal_npv_percent",
+          "window": "latest",
+          "calculation": "terminal_50"
+        },
+        {
+          "id": "sector",
+          "kpiId": "sector",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "branch",
+          "kpiId": "branch",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "normal_npv_full",
+          "kpiId": "normal_npv_percent",
+          "window": "latest",
+          "calculation": "terminal_100"
+        },
+        {
+          "id": "normal_npv_cash_only",
+          "kpiId": "normal_npv_percent",
+          "window": "latest",
+          "calculation": "terminal_0"
+        },
+        {
+          "id": "normal_roce_median",
+          "kpiId": "normal_roce",
+          "window": "normal_2020_2023:5",
+          "calculation": "median",
+          "range": {
+            "min": "20",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_roce_min",
+          "kpiId": "normal_roce",
+          "window": "normal_2020_2023:5",
+          "calculation": "min",
+          "range": {
+            "min": "10",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_rota_median",
+          "kpiId": "normal_rota",
+          "window": "normal_2020_2023:5",
+          "calculation": "median",
+          "range": {
+            "min": "8",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_ebit_margin_median",
+          "kpiId": "ebit_margin",
+          "window": "normal_2020_2023:5",
+          "calculation": "median",
+          "range": {
+            "min": "12",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_ebit_margin_min",
+          "kpiId": "ebit_margin",
+          "window": "normal_2020_2023:5",
+          "calculation": "min",
+          "range": {
+            "min": "8",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_revenue_growth",
+          "kpiId": "revenue",
+          "window": "normal_2020_2023:5",
+          "calculation": "growth",
+          "range": {
+            "min": "3",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_cfo_growth",
+          "kpiId": "cfo",
+          "window": "normal_2020_2023:5",
+          "calculation": "growth",
+          "range": {
+            "min": "0",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_tangible_revenue",
+          "kpiId": "tangible_assets_revenue",
+          "window": "normal_2020_2023:5",
+          "calculation": "median",
+          "range": {
+            "min": "0",
+            "max": "0.5"
+          }
+        },
+        {
+          "id": "normal_positive_fcf",
+          "kpiId": "positive_fcf",
+          "window": "normal_2020_2023:5",
+          "calculation": "latest",
+          "range": {
+            "min": "5",
+            "max": ""
+          }
+        },
+        {
+          "id": "normal_positive_ebit",
+          "kpiId": "positive_ebit",
+          "window": "normal_2020_2023:5",
+          "calculation": "latest"
+        },
+        {
+          "id": "net_debt_ebitda",
+          "kpiId": "provider_42",
+          "window": "provider:screener:last",
+          "calculation": "provider:latest",
+          "range": {
+            "min": "",
+            "max": "1.5"
+          }
+        },
+        {
+          "id": "ebitda_margin",
+          "kpiId": "provider_32",
+          "window": "provider:screener:last",
+          "calculation": "provider:latest"
+        },
+        {
+          "id": "normal_fcf_median",
+          "kpiId": "fcf",
+          "window": "normal_2020_2023:5",
+          "calculation": "median"
+        },
+        {
+          "id": "normal_cash_pv",
+          "kpiId": "normal_cash_pv",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "normal_terminal_pv",
+          "kpiId": "normal_terminal_pv",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "all_year_npv_full",
+          "kpiId": "valuation_attractiveness",
+          "window": "latest",
+          "calculation": "terminal_100"
+        },
+        {
+          "id": "all_year_low_npv",
+          "kpiId": "low_npv_percent",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "price_date",
+          "kpiId": "price_date",
+          "window": "latest",
+          "calculation": "latest"
+        },
+        {
+          "id": "annual_date",
+          "kpiId": "annual_date",
+          "window": "latest",
+          "calculation": "latest"
+        }
+      ],
+      "filters": {
+        "query": "",
+        "sectorId": "all",
+        "branchId": "all",
+        "country": "all",
+        "route": "operating",
+        "readiness": "all",
+        "presence": "latest",
+        "watchlistOnly": false,
+        "preset": "normal_quality",
+        "numericRules": [
+          {
+            "column": {
+              "id": "ebitda_positive",
+              "kpiId": "provider_32",
+              "window": "provider:screener:last",
+              "calculation": "provider:latest"
+            },
+            "operator": "gt",
+            "value": 0
+          }
+        ]
+      },
+      "sort": {
+        "columnId": "normal_quality_value_score",
+        "direction": "desc"
+      }
+    }
+  ],
+  "savedViewFeatures": {
+    "list-mulsmf8a-29lpba0": {
+      "secondarySorts": [
+        {
+          "columnId": "normal_npv_5y_percent",
+          "direction": "desc"
+        }
+      ],
+      "density": "comfortable",
+      "activeWatchlistId": "default"
+    },
+    "list-mulslkos-wor8qyb": {
+      "secondarySorts": [
+        {
+          "columnId": "normal_npv_5y_percent",
+          "direction": "desc"
+        }
+      ],
+      "density": "comfortable",
+      "activeWatchlistId": "default"
+    }
+  },
+  "preservation": {
+    "earlierSavedViews": 3,
+    "targetViewIdsUnchanged": true,
+    "originalColumnsAndRangesUnchanged": true,
+    "unrelatedStorageKeys": 66,
+    "originalColumnsPerView": 27,
+    "newColumnsPerView": 28,
+    "legacyTenYearHalfNpvUnchanged": true,
+    "valuationDrafts": 63
+  },
+  "verification": {
+    "unitTests": 383,
+    "unitFiles": 42,
+    "focusedBrowserChecks": 5,
+    "focusedNativeChecks": 6,
+    "independent": {
+      "status": "passed",
+      "sourceRows": 19140,
+      "eligibleCount": 248,
+      "cohortSize": 180,
+      "unrankedCount": 68,
+      "strictCount": 0,
+      "checkedValues": 3448,
+      "legacyMetricsChecked": 4960,
+      "fiveYearValuesChecked": 1488,
+      "orderedIds": [
+        "22133",
+        "22347",
+        "23935",
+        "16362",
+        "22238",
+        "40059",
+        "16554",
+        "11357",
+        "206",
+        "17587",
+        "34039",
+        "30115",
+        "17452",
+        "20277",
+        "12903",
+        "14451",
+        "10973",
+        "36910",
+        "10496",
+        "12692",
+        "15824",
+        "12703",
+        "22111",
+        "16460",
+        "36259",
+        "36661",
+        "39649",
+        "19583",
+        "12427",
+        "33308",
+        "14713",
+        "10140",
+        "22446",
+        "17293",
+        "11224",
+        "13611",
+        "22034",
+        "17505",
+        "32735",
+        "13878",
+        "10569",
+        "13737",
+        "12227",
+        "19869",
+        "10844",
+        "36394",
+        "17024",
+        "21889",
+        "36340",
+        "18691",
+        "19490",
+        "12416",
+        "36303",
+        "15103",
+        "14115",
+        "11860",
+        "10534",
+        "40235",
+        "16409",
+        "13668",
+        "17156",
+        "297",
+        "11136",
+        "10096",
+        "20575",
+        "13519",
+        "12816",
+        "39369",
+        "18450",
+        "31144",
+        "13723",
+        "13159",
+        "33347",
+        "19769",
+        "31167",
+        "18541",
+        "12763",
+        "39682",
+        "11187",
+        "11819",
+        "13041",
+        "10768",
+        "12673",
+        "36998",
+        "20308",
+        "34546",
+        "21556",
+        "14022",
+        "11184",
+        "20346",
+        "40665",
+        "12256",
+        "19522",
+        "36935",
+        "10218",
+        "13953",
+        "18545",
+        "13511",
+        "11293",
+        "13758",
+        "34578",
+        "11229",
+        "10836",
+        "40026",
+        "17141",
+        "35",
+        "13257",
+        "19357",
+        "33297",
+        "19933",
+        "13518",
+        "689",
+        "31566",
+        "12078",
+        "10962",
+        "34639",
+        "12225",
+        "11202",
+        "11291",
+        "51541",
+        "11379",
+        "11593",
+        "11909",
+        "11274",
+        "13802",
+        "12968",
+        "17723",
+        "20135",
+        "11479",
+        "13783",
+        "12559",
+        "10214",
+        "17183",
+        "18498",
+        "34788",
+        "12934",
+        "821",
+        "12292",
+        "13983",
+        "34814",
+        "13868",
+        "33988",
+        "18734",
+        "10853",
+        "34810",
+        "38295",
+        "1605",
+        "10533",
+        "11309",
+        "21533",
+        "12607",
+        "19",
+        "13979",
+        "38531",
+        "36414",
+        "11203",
+        "34843",
+        "20372",
+        "140",
+        "66893",
+        "11128",
+        "11336",
+        "200",
+        "11298",
+        "39017",
+        "36964",
+        "19741",
+        "10405",
+        "11474",
+        "19990",
+        "20637",
+        "13805",
+        "40238",
+        "16848",
+        "20538",
+        "12520",
+        "12973",
+        "20158",
+        "31224",
+        "21649",
+        "32241",
+        "69960",
+        "32349",
+        "49001",
+        "59788",
+        "65843",
+        "61834",
+        "62373",
+        "32181",
+        "36663",
+        "51557",
+        "32",
+        "70254",
+        "61966",
+        "32370",
+        "73644",
+        "60734",
+        "14386",
+        "32152",
+        "58719",
+        "66508",
+        "71522",
+        "69811",
+        "750",
+        "13052",
+        "35549",
+        "47152",
+        "20064",
+        "65191",
+        "32955",
+        "63660",
+        "65736",
+        "67454",
+        "35246",
+        "20071",
+        "73153",
+        "71513",
+        "61272",
+        "72287",
+        "70054",
+        "20084",
+        "51451",
+        "69879",
+        "69737",
+        "51501",
+        "20634",
+        "71878",
+        "61835",
+        "69644",
+        "32959",
+        "65744",
+        "59790",
+        "60837",
+        "70076",
+        "34860",
+        "20322",
+        "67680",
+        "69905",
+        "66524",
+        "69856",
+        "65147",
+        "72907",
+        "72840",
+        "70129",
+        "69860",
+        "36565",
+        "66266",
+        "69681"
+      ],
+      "originalQualityFiltersPreserved": true,
+      "originalColumnsAndRangesPreserved": true,
+      "displayedCellsMatchIndependent": true,
+      "subsetScoresUnchanged": true,
+      "expectedSha256": "912f56e957f8458c4224a1423d0b7530abb5ef5ce07dd99e901006ee36a4b2c9",
+      "moduleSha256": "f32d5081debcad845c738c3d7008d7cb376612c876837e208a0913e26792adb6"
+    },
+    "fullProcessRestart": true,
+    "normalDebugFreeLaunch": true,
+    "saveReceipt": "verification-save-20260928T225305868Z-5638af6b.json",
+    "restartReceipt": "lifecycle-restart-20260928T225337573Z-ef3fc2bd.json",
+    "verifyReceipt": "verification-verify-20260928T225404912Z-c2007c96.json",
+    "finishReceipt": "lifecycle-finish-20260928T225435501Z-5fef1f0d.json",
+    "prepareReceipt": "lifecycle-prepare-20260928T225113547Z-a58194e1.json",
+    "backupManifestSha256": "3c83223c709b54e889b1a4613d839309f198920a04cebdb72ee09c7751dc24ab",
+    "nativeReportSha256": "683680df7f825a95aabfae4902a7adcf1c37bf18d9548e6728493b829ed55876",
+    "browserReportSha256": "bf16cbd242cc58bbeb4537ab225d9a3963ab69c6be5a8f6a20742524c196ea48",
+    "unitLogSha256": "b6ba86ed12d0e856e5a45f2d34916983a1605124d9246a6f8c7469cb121ba79a"
+  },
+  "expectedRankingSha256": "912f56e957f8458c4224a1423d0b7530abb5ef5ce07dd99e901006ee36a4b2c9",
+  "legacyHalfExpectedSha256": "7cabedd7de6f6dcbeeab5764dfb86212f5f8bc51a8c3ffa28af7a1161f77145c",
+  "referenceIdentity": "5afc66b853bbe44572800bf5ebe6b54a83c736a6a6ed4de6b773fe1990e1b829",
+  "shortcutVerification": {
+    "Status": "PASS",
+    "At": "2026-09-28T22:54:21.3536338Z",
+    "Shortcut": "C:\\Users\\Adamb\\OneDrive\\Desktop\\Macro Atlas.lnk",
+    "TargetPath": "C:\\Users\\Adamb\\AppData\\Local\\MacroAtlas\\0.23.2\\Macro Atlas.exe",
+    "WorkingDirectory": "C:\\Users\\Adamb\\AppData\\Local\\MacroAtlas\\0.23.2",
+    "Version": "0.23.2",
+    "SHA256": "6D8949B4D84674A322AD11E1993CF89CE4B0F96BB2339F0501115872BC6D3C31",
+    "PriorReleaseRetained": true
+  },
+  "limitations": [
+    "Rank points are relative to 180 priced quality listings, not expected returns or an assertion of undervaluation.",
+    "Multiple listings of the same business can affect the reference distribution.",
+    "Missing observations remain unranked; no weights are redistributed.",
+    "Five-year cash-only NPV excludes all cash and business value after year five. Negative NPV is not a claim that the continuing business is worthless or overvalued.",
+    "The common flat-cash assumption keeps valuation percentile order unchanged; the larger 60% valuation weight changes the combined ranking.",
+    "Saved quotes are not current prices. The existing 2020–2023 exclusion, original valuation arithmetic and quality/discount bounds are unchanged.",
+    "The 149-check broad Windows run belongs to 0.23.0. Version 0.23.2 is validated with the full unit suite and focused browser/native ranking and persistence tests."
+  ]
+}

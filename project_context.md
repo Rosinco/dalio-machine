@@ -23,6 +23,31 @@ The framework is treated as a descriptive lens, not a predictive oracle. The pro
 
 ## Company valuation standard
 
+Version 0.23.2 adds `normal_npv_5y_percent`: median normal-year provider FCF,
+held flat for years 1–5 at 10%, with no terminal value, less the dated saved
+whole-equity price and divided by that price. The saved ranking now uses
+`normal_quality_value_score` = 60% five-year NPV percentile + 40% quality points;
+`normal_discount_rank` exposes those NPV points and `normal_quality_rank` the
+quality points. Quality equally weights normal median capital return, minimum
+EBIT margin, CFO CAGR and lower latest net debt/EBITDA; net cash scores as zero
+debt. A fixed, listing-weighted reference retains the original quality bounds.
+Display filters never rebase scores and missing inputs remain unranked. Integer
+midrank arithmetic preserves exact ties. Existing ten-year and starter valuations
+and all filter bounds are unchanged. The flat-cash five-year model preserves the
+previous valuation ordering; the increased value weight changes the combined rank.
+See `desktop/research/screens/normal-years-five-year-ranking-2026-09-29.md`.
+
+Version 0.23.0 adds an explicit `normal_2020_2023:5` list window: the latest five
+comparable annual reports whose actual end year is outside 2020–2023. Optional
+ten-report source-bound history preserves the original five-report measures and
+starter valuations. New `normal_roce` and `normal_rota` are labelled closing-balance
+accounting proxies, not normalized ROIC/ROTCE. `normal_npv_percent` compares a
+separate ten-year flat median-FCF projection (10% required return, zero growth)
+with the dated saved equity price at 100/50/0% terminal credit. Exact windows,
+thresholds and sensitivities persist in saved views. See
+`desktop/research/screens/normal-years-quality-value-2026-09-28.md` for formulas,
+exceptions, missing-data rules and the fixed screening thresholds.
+
 Version 0.21.0 adds inclusive Min/Max ranges beneath every numeric Lists KPI,
 with currency-safe matching, saved-view persistence and full filtered CSV export.
 A Start here guide, per-KPI explanations and explicit company research steps
@@ -614,6 +639,7 @@ semantically reviewed.
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
+| 2026-09-29 | **Saved normal-year screening and explicit five-year NPV ranking.** | User-selected exclusion of fiscal ends 2020–2023 for separate quality/cash measures; retain original histories and valuations. Rank the fixed quality cohort with 60% five-year cash-only NPV/price percentile and 40% quality, no terminal value, transparent components and missing inputs last. This supersedes the intermediate 50/50 ranking without changing screening bounds or investment gates. |
 | 2026-09-26 | **ADR 0044 — survival and portfolio stress review.** | Separate evidence-led liquidity/reverse stress, existing-shareholder permanent impairment and common-cause portfolio losses; explicit local saves, stale-source status, unchanged DCF arithmetic and position policy. |
 | 2026-09-11 | **ADR 0035** — company value versus price, scenario charts and payback | Equity cash distributions, explicit final sale and separate net recovery; source-bound drafts/revisions, tangible-capital context and evidence-linked macro assumptions. |
 | 2026-09-10 | **ADR 0026** — branch histories and saved comparisons | Compare annual values with a whole-branch median/IQR, linked charts and exact-version saved notes; single-currency monetary measures and explicit market-cap/ROIC/CAPEX gaps. See `decisions/0026-branch-history-comparisons.md`. |
@@ -653,6 +679,7 @@ semantically reviewed.
 
 | Date | Change | Files |
 |------|--------|-------|
+| 2026-09-29 | **Macro Atlas 0.23.2 installed and restart-verified.** Saved normal-year screens, ten-report evidence extension, separate ten-year comparisons and five-year cash-only NPV; 60/40 value-quality ranking over 180 priced listings, 68 unranked. Both existing views and all 63 then-current valuation drafts preserved. See desktop handoff and portable release receipts for exact verification/publication scope. | `desktop/src/normalYearScreen.ts`, `normalQualityValue*.ts`, `companyListModel.ts`, `CompanyListWorkspace.tsx`, research-gauge importer/exporter and `desktop/research/screens/` |
 | 2026-09-26 | Added company survival/permanent-loss and manual portfolio shock worksheets in Research notes, with a read-only saved review status in Valuation. Framework/template v2 require survival before accepting valuation and aggregate exposure review. Local source change; installed Windows release unchanged. | `desktop/src/{resilienceReview,CompanyResilienceReview,ResilienceReviewSummary,portfolioStress,PortfolioStressReview}.*`, `docs/survival-and-portfolio-review.md`, ADR 0044 |
 | 2026-09-11 | **Company valuation workspace and analysis standard (ADR 0035).** High/mid/low DCF and cumulative NPV charts, ordinary/discounted payback, separate recovery, capital/exposure notes and local drafts/revisions. Build and installation status is recorded in the desktop handoff. | `docs/company-*.md`, ADR 0035; desktop `ValuationWorkspace`, `ValuationCharts`, calculation/storage modules and tests |
 | 2026-09-10 | **Macro Atlas 0.7.0: branch comparisons (ADR 0026).** Annual bubbles, whole-filtered-branch median/IQR and coverage, linked charts/table, eight-listing selections and saved settings/Swedish notes tied to exact data versions. Single-currency monetary comparisons and explicit size choices preserve missingness; market cap awaits verified split/date alignment. Bounded annual reads loaded Mining’s 1,745 listings in 1.36 s in Windows. Verified 1,238 Python / 51 frontend / 19 Rust tests and complete browser/Windows flows, including process restart, with no external requests or runtime errors. | `desktop/`, `decisions/0026-branch-history-comparisons.md` |

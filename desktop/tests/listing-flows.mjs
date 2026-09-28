@@ -41,6 +41,9 @@ export async function listingFlows(page, project) {
   await page.locator(`[data-listing-detail="${oldRow.id}"]`).waitFor();
   assert.match(await page.locator('.older-listing-note').innerText(), /2025-06-21[\s\S]*does not establish its listing status/);
   assert.equal(await page.locator('[data-financial-history]').count(), 1);
+  // Opening a company creates its own analysis screen, whose map starts hidden.
+  // Reveal the map before exercising its saved-download coverage control.
+  await page.getByRole('button', { name: 'Show listing map', exact: true }).click();
   await coverage.selectOption('all');
   await search.fill('a');
   assert.equal(await page.locator('[data-search-listing]').count(), 20);
