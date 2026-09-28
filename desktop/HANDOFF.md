@@ -1,3 +1,109 @@
+# Macro Atlas 0.23.2 handoff — 2026-09-29
+
+## Completed and installed
+
+Macro Atlas 0.23.2 is installed through the existing Windows desktop shortcut.
+The final normal-profile launch used the verified executable and no remote
+debugging; saved-view persistence was checked after a full process restart.
+Executable: `C:\Users\Adamb\AppData\Local\MacroAtlas\0.23.2\Macro Atlas.exe`.
+SHA-256: `6d8949b4d84674a322ad11e1993cf89ce4b0f96bb2339f0501115872bc6d3c31`.
+Earlier installed versions remain available.
+
+This checkpoint includes the 0.23.0–0.23.2 work: saved capital-light and exceptional
+quality screens; an optional ten-report screening history; quality and separate
+valuation measures excluding fiscal ends 2020–2023; and a transparent ranking of
+the fixed quality-reference listings. The intermediate 50/50 policy is historical.
+The user explicitly selected **60% five-year cash-only NPV/price percentile plus
+40% quality points**. Five-year NPV discounts flat median normal-year FCF at 10%
+for years 1–5 and includes no terminal value. Four quality percentiles contribute
+10% each: capital return, minimum EBIT margin, CFO growth and lower debt.
+
+In Companies → Lists → Saved view, the two existing views retain their IDs,
+filters and all previous column objects/ranges. Both sort the combined score
+descending, then raw five-year NPV/price descending. New raw NPV is visible beside
+the total and component points. The strict discount view still has 0 matches;
+`Kvalitetsbolag – normalår, prisbevakning` has 248 listings, with 180 ranked and
+68 unpriced/unranked last. Searches and display filters do not rebase scores.
+
+All 63 valuation drafts and 66 unrelated storage records at the final pre-save
+checkpoint, and three other saved views, were preserved. Those counts are dated
+evidence, not a promise about later user edits. Always read the live profile before
+another write. Original all-year starters, reviewed studies, ten-year comparisons,
+raw exception-year data, survival reviews and sizing policy are unchanged.
+
+## Meaning and latest user guidance
+
+A five-year cash-only NPV is a cash-coverage sensitivity, not the total value of a
+continuing business. All 180 priced candidates have negative five-year NPV in the
+frozen data (best about −47.60%). The common flat-cash assumptions retain the old
+valuation percentile order; the increased 60% value weight changes 173 combined
+ranking positions. Multiple listings of one business can affect percentiles.
+No probability, expected return, pricing-power proof or investment verdict follows.
+
+The latest Min/Max guidance was: total score Min 75 and quality points Min 60,
+with other ranking/NPV bounds blank, giving 8 listings in the frozen data. Removing
+the quality Min 60 gives 17. These are optional display cutoffs and **were not
+applied by the agent**. Saved ranking and NPV column ranges were still blank at
+verification; the user may have edited them since. NPV5 Min 0 gives no matches.
+
+## Verification and evidence
+
+- 383 frontend/unit/transport tests across 42 files passed; production and Windows
+  builds passed. Focused production-browser checks: 5; focused native checks: 6,
+  including process restart. No runtime errors or external requests were reported.
+- Independent checks cover exact 248-row ordering, 3,448 rank/raw/display values,
+  4,960 unchanged legacy values and 1,488 five-year calculations.
+- Source closeout: 1,206 Python tests, 39 exporter tests, Node backtest and Ruff
+  passed. Gauge regeneration is byte-identical across all 19,140 rows and 154,409
+  screening reports. All 227 pinned dependencies exist and match; 218 are generated
+  assets/packs intentionally outside Git. Four real Code.exe wrapper cases verified
+  waiting and propagation of success/failure exit codes.
+- Windows test wrappers now pipe the VS Code Node fallback through Out-Host so
+  they wait and propagate the child exit code. This harness-only fix does not
+  change the already tested and installed application binary.
+- `research/screens/normal-years-five-year-ranking-verification-2026-09-29.json`
+  records the actual installation, saves, restart and preserved state. The earlier
+  0.23.0/0.23.1 records remain historical; the broad 149-check Windows run belongs
+  to 0.23.0 and is not represented as a fresh 0.23.2 run.
+- Portable records omit full process command lines and profile-directory metadata.
+  Exact original receipts remain in ignored test-results/closeout-2026-09-29/.
+
+## Publication and continuation
+
+Feature commit `f193081f52261f3b6ca3758218d0c99cdd383a0c` was pushed to
+`Rosinco/dalio-machine`, branch `feat/offline-atlas`, and the exact remote ref was
+verified with `git ls-remote` on 2026-09-29. The containing handoff commit adds
+documentation only; the active session handoff records the final remote head.
+
+Desktop implementation belongs to `/home/rosinco/workspace/dalio-atlas-desktop`
+on `feat/offline-atlas`; canonical `/home/rosinco/workspace/dalio-machine` stays on
+`main` and was not changed in this closeout. No merge, trade or external Site
+publication was requested or performed.
+
+Read the three method documents under `research/screens/` for definitions and
+saved thresholds. Both ranking JSON fixtures and focused browser/native test
+scripts are committed. The three scripts in
+`scripts/verification/` reproduce the current ranking from hash-bound local assets
+and check the regenerated fixture byte-for-byte. Exact commands are in the five-year
+method document. A fresh run passed the module/model checks and independently
+matched all 4,960 legacy values to original retained evidence.
+
+Git does not contain the executable, private WebView/localStorage backups,
+financial SQLite companions or generated public/data assets. The installed
+0.23.2 folder and the desktop worktree retain those local artifacts; Git publication
+alone is not their backup. The gauge manifest binds 19,140 listings to the saved
+2026-09-13 research snapshot (provider snapshot 2026-08-10), gauge SHA-256
+`4b7d4298e0f1b5e74c2cad03e53900f746287829ce6113c45851ff75cfe65645` and financial pack
+`1f1534d48fc30c1e3769cb7f1e9060c85fb1dc63ec39b06ada40fb6e11d2c69a`.
+Restore/verify those exact inputs before rebuilding or running data-dependent flows;
+do not silently fetch newer prices or alter the saved share/currency basis.
+
+No feature work remains for the requested ranking. Any change to weights, normal
+years, cash assumptions or source prices needs a new explicit policy and fresh
+validation. Preserve user records and keep missing data unranked.
+
+## Earlier handoffs - historical records
+
 # Survival and portfolio review handoff — 2026-09-26
 
 ## Current source checkpoint
